@@ -20,13 +20,14 @@ devolve `handoff: true`. Até esse marco o código de produto tem **uma frente s
 | Portão | Marco 1 verde · **M1** revisão curta · **I** escolha do modelo | 1 h | leva 2 só sai com Marco 1 verde; M1 e I rodam em paralelo |
 | 2 | **E** datas · **F** lead · **G** robustez e handoff · **H** concorrência · **J** página · **D** (rodadas ao vivo) | 3 h | um dono por arquivo (tabela abaixo) |
 | Integração | merges, correções a partir dos evals dev e do simulador, 1º agregado do reservado | 1,5 h | correção nunca olha caso reservado |
-| 3 | **M2** revisões · **L** custo e monitor · **K** produção · **N** entregáveis | 2 h | K só depois de M2 e de ordem explícita do Éverton |
+| 3 | **M2** revisões · **L** custo e monitor · **K** produção · **N** entregáveis | 2 h | K sai depois de M2, com o envio real desligado (L24); ligar o envio só com ordem do Éverton |
 
 **Prazo.** Final: 14/11/2026 às 14h, assumido como horário de Brasília. Soma das
 estimativas: **29,5 horas de agente**. Caminho crítico: **11 h de relógio** + 1 h de
 coordenação = 12 h. Saindo às 16h30 de 13/11, a entrega técnica fecha por volta das
-4h30 de 14/11, com 9,5 h de folga. O que depende do Éverton (assinar o plano, autorizar
-produção, gravar o vídeo, responder o e-mail) cabe na manhã de 14/11.
+4h30 de 14/11, com 9,5 h de folga. O que depende do Éverton (mandar ligar o envio
+real, tornar o repositório público, gravar o vídeo, responder o e-mail) cabe na manhã de
+14/11.
 
 **Linha de corte, nesta ordem** (o que cai primeiro se o tempo apertar):
 
@@ -59,7 +60,7 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 | J | agente-concierge | Página de chat | Marco 1 | baixa | 1 | subagente em worktree | pendente | — |
 | M2 | agente-concierge | Revisão de código, segurança e segunda opinião | leva 2 integrada | alta | 1,5 | subagentes + conselho | pendente | — |
 | L | agente-concierge | Custo por conversa e monitor diário | leva 2 integrada | média | 1 | subagente em worktree | pendente | — |
-| K | agente-concierge | Produção | M2, L23, L24, ordem do Éverton | alta | 1,5 | thread T3 | pendente | — |
+| K | agente-concierge | Produção com o envio real desligado | M2 | alta | 1,5 | thread T3 | pendente | — |
 | N | agente-concierge | Entregáveis de processo | K | alta | 2 | thread T3 | pendente | — |
 | — | — | Correções entre leva 2 e 3 | evals | alta | 1,5 | frente dona do arquivo | — | — |
 
@@ -73,9 +74,10 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
 
 | # | O quê | Quem | Por quê |
 |---|---|---|---|
-| 1 | Assinar o plano pago da Cloudflare | Éverton | o gratuito dá 10 ms de CPU por requisição e ~85 chamadas de modelo por dia; os evals estouram isso (`docs/VERIFICACOES.md` §3) |
-| 2 | `CLOUDFLARE_ACCOUNT_ID` e a credencial de deploy disponíveis no ambiente, por referência | Éverton / coordenadora | o token cobre mais de uma conta |
-| 3 | Lacunas L1 a L24 decididas no contrato (seção 10) | Éverton | frente não implementa lacuna aberta |
+| 1 | Plano pago da Cloudflare, na conta pessoal (a mesma da zona do subdomínio de produção) | Éverton, assinando em 13/11 | o gratuito dá 10 ms de CPU por requisição e ~85 chamadas de modelo por dia; os evals estouram isso (`docs/VERIFICACOES.md` §3). A coordenadora confere antes dos evals em volume |
+| 2 | `AGENTE_URL_PRODUCAO` (o subdomínio do L23) no arquivo de ambiente | Éverton | o hostname não fica em arquivo versionado; sem ele a frente K não sai |
+| 3 | `CLOUDFLARE_ACCOUNT_ID` no arquivo de ambiente, derivado da zona do domínio de `AGENTE_URL_PRODUCAO`, e a credencial de deploy por referência | coordenadora | o token cobre mais de uma conta |
+| 4 | Lacunas decididas no contrato (seção 10) | feito em 13/11; só a L1a segue aberta | frente não implementa lacuna aberta |
 
 ## Dono de arquivo (confere antes de cada leva)
 
@@ -138,7 +140,8 @@ falso tem a própria pasta com a própria configuração.
 | 20 | Exports de sessão e prompts | N | `docs/sessoes/`, `docs/prompts/` |
 | 21 | Vídeo de 3 a 5 minutos da fábrica rodando | Éverton, com roteiro de N | fora do repo |
 | 22 | Entrega por resposta ao e-mail com link aberto | Éverton | fora do repo |
-| 23 | Repositório público na entrega | Éverton | fora do escopo das sessões: nenhuma sessão muda a visibilidade |
+| 23 | Repositório público na entrega | Éverton | nenhuma sessão muda a visibilidade sem ordem dele |
+| 24 | Envio real de leads ligado só na entrega | K, com ordem do Éverton | `scripts/validar-producao.sh --entrega` → `ENTREGA OK` |
 
 ## Critérios de integração (rodam na `main`, desde a leva 1, vermelhos no começo)
 
@@ -174,12 +177,21 @@ falso tem a própria pasta com a própria configuração.
 
 | Decisão | Resposta |
 |---|---|
-| Passagem para a coordenadora | PENDENTE |
+| Passagem para a coordenadora | o Éverton abre uma thread nova com `docs/prompts/02-coordenadora.md` |
 | Frentes rodam como | subagente em worktree (frente pequena) ou thread nova do T3 (frente longa), conforme o mapa |
-| Autonomia da coordenadora | PENDENTE |
-| Modelos | PENDENTE |
-| Deploy em `dev` | PENDENTE |
-| Deploy em `producao` | só com ordem explícita do Éverton, na frente K |
+| Autonomia da coordenadora | segue sozinha, e para em: Marco 1 verde, lacuna nova ou critério impossível, hora de ligar o envio real, hora de tornar o repositório público |
+| Resumo | até 10 linhas para o Éverton no fim de cada leva |
+| Modelos | o mais forte disponível só na coordenadora e nas frentes A, C, F e G; modelo intermediário em B1, B2, D, I, E, H, J, L, K, N e nos subagentes de revisão e de verificação |
+| Deploy em `dev` | liberado para A e B1 na leva 1 e para a coordenadora, a partir da `main`, depois de cada merge |
+| Deploy em `producao` | pode sair sem o Éverton, depois de M2, com `ENVIO_LEADS=desligado` (L24) |
+| Ligar o envio real e tornar o repositório público | só com ordem explícita do Éverton |
+
+**Orçamento de uso.** O limite semanal de uso do Éverton estava em 74% em 13/11, com o
+uso extra desligado. Por isso os modelos acima, e por isso: no máximo 5 frentes vivas,
+subagente devolve veredito e não diff, e o volume do simulador (que usa modelo de outro
+provedor, fora desse limite) é preferível a rodadas extras de revisão. Se o limite
+acabar, a coordenadora registra o estado no backlog e avisa; não troca de provedor por
+conta própria.
 
 ## Regras que valem para toda frente
 
@@ -218,6 +230,12 @@ falso tem a própria pasta com a própria configuração.
   adaptador único em `src/modelo.ts` no formato de chat com ferramentas; a escolha
   final é da frente I.
 - O item de resumo do catálogo não traz preço; cotar exige a ficha (contrato §4).
+- Armadilha já medida em outra conta: Worker recém-criado no endereço padrão da
+  plataforma pode responder 404 com corpo `error code: 1042` sem nenhuma invocação. A
+  correção é a flag de compatibilidade `global_fetch_strictly_public`. Vale também
+  para o webhook falso (B1), que o agente de `dev` chama por HTTP.
+- `ENVIO_LEADS` (contrato §8 e L24): `ligado` em `dev`, `desligado` em `producao`. O
+  POST do lead só sai com `ligado`. (CA-17)
 
 ### Tasks
 - [ ] Projeto: `package.json` com scripts `test`, `dev`, `deploy:dev`,
@@ -395,7 +413,8 @@ exigem chave.
 
 Implementa em `src/nucleo/datas.ts` e `ferramentas/cotacao.ts` as regras L1 e L2 do
 contrato e a decisão fechada: data sem ano é a próxima ocorrência, e a resposta repete
-a data completa com dia da semana.
+a data completa com dia da semana. Com entrada e saída determinadas, a cotação sai na
+mesma resposta. A L1a ("fim de semana" sem datas) está aberta: não mapeie a expressão.
 
 ### Critérios de aceite
 1. Tabela de datas (sem ano, virada de ano, 29/02, relativa, passada) resolvida em
@@ -466,8 +485,9 @@ MANUAL: `docs/revisoes/m2.md` com cada achado, severidade, correção e commit.
 
 - [ ] `scripts/custo.mjs`: lê os relatórios de eval e calcula custo médio e p95 por
       conversa para o modelo escolhido (vai para o README).
-- [ ] Monitor diário por 7 dias: rodada de fumaça sem confirmação contra `producao`,
-      com aviso em caso de falha (L23 define a URL). Segundo item da linha de corte.
+- [ ] Monitor diário por 7 dias: rodada de fumaça sem confirmação contra `producao`
+      (`AGENTE_URL_PRODUCAO`), com aviso em caso de falha. Segundo item da linha de
+      corte.
 
 ### Critérios de aceite
 1. CHECK: `node scripts/custo.mjs evals/relatorios`
@@ -479,23 +499,46 @@ MANUAL: `docs/revisoes/m2.md` com cada achado, severidade, correção e commit.
 Como validar sem enviar lead: `docs/VERIFICACOES.md` §5. Risco de bloqueio do
 avaliador por erro 1010 em `workers.dev`: `docs/VERIFICACOES.md` §3 e L23.
 
+Verificado na API em 13/11/2026 (só leitura): a zona do domínio está ativa, no plano
+gratuito; a checagem de integridade de navegador está **ligada** na zona inteira; o
+subdomínio de produção ainda não tem registro de DNS. **Desconhecido:** o estado do
+Bot Fight Mode (o token não tem permissão de leitura de bots) e se o token consegue
+criar a regra de configuração por hostname.
+
 ### Tasks
 - [ ] `scripts/validar-producao.sh`: `--so-leitura` faz GET no webhook real e imprime
-      `LEADS REAIS: <n>`; modo completo confere secrets presentes, `/saude`, e roda o
-      conjunto dev **sem** casos de confirmação.
-- [ ] Secrets de `producao` por referência; deploy de `producao` só com ordem do
-      Éverton; teste da URL publicada com curl, `requests`, `urllib` e `fetch` do Node.
-- [ ] L24 conforme decidido.
+      `LEADS REAIS: <n>`; modo completo confere secrets presentes, `/saude` com
+      `envio_leads: "desligado"`, e roda o conjunto dev **sem** casos de confirmação;
+      `--entrega` reprova se o envio estiver desligado.
+- [ ] Secrets de `producao` por referência e deploy de `producao` com
+      `ENVIO_LEADS=desligado`, no subdomínio de `AGENTE_URL_PRODUCAO` (L23). O hostname
+      entra pelo ambiente no comando de deploy, não em arquivo versionado.
+- [ ] Regra de configuração que desliga a checagem de integridade de navegador **só
+      para esse hostname**. Nada mais na zona é alterado. Se o token não tiver
+      permissão, pare e peça ao Éverton para criar a regra no painel.
+- [ ] Bot Fight Mode da zona: confira o estado. Se estiver ligado, **não desligue**
+      (vale para o domínio inteiro): pare e leve ao Éverton.
+- [ ] Teste da URL publicada a partir da máquina de desenvolvimento com curl, Python
+      `requests`, Python `urllib` com o agente de usuário padrão, e `fetch` do Node.
+- [ ] Só com ordem do Éverton: `ENVIO_LEADS=ligado`, novo deploy e
+      `scripts/validar-producao.sh --entrega`.
 
 ### Critérios de aceite
 1. CHECK: `scripts/validar-producao.sh`
-   ESPERA: `PRODUCAO OK` e `LEADS REAIS: 0`
-2. Os quatro clientes recebem 200 do `POST /chat`.
+   ESPERA: `PRODUCAO OK`, `LEADS REAIS: 0` e `ENVIO: desligado`
+2. Os quatro clientes recebem 200 do `POST /chat`, sem página de bloqueio.
    CHECK: `scripts/validar-producao.sh --clientes`
    ESPERA: `CLIENTES OK`
+3. Outro hostname da mesma zona continua com a checagem de integridade ligada.
+   MANUAL: saída da leitura das regras da zona mostrando uma única regra, restrita ao
+   hostname de produção
+4. Na entrega, com ordem do Éverton.
+   CHECK: `scripts/validar-producao.sh --entrega`
+   ESPERA: `ENTREGA OK` e `ENVIO: ligado`
 
 ### Não-escopo
-Qualquer POST ao webhook real. Tornar o repositório público.
+Qualquer POST ao webhook real. Ligar o envio real sem ordem. Alterar qualquer outra
+configuração da zona. Tornar o repositório público.
 
 ## Sessão N — Entregáveis de processo
 
