@@ -46,11 +46,11 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 
 | Sessão | Repo | Escopo resumido | Depende de | Prioridade | Horas | Roda como | Status | Worktree/Thread |
 |---|---|---|---|---|---|---|---|---|
-| A | agente-concierge | Esqueleto vertical até o Marco 1 | pré-voo | alta | 3,5 | thread T3 · Fable 5.2 | pendente | — |
-| B1 | agente-concierge | Webhook falso (Worker próprio), construído e testado local; deploy em `dev` pela coordenadora | pré-voo | alta | 1 | subagente em worktree · DeepSeek | pendente | — |
-| B2 | agente-concierge | Harness HTTP e casos dev por bloco | — | alta | 2,5 | thread T3 · Gemini 4 Hydrogen | pendente | — |
-| C | agente-concierge | Conjunto reservado (fora do repo) | — | alta | 2 | thread T3, fica viva · GPT-6 Astra | pendente | — |
-| D | agente-concierge | Simulador de hóspede hostil | B2 (formato de caso) | média | 2,5 | thread T3 · Gemini 4 Hydrogen | pendente | — |
+| A | agente-concierge | Esqueleto vertical até o Marco 1 | pré-voo | alta | 3,5 | thread T3 · Fable 5.2 | rodando | `frente-a` |
+| B1 | agente-concierge | Webhook falso (Worker próprio), construído e testado local; deploy em `dev` pela coordenadora | pré-voo | alta | 1 | subagente em worktree · DeepSeek | rodando | `t3/webhook-falso-leads` |
+| B2 | agente-concierge | Harness HTTP e casos dev por bloco | — | alta | 2,5 | thread T3 · Gemini 4 Hydrogen | rodando | `frente-b2` |
+| C | agente-concierge | Conjunto reservado (fora do repo) | — | alta | 2 | thread T3, fica viva · GPT-6 Astra | rodando | `frente-c` (sem commits; casos fora do repo) |
+| D | agente-concierge | Simulador de hóspede hostil | B2 (formato de caso) | média | 2,5 | thread T3 · Gemini 4 Hydrogen | rodando | `frente-d` |
 | M1 | agente-concierge | Revisão curta do Marco 1 | A | alta | 0,5 | subagentes Opus 5.5 + conselho | pendente | — |
 | I | agente-concierge | Escolha do modelo por eval | A, B2 | alta | 1 | subagente em worktree · Opus 5.5 | pendente | — |
 | E | agente-concierge | Datas | Marco 1, L1, L1a, L1b, L2 | alta | 1,5 | subagente em worktree · Opus 5.5 | pendente | — |
@@ -68,7 +68,19 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
 `falhou`. Só vira `concluída` com evidência conferida pela coordenadora.
 
 **Log de execução** (data · sessão · resultado · commits):
-- _(vazio)_
+- 13/11 · coordenadora · pré-voo e documentos: três lacunas decididas, frentes divididas
+  por provedor, `AGENTS.md`, conta da Cloudflare e fichas do catálogo gravadas fora do
+  repositório. Faltam, do Éverton: `AGENTE_URL_PRODUCAO`, o estado do Bot Fight Mode e a
+  regra do hostname (travam só a frente K) · 8e11378, ffb7cb2, 3298156, merge 2d35648
+- 13/11 16h00 · leva 1 despachada, todas a partir da `main` em 2d35648, sem sobreposição de
+  arquivo: A (Fable 5.2, thread), B1 (DeepSeek, subagente), B2 (Gemini 4 Hydrogen,
+  thread), C (GPT-6 Astra, thread) e D (Gemini 4 Hydrogen, thread)
+
+**Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
+- Skills: `cloudflare-token` (coordenadora, pré-voo).
+- Regras carregadas em toda sessão Claude: `coding-style`, `git-workflow`, `git-sync`,
+  `security`, `task-contract`, `testing`.
+- Subagentes: nenhum ainda.
 
 ## Pré-voo (antes da leva 1)
 
