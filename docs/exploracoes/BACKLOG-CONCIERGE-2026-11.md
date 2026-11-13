@@ -53,7 +53,7 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 | D | agente-concierge | Simulador de hóspede hostil | B2 (formato de caso) | média | 2,5 | thread T3 · Gemini 4 Hydrogen | concluída: na `main` (6c090d0), rodada ao vivo com `SIMULADOR OK`; a B2 move os 12 casos fixos | `frente-d` |
 | M1 | agente-concierge | Revisão curta do Marco 1 | A | alta | 0,5 | subagentes Opus 5.5 + conselho | concluída (`docs/revisoes/m1.md`; achados com dono) | — |
 | I | agente-concierge | Escolha do modelo por eval | A, B2 | alta | 1 | subagente em worktree · Opus 5.5, esforço médio desde a X16 | rodando (fase 1; candidato da OpenAI fora do plano) | `t3/` (subagente) |
-| E | agente-concierge | Datas | Marco 1, L1, L1a, L1b, L2 | alta | 1,5 | subagente em worktree · Gemini 4 Hydrogen | entregue (e8c2669, db7d272); seguimento curto da P5 e da P7 antes do merge | `t3/datas-relativas-sao-paulo` |
+| E | agente-concierge | Datas | Marco 1, L1, L1a, L1b, L2 | alta | 1,5 | subagente em worktree · Gemini 4 Hydrogen | concluída: na `main` (81873fa) | `t3/datas-relativas-sao-paulo` |
 | F | agente-concierge | Lead robusto | Marco 1, L6, L7, L9, L10, L11, L15 (textos fixos), L20 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16) | rodando | `frente-f` |
 | G | agente-concierge | Robustez e handoff | Marco 1, L3, L4, L5, L5a, L12, L13a, L15, L16, L16a, L19, L21 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16) | rodando | `frente-g` |
 | H | agente-concierge | Concorrência endurecida e falha interna | Marco 1, L17, L17a, L18 | alta | 1 | subagente em worktree · Gemini 4 Hydrogen | reprovada no CHECK 2 (Worker não sobe no runtime real); em correção | `t3/durable-session-concurrency` |
@@ -244,6 +244,17 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
 - 13/11 18h46 · Éverton ajustou a X16 (X17): candidato GPT liberado na frente I só pelo AI Gateway
   com billing unificado, sem chave e sem compra de crédito. Frente I avisada; aplica depois da
   rodada do GLM-5.3 que está em curso
+- 13/11 18h53 · E · na `main` (merge 81873fa) depois da correção da L8 (1e1f1df): a pergunta sem
+  hóspedes repetida 10 de 10 no servidor local do estado mesclado, `BLOCO funciona-cotacoes:
+  100%`, 341 testes. `dev` publicado da 81873fa. Costura E×F conferida em `dev` com duas
+  conversas até o "sim" ("de sexta a domingo" e "de 15/01 a 18/01"): zero lead antes da
+  confirmação, 1 depois, com `checkin` e `checkout` em ISO e `valor_total` igual ao cotado
+- 13/11 18h53 · latência em `dev`: a primeira rodada do `marco1` logo depois do deploy teve um turno
+  de 22 s (`EVAL REPROVADO` só pelo p95, bloco em 100%); as duas repetições deram p95 de 3,5 s e
+  4,6 s. Fica como dado para a escolha do modelo (frente I) e para o critério de p95
+- 13/11 18h53 · H · corrigiu o defeito de runtime (afd764e) e o teste da P4; o achado crítico do
+  verificador é o próximo item da fila dela. B2 · `con-07` e `lead-06` ajustados (9ea4d1c); falta
+  o teste do simulador
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
