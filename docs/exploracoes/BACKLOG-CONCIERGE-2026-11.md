@@ -396,6 +396,13 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
 - 13/11 20h04 · B2 · pedido: `man-07` aceitar "time" e "equipe". F avisada da P11 e da linha de
   `src/agente/ferramentas/lead.ts` a trocar depois que a G entrar. Observação: `con-10-idioma`
   falhou em 1 de 2 rodadas do bloco `contrato` em `dev`; acompanhar depois da G
+- 13/11 20h06 · Éverton · a chave da Anthropic está no arquivo de ambiente (`ANTHROPIC_API_KEY`),
+  testada por ele. Coordenadora: variável conferida sem imprimir e valor acrescentado por
+  referência aos termos extras do gate (`SIGILO OK`). Frente I liberada para medir o Haiku 5.5
+  agora, sem esperar as rodadas com pausa: chave só no gateway `concierge-dev`, nunca como secret
+  de Worker; 98 casos com `--paralelo 2` e rajada de 10 conversas, em nível baixo e depois médio,
+  reserva GLM-5.3 Flash, um servidor na porta 8797. Teto de carga subiu de 6 para 7 `workerd`
+  só até as rodadas com pausa terminarem (por volta das 20h50). `MODELO` segue sem fixar
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
