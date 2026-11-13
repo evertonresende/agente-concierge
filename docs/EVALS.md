@@ -1,9 +1,13 @@
 # Plano de evals
 
 Fonte dos requisitos: [`docs/CONTRATO.md`](CONTRATO.md). Este plano diz como provamos que o
-agente cumpre o contrato, o que medimos e o que conta como aprovado. Onde um caso depende de
-uma lacuna ainda não decidida, ele está marcado com `[depende de L-n]`: o caso existe, mas a
-expectativa só é preenchida depois que a lacuna for registrada em `DECISOES.md`.
+agente cumpre o contrato, o que medimos e o que conta como aprovado.
+
+As lacunas foram decididas pelo Éverton em 13/11/2026 e estão na seção 10 do contrato.
+Onde um caso traz `[depende de L-n]`, a expectativa é a regra L-n do contrato: a frente
+B2 escreve o caso a partir dela. Se uma linha deste plano contradisser o contrato, vale o
+contrato. A única lacuna ainda aberta é a L1a ("fim de semana" sem datas): o caso
+`cot-10-data-relativa` espera que o agente peça entrada e saída até ela ser decidida.
 
 ## Objetivo
 
