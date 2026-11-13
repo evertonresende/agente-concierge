@@ -408,6 +408,20 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   `contrato` em 100% contra `dev`. `funciona-leads` segue em 86% em `dev`: `lead-05` e `lead-06`
   dependem das ligações da G. `lead-12`: o turno 4 passa a ser um sim limpo (um "sim" com dado
   junto não envia, pela regra endurecida da F) e o caso fica em `para-dev/` até a F entrar
+- 13/11 20h15 · G · relatório final (6b06830), lido na conversa dela: ligações das duas travas da F
+  (c005d01), recusa por limite sem nova tentativa (aa3fffd), 645 testes. CHECK 2 dela: três
+  blocos de robustez em 100%, `funciona-leads` 100% em duas rodadas, `funciona-recusas` 90% e
+  100% (`rec-05`: o caso não aceita "mesma data"; pedido à B2). Conferido pela coordenadora:
+  ensaio do merge limpo, 645 testes, tipos e gate verdes. Em curso: os 98 casos no runtime real
+  (servidor local) e o verificador independente (Opus). O merge espera os dois
+- 13/11 20h15 · incidente · a G apontou duas rodadas de CHECK para a porta 8793, de um servidor da
+  frente I (cerca de 50 conversas entre 19h53 e 19h58). O servidor atingido usa o webhook falso
+  (conferido pelo `/saude`): nenhum POST ao webhook real. A I foi avisada para marcar e refazer
+  os casos da rodada com pausa que caíram nessa janela. Regra nova: as outras frentes só usam as
+  portas 8788 a 8792, com conferência de porta livre antes. A G também deixou dois servidores
+  órfãos (sem porta em escuta, cerca de 1 GB): derrubados pela coordenadora, pelo PID
+- 13/11 20h15 · I · medição do Haiku em curso (nível baixo: 98 casos e depois a rajada), servidor
+  na porta 8797. No ar agora: 7 servidores locais (teto temporário), 7,9 GB livres
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
