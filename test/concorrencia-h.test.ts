@@ -1294,4 +1294,83 @@ describe("concorrência endurecida e falhas (frente H)", () => {
     expect(sim.status).toBe(200);
     expect(mundo.leads).toMatchObject([{ hospedes: 3 }]);
   });
+
+  it("A2 / L1 (P12): retentativa mantém chegada original sem ganhar novo prazo nem resumo confirmável após teto do Worker", async () => {
+    const id = `a2-l1-${++proxima}`;
+    const mundo = criarMundo();
+    const modelo: Modelo = async (mensagens) => {
+      const ultima = ultimaDoHospede(mensagens);
+      if (ultima === "sim") return pedeFerramentas(chamar("confirmar_reserva"));
+      if (ultima === "quero fechar") {
+        await pausa(150);
+        return pedeFerramentas(chamar("montar_resumo", DADOS));
+      }
+      return diz("ok");
+    };
+    const stub = ambiente.SESSAO.getByName(`sessao:${id}`);
+    await runInDurableObject(stub, (sessao: Sessao) => {
+      sessao.dependencias = { modelo, buscar: mundo.buscar, tetoMs: 230, orcamentoMs: 230 };
+    });
+
+    let tentativas = 0;
+    const envL1: Env = {
+      ...ambiente,
+      SESSAO: {
+        getByName(nome: string) {
+          const real = ambiente.SESSAO.getByName(nome);
+          return {
+            async conversar(msg: string, c?: number, i?: string): Promise<RespostaDoChat> {
+              tentativas++;
+              if (tentativas === 1) {
+                await pausa(120);
+                throw new Error("falha antes de chegar ao objeto");
+              }
+              return real.conversar(msg, c, i);
+            },
+          };
+        },
+      } as unknown as Env["SESSAO"],
+    };
+
+    const resposta = await tratarChat(new Request("https://agente.teste/chat", {
+      method: "POST",
+      body: JSON.stringify({ session_id: id, message: "quero fechar" }),
+    }), envL1, 240);
+    expect(resposta.status).toBe(200);
+    expect((await resposta.json<{ handoff: boolean }>()).handoff).toBe(true);
+
+    await pausa(200);
+    await postChat(id, "sim");
+    expect(tentativas).toBe(2);
+    expect(mundo.leads).toEqual([]);
+  });
+
+  it("A2 / L2 (P13): nenhum log do turno (normal, falha ou HTTP) contém texto ou dado pessoal do hóspede", async () => {
+    const logs: string[] = [];
+    const espia = vi.spyOn(console, "log").mockImplementation((linha) => {
+      logs.push(String(linha));
+    });
+    try {
+      const stubNormal = await abrir({ modelo: async () => diz("ok"), buscar: criarMundo().buscar });
+      await stubNormal.conversar("Sou Ana Lima, meu telefone é (11) 98888-0000");
+
+      const stubFalha = await abrir({
+        modelo: async () => { throw new Error("falha interna simulada"); },
+        buscar: criarMundo().buscar,
+      });
+      await stubFalha.conversar("Sou Ana Lima, meu telefone é (11) 98888-0000");
+
+      const idHttp = `a2-l2-http-${++proxima}`;
+      const stubHttp = ambiente.SESSAO.getByName(`sessao:${idHttp}`);
+      await runInDurableObject(stubHttp, (s: Sessao) => {
+        s.dependencias = { modelo: async () => diz("recebido"), buscar: criarMundo().buscar };
+      });
+      await postChat(idHttp, "Meu nome é Ana Lima e meu celular é (11) 98888-0000");
+    } finally {
+      espia.mockRestore();
+    }
+    expect(logs.length).toBeGreaterThanOrEqual(3);
+    expect(logs.join("\n")).not.toMatch(/Ana|Lima|98888|Sou |celular/);
+  });
 });
+
