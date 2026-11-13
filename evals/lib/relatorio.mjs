@@ -33,36 +33,34 @@ export function montarResumoRelatorio({
   let entradaTotal = 0;
   let saidaTotal = 0;
   let chamadasTotal = 0;
+  let execCount = 0;
+  let aprovadosTotal = 0;
   const conversas = [];
 
   for (const r of resultadosCasos) {
     if (r.pulado) continue;
+    execCount++;
+    if (r.passou) aprovadosTotal++;
     todasLatencias.push(...r.latenciasMs);
     entradaTotal += r.usoEntrada;
     saidaTotal += r.usoSaida;
     chamadasTotal += r.chamadasModelo;
 
-    const entradaConversa = {
-      bloco: r.bloco,
-      passou: r.passou,
-      latencia_total_ms: r.latenciaTotalMs,
-      uso_entrada: r.usoEntrada,
-      uso_saida: r.usoSaida,
-      chamadas_modelo: r.chamadasModelo,
-    };
-
     if (!soAgregado) {
-      entradaConversa.id = r.id;
-      entradaConversa.falhas = r.falhas;
+      conversas.push({
+        id: r.id,
+        bloco: r.bloco,
+        passou: r.passou,
+        falhas: r.falhas,
+        latencia_total_ms: r.latenciaTotalMs,
+        uso_entrada: r.usoEntrada,
+        uso_saida: r.usoSaida,
+        chamadas_modelo: r.chamadasModelo,
+      });
     }
-
-    conversas.push(entradaConversa);
   }
 
-  const execCount = conversas.length;
-  const aprovadosTotal = conversas.filter((c) => c.passou).length;
-
-  return {
+  const rel = {
     gerado_em: new Date().toISOString(),
     conjunto,
     ambiente,
@@ -94,8 +92,13 @@ export function montarResumoRelatorio({
       saida_media_conversa: execCount > 0 ? Math.round(saidaTotal / execCount) : 0,
       chamadas_media_conversa: execCount > 0 ? Number((chamadasTotal / execCount).toFixed(2)) : 0,
     },
-    conversas,
   };
+
+  if (!soAgregado) {
+    rel.conversas = conversas;
+  }
+
+  return rel;
 }
 
 export function gravarRelatorio(relatorio, destinoExplicito, repoRoot) {

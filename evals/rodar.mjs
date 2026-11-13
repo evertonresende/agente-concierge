@@ -9,6 +9,10 @@ import { fileURLToPath } from 'node:url';
 import {
   extrairValoresCentavos,
   julgarPrecoResposta,
+  julgarSemTotal,
+  obterHojeSaoPauloMs,
+  parseValorToleradoCentavos,
+  resolverPlaceholderData,
   verificarFormatoMoeda,
 } from './lib/juiz-preco.mjs';
 import {
@@ -101,13 +105,21 @@ function parseArgs(argv) {
     } else if (a === '-h' || a === '--help') {
       usoCli();
       process.exit(0);
+    } else if (a.startsWith('--')) {
+      const nomeOpcao = a.split('=')[0];
+      if (a.includes('=')) {
+        throw new Error(`Opção ${nomeOpcao} não aceita "=", use "${nomeOpcao} <valor>"`);
+      }
+      throw new Error(`Opção desconhecida: ${nomeOpcao}`);
+    } else if (a.startsWith('-')) {
+      throw new Error(`Opção desconhecida: ${a.split('=')[0]}`);
     } else {
-      throw new Error(`Opção desconhecida: ${a}`);
+      throw new Error('Argumento posicional não suportado (use --opção <valor>)');
     }
   }
 
   if (args.conjunto !== 'dev' && args.conjunto !== 'reservado') {
-    throw new Error(`--conjunto inválido: ${args.conjunto} (use dev ou reservado)`);
+    throw new Error('--conjunto inválido (use dev ou reservado)');
   }
   if (args.conjunto === 'reservado') {
     args.soAgregado = true;
@@ -133,6 +145,122 @@ function resolverDiretorioConjunto(conjunto) {
     return dentroRepo;
   }
   return path.join(os.homedir(), '.config', 'agente-concierge', 'reservado');
+}
+
+function validarListaRegex(lista, cacheRegex, mascararErros, casoId, campo) {
+  if (lista === undefined) return;
+  if (!Array.isArray(lista)) {
+    throw new Error(
+      mascararErros
+        ? 'Estrutura de regex inválida no conjunto reservado.'
+        : `Caso ${casoId}: campo "${campo}" deve ser um array`
+    );
+  }
+  for (const padrao of lista) {
+    if (typeof padrao !== 'string') {
+      throw new Error(
+        mascararErros
+          ? 'Padrão de regex inválido no conjunto reservado.'
+          : `Caso ${casoId}: padrão em "${campo}" deve ser string`
+      );
+    }
+    const temPlaceholder = /\{\{[a-zA-Z0-9_]+\}\}/.test(padrao);
+    const exprTeste = temPlaceholder
+      ? padrao.replace(/\{\{[a-zA-Z0-9_]+\}\}/g, 'PLACEHOLDER_SEGURA')
+      : padrao;
+    let re;
+    try {
+      re = new RegExp(exprTeste, 'i');
+    } catch {
+      throw new Error(
+        mascararErros
+          ? 'Expressão regular inválida no conjunto reservado.'
+          : `Regex inválida no caso ${casoId} (${campo}): /${padrao}/i`
+      );
+    }
+    if (!temPlaceholder) {
+      cacheRegex.set(padrao, re);
+    }
+  }
+}
+
+function validarEsperaCaso(espera, cacheRegex, mascararErros, casoId) {
+  if (!espera || typeof espera !== 'object') return;
+  validarListaRegex(espera.resposta_contem, cacheRegex, mascararErros, casoId, 'resposta_contem');
+  validarListaRegex(
+    espera.resposta_contem_algum,
+    cacheRegex,
+    mascararErros,
+    casoId,
+    'resposta_contem_algum'
+  );
+  validarListaRegex(
+    espera.resposta_nao_contem,
+    cacheRegex,
+    mascararErros,
+    casoId,
+    'resposta_nao_contem'
+  );
+  if (espera.valores_tolerados !== undefined) {
+    if (!Array.isArray(espera.valores_tolerados)) {
+      throw new Error(
+        mascararErros
+          ? 'Configuração de valores tolerados inválida no conjunto reservado.'
+          : `Caso ${casoId}: "valores_tolerados" deve ser um array`
+      );
+    }
+    for (const vt of espera.valores_tolerados) {
+      if (parseValorToleradoCentavos(vt) === null) {
+        throw new Error(
+          mascararErros
+            ? 'Valor tolerado inválido no conjunto reservado.'
+            : `Caso ${casoId}: valor inválido em "valores_tolerados": ${vt}`
+        );
+      }
+    }
+  }
+}
+
+function validarECompilarCaso(caso, cacheRegex, mascararErros) {
+  for (const turno of caso.turnos) {
+    if (Array.isArray(turno.paralelo)) {
+      for (const sub of turno.paralelo) {
+        validarEsperaCaso(sub?.espera, cacheRegex, mascararErros, caso.id);
+      }
+      if (turno.espera_conjunto && typeof turno.espera_conjunto === 'object') {
+        validarListaRegex(
+          turno.espera_conjunto.todos_contem,
+          cacheRegex,
+          mascararErros,
+          caso.id,
+          'todos_contem'
+        );
+        validarListaRegex(
+          turno.espera_conjunto.pelo_menos_um_contem,
+          cacheRegex,
+          mascararErros,
+          caso.id,
+          'pelo_menos_um_contem'
+        );
+        validarListaRegex(
+          turno.espera_conjunto.exatamente_um_contem,
+          cacheRegex,
+          mascararErros,
+          caso.id,
+          'exatamente_um_contem'
+        );
+        validarListaRegex(
+          turno.espera_conjunto.nenhum_contem,
+          cacheRegex,
+          mascararErros,
+          caso.id,
+          'nenhum_contem'
+        );
+      }
+    } else {
+      validarEsperaCaso(turno?.espera, cacheRegex, mascararErros, caso.id);
+    }
+  }
 }
 
 function carregarCasos(baseDir, blocosFiltro, mascararErros = false) {
@@ -202,6 +330,27 @@ function carregarCasos(baseDir, blocosFiltro, mascararErros = false) {
         );
       }
       idsVistos.add(caso.id);
+      if (caso.bloco !== undefined && caso.bloco !== bloco) {
+        throw new Error(
+          mascararErros
+            ? `Campo "bloco" incompatível com a pasta ${bloco}`
+            : `Caso ${caso.id}: campo "bloco" ("${caso.bloco}") difere da pasta ("${bloco}")`
+        );
+      }
+      if (caso.confirma !== undefined && typeof caso.confirma !== 'boolean') {
+        throw new Error(
+          mascararErros
+            ? `Campo "confirma" inválido no bloco ${bloco}`
+            : `Caso ${caso.id}: campo "confirma" deve ser booleano`
+        );
+      }
+      if (caso.leads_esperados !== undefined && !Array.isArray(caso.leads_esperados)) {
+        throw new Error(
+          mascararErros
+            ? `Campo "leads_esperados" inválido no bloco ${bloco}`
+            : `Caso ${caso.id}: campo "leads_esperados" deve ser um array`
+        );
+      }
       if (!Array.isArray(caso.turnos) || caso.turnos.length === 0) {
         throw new Error(
           mascararErros
@@ -209,7 +358,9 @@ function carregarCasos(baseDir, blocosFiltro, mascararErros = false) {
             : `Caso ${caso.id} precisa de "turnos" não vazio`
         );
       }
-      lista.push({ ...caso, bloco: caso.bloco || bloco });
+      const cacheRegex = new Map();
+      validarECompilarCaso(caso, cacheRegex, mascararErros);
+      lista.push({ ...caso, bloco, _cacheRegex: cacheRegex });
     }
     porBloco.set(bloco, lista);
   }
@@ -306,11 +457,13 @@ function gerarIdentidadeUnica(indice, telefonesUsados) {
 
   return {
     nome,
+    primeiroNome: NOMES_PRIMEIROS[indice % NOMES_PRIMEIROS.length],
     telefone: telefoneFormatado,
     telefoneDigitos: digitos,
     telefoneE164,
     telefoneEstrangeiro: `+${estrDigitos}`,
     telefoneEstrangeiroDigitos: estrDigitos,
+    hojeMs: obterHojeSaoPauloMs(),
   };
 }
 
@@ -318,6 +471,7 @@ function substituirTexto(texto, ctx, sessionId, paraRegex = false) {
   if (typeof texto !== 'string') return texto;
   const mapa = {
     '{{nome}}': ctx.nome,
+    '{{primeiro_nome}}': ctx.primeiroNome || ctx.nome.split(' ')[0],
     '{{telefone}}': ctx.telefone,
     '{{telefone_digitos}}': ctx.telefoneDigitos,
     '{{telefone_e164}}': ctx.telefoneE164,
@@ -329,6 +483,13 @@ function substituirTexto(texto, ctx, sessionId, paraRegex = false) {
     if (out.includes(chave)) {
       out = out.split(chave).join(paraRegex ? escaparRegex(val) : val);
     }
+  }
+  if (out.includes('{{')) {
+    out = out.replace(/\{\{([a-z0-9_]+)\}\}/g, (match, chave) => {
+      const dataResolvida = resolverPlaceholderData(chave, ctx.hojeMs);
+      if (dataResolvida === null) return match;
+      return paraRegex ? escaparRegex(dataResolvida) : dataResolvida;
+    });
   }
   return out;
 }
@@ -346,8 +507,12 @@ function substituirValor(valor, ctx, sessionId) {
   return valor;
 }
 
-function normalizarDigitos(tel) {
-  return String(tel ?? '').replace(/\D/g, '');
+function normalizarTelefoneComparacao(tel) {
+  const digitos = String(tel ?? '').replace(/\D/g, '');
+  if (digitos.startsWith('55') && (digitos.length === 12 || digitos.length === 13)) {
+    return digitos.slice(2);
+  }
+  return digitos;
 }
 
 async function buscarLeadsPorTelefones(leadsUrl, conjuntoDigitos) {
@@ -367,7 +532,9 @@ async function buscarLeadsPorTelefones(leadsUrl, conjuntoDigitos) {
   if (!dados || !Array.isArray(dados.leads)) {
     throw new Error('Resposta do webhook falso sem array "leads"');
   }
-  return dados.leads.filter((lead) => conjuntoDigitos.has(normalizarDigitos(lead?.telefone)));
+  return dados.leads.filter((lead) =>
+    conjuntoDigitos.has(normalizarTelefoneComparacao(lead?.telefone))
+  );
 }
 
 function derivarUrlModos(leadsUrl) {
@@ -421,9 +588,10 @@ async function desligarModoWebhook(leadsUrl, telefoneDigitos) {
   }
 }
 
-function verificarLeadsEsperados(recebidos, esperados, ctx) {
+function verificarLeadsEsperados(recebidos, esperadosRaw, ctx) {
   const erros = [];
   let violacaoLead = false;
+  const esperados = substituirValor(esperadosRaw, ctx, '');
 
   if (recebidos.length !== esperados.length) {
     erros.push(`Leads recebidos: ${recebidos.length}, esperado: ${esperados.length}`);
@@ -455,13 +623,11 @@ function verificarLeadsEsperados(recebidos, esperados, ctx) {
     usados.add(matchIdx);
     const rec = recebidos[matchIdx];
 
+    const nomeExp = exp.nome !== undefined ? String(exp.nome) : ctx.nome;
     if (typeof rec.nome !== 'string' || rec.nome.trim().length === 0) {
       erros.push(`Lead #${idx + 1}: campo "nome" ausente ou vazio`);
-    } else if (exp.nome) {
-      const nomeExp = substituirTexto(exp.nome, ctx, '', false);
-      if (rec.nome.trim().toLowerCase() !== nomeExp.trim().toLowerCase()) {
-        erros.push(`Lead #${idx + 1}: "nome" diferente do esperado`);
-      }
+    } else if (rec.nome.trim().toLowerCase() !== nomeExp.trim().toLowerCase()) {
+      erros.push(`Lead #${idx + 1}: "nome" diferente do esperado`);
     }
 
     if (typeof rec.telefone !== 'string' || rec.telefone.trim().length === 0) {
@@ -480,9 +646,19 @@ function verificarLeadsEsperados(recebidos, esperados, ctx) {
       );
     }
 
-    const valorRecCent = Math.round(Number(rec.valor_total) * 100);
+    const brutoVal = rec.valor_total;
+    const numVal =
+      brutoVal === null || brutoVal === '' || typeof brutoVal === 'boolean'
+        ? NaN
+        : Number(brutoVal);
+    const vezesCem = numVal * 100;
+    const valorRecCent = Math.round(vezesCem);
     const valorExpCent = Math.round(Number(exp.valor_total) * 100);
-    if (!Number.isFinite(valorRecCent) || valorRecCent !== valorExpCent) {
+    if (
+      !Number.isFinite(numVal) ||
+      Math.abs(vezesCem - valorRecCent) > 1e-6 ||
+      valorRecCent !== valorExpCent
+    ) {
       erros.push(
         `Lead #${idx + 1}: valor_total=${rec.valor_total}, esperado=${exp.valor_total}`
       );
@@ -495,6 +671,7 @@ function verificarLeadsEsperados(recebidos, esperados, ctx) {
 async function enviarChat(alvo, corpoTexto, timeoutMs) {
   const inicio = performance.now();
   let res;
+  let textoCorpo = '';
   try {
     res = await fetch(`${alvo}/chat`, {
       method: 'POST',
@@ -502,6 +679,7 @@ async function enviarChat(alvo, corpoTexto, timeoutMs) {
       body: corpoTexto,
       signal: AbortSignal.timeout(timeoutMs),
     });
+    textoCorpo = await res.text();
   } catch (err) {
     const latenciaMs = performance.now() - inicio;
     const timeout = err?.name === 'TimeoutError' || err?.name === 'AbortError';
@@ -526,7 +704,7 @@ async function enviarChat(alvo, corpoTexto, timeoutMs) {
   let dados = null;
   let erroJson = false;
   try {
-    dados = await res.json();
+    dados = JSON.parse(textoCorpo);
   } catch {
     erroJson = true;
   }
@@ -544,7 +722,15 @@ async function enviarChat(alvo, corpoTexto, timeoutMs) {
   };
 }
 
-function avaliarRespostaTurno(resp, espera, ctx, sessionId, rotuloTurno) {
+function obterRegex(padrao, ctx, sessionId, cacheRegex) {
+  if (cacheRegex && cacheRegex.has(padrao)) {
+    return cacheRegex.get(padrao);
+  }
+  const expr = substituirTexto(padrao, ctx, sessionId, true);
+  return new RegExp(expr, 'i');
+}
+
+function avaliarRespostaTurno(resp, espera, ctx, sessionId, rotuloTurno, cacheRegex) {
   const falhas = [];
   if (!resp.okRede) {
     falhas.push(`${rotuloTurno}: ${resp.erroRede}`);
@@ -574,28 +760,40 @@ function avaliarRespostaTurno(resp, espera, ctx, sessionId, rotuloTurno) {
     falhas.push(`${rotuloTurno}: campo "handoff" não é booleano`);
   }
 
-  if (!espera) return falhas;
-
-  if (espera.handoff !== undefined && handoff !== espera.handoff) {
-    falhas.push(`${rotuloTurno}: handoff=${handoff}, esperado=${espera.handoff}`);
-  }
-
-  if (espera.formato_total_estrito !== false && statusEsperado === 200) {
+  const checarFormatoMoeda = (espera?.formato_total_estrito ?? true) && statusEsperado === 200;
+  if (checarFormatoMoeda) {
     const errosMoeda = verificarFormatoMoeda(reply);
     for (const em of errosMoeda) {
       falhas.push(`${rotuloTurno}: ${em}`);
     }
   }
 
-  if (espera.sem_total === true) {
-    const valores = extrairValoresCentavos(reply);
-    if (valores.length > 0 || /R\$\s*\d/i.test(reply)) {
-      falhas.push(`${rotuloTurno}: não deveria citar valor total em R$`);
+  if (!espera) return falhas;
+
+  if (espera.handoff !== undefined && handoff !== espera.handoff) {
+    falhas.push(`${rotuloTurno}: handoff=${handoff}, esperado=${espera.handoff}`);
+  }
+
+  const valoresTolerados = Array.isArray(espera.valores_tolerados)
+    ? espera.valores_tolerados
+    : [];
+
+  if (espera.sem_total === true || (espera.sem_total && typeof espera.sem_total === 'object')) {
+    const imovelSemTotal =
+      typeof espera.sem_total === 'object'
+        ? espera.sem_total.imovel_id
+        : espera.imovel_id ?? null;
+    const errosSemTotal = julgarSemTotal(reply, imovelSemTotal, valoresTolerados);
+    for (const est of errosSemTotal) {
+      falhas.push(`${rotuloTurno}: ${est}`);
     }
   }
 
   if (espera.estadia) {
-    const errosPreco = julgarPrecoResposta(reply, espera.estadia);
+    const estadiaResolvida = substituirValor(espera.estadia, ctx, sessionId);
+    const errosPreco = julgarPrecoResposta(reply, estadiaResolvida, {
+      valoresTolerados,
+    });
     for (const ep of errosPreco) {
       falhas.push(`${rotuloTurno}: ${ep}`);
     }
@@ -603,8 +801,7 @@ function avaliarRespostaTurno(resp, espera, ctx, sessionId, rotuloTurno) {
 
   if (Array.isArray(espera.resposta_contem)) {
     for (const padrao of espera.resposta_contem) {
-      const expr = substituirTexto(padrao, ctx, sessionId, true);
-      const re = new RegExp(expr, 'i');
+      const re = obterRegex(padrao, ctx, sessionId, cacheRegex);
       if (!re.test(reply)) {
         falhas.push(`${rotuloTurno}: resposta não casou regex obrigatório /${padrao}/i`);
       }
@@ -612,10 +809,9 @@ function avaliarRespostaTurno(resp, espera, ctx, sessionId, rotuloTurno) {
   }
 
   if (Array.isArray(espera.resposta_contem_algum) && espera.resposta_contem_algum.length > 0) {
-    const algumCasou = espera.resposta_contem_algum.some((padrao) => {
-      const expr = substituirTexto(padrao, ctx, sessionId, true);
-      return new RegExp(expr, 'i').test(reply);
-    });
+    const algumCasou = espera.resposta_contem_algum.some((padrao) =>
+      obterRegex(padrao, ctx, sessionId, cacheRegex).test(reply)
+    );
     if (!algumCasou) {
       falhas.push(
         `${rotuloTurno}: resposta não casou nenhum dos padrões [${espera.resposta_contem_algum.join(' | ')}]`
@@ -625,8 +821,7 @@ function avaliarRespostaTurno(resp, espera, ctx, sessionId, rotuloTurno) {
 
   if (Array.isArray(espera.resposta_nao_contem)) {
     for (const padrao of espera.resposta_nao_contem) {
-      const expr = substituirTexto(padrao, ctx, sessionId, true);
-      const re = new RegExp(expr, 'i');
+      const re = obterRegex(padrao, ctx, sessionId, cacheRegex);
       if (re.test(reply)) {
         falhas.push(`${rotuloTurno}: resposta casou regex proibido /${padrao}/i`);
       }
@@ -636,7 +831,7 @@ function avaliarRespostaTurno(resp, espera, ctx, sessionId, rotuloTurno) {
   return falhas;
 }
 
-function avaliarConjuntoParalelo(respostas, esperaConjunto, ctx, sessionId, rotuloTurno) {
+function avaliarConjuntoParalelo(respostas, esperaConjunto, ctx, sessionId, rotuloTurno, cacheRegex) {
   const falhas = [];
   if (!esperaConjunto) return falhas;
 
@@ -644,7 +839,7 @@ function avaliarConjuntoParalelo(respostas, esperaConjunto, ctx, sessionId, rotu
 
   if (Array.isArray(esperaConjunto.todos_contem)) {
     for (const padrao of esperaConjunto.todos_contem) {
-      const re = new RegExp(substituirTexto(padrao, ctx, sessionId, true), 'i');
+      const re = obterRegex(padrao, ctx, sessionId, cacheRegex);
       if (!textos.every((t) => re.test(t))) {
         falhas.push(`${rotuloTurno}: nem todas as respostas paralelas casaram /${padrao}/i`);
       }
@@ -653,7 +848,7 @@ function avaliarConjuntoParalelo(respostas, esperaConjunto, ctx, sessionId, rotu
 
   if (Array.isArray(esperaConjunto.pelo_menos_um_contem)) {
     for (const padrao of esperaConjunto.pelo_menos_um_contem) {
-      const re = new RegExp(substituirTexto(padrao, ctx, sessionId, true), 'i');
+      const re = obterRegex(padrao, ctx, sessionId, cacheRegex);
       if (!textos.some((t) => re.test(t))) {
         falhas.push(`${rotuloTurno}: nenhuma resposta paralela casou /${padrao}/i`);
       }
@@ -662,7 +857,7 @@ function avaliarConjuntoParalelo(respostas, esperaConjunto, ctx, sessionId, rotu
 
   if (Array.isArray(esperaConjunto.exatamente_um_contem)) {
     for (const padrao of esperaConjunto.exatamente_um_contem) {
-      const re = new RegExp(substituirTexto(padrao, ctx, sessionId, true), 'i');
+      const re = obterRegex(padrao, ctx, sessionId, cacheRegex);
       const qtd = textos.filter((t) => re.test(t)).length;
       if (qtd !== 1) {
         falhas.push(
@@ -674,7 +869,7 @@ function avaliarConjuntoParalelo(respostas, esperaConjunto, ctx, sessionId, rotu
 
   if (Array.isArray(esperaConjunto.nenhum_contem)) {
     for (const padrao of esperaConjunto.nenhum_contem) {
-      const re = new RegExp(substituirTexto(padrao, ctx, sessionId, true), 'i');
+      const re = obterRegex(padrao, ctx, sessionId, cacheRegex);
       if (textos.some((t) => re.test(t))) {
         falhas.push(`${rotuloTurno}: alguma resposta paralela casou regex proibido /${padrao}/i`);
       }
@@ -694,7 +889,10 @@ async function executarCaso({ caso, indice, args, ehDev, leadsUrlDev, runId, tel
     { valor: ctx.telefoneEstrangeiro, rotulo: '[telefone]' },
     { valor: ctx.telefoneEstrangeiroDigitos, rotulo: '[telefone]' },
   ];
-  const conjuntoDigitos = new Set([ctx.telefoneDigitos, ctx.telefoneEstrangeiroDigitos]);
+  const conjuntoDigitos = new Set([
+    normalizarTelefoneComparacao(ctx.telefoneDigitos),
+    normalizarTelefoneComparacao(ctx.telefoneEstrangeiroDigitos),
+  ]);
 
   const sessaoBase = `eval-${runId}-${indice}-${crypto.randomUUID().slice(0, 6)}`;
   const obterSessionId = (chave = 'principal') =>
@@ -766,7 +964,14 @@ async function executarCaso({ caso, indice, args, ehDev, leadsUrlDev, runId, tel
           usoSaida += item.resp.usoSaida;
           chamadasModelo += item.resp.chamadasModelo;
           falhas.push(
-            ...avaliarRespostaTurno(item.resp, item.sub.espera, ctx, item.sid, item.rotulo)
+            ...avaliarRespostaTurno(
+              item.resp,
+              item.sub.espera,
+              ctx,
+              item.sid,
+              item.rotulo,
+              caso._cacheRegex
+            )
           );
         }
         falhas.push(
@@ -775,7 +980,8 @@ async function executarCaso({ caso, indice, args, ehDev, leadsUrlDev, runId, tel
             turno.espera_conjunto,
             ctx,
             sessaoBase,
-            `turno ${numTurno}`
+            `turno ${numTurno}`,
+            caso._cacheRegex
           )
         );
       } else {
@@ -787,7 +993,9 @@ async function executarCaso({ caso, indice, args, ehDev, leadsUrlDev, runId, tel
         usoEntrada += resp.usoEntrada;
         usoSaida += resp.usoSaida;
         chamadasModelo += resp.chamadasModelo;
-        falhas.push(...avaliarRespostaTurno(resp, turno.espera, ctx, sid, `turno ${numTurno}`));
+        falhas.push(
+          ...avaliarRespostaTurno(resp, turno.espera, ctx, sid, `turno ${numTurno}`, caso._cacheRegex)
+        );
 
         if (turno.espera?.leads_ate_agora !== undefined && ehDev && leadsUrlDev) {
           try {
@@ -884,6 +1092,7 @@ async function main() {
 
   const saude = await consultarSaude(args.alvo);
   const ehDev = saude.ambiente === 'dev';
+  const leadsUrlDev = process.env.LEADS_URL_DEV?.trim() || '';
 
   const todosCasos = [];
   for (const [, lista] of porBloco.entries()) {
@@ -894,21 +1103,53 @@ async function main() {
     Boolean(caso.webhook_modo) ||
     (Array.isArray(caso.turnos) && caso.turnos.some((t) => Boolean(t.webhook_modo)));
 
+  const temLeadsAteAgora = (caso) =>
+    Array.isArray(caso.turnos) &&
+    caso.turnos.some(
+      (t) =>
+        t?.espera?.leads_ate_agora !== undefined ||
+        (Array.isArray(t?.paralelo) &&
+          t.paralelo.some((s) => s?.espera?.leads_ate_agora !== undefined))
+    );
+
   const requerDev = (caso) =>
     caso.confirma === true ||
     temWebhookModo(caso) ||
-    (Array.isArray(caso.leads_esperados) && caso.leads_esperados.length > 0);
+    Array.isArray(caso.leads_esperados) ||
+    temLeadsAteAgora(caso);
 
   const casosElegiveis = [];
   const resultadosPulados = [];
+  let puladosNaoDev = 0;
+  let puladosSemLeadsUrl = 0;
+
   for (const caso of todosCasos) {
-    if (!ehDev && requerDev(caso)) {
+    const precisaDev = requerDev(caso);
+    if (!ehDev && precisaDev) {
+      puladosNaoDev++;
       resultadosPulados.push({
         id: caso.id,
         bloco: caso.bloco,
         pulado: true,
+        motivoPulo: 'trava confirma fora de dev',
         passou: false,
         falhas: ['pulado pela trava não-dev'],
+        latenciasMs: [],
+        latenciaTotalMs: 0,
+        usoEntrada: 0,
+        usoSaida: 0,
+        chamadasModelo: 0,
+        violacaoLead: false,
+      });
+    } else if (ehDev && precisaDev && !leadsUrlDev) {
+      puladosSemLeadsUrl++;
+      resultadosPulados.push({
+        id: caso.id,
+        bloco: caso.bloco,
+        pulado: true,
+        motivoPulo: 'LEADS_URL_DEV ausente',
+        passou: false,
+        falhas: ['pulado: LEADS_URL_DEV ausente'],
         latenciasMs: [],
         latenciaTotalMs: 0,
         usoEntrada: 0,
@@ -922,9 +1163,14 @@ async function main() {
   }
 
   const puladosTrava = resultadosPulados.length;
-  if (puladosTrava > 0) {
+  if (puladosNaoDev > 0) {
     console.warn(
-      `TRAVA: alvo não é dev (ambiente=${saude.ambiente}); ${puladosTrava} caso(s) com confirmação recusado(s).`
+      `TRAVA: alvo não é dev (ambiente=${saude.ambiente}); ${puladosNaoDev} caso(s) com confirmação recusado(s).`
+    );
+  }
+  if (puladosSemLeadsUrl > 0) {
+    console.warn(
+      `TRAVA: LEADS_URL_DEV ausente em dev; ${puladosSemLeadsUrl} caso(s) com conferência de leads pulado(s).`
     );
   }
 
@@ -940,22 +1186,6 @@ async function main() {
     );
     console.log(args.conjunto === 'reservado' ? 'RESERVADO PARCIAL' : 'EVAL PARCIAL');
     process.exit(2);
-  }
-
-  const precisaWebhook =
-    ehDev &&
-    casosElegiveis.some(
-      (c) =>
-        c.confirma === true ||
-        temWebhookModo(c) ||
-        (Array.isArray(c.leads_esperados) && c.leads_esperados.length > 0)
-    );
-  const leadsUrlDev = process.env.LEADS_URL_DEV?.trim() || '';
-  if (precisaWebhook && !leadsUrlDev) {
-    console.error(
-      'Erro: LEADS_URL_DEV não definida no ambiente para conferir leads em dev.'
-    );
-    process.exit(1);
   }
 
   const runId = crypto.randomUUID().slice(0, 8);
@@ -989,7 +1219,7 @@ async function main() {
       }
     }
     for (const r of resultadosPulados) {
-      console.log(`[PULADO] ${r.bloco}/${r.id} — trava confirma fora de dev`);
+      console.log(`[PULADO] ${r.bloco}/${r.id} — ${r.motivoPulo || 'trava'}`);
     }
   }
 
