@@ -221,3 +221,31 @@ describe("rearme negado por padrão: mensagem com sinal de mudança derruba o re
     expect(s.mundo.leads).toHaveLength(1);
   });
 });
+
+describe("sim só com caracteres comuns; \"?\" só com verbo de envio (A4)", () => {
+  const ESTRANHOS = ["sim❓", "sim❔", "sim﹖", "sim⁇", "sim‽", "sim;", "¿sim", "sim 🤔", "sim 👎", "sim ❌", "confirmo 👍"];
+  for (const mensagem of ESTRANHOS) {
+    it(`repete o pedido: ${JSON.stringify(mensagem)}`, () => expect(lerConfirmacao(mensagem, GRM301)).toBe("hesitacao"));
+  }
+  it("\"sim, pode?\" é pergunta; com o verbo de envio é sim", () => {
+    expect(lerConfirmacao("sim, pode?", GRM301)).toBe("pergunta");
+    expect(lerConfirmacao("Sim, confirmo! Pode fechar a reserva, por favor?", GRM301)).toBe("sim");
+  });
+  it("sinal de mudança junto de emoji derruba", () => expect(lerConfirmacao("sim 🤔 somos 3", GRM301)).toBe("outra"));
+  it("acentos, apóstrofo e o \"sim\" entre aspas continuam limpos", () => {
+    for (const mensagem of ["Sí", "that's correct", "\"sim\"", "Sim, confirmo, está tudo certo."]) expect(lerConfirmacao(mensagem, GRM301)).toBe("sim");
+  });
+  it("nenhum deles envia: o sim estranho só repete o pedido com o resumo", async () => {
+    const mundo = criarMundo();
+    let estado: EstadoLead = ESTADO_INICIAL;
+    const cofre: Cofre = { ler: () => estado, salvar: (e) => { estado = e; } };
+    const ctx = (turno: number, mensagem: string) => criarContexto(mundo, cofre, turno, mensagem);
+    await montarResumo.executar({ imovel_id: "GRM-301", checkin: "15/01/2027", checkout: "18/01/2027", hospedes: 2, nome: "Ana Lima", telefone: "(11) 98888-0000" }, ctx(2, "quero fechar"));
+    let turno = 3;
+    for (const mensagem of [...ESTRANHOS, "sim, pode?"]) {
+      const r = await confirmarReserva.executar({}, ctx(turno++, mensagem));
+      if (r.respostaFinal) expect(r.respostaFinal).toContain("- Total: R$ 2.156,00");
+    }
+    expect(mundo.leads).toEqual([]);
+  });
+});

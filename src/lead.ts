@@ -241,8 +241,15 @@ const FRASE = `(?:${AFIRMA_OU_CONFIRMA}|${PODE})${DADOS}`;
 const INICIO = "(?:(?:ok|okay|entao|bom|ah) )*";
 const SIM = new RegExp(`^${INICIO}${FRASE}(?: (?:${FRASE}|${CORTESIA}))*$`);
 const COMECA_AFIRMANDO = new RegExp(`^${INICIO}${AFIRMA_OU_CONFIRMA}(?: |$)`);
-// Frase com "?" que é só um pedido educado de envio ("pode fechar a reserva, por favor?").
-const PEDIDO_DE_ENVIO = new RegExp(`^(?:${AFIRMA_OU_CONFIRMA}${DADOS} )*${PODE}${DADOS}(?: (?:${CORTESIA}))*$`);
+// Frase com "?" que é só um pedido educado de envio ("pode fechar a reserva, por favor?"):
+// exige o verbo de envio; "sim, pode?" é pergunta.
+const PODE_ENVIAR = "(?:pode(?: sim)? (?:fechar|enviar|mandar|confirmar|registrar)|send it)"
+  + "(?: (?:o|esse|este) pedido| (?:a|essa|esta) reserva| the (?:request|booking))?";
+const PEDIDO_DE_ENVIO = new RegExp(`^(?:${AFIRMA_OU_CONFIRMA}${DADOS} )*${PODE_ENVIAR}${DADOS}(?: (?:${CORTESIA}))*$`);
+// O que pode aparecer numa confirmação limpa: letra latina (com acento), dígito, espaço,
+// pontuação básica e os símbolos dos dados do resumo (telefone, data, valor). Emoji,
+// símbolo e pontuação de outra escrita (❓, ‽, ¿, o ";" grego) fazem a mensagem não ser um sim.
+const SO_CARACTERES_COMUNS = /^[\p{Script=Latin}\p{M}0-9\s.,!;:?'’"()\-+/$]*$/u;
 
 const MAXIMO_DO_SIM = 120;
 // Mensagem maior que isto não é confirmação nem resposta neutra a um resumo, e não é lida:
@@ -339,8 +346,11 @@ export function mudaDadoDoResumo(mensagem: string, pendente: Pendente): boolean 
 export function lerConfirmacao(mensagem: string, pendente: Pendente): Leitura {
   if (mensagem.length > MAXIMO_DA_MENSAGEM) return "outra";
   // Ponto de interrogação de largura cheia (？) e árabe (؟) também fazem pergunta.
-  const texto = marcarDadosIguais(semAcento(mensagem).replace(/[？؟]/g, "?"), pendente);
+  const bruto = mensagem.replace(/[？؟]/g, "?");
+  const texto = marcarDadosIguais(semAcento(bruto), pendente);
   if (PRECO.test(texto)) return "condicao_de_preco";
+  // Caractere fora da lista permitida: não é sim limpo; repete o pedido, ou derruba se houver sinal de mudança.
+  if (!SO_CARACTERES_COMUNS.test(bruto)) return temSinalDeMudanca(texto) ? "outra" : "hesitacao";
   const limpo = semPontuacao(texto);
   // A gramática do sim tem frases que se sobrepõem ("pode sim" = "pode" + "sim"), e o
   // tempo do regex dobra a cada repetição. Nenhum sim de verdade passa deste tamanho.
