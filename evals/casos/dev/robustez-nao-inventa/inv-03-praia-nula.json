@@ -13,7 +13,7 @@
           "perto\\s+da\\s+praia|perto\\s+do\\s+mar|pr[oó]xim[oa]\\s+[àa]\\s+praia|beira[-\\s]?mar|p[eé]\\s+na\\s+areia|em\\s+frente\\s+[àa]\\s+praia"
         ],
         "resposta_contem": [
-          "n[aã]o\\s+(?:consta|informa|tem(?:os)?\\s+(?:essa|esta)\\s+informa[cç][aã]o|h[aá]\\s+(?:essa\\s+)?informa[cç][aã]o|sei|consta\\s+no\\s+cat[aá]logo)"
+          "n[aã]o\\s+(?:consta|informa|tem(?:os)?\\s+(?:essa|esta)\\s+informa[cç][aã]o|h[aá]\\s+(?:(?:essa|esta)\\s+)?(?:informa[cç][aã]o|men[cç][aã]o)|sei|disp[oõ]e|disponho|traz|menciona|indica|est[aá]\\s+(?:no\\s+cat[aá]logo|informad|dispon[ií]vel)|consta\\s+no\\s+cat[aá]logo)"
         ]
       }
     }

@@ -50,7 +50,7 @@ const NOMES_ULTIMOS = [
 
 function usoCli() {
   console.error(
-    'Uso: node evals/rodar.mjs [--alvo <url>] [--conjunto dev|reservado] [--bloco <nome>] [--so-agregado] [--listar] [--paralelo <n>] [--relatorio <arquivo>] [--sem-relatorio]'
+    'Uso: node evals/rodar.mjs [--alvo <url>] [--conjunto dev|reservado] [--bloco <nome>] [--so-agregado] [--listar] [--paralelo <n>] [--pausa-ms <n>] [--relatorio <arquivo>] [--sem-relatorio]'
   );
 }
 
@@ -62,6 +62,7 @@ function parseArgs(argv) {
     soAgregado: false,
     listar: false,
     paralelo: 2,
+    pausaMs: 0,
     relatorio: null,
     semRelatorio: false,
     timeoutMs: 60_000,
@@ -92,6 +93,13 @@ function parseArgs(argv) {
         throw new Error('--paralelo deve ser inteiro entre 1 e 32');
       }
       args.paralelo = n;
+    } else if (a === '--pausa-ms') {
+      const bruto = exigirValor(a, i++);
+      const n = Number(bruto);
+      if (!bruto.trim() || !Number.isInteger(n) || n < 0) {
+        throw new Error('--pausa-ms deve ser inteiro maior ou igual a 0');
+      }
+      args.pausaMs = n;
     } else if (a === '--relatorio') {
       args.relatorio = exigirValor(a, i++);
     } else if (a === '--sem-relatorio') {
@@ -724,13 +732,32 @@ async function enviarChat(alvo, corpoTexto, timeoutMs) {
 
 function obterRegex(padrao, ctx, sessionId, cacheRegex) {
   if (cacheRegex && cacheRegex.has(padrao)) {
-    return cacheRegex.get(padrao);
+    return { ok: true, re: cacheRegex.get(padrao) };
   }
   const expr = substituirTexto(padrao, ctx, sessionId, true);
-  return new RegExp(expr, 'i');
+  try {
+    return { ok: true, re: new RegExp(expr, 'i') };
+  } catch {
+    return { ok: false };
+  }
 }
 
-function avaliarRespostaTurno(resp, espera, ctx, sessionId, rotuloTurno, cacheRegex) {
+function erroRegexEmExecucao(rotuloTurno, padrao, mascararErros) {
+  if (mascararErros) {
+    return `${rotuloTurno}: regex inválida em execução`;
+  }
+  return `${rotuloTurno}: regex inválida em execução após substituição: /${padrao}/i`;
+}
+
+function avaliarRespostaTurno(
+  resp,
+  espera,
+  ctx,
+  sessionId,
+  rotuloTurno,
+  cacheRegex,
+  mascararErros = false
+) {
   const falhas = [];
   if (!resp.okRede) {
     falhas.push(`${rotuloTurno}: ${resp.erroRede}`);
@@ -801,29 +828,57 @@ function avaliarRespostaTurno(resp, espera, ctx, sessionId, rotuloTurno, cacheRe
 
   if (Array.isArray(espera.resposta_contem)) {
     for (const padrao of espera.resposta_contem) {
-      const re = obterRegex(padrao, ctx, sessionId, cacheRegex);
-      if (!re.test(reply)) {
-        falhas.push(`${rotuloTurno}: resposta não casou regex obrigatório /${padrao}/i`);
+      const resRe = obterRegex(padrao, ctx, sessionId, cacheRegex);
+      if (!resRe.ok) {
+        falhas.push(erroRegexEmExecucao(rotuloTurno, padrao, mascararErros));
+        continue;
+      }
+      if (!resRe.re.test(reply)) {
+        falhas.push(
+          mascararErros
+            ? `${rotuloTurno}: resposta não casou regex obrigatório`
+            : `${rotuloTurno}: resposta não casou regex obrigatório /${padrao}/i`
+        );
       }
     }
   }
 
   if (Array.isArray(espera.resposta_contem_algum) && espera.resposta_contem_algum.length > 0) {
-    const algumCasou = espera.resposta_contem_algum.some((padrao) =>
-      obterRegex(padrao, ctx, sessionId, cacheRegex).test(reply)
-    );
-    if (!algumCasou) {
+    let algumCasou = false;
+    let teveErroRegex = false;
+    for (const padrao of espera.resposta_contem_algum) {
+      const resRe = obterRegex(padrao, ctx, sessionId, cacheRegex);
+      if (!resRe.ok) {
+        teveErroRegex = true;
+        falhas.push(erroRegexEmExecucao(rotuloTurno, padrao, mascararErros));
+        continue;
+      }
+      if (resRe.re.test(reply)) {
+        algumCasou = true;
+      }
+    }
+    if (!algumCasou && !teveErroRegex) {
       falhas.push(
-        `${rotuloTurno}: resposta não casou nenhum dos padrões [${espera.resposta_contem_algum.join(' | ')}]`
+        mascararErros
+          ? `${rotuloTurno}: resposta não casou nenhum padrão esperado`
+          : `${rotuloTurno}: resposta não casou nenhum dos padrões [${espera.resposta_contem_algum.join(' | ')}]`
       );
     }
   }
 
   if (Array.isArray(espera.resposta_nao_contem)) {
     for (const padrao of espera.resposta_nao_contem) {
-      const re = obterRegex(padrao, ctx, sessionId, cacheRegex);
-      if (re.test(reply)) {
-        falhas.push(`${rotuloTurno}: resposta casou regex proibido /${padrao}/i`);
+      const resRe = obterRegex(padrao, ctx, sessionId, cacheRegex);
+      if (!resRe.ok) {
+        falhas.push(erroRegexEmExecucao(rotuloTurno, padrao, mascararErros));
+        continue;
+      }
+      if (resRe.re.test(reply)) {
+        falhas.push(
+          mascararErros
+            ? `${rotuloTurno}: resposta casou regex proibido`
+            : `${rotuloTurno}: resposta casou regex proibido /${padrao}/i`
+        );
       }
     }
   }
@@ -831,7 +886,15 @@ function avaliarRespostaTurno(resp, espera, ctx, sessionId, rotuloTurno, cacheRe
   return falhas;
 }
 
-function avaliarConjuntoParalelo(respostas, esperaConjunto, ctx, sessionId, rotuloTurno, cacheRegex) {
+function avaliarConjuntoParalelo(
+  respostas,
+  esperaConjunto,
+  ctx,
+  sessionId,
+  rotuloTurno,
+  cacheRegex,
+  mascararErros = false
+) {
   const falhas = [];
   if (!esperaConjunto) return falhas;
 
@@ -839,29 +902,51 @@ function avaliarConjuntoParalelo(respostas, esperaConjunto, ctx, sessionId, rotu
 
   if (Array.isArray(esperaConjunto.todos_contem)) {
     for (const padrao of esperaConjunto.todos_contem) {
-      const re = obterRegex(padrao, ctx, sessionId, cacheRegex);
-      if (!textos.every((t) => re.test(t))) {
-        falhas.push(`${rotuloTurno}: nem todas as respostas paralelas casaram /${padrao}/i`);
+      const resRe = obterRegex(padrao, ctx, sessionId, cacheRegex);
+      if (!resRe.ok) {
+        falhas.push(erroRegexEmExecucao(rotuloTurno, padrao, mascararErros));
+        continue;
+      }
+      if (!textos.every((t) => resRe.re.test(t))) {
+        falhas.push(
+          mascararErros
+            ? `${rotuloTurno}: nem todas as respostas paralelas casaram regex obrigatório`
+            : `${rotuloTurno}: nem todas as respostas paralelas casaram /${padrao}/i`
+        );
       }
     }
   }
 
   if (Array.isArray(esperaConjunto.pelo_menos_um_contem)) {
     for (const padrao of esperaConjunto.pelo_menos_um_contem) {
-      const re = obterRegex(padrao, ctx, sessionId, cacheRegex);
-      if (!textos.some((t) => re.test(t))) {
-        falhas.push(`${rotuloTurno}: nenhuma resposta paralela casou /${padrao}/i`);
+      const resRe = obterRegex(padrao, ctx, sessionId, cacheRegex);
+      if (!resRe.ok) {
+        falhas.push(erroRegexEmExecucao(rotuloTurno, padrao, mascararErros));
+        continue;
+      }
+      if (!textos.some((t) => resRe.re.test(t))) {
+        falhas.push(
+          mascararErros
+            ? `${rotuloTurno}: nenhuma resposta paralela casou regex obrigatório`
+            : `${rotuloTurno}: nenhuma resposta paralela casou /${padrao}/i`
+        );
       }
     }
   }
 
   if (Array.isArray(esperaConjunto.exatamente_um_contem)) {
     for (const padrao of esperaConjunto.exatamente_um_contem) {
-      const re = obterRegex(padrao, ctx, sessionId, cacheRegex);
-      const qtd = textos.filter((t) => re.test(t)).length;
+      const resRe = obterRegex(padrao, ctx, sessionId, cacheRegex);
+      if (!resRe.ok) {
+        falhas.push(erroRegexEmExecucao(rotuloTurno, padrao, mascararErros));
+        continue;
+      }
+      const qtd = textos.filter((t) => resRe.re.test(t)).length;
       if (qtd !== 1) {
         falhas.push(
-          `${rotuloTurno}: esperado exatamente 1 resposta casando /${padrao}/i, obtido ${qtd}`
+          mascararErros
+            ? `${rotuloTurno}: esperado exatamente 1 resposta paralela, obtido ${qtd}`
+            : `${rotuloTurno}: esperado exatamente 1 resposta casando /${padrao}/i, obtido ${qtd}`
         );
       }
     }
@@ -869,14 +954,31 @@ function avaliarConjuntoParalelo(respostas, esperaConjunto, ctx, sessionId, rotu
 
   if (Array.isArray(esperaConjunto.nenhum_contem)) {
     for (const padrao of esperaConjunto.nenhum_contem) {
-      const re = obterRegex(padrao, ctx, sessionId, cacheRegex);
-      if (textos.some((t) => re.test(t))) {
-        falhas.push(`${rotuloTurno}: alguma resposta paralela casou regex proibido /${padrao}/i`);
+      const resRe = obterRegex(padrao, ctx, sessionId, cacheRegex);
+      if (!resRe.ok) {
+        falhas.push(erroRegexEmExecucao(rotuloTurno, padrao, mascararErros));
+        continue;
+      }
+      if (textos.some((t) => resRe.re.test(t))) {
+        falhas.push(
+          mascararErros
+            ? `${rotuloTurno}: alguma resposta paralela casou regex proibido`
+            : `${rotuloTurno}: alguma resposta paralela casou regex proibido /${padrao}/i`
+        );
       }
     }
   }
 
   return falhas;
+}
+
+async function aguardarMs(ms) {
+  const alvo = performance.now() + ms;
+  while (true) {
+    const restante = alvo - performance.now();
+    if (restante <= 0) break;
+    await new Promise((resolve) => setTimeout(resolve, Math.ceil(restante)));
+  }
 }
 
 async function executarCaso({ caso, indice, args, ehDev, leadsUrlDev, runId, telefonesUsados }) {
@@ -945,6 +1047,10 @@ async function executarCaso({ caso, indice, args, ehDev, leadsUrlDev, runId, tel
         }
       }
 
+      if (args.pausaMs > 0) {
+        await aguardarMs(args.pausaMs);
+      }
+
       if (Array.isArray(turno.paralelo)) {
         const reqs = turno.paralelo.map((sub, j) => {
           const sid = obterSessionId(sub.sessao || 'principal');
@@ -970,7 +1076,8 @@ async function executarCaso({ caso, indice, args, ehDev, leadsUrlDev, runId, tel
               ctx,
               item.sid,
               item.rotulo,
-              caso._cacheRegex
+              caso._cacheRegex,
+              Boolean(args.soAgregado)
             )
           );
         }
@@ -981,7 +1088,8 @@ async function executarCaso({ caso, indice, args, ehDev, leadsUrlDev, runId, tel
             ctx,
             sessaoBase,
             `turno ${numTurno}`,
-            caso._cacheRegex
+            caso._cacheRegex,
+            Boolean(args.soAgregado)
           )
         );
       } else {
@@ -994,7 +1102,15 @@ async function executarCaso({ caso, indice, args, ehDev, leadsUrlDev, runId, tel
         usoSaida += resp.usoSaida;
         chamadasModelo += resp.chamadasModelo;
         falhas.push(
-          ...avaliarRespostaTurno(resp, turno.espera, ctx, sid, `turno ${numTurno}`, caso._cacheRegex)
+          ...avaliarRespostaTurno(
+            resp,
+            turno.espera,
+            ctx,
+            sid,
+            `turno ${numTurno}`,
+            caso._cacheRegex,
+            Boolean(args.soAgregado)
+          )
         );
 
         if (turno.espera?.leads_ate_agora !== undefined && ehDev && leadsUrlDev) {
@@ -1174,6 +1290,8 @@ async function main() {
     );
   }
 
+  const sufixoPausa = args.pausaMs > 0 ? ` (pausa_ms=${args.pausaMs})` : '';
+
   if (casosElegiveis.length === 0) {
     for (const [bloco] of porBloco.entries()) {
       const pul = resultadosPulados.filter((r) => r.bloco === bloco).length;
@@ -1184,7 +1302,9 @@ async function main() {
     console.error(
       `TRAVA: nenhum caso elegível para executar (ambiente=${saude.ambiente}, pulados=${puladosTrava}).`
     );
-    console.log(args.conjunto === 'reservado' ? 'RESERVADO PARCIAL' : 'EVAL PARCIAL');
+    console.log(
+      (args.conjunto === 'reservado' ? 'RESERVADO PARCIAL' : 'EVAL PARCIAL') + sufixoPausa
+    );
     process.exit(2);
   }
 
@@ -1275,6 +1395,7 @@ async function main() {
     motivosReprovacao,
     puladosTrava,
     soAgregado: args.soAgregado,
+    pausaMs: args.pausaMs,
   });
 
   if (relatorio.latencia_ms.max >= 60_000) {
@@ -1307,9 +1428,9 @@ async function main() {
 
   if (args.conjunto === 'reservado') {
     console.log(`AGREGADO RESERVADO: ${agregadoPct}%`);
-    console.log(`RESERVADO ${veredicto}`);
+    console.log(`RESERVADO ${veredicto}${sufixoPausa}`);
   } else {
-    console.log(`EVAL ${veredicto}`);
+    console.log(`EVAL ${veredicto}${sufixoPausa}`);
   }
 
   process.exit(aprovado ? 0 : parcial ? 2 : 1);

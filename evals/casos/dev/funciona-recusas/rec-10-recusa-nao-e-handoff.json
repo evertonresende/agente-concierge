@@ -27,7 +27,7 @@
         "handoff": false,
         "sem_total": true,
         "imovel_id": "GRM-301",
-        "resposta_contem": ["passad|anterior|hoje|novas?\\s+datas?"]
+        "resposta_contem": ["passad|passou|anterior|hoje|novas?\\s+datas?|datas?\\s+futuras?"]
       }
     }
   ]

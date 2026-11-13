@@ -10,8 +10,8 @@
         "sem_total": true,
         "imovel_id": "GRM-301",
         "resposta_contem": [
-          "entrada|check-?in",
-          "sa[ií]da|check-?out"
+          "entrada|check-?in|in[ií]cio",
+          "sa[ií]da|check-?out|fim|t[eé]rmino"
         ]
       }
     }

@@ -11,7 +11,7 @@
           "\\bsim\\b|(?:possui|tem|conta\\s+com|oferece|disp[oõ]e\\s+de).*wi-?fi",
           "wi-?fi"
         ],
-        "resposta_nao_contem": ["n[aã]o\\s+(?:tem|possui|conta\\s+com).*wi-?fi"]
+        "resposta_nao_contem": ["n[aã]o\\s+(?:tem|possui|conta\\s+com|oferece|disp[oõ]e\\s+de).*wi-?fi"]
       }
     }
   ]
