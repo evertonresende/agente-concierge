@@ -249,9 +249,16 @@ describe("concorrência endurecida e falhas (frente H)", () => {
     const r2 = await stub.conversar("alterar");
     expect(r2.handoff).toBe(true);
 
-    // O "sim" não pode enviar a alteração (19/01) que nunca foi entregue.
+    // Como houve um turno falho no meio, o primeiro "sim" reapresenta apenas o resumo já entregue (18/01),
+    // nunca a alteração (19/01); o "sim" seguinte confirma e envia só a 18/01.
     const r3 = await stub.conversar("sim");
     expect(r3.handoff).toBe(false);
+    expect(r3.reply).toContain("18/01/2027");
+    expect(r3.reply).not.toContain("19/01/2027");
+    expect(mundo.leads).toEqual([]);
+
+    const r4 = await stub.conversar("sim");
+    expect(r4.handoff).toBe(false);
     expect(mundo.leads).toMatchObject([{ checkout: "2027-01-18", valor_total: 2156 }]);
   });
 

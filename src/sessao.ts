@@ -25,6 +25,8 @@ export interface Dependencias {
   tetoMs?: number;
 }
 
+/** Teto próprio do Worker (abaixo de 60 s, contrato seção 2 e L18). */
+export const TETO_WORKER_MS = 55_000;
 /** Orçamento do trabalho externo de cada turno (contrato seção 2). */
 const ORCAMENTO_MS = 45_000;
 /** Teto total desde a chegada ao Worker, abaixo do teto do Worker para devolver contingência limpa. */

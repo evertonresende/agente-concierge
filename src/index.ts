@@ -3,16 +3,13 @@ import { CONTINGENCIA } from "./agente/loop";
 import type { Env } from "./env";
 import { destinoDosLeads } from "./lead";
 import { PAGINA } from "./pagina";
-import type { RespostaDoChat } from "./sessao";
+import { type RespostaDoChat, TETO_WORKER_MS } from "./sessao";
 
 export { Sessao } from "./sessao";
 
 const LIMITE_DA_MENSAGEM = 8_000;
 const SEM_USO = { entrada: 0, saida: 0, chamadas: 0 };
 const TENTATIVAS_SESSAO = 2;
-
-/** Teto próprio do Worker (abaixo de 60 s, contrato seção 2 e L18). */
-export const TETO_WORKER_MS = 55_000;
 
 class TempoEsgotadoWorker extends Error {}
 

@@ -2,8 +2,8 @@ import { runInDurableObject } from "cloudflare:test";
 import { env } from "cloudflare:workers";
 import { describe, expect, it } from "vitest";
 import type { Env } from "../src/env";
-import worker, { TETO_WORKER_MS, tratarChat } from "../src/index";
-import type { Sessao } from "../src/sessao";
+import worker, * as entrada from "../src/index";
+import { type Sessao, TETO_WORKER_MS } from "../src/sessao";
 import { criarMundo, diz, roteiro } from "./apoio";
 
 const ambiente = env as unknown as Env;
@@ -131,6 +131,17 @@ describe("POST /chat", () => {
     expect(dado.reply).not.toContain("objeto fora do ar");
   });
 
+  it("módulo de entrada do Worker só exporta default (objeto) e classes ou funções", () => {
+    for (const [nome, valor] of Object.entries(entrada)) {
+      if (nome === "default") {
+        expect(typeof valor).toBe("object");
+        expect(valor).not.toBeNull();
+      } else {
+        expect(typeof valor, `export '${nome}' em src/index.ts precisa ser classe ou função`).toBe("function");
+      }
+    }
+  });
+
   it("teto próprio do Worker fica abaixo de 60 s e devolve contingência sem retentar quando estoura", async () => {
     expect(TETO_WORKER_MS).toBeLessThan(60_000);
     let tentativas = 0;
@@ -145,7 +156,7 @@ describe("POST /chat", () => {
     };
     const inicio = Date.now();
     const req = new Request("https://agente.teste/chat", { method: "POST", body: JSON.stringify({ session_id: "teto", message: "oi" }) });
-    const resposta = await tratarChat(req, { ...ambiente, SESSAO: lento as unknown as Env["SESSAO"] }, 60);
+    const resposta = await entrada.tratarChat(req, { ...ambiente, SESSAO: lento as unknown as Env["SESSAO"] }, 60);
     const decorrido = Date.now() - inicio;
     expect(resposta.status).toBe(200);
     expect(decorrido).toBeLessThan(200);
