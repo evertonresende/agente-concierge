@@ -168,9 +168,13 @@ export function detectarGatilhoHandoff(mensagemHospede, contexto = {}) {
 
   // Gatilhos de desconto / negociação / exceção de regra (contrato §6.2, L9, L12, L16)
   const pediuDescontoOuNegociacao =
-    /\b(desconto|abatimento|cupom|promo[çc][ãa]o|abaixa|reduz|negoci|cortesia|tarifa\s+(?:especial|menor|de\s+dono)|pre[çc]o\s+(?:menor|especial|de\s+dono|melhor)|sem\s+(?:a\s+)?taxa|isentar|isen[çc][ãa]o|arredond|faz\s+por\s+r?\$|desde\s+que\s+(?:o\s+total|fique|fa[çc]a)|se\s+fizer\s+por|pelo\s+pre[çc]o\s+de)\b/i.test(
+    /\b(desconto|abatimento|cupom|promo[çc][ãa]o|abaixa|reduz|negoci|cortesia|tarifa\s+(?:especial|menor|de\s+dono)|pre[çc]o\s+(?:menor|especial|de\s+dono|melhor)|sem\s+(?:a\s+)?taxa|isentar|isen[çc][ãa]o|arredond|desde\s+que\s+(?:o\s+total|fique|fa[çc]a)|se\s+fizer\s+por|pelo\s+pre[çc]o\s+de)\b/i.test(
       texto,
-    ) || /(?:%\s*(?:de\s+)?desconto|menos\s+\d+\s*%)/i.test(texto);
+    ) ||
+    /\b(?:faz(?:er)?|fecha(?:r)?|registra(?:r)?|deixa(?:r)?|cota(?:r)?|manda(?:r)?)\b[^.?!\n]{0,30}\bpor\s+r?\$/i.test(
+      texto,
+    ) ||
+    /(?:%\s*(?:de\s+)?desconto|menos\s+\d+\s*%)/i.test(texto);
 
   if (pediuDescontoOuNegociacao) {
     return { esperaHandoff: true, motivo: 'desconto_ou_negociacao' };
