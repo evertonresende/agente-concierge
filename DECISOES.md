@@ -86,6 +86,8 @@ planejamento, e o motivo é o da recomendação.
 | ID | Pergunta | Enquanto isso |
 |---|---|---|
 | L1a | "Fim de semana" sem datas é sexta a domingo ou sábado a domingo? | o código não mapeia a expressão e o agente pede entrada e saída |
+| L1b | Dia da semana sem data ("sexta que vem") vale como a próxima ocorrência? | padrão provisório: sim, com a data exata declarada na resposta |
+| L17a | Campo presente que não é texto, e `session_id` vazio | padrão provisório: campo que não é texto devolve 400; `session_id` vazio devolve 200 |
 
 ## Decisões de execução (13/11/2026)
 
