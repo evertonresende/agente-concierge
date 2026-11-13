@@ -5,7 +5,7 @@ import { pedidoDeConfirmacaoPendente } from "../lead";
 import type { ChamadaDeFerramenta, Mensagem, Modelo, RespostaDoModelo } from "../modelo";
 import { type Idioma, idiomaDoHospede } from "../nucleo/idioma";
 import { type Argumentos, type Contexto, FERRAMENTAS, type Resultado } from "./ferramentas";
-import { NOME_DO_HANDOFF, pedeAbatimento } from "./ferramentas/handoff";
+import { mencionaDesconto, NOME_DO_HANDOFF, pedeAbatimento } from "./ferramentas/handoff";
 import { montarPrompt } from "./prompt";
 
 export interface EntradaDoTurno {
@@ -79,17 +79,40 @@ const DEGENERADA = /(.)\1{24,}/s;
  * Textos de código deste arquivo, em português e em inglês (contrato L15). Outro idioma
  * recebe o português.
  */
-const TEXTOS: Record<Idioma, { contingencia: string; semValor: string; total: (valor: string) => string }> = {
+type Corte = "disponibilidade" | "passa" | "concessao";
+interface Textos {
+  contingencia: string;
+  semValor: string;
+  total: (valor: string) => string;
+  /** Frase fixa que fica no lugar da frase cortada por código, uma vez por tipo. */
+  troca: Record<Corte, string>;
+  /** Desconto pedido e o modelo não passou a conversa: o código passa e avisa. */
+  passaPorDesconto: string;
+}
+
+const TEXTOS: Record<Idioma, Textos> = {
   pt: {
     contingencia: CONTINGENCIA,
     semValor: "Não tenho esse valor confirmado. Para um valor exato, me diga o imóvel e as datas de entrada e de saída.",
     total: (valor) => `Total da estadia: ${valor}`,
+    troca: {
+      disponibilidade: "O catálogo não informa a disponibilidade de datas.",
+      passa: "Se quiser, posso passar a conversa para uma pessoa do time.",
+      concessao: "Eu não concedo desconto nem exceção.",
+    },
+    passaPorDesconto: "Eu não concedo desconto nem negocio preço. Uma pessoa do time vai continuar o seu atendimento.",
   },
   en: {
     contingencia: "I had a technical problem and couldn't finish helping you right now. I'm passing the conversation to a person "
       + "on our team, who will continue with you.",
     semValor: "I don't have that amount confirmed. For an exact amount, tell me the property and the check-in and check-out dates.",
     total: (valor) => `Total for the stay: ${valor}`,
+    troca: {
+      disponibilidade: "The catalog doesn't show date availability.",
+      passa: "If you want, I can pass the conversation to a person on our team.",
+      concessao: "I don't grant discounts or exceptions.",
+    },
+    passaPorDesconto: "I don't grant discounts or negotiate prices. A person on our team will continue helping you.",
   },
 };
 
@@ -179,12 +202,13 @@ export function valoresInventados(texto: string, permitidos: Set<string>): strin
  * valor que o código nunca devolveu sai junto com a frase que o trazia, e o mesmo vale
  * para frase com nome interno. Rótulo que ficaria solto ("O cálculo é:") sai junto.
  */
-export function corrigirValores(texto: string, permitidos: Set<string>, semValor: string = TEXTOS.pt.semValor): string {
+export function corrigirValores(texto: string, permitidos: Set<string>, semValor: string = TEXTOS.pt.semValor, regras?: { handoff: boolean; textos: Textos }): string {
   const porDigitos = indicePorDigitos(permitidos);
   // Frases e os separadores entre elas, para devolver o texto com a mesma forma.
   const partes = frases(texto);
   let saida = "";
   let cortou = false;
+  const trocadas = new Set<Corte>();
   for (let i = 0; i < partes.length; i += 2) {
     let ruim = NOME_INTERNO.test(partes[i]!);
     const frase = partes[i]!.replace(VALOR_NO_TEXTO, (achado) => {
@@ -192,7 +216,12 @@ export function corrigirValores(texto: string, permitidos: Set<string>, semValor
       if (!certo) ruim = true;
       return certo ?? achado;
     });
-    if (ruim) cortou = true;
+    const corte = regras ? motivoDeCorte(frase, regras.handoff) : undefined;
+    if (corte) {
+      cortou = true;
+      if (!trocadas.has(corte)) saida += regras!.textos.troca[corte] + (partes[i + 1] ?? "");
+      trocadas.add(corte);
+    } else if (ruim) cortou = true;
     else saida += frase + (partes[i + 1] ?? "");
   }
   if (cortou) {
@@ -202,6 +231,14 @@ export function corrigirValores(texto: string, permitidos: Set<string>, semValor
   }
   const resultado = saida.replace(/\n{3,}/g, "\n\n").trim();
   return resultado === "" && texto.trim() !== "" ? semValor : resultado;
+}
+
+/** O que a conferência pede para corrigir numa frase, além de valor e nome interno. */
+function motivoDeCorte(frase: string, handoff: boolean): Corte | undefined {
+  if (falaDeDisponibilidade(frase)) return "disponibilidade";
+  if (!handoff && DIZ_QUE_PASSA.test(frase)) return "passa";
+  if (ACENA_COM_CONCESSAO.test(frase)) return "concessao";
+  return undefined;
 }
 
 /**
@@ -298,9 +335,17 @@ export async function rodarTurno(entrada: EntradaDoTurno): Promise<SaidaDoTurno>
 
   const permitidos = () => valoresDoCodigo([...entrada.historico, ...novas]);
 
-  /** Resposta escrita pelo modelo, já sem o que não pode chegar ao hóspede. */
+  /**
+   * Resposta escrita pelo modelo, já sem o que não pode chegar ao hóspede. Vale para toda
+   * resposta, inclusive a corrigida e a que não teve tempo de correção: o que a
+   * conferência pega e sobrou sai por código, frase a frase.
+   */
   const fechar = (texto: string): SaidaDoTurno => {
-    const conferido = comTotais(corrigirValores(semPontaSolta(texto), permitidos(), textos.semValor), totais, textos);
+    // Desconto pedido sem a conversa passada: a correção não resolveu, o código passa (L16a).
+    const passaPorDesconto = !handoff && mencionaDesconto(entrada.mensagem);
+    if (passaPorDesconto) handoff = true;
+    const cortado = corrigirValores(semPontaSolta(texto), permitidos(), textos.semValor, { handoff, textos });
+    const conferido = comTotais(passaPorDesconto ? `${cortado}\n\n${textos.passaPorDesconto}` : cortado, totais, textos);
     // Com resumo pendente, a resposta escrita pelo modelo termina com o pedido de
     // confirmação gerado por código, que não passa pela conferência (trava da frente F).
     const pedido = pedidoDeConfirmacaoPendente(contexto.cofre, contexto.turno, idioma);
