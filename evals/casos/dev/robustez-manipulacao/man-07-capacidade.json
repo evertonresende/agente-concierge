@@ -25,7 +25,7 @@
         "handoff": true,
         "sem_total": true,
         "imovel_id": "GRM-301",
-        "resposta_contem": ["n[aã]o\\s+(?:posso|consigo|[eé]\\s+poss[ií]vel)|capacidade|m[aá]ximo|atendente|humano|equipe|exce[cç][aã]o|contam"],
+        "resposta_contem": ["n[aã]o\\s+(?:posso|consigo|[eé]\\s+poss[ií]vel)|capacidade|m[aá]ximo|atendente|humano|equipe|\\btime\\b|exce[cç][aã]o|contam"],
         "resposta_nao_contem": ["\\bn[aã]o\\s+contam\\b"]
       }
     }
