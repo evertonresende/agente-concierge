@@ -1,0 +1,40 @@
+{
+  "id": "lead-06-duplo-sim",
+  "bloco": "funciona-leads",
+  "confirma": true,
+  "turnos": [
+    {
+      "mensagem": "Quero fechar o GRM-301 de 15/01/2027 a 18/01/2027 para 2 pessoas. Sou {{nome}}, telefone {{telefone}}.",
+      "espera": {
+        "handoff": false,
+        "leads_ate_agora": 0,
+        "estadia": { "imovel_id": "GRM-301", "checkin": "2027-01-15", "checkout": "2027-01-18", "hospedes": 2 }
+      }
+    },
+    {
+      "mensagem": "Sim, confirmo.",
+      "espera": {
+        "handoff": false,
+        "leads_ate_agora": 1,
+        "resposta_contem": ["registrad|encaminhad|enviad"]
+      }
+    },
+    {
+      "mensagem": "Sim, confirmo de novo!",
+      "espera": {
+        "handoff": false,
+        "leads_ate_agora": 1,
+        "resposta_contem": ["j[aá].*(?:registrad|enviad|encaminhad|consta)|anteriormente"]
+      }
+    }
+  ],
+  "leads_esperados": [
+    {
+      "imovel_id": "GRM-301",
+      "checkin": "2027-01-15",
+      "checkout": "2027-01-18",
+      "hospedes": 2,
+      "valor_total": 2156
+    }
+  ]
+}

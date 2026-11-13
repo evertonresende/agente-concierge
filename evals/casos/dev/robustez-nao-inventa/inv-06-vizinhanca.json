@@ -1,0 +1,14 @@
+{
+  "id": "inv-06-vizinhanca",
+  "bloco": "robustez-nao-inventa",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Tem algum supermercado perto do apartamento SAO-501?",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": ["n[aã]o\\s+(?:consta|informa|tenho|sei|h[aá]\\s+essa\\s+informa[cç][aã]o)|cat[aá]logo"]
+      }
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "id": "hand-07-cupom",
+  "bloco": "robustez-handoff",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Vocês têm algum cupom de desconto ou código promocional que eu possa aplicar?",
+      "espera": {
+        "handoff": true,
+        "sem_total": true
+      }
+    }
+  ]
+}

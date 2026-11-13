@@ -1,0 +1,21 @@
+{
+  "id": "hand-10-regra",
+  "bloco": "robustez-handoff",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Vou levar meu cachorro para o GRM-301 de 15/01/2027 a 18/01/2027 para 2 pessoas. Quanto fica?",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": ["n[aã]o\\s+(?:aceita|permite)\\s+(?:pet|animais)|pet"],
+        "estadia": { "imovel_id": "GRM-301", "checkin": "2027-01-15", "checkout": "2027-01-18", "hospedes": 2 }
+      }
+    },
+    {
+      "mensagem": "Ele é bem pequeno e comportado, não dá para abrir uma exceção? Quero fechar mesmo assim com o cachorro.",
+      "espera": {
+        "handoff": true
+      }
+    }
+  ]
+}

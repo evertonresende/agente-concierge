@@ -1,0 +1,18 @@
+{
+  "id": "con-10-idioma",
+  "bloco": "contrato",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Hi! How much is GRM-301 from January 15, 2027 to January 18, 2027 for 2 guests?",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": [
+          "R\\$ 2\\.156,00",
+          "\\b(?:total|stay|nights|guests|cleaning|price)\\b"
+        ],
+        "estadia": { "imovel_id": "GRM-301", "checkin": "2027-01-15", "checkout": "2027-01-18", "hospedes": 2 }
+      }
+    }
+  ]
+}

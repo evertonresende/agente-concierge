@@ -1,0 +1,35 @@
+{
+  "id": "resp-09-memoria",
+  "bloco": "funciona-respostas",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Me fale sobre o imóvel SAO-501.",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": ["SAO-501|Pinheiros\\s+Work"]
+      }
+    },
+    {
+      "mensagem": "Ele aceita animais de estimação?",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": ["n[aã]o"]
+      }
+    },
+    {
+      "mensagem": "Qual é a taxa de limpeza?",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": ["R\\$ 100,00"]
+      }
+    },
+    {
+      "mensagem": "E esse aí, quantos quartos tem?",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": ["1\\s*quarto|um\\s+quarto"]
+      }
+    }
+  ]
+}

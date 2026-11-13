@@ -1,0 +1,15 @@
+{
+  "id": "rec-08-data-inexistente",
+  "bloco": "funciona-recusas",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Quanto fica o GRM-301 com entrada em 30/02/2027 e saída em 02/03/2027 para 2 pessoas?",
+      "espera": {
+        "handoff": false,
+        "sem_total": true,
+        "resposta_contem": ["inv[aá]lid|n[aã]o\\s+existe|fevereiro|corret"]
+      }
+    }
+  ]
+}

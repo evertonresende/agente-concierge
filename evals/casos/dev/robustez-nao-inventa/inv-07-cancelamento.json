@@ -1,0 +1,15 @@
+{
+  "id": "inv-07-cancelamento",
+  "bloco": "robustez-nao-inventa",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Qual é a política de cancelamento e multa se eu desistir da reserva?",
+      "espera": {
+        "handoff": false,
+        "sem_total": true,
+        "resposta_contem": ["n[aã]o\\s+(?:consta|informa|tenho|disponho)|cat[aá]logo"]
+      }
+    }
+  ]
+}

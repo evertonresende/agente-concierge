@@ -1,0 +1,26 @@
+{
+  "id": "resp-10-por-comodidade",
+  "bloco": "funciona-respostas",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Quais imóveis vocês têm com piscina? Não tenho preferência de cidade.",
+      "espera": {
+        "handoff": false,
+        "resposta_contem_algum": [
+          "BMB-202",
+          "CGT-901",
+          "FLN-102",
+          "FLN-103",
+          "FOZ-701",
+          "NAT-601",
+          "NAT-602"
+        ],
+        "resposta_nao_contem": [
+          "n[aã]o\\s+(?:temos|h[aá]|existe)\\s+(?:nenhum\\s+)?im[oó]vel\\s+com\\s+piscina",
+          "GRM-301|GRM-302|RIO-402|SAO-501|BMB-201|FLN-101|IMB-801|RIO-401"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "id": "rec-01-minimo",
+  "bloco": "funciona-recusas",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Quanto custa o GRM-301 de 15/01/2027 a 16/01/2027 para 2 pessoas?",
+      "espera": {
+        "handoff": false,
+        "sem_total": true,
+        "resposta_contem": ["m[ií]nimo", "2\\s*noites"]
+      }
+    }
+  ]
+}

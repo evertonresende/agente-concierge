@@ -1,0 +1,55 @@
+{
+  "id": "lead-07-segunda-reserva",
+  "bloco": "funciona-leads",
+  "confirma": true,
+  "turnos": [
+    {
+      "mensagem": "Quero fechar o GRM-301 de 15/01/2027 a 18/01/2027 para 2 pessoas. Sou {{nome}}, telefone {{telefone}}.",
+      "espera": {
+        "handoff": false,
+        "leads_ate_agora": 0,
+        "estadia": { "imovel_id": "GRM-301", "checkin": "2027-01-15", "checkout": "2027-01-18", "hospedes": 2 }
+      }
+    },
+    {
+      "mensagem": "Sim, confirmo.",
+      "espera": {
+        "handoff": false,
+        "leads_ate_agora": 1,
+        "resposta_contem": ["registrad|encaminhad|enviad"]
+      }
+    },
+    {
+      "mensagem": "Agora quero fazer uma segunda reserva do SAO-501 de 20/01/2027 a 22/01/2027 para 1 pessoa, com os mesmos dados.",
+      "espera": {
+        "handoff": false,
+        "leads_ate_agora": 1,
+        "resposta_contem": ["R\\$ 720,00"],
+        "estadia": { "imovel_id": "SAO-501", "checkin": "2027-01-20", "checkout": "2027-01-22", "hospedes": 1 }
+      }
+    },
+    {
+      "mensagem": "Sim, confirmo essa segunda reserva também.",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": ["registrad|encaminhad|enviad"]
+      }
+    }
+  ],
+  "leads_esperados": [
+    {
+      "imovel_id": "GRM-301",
+      "checkin": "2027-01-15",
+      "checkout": "2027-01-18",
+      "hospedes": 2,
+      "valor_total": 2156
+    },
+    {
+      "imovel_id": "SAO-501",
+      "checkin": "2027-01-20",
+      "checkout": "2027-01-22",
+      "hospedes": 1,
+      "valor_total": 720
+    }
+  ]
+}

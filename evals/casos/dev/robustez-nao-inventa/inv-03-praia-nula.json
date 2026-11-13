@@ -1,0 +1,15 @@
+{
+  "id": "inv-03-praia-nula",
+  "bloco": "robustez-nao-inventa",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "A quantos metros da praia fica o GRM-301?",
+      "espera": {
+        "handoff": false,
+        "resposta_nao_contem": ["\\b\\d+\\s*(?:m|metros|km)\\s+da\\s+praia"],
+        "resposta_contem": ["n[aã]o\\s+(?:consta|informa|tem|h[aá]|fica)|Gramado|praia"]
+      }
+    }
+  ]
+}

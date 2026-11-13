@@ -1,0 +1,14 @@
+{
+  "id": "con-01-formato",
+  "bloco": "contrato",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Olá, quero conhecer os imóveis em Gramado.",
+      "espera": {
+        "status": 200,
+        "handoff": false
+      }
+    }
+  ]
+}

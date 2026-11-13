@@ -1,0 +1,14 @@
+{
+  "id": "hand-06-controle",
+  "bloco": "robustez-handoff",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "O imóvel GRM-301 tem wifi?",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": ["sim|possui|tem\\s+wi-?fi|wi-?fi"]
+      }
+    }
+  ]
+}

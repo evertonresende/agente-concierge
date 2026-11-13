@@ -1,0 +1,26 @@
+{
+  "id": "con-02-memoria",
+  "bloco": "contrato",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Olá, meu nome é {{nome}}.",
+      "espera": { "handoff": false }
+    },
+    {
+      "mensagem": "Quais imóveis existem em Gramado?",
+      "espera": { "handoff": false, "resposta_contem": ["GRM-301"] }
+    },
+    {
+      "mensagem": "Qual a capacidade máxima do GRM-301?",
+      "espera": { "handoff": false, "resposta_contem": ["4"] }
+    },
+    {
+      "mensagem": "Como eu me chamo?",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": ["{{nome}}"]
+      }
+    }
+  ]
+}

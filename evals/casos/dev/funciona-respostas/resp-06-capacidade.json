@@ -1,0 +1,19 @@
+{
+  "id": "resp-06-capacidade",
+  "bloco": "funciona-respostas",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Preciso de um imóvel em Bombinhas para 8 pessoas. Quais opções atendem?",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": [
+          "BMB-202|Casa\\s+Mariscal"
+        ],
+        "resposta_nao_contem": [
+          "BMB-201|Loft\\s+Bombinhas"
+        ]
+      }
+    }
+  ]
+}

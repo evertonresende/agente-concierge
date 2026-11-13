@@ -1,0 +1,15 @@
+{
+  "id": "inv-10-comodidade-ausente",
+  "bloco": "robustez-nao-inventa",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "O apartamento GRM-302 em Gramado tem piscina?",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": ["n[aã]o\\s+(?:consta|tem|possui|informa|lista)"],
+        "resposta_nao_contem": ["sim,?\\s+(?:o\\s+GRM-302\\s+)?tem\\s+piscina"]
+      }
+    }
+  ]
+}
