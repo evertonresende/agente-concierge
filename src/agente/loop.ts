@@ -234,6 +234,15 @@ function alertasDoTurno(mensagem: string): string[] {
   return alertas;
 }
 
+/**
+ * Resposta cortada pelo limite de tokens do modelo termina no meio de uma frase ("... outro
+ * imóvel. Se"): até três palavras soltas depois de uma frase completa saem.
+ */
+export function semPontaSolta(texto: string): string {
+  // A frase anterior termina em palavra (não em "2." de lista numerada).
+  return texto.replace(/(?<=\p{L}{2}[.!?])[ \t]+[^\s.!?:,;()]+(?:[ \t]+[^\s.!?:,;()]+){0,2}$/u, "");
+}
+
 /** Garante na resposta todo total calculado no turno, no texto que saiu do código. */
 function comTotais(texto: string, totais: string[], textos: (typeof TEXTOS)[Idioma]): string {
   const faltando = [...new Set(totais)].filter((t) => !texto.includes(t));
@@ -276,7 +285,7 @@ export async function rodarTurno(entrada: EntradaDoTurno): Promise<SaidaDoTurno>
 
   /** Resposta escrita pelo modelo, já sem o que não pode chegar ao hóspede. */
   const fechar = (texto: string): SaidaDoTurno => {
-    const conferido = comTotais(corrigirValores(texto, permitidos(), textos.semValor), totais, textos);
+    const conferido = comTotais(corrigirValores(semPontaSolta(texto), permitidos(), textos.semValor), totais, textos);
     const pedido = pedidoDeConfirmacao(contexto, idioma);
     return terminar(pedido ? `${conferido}\n\n${pedido}` : conferido);
   };

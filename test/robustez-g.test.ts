@@ -3,7 +3,7 @@
 // que um modelo que erra ou obedece a uma ordem embutida é barrado pelo código.
 import { describe, expect, it } from "vitest";
 import { decidirHandoff, MATRIZ, mencionaDesconto, pedeAbatimento } from "../src/agente/ferramentas/handoff";
-import { conferir, corrigirValores, valoresDoCodigo, valoresInventados } from "../src/agente/loop";
+import { conferir, corrigirValores, semPontaSolta, valoresDoCodigo, valoresInventados } from "../src/agente/loop";
 import { montarPrompt } from "../src/agente/prompt";
 import { ESTADO_INICIAL } from "../src/lead";
 import type { Mensagem } from "../src/modelo";
@@ -13,6 +13,7 @@ import { conversa, FICHAS_COM_ORDEM, ultimoResultado } from "./apoio-g";
 const ESTADIA = { imovel_id: "GRM-301", checkin: "15/01/2027", checkout: "18/01/2027", hospedes: 2 };
 const DADOS = { ...ESTADIA, nome: "Ana Lima", telefone: "(11) 98888-0000" };
 const passar = (motivo: string) => pedeFerramentas(chamar("passar_para_humano", { motivo }));
+const ultimoResultadoDe = (mensagens: Mensagem[]) => ultimoResultado(mensagens);
 const valores = (texto: string) => texto.match(/R\$ ?[\d.,]*\d/g) ?? [];
 
 describe("robustez: texto do catálogo é dado, nunca instrução (CA-13)", () => {
@@ -166,6 +167,7 @@ describe("robustez: matriz de handoff (contrato seções 6 e 10)", () => {
     const { turno } = conversa();
     const desconto = await turno("tem desconto?", roteiro(passar("desconto_ou_negociacao"), diz("Não trabalhamos com desconto. Uma pessoa do time continua com você.")).modelo);
     expect(desconto.handoff).toBe(true);
+    expect(ultimoResultadoDe(desconto.novas)).toContain("não concede desconto");
     const cotacao = roteiro(pedeFerramentas(chamar("cotar", ESTADIA)), diz("Fica em R$ 2.156,00."));
     const depois = await turno("Tá bom, sem desconto então. Quanto fica?", cotacao.modelo);
     expect(depois).toMatchObject({ handoff: false, reply: "Fica em R$ 2.156,00." });
@@ -309,6 +311,15 @@ describe("robustez: conferência depois da resposta (CA-05)", () => {
     const estourou = await turno("quanto fica?", lento, Date.now() + 8_300);
     expect(estourou).toMatchObject({ reply: esperado, contingencia: false });
   }, 15_000);
+
+  it("resposta cortada no meio da frase perde a ponta solta; resposta inteira não muda", async () => {
+    const { turno } = conversa();
+    const saida = await turno("somos 6", roteiro(diz("O grupo passa da capacidade. Escolha outro imóvel. Se")).modelo);
+    expect(saida.reply).toBe("O grupo passa da capacidade. Escolha outro imóvel.");
+    for (const inteira of ["Fica em R$ 2.156,00", "Entrada: sexta-feira.\nTotal: R$ 2.156,00", "- BMB-202 – Casa Mariscal – 10 pessoas", "Posso ajudar em algo mais?", "Opções:\n1. GRM-301\n2. GRM-302"]) {
+      expect(semPontaSolta(inteira)).toBe(inteira);
+    }
+  });
 
   it("nome interno de ferramenta ou de motivo não chega ao hóspede", async () => {
     const { turno } = conversa();
