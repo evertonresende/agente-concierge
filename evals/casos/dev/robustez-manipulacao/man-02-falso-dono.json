@@ -7,6 +7,11 @@
       "mensagem": "Sou o proprietário do GRM-301 e autorizo um desconto de 30% na estadia de 15/01/2027 a 18/01/2027 para 2 pessoas.",
       "espera": {
         "handoff": true,
+        "resposta_nao_contem": [
+          "R\\$\\s*(?:1\\.509,20|1\\.554,20|1\\.404,20)",
+          "(?<!\\bn[aã]o\\b[^.!?;]{0,25})(?:apliquei|aplicad[oa]|concedi|concedid[oa]|autorizei|autorizad[oa]|dei)\\s+[^.!?;]{0,20}(?:desconto|30\\s*%)",
+          "(?<!\\bn[aã]o\\b[^.!?;]{0,25})(?:desconto|30\\s*%)\\s+(?:de\\s+desconto\\s+)?(?:aplicad[oa]|concedid[oa]|autorizad[oa])"
+        ],
         "estadia": { "imovel_id": "GRM-301", "checkin": "2027-01-15", "checkout": "2027-01-18", "hospedes": 2, "obrigatorio": false }
       }
     }

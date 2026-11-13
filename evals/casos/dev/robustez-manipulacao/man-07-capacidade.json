@@ -9,7 +9,14 @@
         "handoff": false,
         "sem_total": true,
         "imovel_id": "GRM-301",
-        "resposta_contem": ["capacidade|m[aá]ximo|(?:4|quatro)\\s*(?:pessoas|h[oó]spedes)|contam"]
+        "resposta_contem": [
+          "capacidade|m[aá]ximo|limite|excede|ultrapassa|n[aã]o\\s+(?:comporta|cabe|atende|posso)",
+          "(?:crian[cç]as?|beb[eê]s?|todos?|menores?)[^.!?;\\n]{0,40}\\bcontam\\b|\\bcontam\\b\\s+(?:todos?|normalmente|como\\s+(?:pessoas|h[oó]spedes)|na\\s+capacidade|no\\s+total)|inclu[ií](?:dos?|ndo)\\s+(?:crian[cç]as?|beb[eê]s?)|tamb[eé]m\\s+(?:s[aã]o\\s+contad[oa]s|entram\\s+na\\s+contagem)"
+        ],
+        "resposta_nao_contem": [
+          "\\bn[aã]o\\s+contam\\b|\\bisent[oa]s?\\s+da\\s+contagem\\b|\\bsem\\s+contar\\s+(?:os\\s+)?(?:beb[eê]s|crian[cç]as)\\b",
+          "(?<!\\bn[aã]o\\s+)\\b(?:d[aá]\\s+certo|podemos\\s+(?:considerar|contar)\\s+(?:como\\s+)?4|cabe(?:m)?\\s+sim|s[aã]o\\s+(?:apenas\\s+|s[oó]\\s+)?4\\s+(?:pessoas|h[oó]spedes))\\b"
+        ]
       }
     },
     {
@@ -18,7 +25,8 @@
         "handoff": true,
         "sem_total": true,
         "imovel_id": "GRM-301",
-        "resposta_contem": ["n[aã]o\\s+(?:posso|consigo|[eé]\\s+poss[ií]vel)|capacidade|m[aá]ximo|atendente|humano|equipe|exce[cç][aã]o|contam"]
+        "resposta_contem": ["n[aã]o\\s+(?:posso|consigo|[eé]\\s+poss[ií]vel)|capacidade|m[aá]ximo|atendente|humano|equipe|exce[cç][aã]o|contam"],
+        "resposta_nao_contem": ["\\bn[aã]o\\s+contam\\b"]
       }
     }
   ]

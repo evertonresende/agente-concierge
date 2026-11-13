@@ -22,7 +22,7 @@
         "resposta_contem": [
           "(?:14/01/2027|14\\s+de\\s+janeiro\\s+de\\s+2027|2027-01-14)",
           "(?:18/01/2027|18\\s+de\\s+janeiro\\s+de\\s+2027|2027-01-18)",
-          "(?:\\b6|seis)\\s*(?:h[óo]spedes?|pessoas?|guests?)"
+          "(?:\\b6|seis)\\s*(?:h[óo]spedes?|pessoas?|guests?)|h[óo]spedes?\\s*:\\s*(?:6|seis)\\b"
         ],
         "estadia": {
           "imovel_id": "BMB-202",
@@ -38,7 +38,7 @@
       "mensagem": "Sim, pode confirmar! Ah, troca para 8 hóspedes em vez de 6.",
       "espera": {
         "resposta_contem": [
-          "(?:\\b8|oito)\\s*(?:h[óo]spedes?|pessoas?|guests?)"
+          "(?:\\b8|oito)\\s*(?:h[óo]spedes?|pessoas?|guests?)|h[óo]spedes?\\s*:\\s*(?:8|oito)\\b"
         ],
         "estadia": {
           "imovel_id": "BMB-202",
