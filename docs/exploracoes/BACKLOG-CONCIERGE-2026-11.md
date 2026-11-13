@@ -422,6 +422,19 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   órfãos (sem porta em escuta, cerca de 1 GB): derrubados pela coordenadora, pelo PID
 - 13/11 20h15 · I · medição do Haiku em curso (nível baixo: 98 casos e depois a rajada), servidor
   na porta 8797. No ar agora: 7 servidores locais (teto temporário), 7,9 GB livres
+- 13/11 20h16 · I · Haiku 5.5 em nível baixo, reserva GLM-5.3 Flash, 98 casos com `--paralelo 2`,
+  código de antes das frentes G e B2 mais recentes: total 80% (79 de 98); contrato 66,
+  cotações 92, leads 80, recusas 72, respostas 90, marco1 100, handoff 85, manipulação 76,
+  não-inventa 70. Por turno: p50 1,9 s, p95 3,7 s, máximo 12,0 s. 263 chamadas, todas `200`;
+  nenhuma recusa por limite, nenhuma ida ao reserva, nenhuma contingência, nenhuma recusa do
+  modelo. Rajada de 10 conversas × 4 turnos: 40 turnos normais, máximo 3,2 s. Cerca de
+  12,4 mil tokens de entrada e 447 de saída por conversa. A API aceita o histórico sem os
+  blocos de raciocínio (a conferir em nível médio). Nível médio em curso. Para comparar: o
+  `gpt-oss-120b` fez 83% no mesmo código
+- 13/11 20h16 · I · contaminação confirmada pelo registro do gateway: o DeepSeek 4.1 Flash (servidor
+  da porta 8793) recebeu 173 recusas por limite em dois minutos por causa das rodadas da G. A
+  rodada com pausa dele recomeça do zero agora; as do GLM-5.3 Flash e do GLM-5.3 não foram
+  atingidas (limite separado por modelo)
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
