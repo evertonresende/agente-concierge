@@ -130,7 +130,9 @@ const AFIRMA = "s+i+m+|s|ss|si|yes|yep|yeah|yup|isso(?: mesmo)?|exato|exatamente
 // 2. "Confirmo", que pode dizer o que confirma: o resumo, a reserva, os dados.
 const CONFIRMA = "(?:(?:eu )?confirm(?:o|ado|ada|ar)|i confirm|confirm(?:ed)?)"
   + "(?: (?:o |esse |este |the |this |that |my )?(?:resumo|pedido|summary|request|booking|reservation)"
-  + "| (?:a |essa |esta )?(?:segunda |nova |outra )?reserva| (?:the |this |that )?second (?:booking|reservation|request)"
+  // "Segunda", "nova" ou "outra" reserva só com demonstrativo: "confirmo a outra reserva"
+  // pode ser uma reserva que ainda não teve resumo; "essa segunda reserva" é a do resumo.
+  + "| (?:a |essa |esta )?reserva| (?:essa |esta )(?:segunda |nova |outra )reserva| (?:this |that )second (?:booking|reservation|request)"
   + "| (?:os |esses |the )?(?:dados|details)| tudo| it| everything"
   + "| com (?:as |os )?(?:novas |novos )?(?:datas|dados)| with the new (?:dates|details))?"
   + "(?: de novo| novamente| again)?";

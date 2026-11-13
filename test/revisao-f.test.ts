@@ -23,3 +23,12 @@ describe("mensagem longa e repetitiva não trava a leitura do sim", () => {
       .toBe("sim");
   });
 });
+
+describe("segunda, nova ou outra reserva só confirmam com demonstrativo", () => {
+  for (const mensagem of ["Sim, confirmo essa segunda reserva também.", "confirmo esta nova reserva", "confirmo essa outra reserva", "I confirm this second booking"]) {
+    it(`é sim: "${mensagem}"`, () => expect(lerConfirmacao(mensagem, GRM301)).toBe("sim"));
+  }
+  for (const mensagem of ["confirmo a outra reserva", "confirmo a nova reserva", "confirmo a segunda reserva", "confirmo outra reserva", "I confirm the second booking"]) {
+    it(`não é sim: "${mensagem}"`, () => expect(lerConfirmacao(mensagem, GRM301)).toBe("outra"));
+  }
+});
