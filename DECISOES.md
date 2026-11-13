@@ -159,6 +159,7 @@ confirmar ou reverter.
 | P8 | Página de chat: contorno de foco do campo de mensagem | Desenhado por dentro do campo, e não por fora como no canvas aprovado | por fora ele entrava no botão Enviar. Escolha da frente J no passo 2; o Éverton pode vetar | provisória |
 | P9 | AI Gateway sem provedor de terceiro (recomendação 3 da frente I) | Mantém o gateway em `dev`: custa uma variável e dá o log de qual modelo respondeu e de quantos erros de limite houve por modelo. A troca para o reserva está no código e não depende dele | foi por esse log que a frente I mediu os candidatos. O Éverton deixou como provisória em 13/11 às 19h10 | provisória |
 | P10 | Gateway de `producao` (recomendação 4 da frente I) | Um gateway próprio para `producao`, sem nenhuma chave guardada. Ainda não foi criado: espera a escolha do modelo principal | `producao` hoje está sem gateway e sem reserva. O Éverton deixou como provisória em 13/11 às 19h10 | provisória |
+| P11 | Palavras curtas como confirmação (L9, "sim inequívoco") | "isso", "exato" e "pode", sozinhas e no turno seguinte ao resumo, confirmam. "s" sozinho e "ok" não confirmam: o código repete o pedido com o resumo | "s" e "ok" podem ser digitação solta ou só reconhecimento; as outras três respondem diretamente a "Está tudo certo?". Levantado pelo verificador independente da frente F | provisória |
 
 ## Decisões de engenharia do planejamento
 

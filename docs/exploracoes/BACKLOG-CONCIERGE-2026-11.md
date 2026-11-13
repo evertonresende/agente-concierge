@@ -360,6 +360,42 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   erro vem marcado) avisadas. Combinado entre as duas, sem importar código uma da outra: o erro
   lançado pelo modelo quando principal e reserva recusam por limite leva a propriedade
   `porLimite: true`
+- 13/11 19h53 · F · verificador independente (Opus, esforço padrão) sobre a trava mesclada:
+  REPROVADO. Passou: nenhum "registrado" sem `201`, nenhum segundo POST depois de `201` ou de
+  resultado incerto, marcador antes do POST, 28 de 28 mensagens com dado diferente sem lead, P4,
+  12 de 12 defeitos plantados pegos. Reprovou: (A1, alta) hesitação com dado ("acho que sim, mas
+  somos 3") recebe só "Está tudo certo?" e o "sim" seguinte envia o dado antigo; (A2, média-alta)
+  `pedidoDeConfirmacaoPendente` mantém o resumo em 16 de 22 formas de mudança; (A3, média) `422`
+  com campo apontado repete sem handoff; (A4, média) "sim" com interrogação de outra escrita ou
+  emoji envia. Devolvida com a regra invertida: todo pedido de confirmação de código traz o
+  resumo completo, e o rearme é negado por padrão (na dúvida, derruba o resumo). A frente já
+  estava na `main` e em `dev` (só webhook falso); as correções entram como commits novos.
+  Regra provisória P11 sobre palavras curtas. Relatório do verificador fora do repositório
+- 13/11 19h53 · G · relatório das 19h43, lido na conversa dela: itens 1 a 8 da revisão commitados
+  (c8b92a3 a 19ac5a6), mais 5d6541b e 94d2b90; CHECK 2 local com os três blocos de robustez em
+  100%, `funciona-respostas` 100%, `funciona-leads` 93% e `funciona-recusas` 90% (`lead-07` e
+  `rec-10` falharam uma vez e passaram à mão: pedidas mais duas rodadas e a resposta real, não
+  conta como verde). As duas ligações da F prontas e sem commit por um erro de tipo num teste da
+  F: autorizada a trocar essa linha (`test/textos-f.test.ts:17`). Um merge dela (b2d4495) saiu
+  sem rodapé e fica assim. A frente G informou que a queda das 19h20 foi provavelmente dela: um
+  `vitest --root /`, que varre o disco inteiro. Em curso: a parte dela da L18 (`porLimite`)
+- 13/11 20h04 · H · relatório da frente (fc52fe2): `fetch` deixou de ser chamado como método de
+  objeto (f5510cb, com teste de regressão), o log de contingência ganhou origem e classe do erro
+  (1ceb403) e há prova de que `postar` depois do prazo não dispara POST (75ab6ed). Conferido pela
+  coordenadora: ensaio do merge sobre a `main` limpo, 606 testes, tipos e gate verdes; no runtime
+  real (servidor local, ambiente `dev`) o servidor sobe, `contrato` 88% e `funciona-leads` 86%,
+  com as mesmas falhas que a `main` tem em `dev` (`con-07`, `lead-05`, `lead-06`: pendências de
+  casos da B2 e das ligações da G, não da H). Segunda rodada de verificador independente (Opus)
+  em curso; o merge espera o veredito
+- 13/11 20h04 · I · preparação do Haiku pronta numa cópia temporária, sem a chave: chamada pela
+  binding de IA com o gateway (sem SDK e sem secret novo no Worker), nível de raciocínio por
+  variável, recusa do modelo tratada como falha do principal, `porLimite` testado. Entra na
+  branch quando as rodadas com pausa terminarem (por volta das 20h50). Ponto aberto: os blocos
+  de raciocínio não voltam ao histórico em `src/agente/loop.ts` (arquivo da G); a I testa com a
+  chave real se a API aceita antes de pedir a mudança
+- 13/11 20h04 · B2 · pedido: `man-07` aceitar "time" e "equipe". F avisada da P11 e da linha de
+  `src/agente/ferramentas/lead.ts` a trocar depois que a G entrar. Observação: `con-10-idioma`
+  falhou em 1 de 2 rodadas do bloco `contrato` em `dev`; acompanhar depois da G
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
