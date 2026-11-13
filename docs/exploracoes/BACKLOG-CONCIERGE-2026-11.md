@@ -339,6 +339,18 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
 - 13/11 19h34 · conferência depois do incidente: G (em Opus, já no item 6 da lista dela, com o
   trabalho do disco commitado), H (sessão viva, correção em curso) e I (servidores de volta,
   GLM-5.3 Flash commitado em 895d8aa) retomadas às 19h25; E está concluída desde 18h51
+- 13/11 19h44 · I · rajada da recusa simultânea medida (commit 895d8aa, principal GLM-5.3 Flash,
+  reserva DeepSeek 4.1 Flash, 10 conversas simultâneas de 4 turnos, sem pausa): 80 turnos, 80
+  respostas `200` e nenhum `500`; 26 responderam normal e 54 caíram na contingência com
+  `handoff: true` ("Tive um problema técnico e não consegui concluir o seu atendimento agora. Vou
+  passar a conversa para uma pessoa do nosso time, que continua com você."), em menos de 1 s
+  quase todos; nenhum turno acima de 60 s. No gateway: 136 respostas 429 do GLM-5.3 Flash e 110
+  do DeepSeek. Cada turno de contingência gastou 4 chamadas (o laço tenta 2 vezes e cada
+  tentativa passa pelo principal e pelo reserva). Quatro saídas propostas, nenhuma implementada,
+  levadas ao Éverton: terceiro nível de reserva com limite alto (`gpt-oss-120b`); esperar e
+  tentar de novo dentro do turno; menos chamadas por turno (não repetir quando o erro é de
+  limite, no laço da G); crédito no gateway. As três rodadas com pausa (GLM-5.3 Flash, DeepSeek
+  4.1 Flash e GLM-5.3) começaram depois da rajada, com zero 429 nos 3 primeiros minutos
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
