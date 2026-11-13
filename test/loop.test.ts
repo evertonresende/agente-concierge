@@ -399,9 +399,31 @@ describe("ligações da frente F no loop", () => {
     const { turno, mundo } = conversa();
     await turno("quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
     const pergunta = await turno("tem wifi?", roteiro(diz("Sim, a ficha lista wifi.")).modelo);
-    expect(pergunta.reply).toContain('responda "sim"');
+    // O pedido de confirmação é anexado por código (o texto exato é da frente F).
+    expect(pergunta.reply.startsWith("Sim, a ficha lista wifi.\n\n")).toBe(true);
+    expect(pergunta.reply.length).toBeGreaterThan("Sim, a ficha lista wifi.".length + 10);
     const mudou = await turno("muda a saída para 19/01", roteiro(diz("Claro, anotado.")).modelo);
     expect(mudou.reply).toBe("Claro, anotado.");
     expect(mundo.leads).toEqual([]);
+  });
+});
+
+describe("nova tentativa do modelo (L18)", () => {
+  it("erro por limite de pedidos não se repete: uma chamada e contingência com handoff", async () => {
+    const { turno } = conversa();
+    let chamadas = 0;
+    const limite: Modelo = async () => { chamadas++; throw Object.assign(new Error("limite"), { porLimite: true }); };
+    const saida = await turno("oi", limite);
+    expect(chamadas).toBe(1);
+    expect(saida).toMatchObject({ contingencia: true, handoff: true });
+  });
+
+  it("erro comum ganha uma nova tentativa", async () => {
+    const { turno } = conversa();
+    let chamadas = 0;
+    const instavel: Modelo = async () => { if (++chamadas === 1) throw new Error("fora do ar"); return diz("Olá!"); };
+    const saida = await turno("oi", instavel);
+    expect(chamadas).toBe(2);
+    expect(saida).toMatchObject({ reply: "Olá!", contingencia: false, handoff: false });
   });
 });

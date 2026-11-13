@@ -386,7 +386,10 @@ export async function rodarTurno(entrada: EntradaDoTurno): Promise<SaidaDoTurno>
         if (DEGENERADA.test(texto)) throw new Error("resposta degenerada do modelo");
         return { ...resposta, texto };
       } catch (erro) {
-        if (erro instanceof TempoEsgotado || tentativa >= tentativas) throw erro;
+        // Recusa por limite de pedidos não se repete: a nova tentativa gastaria limite
+        // justamente quando ele acabou (L18). O modelo já tentou o reserva.
+        const porLimite = (erro as { porLimite?: unknown } | null)?.porLimite === true;
+        if (erro instanceof TempoEsgotado || porLimite || tentativa >= tentativas) throw erro;
       }
     }
   }
