@@ -6,18 +6,44 @@ const execFileAsync = promisify(execFile);
 
 export const MODELO_PADRAO_HOSPEDE = 'gemini-3.8-flash-low';
 
+export const MODELOS_PERMITIDOS_HOSPEDE = new Set([
+  'gemini-3.8-flash-low',
+  'gemini-3.8-flash-medium',
+  'gemini-3.8-flash-high',
+  'gemini-4-argon-low',
+  'gemini-4-argon-medium',
+  'gemini-4-argon-high',
+  'gemini-4-hydrogen-low',
+  'gemini-4-hydrogen-medium',
+  'gemini-4-hydrogen-high',
+  'gemini-4-hydrogen-xhigh',
+  'claude-sonnet-5-5-low',
+  'claude-sonnet-5-5-medium',
+  'claude-sonnet-5-5-high',
+  'claude-opus-5-5-low',
+  'claude-opus-5-5-medium',
+  'claude-opus-5-5-high',
+]);
+
 export function validarModeloPermitido(modelo) {
   if (!modelo || typeof modelo !== 'string' || !modelo.trim()) {
     throw new Error('Modelo do hóspede não informado. Passe --modelo <nome>.');
   }
-  const norm = modelo.trim().toLowerCase();
-  if (/gpt/.test(norm)) {
-    throw new Error(`Modelo proibido pelas regras do projeto (uso limitado de GPT): ${modelo}`);
+  const limpo = modelo.trim();
+  const norm = limpo.toLowerCase();
+  if (!MODELOS_PERMITIDOS_HOSPEDE.has(norm)) {
+    throw new Error(
+      `Modelo não permitido para o simulador (fora da lista explícita permitida): ${limpo}`,
+    );
   }
-  if (norm.includes(':free') || (norm.includes('opencode') && norm.includes('free'))) {
-    throw new Error(`Modelo gratuito do OpenCode proibido pelas regras do projeto: ${modelo}`);
-  }
-  return modelo.trim();
+  return norm;
+}
+
+export function sanitizarTextoParaCli(texto) {
+  if (typeof texto !== 'string') return '';
+  return texto
+    .replace(/https?:\/\/[^\s"'<>]+/gi, '[URL_REMOVIDA]')
+    .replace(/\b(?:CATALOGO_URL|LEADS_URL|CLOUDFLARE_API_TOKEN)\b/g, '[SEGREDO_REMOVIDO]');
 }
 
 export function montarPromptHospede({ persona, cenario, historico, objetivoTurno }) {
@@ -25,11 +51,13 @@ export function montarPromptHospede({ persona, cenario, historico, objetivoTurno
     historico.length === 0
       ? '(início da conversa, ainda não houve mensagens)'
       : historico
-          .map((item) =>
-            item.papel === 'hospede'
-              ? `Hóspede: ${item.texto}`
-              : `Agente: ${item.texto}`,
-          )
+          .map((item) => {
+            const textoSeguro =
+              item.papel === 'agente' ? sanitizarTextoParaCli(item.texto) : item.texto;
+            return item.papel === 'hospede'
+              ? `Hóspede: ${textoSeguro}`
+              : `Agente: ${textoSeguro}`;
+          })
           .join('\n');
 
   const instrucoes = [

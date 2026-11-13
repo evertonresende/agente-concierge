@@ -11,6 +11,10 @@ const NOMES_SINTETICOS = [
   'Fernanda Pires',
   'Thiago Barros',
   'Juliana Mendes',
+  'Rodrigo Campos',
+  'Beatriz Duarte',
+  'Gustavo Farias',
+  'Larissa Monteiro',
 ];
 
 const DDDS_VALIDOS = ['11', '21', '31', '41', '48', '51', '61', '71'];
@@ -69,7 +73,7 @@ export const PERSONAS = [
         checkinBr: '14/01/2027',
         checkoutBr: '18/01/2027',
         hospedes: 6,
-        indice: rodada * 8 + 0,
+        indice: rodada * 10 + 0,
         catalogo,
       });
     },
@@ -131,7 +135,7 @@ export const PERSONAS = [
         checkinBr: '15/01/2027',
         checkoutBr: '18/01/2027',
         hospedes: 2,
-        indice: rodada * 8 + 1,
+        indice: rodada * 10 + 1,
         catalogo,
       });
     },
@@ -184,7 +188,7 @@ export const PERSONAS = [
         checkinBr: '15/01/2027',
         checkoutBr: '17/01/2027',
         hospedes: 2,
-        indice: rodada * 8 + 2,
+        indice: rodada * 10 + 2,
         catalogo,
       });
     },
@@ -246,7 +250,7 @@ export const PERSONAS = [
         checkinBr: '15/01/2027',
         checkoutBr: '17/01/2027',
         hospedes: 2,
-        indice: rodada * 8 + 3,
+        indice: rodada * 10 + 3,
         catalogo,
       });
     },
@@ -304,7 +308,7 @@ export const PERSONAS = [
         checkinBr: '15/01/2027',
         checkoutBr: '18/01/2027',
         hospedes: 2,
-        indice: rodada * 8 + 4,
+        indice: rodada * 10 + 4,
         catalogo,
         observacaoCenario: 'Novas datas após o resumo: 18/01/2027 a 20/01/2027, 3 hóspedes.',
       });
@@ -380,7 +384,7 @@ export const PERSONAS = [
         checkinBr: '18/01/2027',
         checkoutBr: '20/01/2027',
         hospedes: 4,
-        indice: rodada * 8 + 5,
+        indice: rodada * 10 + 5,
         catalogo,
       });
     },
@@ -430,7 +434,7 @@ export const PERSONAS = [
         checkinBr: '15/01/2027',
         checkoutBr: '18/01/2027',
         hospedes: 2,
-        indice: rodada * 8 + 6,
+        indice: rodada * 10 + 6,
         catalogo,
       });
     },
@@ -486,7 +490,7 @@ export const PERSONAS = [
         checkinBr: '15/01/2027',
         checkoutBr: '17/01/2027',
         hospedes: 2,
-        indice: rodada * 8 + 7,
+        indice: rodada * 10 + 7,
         catalogo,
       });
     },
@@ -537,6 +541,92 @@ export const PERSONAS = [
         valorWebhook: cenario.cotacao.valorWebhook,
       },
     ],
+  },
+
+  {
+    id: 'reclamacao-hospede',
+    nome: 'Hóspede com reclamação',
+    bloco: 'robustez-handoff',
+    criterios: ['CA-12'],
+    descricaoPrompt:
+      'Hóspede que começa pedindo uma cotação normal e depois faz uma reclamação formal sobre atendimento péssimo ou problema grave.',
+    criarCenario(rodada, catalogo) {
+      return criarCenarioBase({
+        imovelId: 'FLN-103',
+        checkinBr: '15/01/2027',
+        checkoutBr: '18/01/2027',
+        hospedes: 2,
+        indice: rodada * 10 + 8,
+        catalogo,
+      });
+    },
+    turnos(cenario) {
+      return [
+        {
+          objetivo: `Peça apenas uma cotação normal do imóvel ${cenario.imovel.id} de ${cenario.checkinBr} a ${cenario.checkoutBr} para ${cenario.hospedes} pessoas.`,
+          fallback: `Quanto fica o ${cenario.imovel.id} de ${cenario.checkinBr} a ${cenario.checkoutBr} para ${cenario.hospedes} hóspedes?`,
+          cotacao: cenario.cotacao,
+          turnoInvalido: false,
+          esperaHandoff: false,
+          permiteLead: false,
+        },
+        {
+          objetivo:
+            'Faça uma reclamação firme dizendo que está muito insatisfeito com o atendimento péssimo da última estadia, que o imóvel estava sujo e com problema sem solução, e exija registro de queixa.',
+          fallback:
+            'Estou muito insatisfeito com o atendimento péssimo da última reserva, estava tudo sujo e ninguém resolveu. Quero registrar uma reclamação formal agora.',
+          cotacao: cenario.cotacao,
+          turnoInvalido: false,
+          esperaHandoff: true,
+          motivoHandoff: 'reclamacao',
+          permiteLead: false,
+        },
+      ];
+    },
+    leadsEsperadosNoFim: () => [],
+  },
+
+  {
+    id: 'pedido-humano',
+    nome: 'Pedido direto de atendente humano',
+    bloco: 'robustez-handoff',
+    criterios: ['CA-12'],
+    descricaoPrompt:
+      'Hóspede que pede cotação inicial e logo exige ser transferido para um atendente humano ou gerente.',
+    criarCenario(rodada, catalogo) {
+      return criarCenarioBase({
+        imovelId: 'IMB-801',
+        checkinBr: '15/01/2027',
+        checkoutBr: '17/01/2027',
+        hospedes: 2,
+        indice: rodada * 10 + 9,
+        catalogo,
+      });
+    },
+    turnos(cenario) {
+      return [
+        {
+          objetivo: `Peça cotação do imóvel ${cenario.imovel.id} de ${cenario.checkinBr} a ${cenario.checkoutBr} para ${cenario.hospedes} hóspedes.`,
+          fallback: `Qual o total do ${cenario.imovel.id} de ${cenario.checkinBr} a ${cenario.checkoutBr} para ${cenario.hospedes} pessoas?`,
+          cotacao: cenario.cotacao,
+          turnoInvalido: false,
+          esperaHandoff: false,
+          permiteLead: false,
+        },
+        {
+          objetivo:
+            'Peça explicitamente para parar o atendimento automático e falar com um atendente humano ou gerente.',
+          fallback:
+            'Não quero continuar por atendimento automático, quero falar com um atendente humano ou com o gerente agora.',
+          cotacao: cenario.cotacao,
+          turnoInvalido: false,
+          esperaHandoff: true,
+          motivoHandoff: 'pedido_humano',
+          permiteLead: false,
+        },
+      ];
+    },
+    leadsEsperadosNoFim: () => [],
   },
 ];
 
