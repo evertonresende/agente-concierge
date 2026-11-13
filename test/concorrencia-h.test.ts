@@ -618,4 +618,91 @@ describe("concorrência endurecida e falhas (frente H)", () => {
     expect(await resposta.json()).toMatchObject({ handoff: true });
     await pausa(110);
   });
+
+  it("item 3: cofre não aceita gravação depois do turno fechado quando o POST tardio devolve 201", async () => {
+    const mundo = criarMundo({ statusDoWebhook: 201 });
+    const buscarLento = (async (entrada: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.method === "POST") await pausa(200);
+      return mundo.buscar(entrada, init);
+    }) as typeof fetch;
+
+    const modelo: Modelo = async (mensagens) =>
+      ultimaDoHospede(mensagens) === "sim"
+        ? pedeFerramentas(chamar("confirmar_reserva"))
+        : pedeFerramentas(chamar("montar_resumo", DADOS));
+
+    const stub = await abrir({ modelo, buscar: buscarLento, orcamentoMs: 80, tetoMs: 250 });
+    await stub.conversar("quero fechar");
+
+    // O turno estoura em 80 ms com o marcador em "enviando" e o POST ainda em curso.
+    const cortada = await stub.conversar("sim");
+    expect(cortada.handoff).toBe(true);
+    expect(cortada.reply).toContain("problema técnico");
+
+    // Espera o POST tardio devolver 201 e tentar marcar "registrado" com o turno já fechado.
+    await pausa(250);
+
+    const estadoLead = await runInDurableObject(stub, (_sessao, state) => {
+      const linha = state.storage.sql.exec<{ valor: string }>("SELECT valor FROM estado WHERE chave = ?", "lead").toArray()[0];
+      return JSON.parse(linha!.valor) as EstadoLead;
+    });
+    expect(Object.values(estadoLead.envios)).toEqual(["enviando"]);
+
+    const seguinte = await stub.conversar("sim");
+    expect(seguinte.handoff).toBe(true);
+    expect(seguinte.reply).toContain("Não consegui confirmar");
+    expect(seguinte.reply).not.toMatch(/já está registrado/);
+  });
+
+  it("item 3: turno de contingência descarta resumo pendente alterado no mesmo turno", async () => {
+    const mundo = criarMundo();
+    const vistas: Mensagem[][] = [];
+    FERRAMENTAS.push(definir("apresentar_e_seguir", "sonda de teste", {}, [], async (_args, contexto) => {
+      apresentarResumo(contexto.cofre, {
+        imovel_id: "GRM-301",
+        checkin: "2027-01-15",
+        checkout: "2027-01-19",
+        hospedes: 2,
+        nome: "Ana Lima",
+        telefone: "(11) 98888-0000",
+      }, 215_600, contexto.turno);
+      return { paraOModelo: { ok: true } };
+    }));
+
+    try {
+      const modelo: Modelo = async (mensagens) => {
+        vistas.push(mensagens);
+        const ultima = ultimaDoHospede(mensagens);
+        if (ultima === "alterar") {
+          if (mensagens.at(-1)?.role === "tool") throw new Error("modelo caiu após ferramenta");
+          return pedeFerramentas(chamar("apresentar_e_seguir"));
+        }
+        return mensagens.at(-1)?.role === "tool"
+          ? diz("Nenhum resumo aguardando confirmação.")
+          : pedeFerramentas(chamar("confirmar_reserva"));
+      };
+
+      const stub = await abrir({ modelo, buscar: mundo.buscar });
+      const falha = await stub.conversar("alterar");
+      expect(falha.handoff).toBe(true);
+      expect(falha.reply).toContain("problema técnico");
+
+      const estadoLead = await runInDurableObject(stub, (_sessao, state) => {
+        const linha = state.storage.sql.exec<{ valor: string }>("SELECT valor FROM estado WHERE chave = ?", "lead").toArray()[0];
+        return linha ? (JSON.parse(linha.valor) as EstadoLead) : { pendente: null, envios: {} };
+      });
+      expect(estadoLead.pendente).toBeNull();
+
+      await stub.conversar("sim");
+      expect(vistas.at(-1)![0]!.content).toContain("Nenhum resumo aguardando confirmação");
+      expect(mundo.leads).toEqual([]);
+    } finally {
+      FERRAMENTAS.pop();
+    }
+  });
+
+  it("item 3: TETO_SESSAO_MS é menor que o teto do Worker e abaixo de 60 s", () => {
+    expect(TETO_SESSAO_MS).toBeLessThan(TETO_WORKER_MS);
+    expect(TETO_WORKER_MS).toBeLessThan(60_000);
+  });
 });
