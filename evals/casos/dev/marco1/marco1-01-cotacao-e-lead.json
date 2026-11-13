@@ -1,0 +1,56 @@
+{
+  "id": "marco1-01-cotacao-e-lead",
+  "bloco": "marco1",
+  "confirma": true,
+  "turnos": [
+    {
+      "mensagem": "Olá! Quero cotar o imóvel GRM-301 de 15/01/2027 a 18/01/2027 para 2 pessoas.",
+      "espera": {
+        "resposta_contem": ["R\\$ 2\\.156,00"],
+        "handoff": false,
+        "estadia": {
+          "imovel_id": "GRM-301",
+          "checkin": "2027-01-15",
+          "checkout": "2027-01-18",
+          "hospedes": 2
+        }
+      }
+    },
+    {
+      "mensagem": "Quero fechar essa reserva. Meu nome é {{nome}} e meu telefone é {{telefone}}.",
+      "espera": {
+        "resposta_contem": [
+          "GRM-301|Chal[eé]\\s+Serra\\s+Gramado",
+          "(?:15/01/2027|15\\s+de\\s+janeiro\\s+de\\s+2027)",
+          "(?:18/01/2027|18\\s+de\\s+janeiro\\s+de\\s+2027)",
+          "R\\$ 2\\.156,00"
+        ],
+        "resposta_nao_contem": ["(?:lead|pedido|reserva)\\s+(?:foi\\s+|j[aá]\\s+)?registrad[oa]"],
+        "leads_ate_agora": 0,
+        "handoff": false,
+        "estadia": {
+          "imovel_id": "GRM-301",
+          "checkin": "2027-01-15",
+          "checkout": "2027-01-18",
+          "hospedes": 2
+        }
+      }
+    },
+    {
+      "mensagem": "Sim, confirmo os dados. Pode registrar.",
+      "espera": {
+        "resposta_contem": ["registrad|encaminhad|enviad"],
+        "handoff": false
+      }
+    }
+  ],
+  "leads_esperados": [
+    {
+      "imovel_id": "GRM-301",
+      "checkin": "2027-01-15",
+      "checkout": "2027-01-18",
+      "hospedes": 2,
+      "valor_total": 2156
+    }
+  ]
+}

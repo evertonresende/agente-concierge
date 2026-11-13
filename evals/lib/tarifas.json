@@ -1,0 +1,17 @@
+{
+  "BMB-201": { "diaria_centavos": 32000, "taxa_limpeza_centavos": 11000, "minimo_noites": 2, "capacidade": 3 },
+  "BMB-202": { "diaria_centavos": 115000, "taxa_limpeza_centavos": 32000, "minimo_noites": 4, "capacidade": 10 },
+  "CGT-901": { "diaria_centavos": 54000, "taxa_limpeza_centavos": 17000, "minimo_noites": 2, "capacidade": 8 },
+  "FLN-101": { "diaria_centavos": 28000, "taxa_limpeza_centavos": 9000, "minimo_noites": 2, "capacidade": 2 },
+  "FLN-102": { "diaria_centavos": 89000, "taxa_limpeza_centavos": 25000, "minimo_noites": 3, "capacidade": 7 },
+  "FLN-103": { "diaria_centavos": 64000, "taxa_limpeza_centavos": 18000, "minimo_noites": 2, "capacidade": 5 },
+  "FOZ-701": { "diaria_centavos": 42000, "taxa_limpeza_centavos": 13000, "minimo_noites": 2, "capacidade": 5 },
+  "GRM-301": { "diaria_centavos": 59000, "taxa_limpeza_centavos": 15000, "minimo_noites": 2, "capacidade": 4 },
+  "GRM-302": { "diaria_centavos": 43000, "taxa_limpeza_centavos": 12000, "minimo_noites": 3, "capacidade": 2 },
+  "IMB-801": { "diaria_centavos": 47500, "taxa_limpeza_centavos": 14000, "minimo_noites": 2, "capacidade": 4 },
+  "NAT-601": { "diaria_centavos": 36590, "taxa_limpeza_centavos": 9500, "minimo_noites": 2, "capacidade": 3 },
+  "NAT-602": { "diaria_centavos": 76000, "taxa_limpeza_centavos": 21000, "minimo_noites": 3, "capacidade": 6 },
+  "RIO-401": { "diaria_centavos": 98000, "taxa_limpeza_centavos": 26000, "minimo_noites": 3, "capacidade": 4 },
+  "RIO-402": { "diaria_centavos": 24550, "taxa_limpeza_centavos": 7500, "minimo_noites": 1, "capacidade": 2 },
+  "SAO-501": { "diaria_centavos": 31000, "taxa_limpeza_centavos": 10000, "minimo_noites": 1, "capacidade": 2 }
+}
