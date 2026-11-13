@@ -929,9 +929,16 @@ async function main() {
   }
 
   if (casosElegiveis.length === 0) {
+    for (const [bloco] of porBloco.entries()) {
+      const pul = resultadosPulados.filter((r) => r.bloco === bloco).length;
+      if (pul > 0) {
+        console.log(`BLOCO ${bloco}: PULADO (${pul} pulado(s) pela trava)`);
+      }
+    }
     console.error(
       `TRAVA: nenhum caso elegível para executar (ambiente=${saude.ambiente}, pulados=${puladosTrava}).`
     );
+    console.log(args.conjunto === 'reservado' ? 'RESERVADO PARCIAL' : 'EVAL PARCIAL');
     process.exit(2);
   }
 
@@ -1007,9 +1014,10 @@ async function main() {
     };
 
     if (exec.length === 0) {
-      console.log(`BLOCO ${bloco}: PULADO (${pul} pela trava)`);
+      console.log(`BLOCO ${bloco}: PULADO (${pul} pulado(s) pela trava)`);
     } else {
-      console.log(`BLOCO ${bloco}: ${taxaPct}%`);
+      const sufixoPulado = pul > 0 ? ` (${pul} pulado(s) pela trava)` : '';
+      console.log(`BLOCO ${bloco}: ${taxaPct}%${sufixoPulado}`);
       if (args.conjunto === 'dev' && aprov / exec.length < 0.95) {
         motivosReprovacao.push(`bloco ${bloco} abaixo de 95% (${aprov}/${exec.length})`);
       }
@@ -1033,6 +1041,7 @@ async function main() {
     resultadosCasos: resultadosTodos,
     blocosResumo,
     aprovado: false,
+    veredicto: 'REPROVADO',
     motivosReprovacao,
     puladosTrava,
     soAgregado: args.soAgregado,
@@ -1045,8 +1054,13 @@ async function main() {
     motivosReprovacao.push(`latência p95 ${relatorio.latencia_ms.p95}ms > 20000ms`);
   }
 
-  const aprovado = motivosReprovacao.length === 0 && totalExec > 0;
+  const limiaresOk = motivosReprovacao.length === 0 && totalExec > 0;
+  const parcial = limiaresOk && puladosTrava > 0;
+  const aprovado = limiaresOk && puladosTrava === 0;
+  const veredicto = aprovado ? 'OK' : parcial ? 'PARCIAL' : 'REPROVADO';
+
   relatorio.aprovado = aprovado;
+  relatorio.veredicto = veredicto;
   relatorio.motivos_reprovacao = motivosReprovacao;
 
   if (!args.semRelatorio) {
@@ -1063,12 +1077,12 @@ async function main() {
 
   if (args.conjunto === 'reservado') {
     console.log(`AGREGADO RESERVADO: ${agregadoPct}%`);
-    console.log(aprovado ? 'RESERVADO OK' : 'RESERVADO REPROVADO');
+    console.log(`RESERVADO ${veredicto}`);
   } else {
-    console.log(aprovado ? 'EVAL OK' : 'EVAL REPROVADO');
+    console.log(`EVAL ${veredicto}`);
   }
 
-  process.exit(aprovado ? 0 : 1);
+  process.exit(aprovado ? 0 : parcial ? 2 : 1);
 }
 
 main().catch((err) => {

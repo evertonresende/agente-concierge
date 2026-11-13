@@ -92,33 +92,45 @@ async function testarTrava() {
 
   const tmpRel = path.join(os.tmpdir(), `trava-rel-${Date.now()}.json`);
   try {
-    // 1. Bloco inteiro de confirmação contra producao: deve recusar tudo e sair != 0
+    // 1. Bloco inteiro de confirmação contra producao: deve recusar tudo, imprimir EVAL PARCIAL e sair 2
     const rLeads = await rodarCli(
       ['--alvo', agenteProducao.url, '--conjunto', 'dev', '--bloco', 'funciona-leads', '--relatorio', tmpRel],
       { LEADS_URL_DEV: `${webhook.url}/leads/teste` }
     );
-    assert.notEqual(rLeads.code, 0, 'funciona-leads contra producao deveria falhar/recusar');
+    assert.equal(rLeads.code, 2, 'funciona-leads contra producao deve sair 2 (EVAL PARCIAL)');
     assert.match(rLeads.stderr, /TRAVA/i);
+    assert.match(rLeads.stdout, /EVAL PARCIAL/);
     assert.equal(chatRequests, 0, 'Nenhum POST /chat deve sair para confirma: true em producao');
     assert.equal(webhookRequests, 0, 'Nenhuma consulta ao webhook deve sair fora de dev');
 
-    // 2. Bloco misto (marco1) contra producao: pula marco1-01 (confirma: true) e roda só marco1-02
+    // 2. Bloco misto (marco1) contra producao: pula marco1-01, roda marco1-02, imprime pulados + EVAL PARCIAL e sai 2
     const rMisto = await rodarCli(
       ['--alvo', agenteProducao.url, '--conjunto', 'dev', '--bloco', 'marco1', '--relatorio', tmpRel],
       { LEADS_URL_DEV: `${webhook.url}/leads/teste` }
     );
-    assert.equal(rMisto.code, 0, `marco1-02 deveria passar mesmo pulando marco1-01: ${rMisto.stdout}\n${rMisto.stderr}`);
+    assert.equal(rMisto.code, 2, `marco1 parcial deve sair 2 (D1): ${rMisto.stdout}\n${rMisto.stderr}`);
     assert.match(rMisto.stderr, /1 caso\(s\) com confirmação recusado/);
     assert.match(rMisto.stdout, /\[PULADO\] marco1\/marco1-01-cotacao-e-lead/);
+    assert.match(rMisto.stdout, /BLOCO marco1: 100% \(1 pulado\(s\) pela trava\)/);
+    assert.match(rMisto.stdout, /EVAL PARCIAL/);
+    assert.equal(rMisto.stdout.includes('EVAL OK'), false, 'Nunca pode imprimir EVAL OK quando há caso pulado');
     assert.equal(chatRequests, 1, 'Apenas o caso sem confirmação deveria rodar');
 
-    // 3. Alvo que não responde /saude: também recusa casos com confirmação
+    // 3. Alvo que não responde /saude: marco1 também não pode dar EVAL OK nem saída 0
     chatRequests = 0;
     const rSemSaude = await rodarCli(
+      ['--alvo', agenteSemSaude.url, '--conjunto', 'dev', '--bloco', 'marco1', '--sem-relatorio'],
+      { LEADS_URL_DEV: `${webhook.url}/leads/teste` }
+    );
+    assert.equal(rSemSaude.code, 1, 'marco1-02 falhou (404) e marco1-01 foi pulado -> EVAL REPROVADO (1)');
+    assert.match(rSemSaude.stdout, /EVAL REPROVADO/);
+
+    chatRequests = 0;
+    const rLeadsSemSaude = await rodarCli(
       ['--alvo', agenteSemSaude.url, '--conjunto', 'dev', '--bloco', 'funciona-leads', '--sem-relatorio'],
       { LEADS_URL_DEV: `${webhook.url}/leads/teste` }
     );
-    assert.notEqual(rSemSaude.code, 0, 'Alvo sem /saude deve recusar confirma: true');
+    assert.equal(rLeadsSemSaude.code, 2, 'Alvo sem /saude deve recusar confirma: true e sair 2');
     assert.equal(chatRequests, 0);
 
     console.log('TRAVA OK');
