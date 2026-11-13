@@ -371,6 +371,22 @@ describe("robustez: não sei sem invenção (CA-08, CA-15)", () => {
     expect(mundo.pedidosAoCatalogo.slice(0, 5).sort()).toEqual(["/cidades", "/imoveis/GRM-301", "/imoveis/RIO-402", "/imoveis?cidade=Gramado", "/imoveis?cidade=Rio+de+Janeiro"]);
   });
 
+  it("busca por comodidade casa palavra inteira e recusa cidade fora do catálogo", async () => {
+    const { turno } = conversa();
+    const { modelo, recebidas } = roteiro(
+      pedeFerramentas(chamar("buscar_por_comodidade", { termo: "gás" })),
+      pedeFerramentas(chamar("buscar_por_comodidade", { termo: "piscina", cidade: "Atlântida" })),
+      pedeFerramentas(chamar("buscar_por_comodidade", { termo: "garagens", cidade: "gramado" })),
+      diz("ok"),
+    );
+    await turno("qual tem gás?", modelo);
+    expect(JSON.parse(ultimoResultado(recebidas[1]!)).dados_do_catalogo.total).toBe(0);
+    const semCidade = JSON.parse(ultimoResultado(recebidas[2]!));
+    expect(semCidade.erro).toContain("Cidade não encontrada");
+    expect(JSON.stringify(semCidade)).not.toContain("nenhum imóvel");
+    expect(JSON.parse(ultimoResultado(recebidas[3]!)).dados_do_catalogo.imoveis.map((i: { id: string }) => i.id)).toEqual(["GRM-301"]);
+  });
+
   it("ficha que falha na leitura não derruba a busca por comodidade: o modelo é avisado de que pode faltar imóvel", async () => {
     const fichas = { ...FICHAS, "RIO-402": { ...FICHAS["RIO-402"], diaria: "quebrada" } };
     const { turno } = conversa({ fichas });

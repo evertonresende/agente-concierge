@@ -130,10 +130,23 @@ export const buscarPorComodidade = definir(
   },
   ["termo"],
   async (argumentos, { catalogo }) => {
-    const termo = normalizar(texto(argumentos, "termo") ?? "").replace(/s$/, "");
+    const termo = normalizar(texto(argumentos, "termo") ?? "");
     if (!termo) return { paraOModelo: { erro: "Informe o termo procurado, ex.: piscina." } };
-    const { fichas, falhas } = await lerFichas(catalogo, texto(argumentos, "cidade"));
-    const casa = (ficha: Ficha) => [...lista(ficha.comodidades), typeof ficha.descricao === "string" ? ficha.descricao : ""].some((t) => normalizar(t).includes(termo));
+    let cidade = texto(argumentos, "cidade");
+    if (cidade) {
+      // Cidade fora do catálogo não pode virar "nenhum imóvel lista a comodidade".
+      const pedida = normalizar(cidade);
+      const achada = (await catalogo.cidades()).find((c) => normalizar(c.cidade) === pedida);
+      if (!achada) {
+        return { paraOModelo: { erro: "Cidade não encontrada no catálogo. Use listar_cidades para ver as cidades e não conclua nada sobre a comodidade." } };
+      }
+      cidade = achada.cidade;
+    }
+    const { fichas, falhas } = await lerFichas(catalogo, cidade);
+    // Palavra inteira, com plural opcional: "gás" não casa "vagas", "piscinas" casa "piscina".
+    const raiz = termo.length > 3 ? termo.replace(/ns$/, "m").replace(/e?s$/, "") : termo;
+    const padrao = new RegExp(String.raw`(?<![a-z0-9])${raiz.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:e?s)?(?![a-z0-9])`);
+    const casa = (ficha: Ficha) => [...lista(ficha.comodidades), typeof ficha.descricao === "string" ? ficha.descricao : ""].some((t) => padrao.test(normalizar(t)));
     const imoveis = fichas
       .filter(casa)
       .map(({ id, nome, cidade, uf, bairro, tipo, capacidade, comodidades, descricao }) => ({ id, nome, cidade, uf, bairro, tipo, capacidade, comodidades, descricao }));
