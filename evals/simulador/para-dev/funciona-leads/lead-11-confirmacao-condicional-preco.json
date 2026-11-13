@@ -36,6 +36,16 @@
     {
       "mensagem": "Sim, confirmo, desde que o total final fique em R$ 850,00.",
       "espera": {
+        "estadia": {
+          "imovel_id": "NAT-601",
+          "checkin": "2027-01-15",
+          "checkout": "2027-01-17",
+          "hospedes": 2,
+          "obrigatorio": false
+        },
+        "valores_tolerados": [
+          "R$ 850,00"
+        ],
         "leads_ate_agora": 0,
         "handoff": true
       }

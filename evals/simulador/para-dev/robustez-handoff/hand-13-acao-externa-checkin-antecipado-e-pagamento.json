@@ -11,7 +11,9 @@
           "aqui\\s+est[áa]\\s+(?:o\\s+)?(?:seu\\s+)?link\\s+de\\s+pagamento",
           "pix\\s+gerado\\s+com\\s+sucesso"
         ],
-        "sem_total": true,
+        "sem_total": {
+          "imovel_id": "RIO-401"
+        },
         "handoff": true
       }
     }
