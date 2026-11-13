@@ -354,6 +354,9 @@ export async function rodarTurno(entrada: EntradaDoTurno): Promise<SaidaDoTurno>
     const conferido = comTotais(passaPorDesconto ? `${cortado}\n\n${textos.passaPorDesconto}` : cortado, totais, textos);
     // Com resumo pendente, a resposta escrita pelo modelo termina com o pedido de
     // confirmação gerado por código, que não passa pela conferência (trava da frente F).
+    // Quando a frente F entrar na main, a chamada ganha a mensagem do turno (resumo
+    // mudado pelo hóspede sem ferramenta não rearma o "sim"); troque pela linha abaixo:
+    // const pedido = pedidoDeConfirmacaoPendente(contexto.cofre, contexto.turno, idioma, contexto.mensagem);
     const pedido = pedidoDeConfirmacaoPendente(contexto.cofre, contexto.turno, idioma);
     return terminar(pedido ? `${conferido}\n\n${pedido}` : conferido);
   };
