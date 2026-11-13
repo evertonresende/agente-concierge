@@ -3,7 +3,7 @@
 // que um modelo que erra ou obedece a uma ordem embutida é barrado pelo código.
 import { describe, expect, it } from "vitest";
 import { decidirHandoff, MATRIZ, mencionaDesconto, pedeAbatimento } from "../src/agente/ferramentas/handoff";
-import { conferir, corrigirValores, semPontaSolta, valoresDoCodigo, valoresInventados } from "../src/agente/loop";
+import { conferir, corrigirValores, falaDeDisponibilidade, semPontaSolta, valoresDoCodigo, valoresInventados } from "../src/agente/loop";
 import { montarPrompt } from "../src/agente/prompt";
 import { sanear } from "../src/catalogo";
 import { ESTADO_INICIAL } from "../src/lead";
@@ -259,8 +259,29 @@ describe("robustez: não sei sem invenção (CA-08, CA-15)", () => {
     const semValores = new Set<string>();
     const turnoNeutro = { mensagem: "está livre?", handoff: false };
     expect(conferir("Não tenho como confirmar se está livre: o catálogo não informa disponibilidade.", semValores, turnoNeutro)).toEqual([]);
-    expect(conferir("Infelizmente não está disponível.", semValores, turnoNeutro)).toHaveLength(1);
+    expect(conferir("Infelizmente essas datas não estão disponíveis.", semValores, turnoNeutro)).toHaveLength(1);
     expect(conferir("Yes, it is available on those dates.", semValores, turnoNeutro)).toHaveLength(1);
+  });
+
+  it("disponibilidade: afirmação depois de \"não se preocupe\" conta; informação indisponível e comodidade não contam", () => {
+    for (const afirma of ["Não se preocupe, as datas estão livres.", "As datas de 15/01 a 18/01 estão disponíveis.", "Ótimo! Essas noites estão garantidas.", "The dates aren't available.", "Good news: the dates are free."]) {
+      expect(falaDeDisponibilidade(afirma)).toBe(true);
+    }
+    for (const nao of ["Essa informação não está disponível no catálogo.", "A piscina está disponível para os hóspedes.", "Não posso garantir que as datas estão livres.", "I can’t confirm whether the dates are available.", "O catálogo não informa se as datas estão livres."]) {
+      expect(falaDeDisponibilidade(nao)).toBe(false);
+    }
+  });
+
+  it("\"vou passar\" com apóstrofo curvo também é pego; medida não é dinheiro; motivo herdado não é motivo", () => {
+    const turno = { mensagem: "hi", handoff: false };
+    expect(conferir("I’ll pass you to a person on our team.", new Set(), turno)).toHaveLength(1);
+    expect(conferir("I’m transferring you to our team, a person will help.", new Set(), turno)).toHaveLength(1);
+    for (const medida of ["Fica a 0,80 km da praia.", "O quarto tem 2,50 m de pé-direito.", "A 1,20 quilômetro do centro.", "Acréscimo de 20,00% na sexta."]) {
+      expect(valoresInventados(medida, new Set())).toEqual([]);
+    }
+    expect(valoresInventados("Fica 0,80 no total.", new Set())).toHaveLength(1);
+    expect(decidirHandoff("constructor", "oi", [])).toBe(true);
+    expect(decidirHandoff("toString", "oi", [])).toBe(true);
   });
 
   it("busca comum vazia avisa que não olha comodidades; mais de um imóvel pede a escolha (L21)", async () => {

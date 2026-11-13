@@ -97,7 +97,8 @@ function jaUsou(motivo: string, historico: Mensagem[]): boolean {
  * de passar, e perder um handoff devido custa mais que passar um a mais.
  */
 export function decidirHandoff(motivo: string | undefined, mensagem: string, historico: Mensagem[]): boolean {
-  const linha = motivo ? MATRIZ[motivo] : undefined;
+  // hasOwn: "constructor" e afins não são motivos da tabela.
+  const linha = motivo && Object.hasOwn(MATRIZ, motivo) ? MATRIZ[motivo] : undefined;
   if (!linha || linha.decisao === "passa") return true;
   // Desconto é gatilho mesmo dentro de uma mensagem de manipulação ou de recusa (L16a).
   if (pedeAbatimento(mensagem)) return true;
@@ -125,7 +126,7 @@ export const passarParaHumano = definir(
         handoff: true,
         paraOModelo: {
           passou: true,
-          instrucao: `A conversa foi passada. Avise o hóspede que uma pessoa do time vai continuar o atendimento. ${motivo ? MATRIZ[motivo]?.orientacao ?? "" : ""} `
+          instrucao: `A conversa foi passada. Avise o hóspede que uma pessoa do time vai continuar o atendimento. ${motivo && Object.hasOwn(MATRIZ, motivo) ? MATRIZ[motivo]!.orientacao ?? "" : ""} `
             + "Não prometa nem sugira desconto, exceção, condição especial ou prazo, e não diga que a pessoa vai analisar ou "
             + "avaliar o pedido: diga só que ela continua o atendimento. Você continua ajudando com dúvidas, cotação e pedido sem desconto.",
         },

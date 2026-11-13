@@ -102,8 +102,10 @@ const VALOR_DO_CODIGO = /R\$ \d{1,3}(?:\.\d{3})*,\d{2}/g;
 const NUMERO = String.raw`\d(?:[\d.,]*\d)?`;
 // Com marca de moeda: "R$ 2.156,00", "R$2156", "$ 2,156.00", "2156 reais", "2 mil reais",
 // "BRL 2156". Sem marca, só o que tem cara de dinheiro: "2.156,00" e "2156,00".
+// Número seguido de unidade ("0,80 km", "1,50 m", "12,50%") é medida, não dinheiro.
+const NAO_E_MEDIDA = String.raw`(?!\d|\s*(?:%|(?:km|m|metros?|quil[oô]metros?|kg|h|horas?|min|minutos?)\b))`;
 const VALOR_NO_TEXTO = new RegExp(
-  String.raw`(?:R|US)?\$\s*${NUMERO}|\bBRL\s*${NUMERO}|\b${NUMERO}\s*(?:mil\s+reais|reais|BRL)\b|\b\d{1,3}(?:\.\d{3})+,\d{2}(?!\d)|\b\d+,\d{2}(?!\d)`,
+  String.raw`(?:R|US)?\$\s*${NUMERO}|\bBRL\s*${NUMERO}|\b${NUMERO}\s*(?:mil\s+reais|reais|BRL)\b|\b\d{1,3}(?:\.\d{3})+,\d{2}${NAO_E_MEDIDA}|\b\d+,\d{2}${NAO_E_MEDIDA}`,
   "gi",
 );
 // Identificador com sublinhado não existe em conversa com hóspede: é nome de ferramenta,
@@ -112,16 +114,26 @@ const NOME_INTERNO = /\b[a-z]+(?:_[a-z]+)+\b/i;
 const DIZ_QUE_PASSA = new RegExp(
   String.raw`\b(?:vou|irei|estou)\s+(?:te\s+|lhe\s+)?(?:passar|passando|encaminhar|encaminhando|transferir|transferindo)\b[^.!?\n]*\b(?:pessoa|humano|atendente|time|equipe|colega|especialista)\b`
     + String.raw`|\b(?:conversa|atendimento)\s+(?:foi|será)\s+(?:passad|encaminhad|transferid)`
-    + String.raw`|\bI(?:'ll| will| am|'m)\s+(?:pass|transferr?|hand|forward|connect)(?:ing)?\b`,
+    + String.raw`|\bI(?:['’]ll| will| am|['’]m)\s+(?:pass|transferr?|hand|forward|connect)(?:ing)?\b`,
   "i",
 );
-// Afirma ou nega disponibilidade de datas. "Não tenho como saber se está livre" não conta.
-const FALA_DE_DISPONIBILIDADE = new RegExp(
-  String.raw`(?<!\b(?:n[aã]o|sem|imposs[ií]vel)\b[^.!?;\n]{0,60})\b(?:est[aá]|est[aã]o|ficam?)\s+(?:livres?|dispon[ií]ve(?:l|is)|garantid[oa]s?)\b`
-    + String.raw`|\b(?:h[aá]|tem|temos)\s+disponibilidade\b|\bn[aã]o\s+est[aá]\s+(?:livre|dispon[ií]vel)\b`
-    + String.raw`|(?<!\b(?:can't|cannot|can not|not|unable)\b[^.!?;\n]{0,60})\b(?:is|are)\s+available\b`,
-  "i",
-);
+// Afirma ou nega disponibilidade de datas. Só conta frase que fala de data ou período
+// ("essa informação não está disponível no catálogo" não conta) e não conta quem diz que
+// não sabe ("não tenho como saber se está livre"); "não se preocupe, está livre" conta.
+const ESTADO_DA_DATA = /\b(?:est[aá]|est[aã]o|ficam?|seguem?|continuam?)\s+(?:livres?|dispon[ií]ve(?:l|is)|garantid[oa]s?|ocupad[oa]s?|reservad[oa]s?)(?![\p{L}])|\b(?:h[aá]|tem|temos)\s+disponibilidade\b|\b(?:is|are)(?:n['’]t|\s+not)?\s+(?:still\s+)?(?:free|available|booked)\b/iu;
+const FALA_DE_DATA = /\bdatas?\b|\bper[ií]odo\b|\bnoites?\b|\bestadia\b|\bfim de semana\b|\d{1,2}\/\d{1,2}|\b(?:janeiro|fevereiro|mar[cç]o|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)\b|\blivres?\b|\bocupad|\bgarantid|\bdisponibilidade\b|\bdates?\b|\bnights?\b|\bfree\b|\bbooked\b|\bweekend\b/i;
+const NAO_SABE = /\b(?:n[aã]o\s+(?:sei|sabemos|tenho|temos|consigo|conseguimos|posso|podemos|informa|h[aá]|d[aá])|sem\s+como|imposs[ií]vel|can['’]?t|cannot|can not|unable|don['’]t|do not|doesn['’]t|does not)\b/i;
+
+/** A frase afirma ou nega que datas estão livres. */
+export function falaDeDisponibilidade(frase: string): boolean {
+  const achado = ESTADO_DA_DATA.exec(frase);
+  return achado !== null && FALA_DE_DATA.test(frase) && !NAO_SABE.test(frase.slice(0, achado.index));
+}
+
+/** Frases de um texto, com os separadores entre elas nas posições ímpares. */
+function frases(texto: string): string[] {
+  return texto.split(/((?<=[.!?])[ \t]+|\n)/);
+}
 // "Uma pessoa poderá analisar a possibilidade de desconto": sugere que a concessão é possível.
 const ACENA_COM_CONCESSAO = /\b(?:analis|avali|verific|estud|consider|review|evaluat|look into)\w*\b[^.!?\n]*\b(?:descont\w*|exce[cç][aã]o|exce[cç][oõ]es|promo[cç]\w+|discount\w*|exception\w*)/i;
 const PEDE_PARA_CONTAR_MENOS = /\bcont(?:e|a|ar|em|am|ando)\b|\bconsider\w+|\bcount\b/;
@@ -170,7 +182,7 @@ export function valoresInventados(texto: string, permitidos: Set<string>): strin
 export function corrigirValores(texto: string, permitidos: Set<string>, semValor: string = TEXTOS.pt.semValor): string {
   const porDigitos = indicePorDigitos(permitidos);
   // Frases e os separadores entre elas, para devolver o texto com a mesma forma.
-  const partes = texto.split(/((?<=[.!?])[ \t]+|\n)/);
+  const partes = frases(texto);
   let saida = "";
   let cortou = false;
   for (let i = 0; i < partes.length; i += 2) {
@@ -217,7 +229,7 @@ export function conferir(texto: string, permitidos: Set<string>, turno: { mensag
     problemas.push("Você sugeriu que um desconto ou uma exceção pode ser analisado ou concedido. Não acene com isso: diga só que você não "
       + "concede nem negocia e que uma pessoa do time continua o atendimento.");
   }
-  if (FALA_DE_DISPONIBILIDADE.test(texto)) {
+  if (frases(texto).some(falaDeDisponibilidade)) {
     problemas.push("Você afirmou ou negou disponibilidade de datas. O catálogo não informa disponibilidade: diga isso, sem afirmar nem negar.");
   }
   return problemas;
