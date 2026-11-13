@@ -1,6 +1,6 @@
 // Leitura comum do pedido de estadia que o modelo manda para cotar e para resumir.
 import { type Ficha, regrasDaFicha } from "../../catalogo";
-import { type DataISO, ehDataInexistente, formatarDataComDia, resolverData } from "../../nucleo/datas";
+import { type DataISO, ehDataInexistente, formatarDataComDia, resolverData, resolverSaida } from "../../nucleo/datas";
 import { cotar, type Cotacao } from "../../nucleo/preco";
 import { type Argumentos, type Contexto, numero, texto } from "./tipos";
 
@@ -18,7 +18,9 @@ export async function prepararPedido(argumentos: Argumentos, contexto: Contexto,
   const entrada = texto(argumentos, "checkin");
   const saida = texto(argumentos, "checkout");
   const checkin = entrada ? resolverData(entrada, contexto.hoje) : null;
-  const checkout = saida ? resolverData(saida, contexto.hoje) : null;
+  const checkout = saida
+    ? (checkin ? resolverSaida(saida, checkin, contexto.hoje) : resolverData(saida, contexto.hoje))
+    : null;
   if (!checkin || !checkout) {
     const inexistente = (entrada && !checkin && ehDataInexistente(entrada))
       || (saida && !checkout && ehDataInexistente(saida));
@@ -27,9 +29,9 @@ export async function prepararPedido(argumentos: Argumentos, contexto: Contexto,
       erro: inexistente
         ? "Data de entrada ou de saída inexistente no calendário. Peça ao hóspede a data correta de entrada e de saída. "
           + "Não informe nenhum total e não passe para humano."
-        : "Não foi possível determinar a data de entrada ou de saída. Expressões como \"fim de semana\", \"Natal\" ou "
-          + "\"feriado\" não definem as datas: peça ao hóspede a data exata de entrada e a de saída. "
-          + "Não informe nenhum total e não passe para humano.",
+        : "Não foi possível determinar a data de entrada ou de saída. Expressões sem mês ou datas exatas (como "
+          + "\"fim de semana\", \"Natal\", \"feriado\" ou \"dia 15\") não definem o período: peça ao hóspede a data "
+          + "completa de entrada e a de saída. Não informe nenhum total e não passe para humano.",
     };
   }
   if (checkin < contexto.hoje) {

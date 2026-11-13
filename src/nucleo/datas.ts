@@ -13,13 +13,13 @@ function montar(ano: number, mes: number, dia: number): DataISO | null {
   return d.toISOString().slice(0, 10);
 }
 
-/** Aceita "AAAA-MM-DD" e "DD/MM/AAAA" explícitas. Qualquer outra coisa, ou data que não existe, devolve null. */
+/** Aceita "AAAA-MM-DD", "DD/MM/AAAA" e "DD/MM/AA" (20AA) explícitas. Qualquer outra coisa, ou data que não existe, devolve null. */
 export function interpretarData(texto: string): DataISO | null {
   const t = texto.trim();
   const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(t);
   if (iso) return montar(Number(iso[1]), Number(iso[2]), Number(iso[3]));
-  const br = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(t);
-  if (br) return montar(Number(br[3]), Number(br[2]), Number(br[1]));
+  const br = /^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})$/.exec(t);
+  if (br) return montar(interpretarAno(br[3]!), Number(br[2]), Number(br[1]));
   return null;
 }
 
@@ -155,7 +155,7 @@ function extrairNucleoDeData(norm: string): { diaEsperado?: number; resto: strin
   let s = norm.replace(/^(?:(?:para|pra|no|na|do|da|de|a|o|ate|desde)\s+)*/, "");
   let diaEsperado: number | undefined;
   const comDia = /^([a-z]+(?:[- ][a-z]+)?)\s*,?\s+(.+)$/.exec(s);
-  if (comDia && comDia[1]! in DIAS_DA_SEMANA) {
+  if (comDia && Object.hasOwn(DIAS_DA_SEMANA, comDia[1]!)) {
     diaEsperado = DIAS_DA_SEMANA[comDia[1]!]!;
     s = comDia[2]!.replace(/^(?:(?:para|pra|no|na|do|da|de|a|o|ate|desde)\s+)*/, "");
   }
@@ -163,16 +163,15 @@ function extrairNucleoDeData(norm: string): { diaEsperado?: number; resto: strin
   return { diaEsperado, resto };
 }
 
-/**
- * Resolve datas escritas pelo hóspede a partir da data civil de `hoje` (em São Paulo):
- * - explícitas (`AAAA-MM-DD`, `DD/MM/AAAA`, `15 de janeiro de 2027`);
- * - sem ano (`15/01`, `15 de janeiro`, `29/02`): próxima ocorrência (>= hoje);
- * - relativas (`hoje`, `amanhã`, `depois de amanhã`, `ontem`);
- * - dia da semana sem data (`sexta`, `sexta que vem`): próxima ocorrência estritamente futura.
- * Expressões vagas (`fim de semana`, `Natal`, `feriado`) ou datas inexistentes devolvem null.
- */
-export function resolverData(texto: string, hoje: DataISO): DataISO | null {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(hoje) || !interpretarData(hoje)) return null;
+function interpretarAno(texto: string): number {
+  const n = Number(texto);
+  return texto.length === 2 ? 2000 + n : n;
+}
+
+function resolverComReferencias(texto: string, refSemAno: DataISO, refDiaSemana: DataISO, refRelativo: DataISO): DataISO | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(refSemAno) || !interpretarData(refSemAno)) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(refDiaSemana) || !interpretarData(refDiaSemana)) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(refRelativo) || !interpretarData(refRelativo)) return null;
 
   const explicita = interpretarData(texto);
   if (explicita) return explicita;
@@ -182,14 +181,14 @@ export function resolverData(texto: string, hoje: DataISO): DataISO | null {
 
   const rel = /^(?:(?:para|pra|a partir de|desde|de|ate)\s+)?(.+)$/.exec(norm);
   if (rel && Object.hasOwn(RELATIVOS, rel[1]!)) {
-    return somarDias(hoje, RELATIVOS[rel[1]!]!);
+    return somarDias(refRelativo, RELATIVOS[rel[1]!]!);
   }
 
-  const sem = /^(?:(?:para|pra|na|no|nesta|neste|nessa|nesse|esta|este|essa|esse|proxima|proximo|a|o)\s+)*([a-z]+(?:[- ][a-z]+)?)(?:\s+(?:que vem|proxima|proximo|agora))?$/.exec(norm);
+  const sem = /^(?:(?:para|pra|na|no|nesta|neste|nessa|nesse|esta|este|essa|esse|proxima|proximo|de|da|do|ate|desde|a|o)\s+)*([a-z]+(?:[- ][a-z]+)?)(?:\s+(?:que vem|proxima|proximo|agora))?$/.exec(norm);
   if (sem && Object.hasOwn(DIAS_DA_SEMANA, sem[1]!)) {
     const alvo = DIAS_DA_SEMANA[sem[1]!]!;
-    const delta = ((alvo - indiceDiaDaSemana(hoje) + 7) % 7) || 7;
-    return somarDias(hoje, delta);
+    const delta = ((alvo - indiceDiaDaSemana(refDiaSemana) + 7) % 7) || 7;
+    return somarDias(refDiaSemana, delta);
   }
 
   const { diaEsperado, resto } = extrairNucleoDeData(norm);
@@ -198,34 +197,34 @@ export function resolverData(texto: string, hoje: DataISO): DataISO | null {
   if (!resolvida) {
     const brSemAno = /^(\d{1,2})\/(\d{1,2})$/.exec(resto);
     if (brSemAno) {
-      resolvida = resolverSemAno(Number(brSemAno[1]), Number(brSemAno[2]), hoje);
+      resolvida = resolverSemAno(Number(brSemAno[1]), Number(brSemAno[2]), refSemAno);
     }
   }
 
   if (!resolvida) {
-    const ext = /^(\d{1,2})\s+(?:de\s+)?([a-z]+)(?:\s+(?:de\s+)?(\d{4}))?$/.exec(resto);
+    const ext = /^(\d{1,2})\s+(?:de\s+)?([a-z]+)(?:\s+(?:de\s+)?(\d{2}|\d{4}))?$/.exec(resto);
     if (ext && Object.hasOwn(MESES, ext[2]!)) {
       const dia = Number(ext[1]);
       const mes = MESES[ext[2]!]!;
-      resolvida = ext[3] ? montar(Number(ext[3]), mes, dia) : resolverSemAno(dia, mes, hoje);
+      resolvida = ext[3] ? montar(interpretarAno(ext[3]), mes, dia) : resolverSemAno(dia, mes, refSemAno);
     }
   }
 
   if (!resolvida) {
-    const barraMes = /^(\d{1,2})\/([a-z]+)(?:\/(\d{4}))?$/.exec(resto);
+    const barraMes = /^(\d{1,2})\/([a-z]+)(?:\/(\d{2}|\d{4}))?$/.exec(resto);
     if (barraMes && Object.hasOwn(MESES, barraMes[2]!)) {
       const dia = Number(barraMes[1]);
       const mes = MESES[barraMes[2]!]!;
-      resolvida = barraMes[3] ? montar(Number(barraMes[3]), mes, dia) : resolverSemAno(dia, mes, hoje);
+      resolvida = barraMes[3] ? montar(interpretarAno(barraMes[3]), mes, dia) : resolverSemAno(dia, mes, refSemAno);
     }
   }
 
   if (!resolvida) {
-    const en = /^([a-z]+)\s+(\d{1,2})(?:\s*,?\s*(\d{4}))?$/.exec(resto);
+    const en = /^([a-z]+)\s+(\d{1,2})(?:\s*,?\s*(\d{2}|\d{4}))?$/.exec(resto);
     if (en && Object.hasOwn(MESES, en[1]!)) {
       const mes = MESES[en[1]!]!;
       const dia = Number(en[2]);
-      resolvida = en[3] ? montar(Number(en[3]), mes, dia) : resolverSemAno(dia, mes, hoje);
+      resolvida = en[3] ? montar(interpretarAno(en[3]), mes, dia) : resolverSemAno(dia, mes, refSemAno);
     }
   }
 
@@ -234,14 +233,35 @@ export function resolverData(texto: string, hoje: DataISO): DataISO | null {
   return resolvida;
 }
 
+/**
+ * Resolve datas escritas pelo hóspede a partir da data civil de `hoje` (em São Paulo):
+ * - explícitas (`AAAA-MM-DD`, `DD/MM/AAAA`, `DD/MM/AA` como 20AA, `15 de janeiro de 2027`);
+ * - sem ano (`15/01`, `15 de janeiro`, `29/02`): próxima ocorrência (>= hoje);
+ * - relativas (`hoje`, `amanhã`, `depois de amanhã`, `ontem`);
+ * - dia da semana sem data (`sexta`, `sexta que vem`): próxima ocorrência estritamente futura.
+ * Expressões vagas (`fim de semana`, `Natal`, `feriado`, `dia 15`) ou datas inexistentes devolvem null.
+ */
+export function resolverData(texto: string, hoje: DataISO): DataISO | null {
+  return resolverComReferencias(texto, hoje, hoje, hoje);
+}
+
+/**
+ * Resolve a data de saída (P5): com ano escrito ou ISO mantém a data literal;
+ * relativas (`hoje`, `amanhã`, ...) continuam relativas a `hoje`;
+ * dia da semana ou data sem ano resolvem a partir de `checkin`.
+ */
+export function resolverSaida(texto: string, checkin: DataISO, hoje: DataISO): DataISO | null {
+  return resolverComReferencias(texto, checkin, checkin, hoje);
+}
+
 function temFormaDeCalendario(resto: string): boolean {
   if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(resto)) return true;
-  if (/^\d{1,2}\/\d{1,2}(?:\/\d{4})?$/.test(resto)) return true;
-  const ext = /^\d{1,2}\s+(?:de\s+)?([a-z]+)(?:\s+(?:de\s+)?\d{4})?$/.exec(resto);
+  if (/^\d{1,2}\/\d{1,2}(?:\/(?:\d{2}|\d{4}))?$/.test(resto)) return true;
+  const ext = /^\d{1,2}\s+(?:de\s+)?([a-z]+)(?:\s+(?:de\s+)?(?:\d{2}|\d{4}))?$/.exec(resto);
   if (ext && Object.hasOwn(MESES, ext[1]!)) return true;
-  const barraMes = /^\d{1,2}\/([a-z]+)(?:\/\d{4})?$/.exec(resto);
+  const barraMes = /^\d{1,2}\/([a-z]+)(?:\/(?:\d{2}|\d{4}))?$/.exec(resto);
   if (barraMes && Object.hasOwn(MESES, barraMes[1]!)) return true;
-  const en = /^([a-z]+)\s+\d{1,2}(?:\s*,?\s*\d{4})?$/.exec(resto);
+  const en = /^([a-z]+)\s+\d{1,2}(?:\s*,?\s*(?:\d{2}|\d{4}))?$/.exec(resto);
   if (en && Object.hasOwn(MESES, en[1]!)) return true;
   return false;
 }

@@ -44,9 +44,13 @@ describe("cotação e pedido com datas resolvidas por código", () => {
     ["sem ano já passou neste ano -> próximo ano", "2026-11-13", "10/11", "12/11", "quarta-feira, 10/11/2027", "sexta-feira, 12/11/2027", "R$ 566,00"],
     ["virada de ano (dezembro -> janeiro)", "2026-12-30", "31/12", "02/01", "quinta-feira, 31/12/2026", "sábado, 02/01/2027", "R$ 615,10"],
     ["29/02 sem ano em ano bissexto", "2028-01-10", "29/02", "02/03", "terça-feira, 29/02/2028", "quinta-feira, 02/03/2028", "R$ 566,00"],
-    ["29/02 sem ano em ano não bissexto -> próximo bissexto", "2026-11-13", "29/02", "02/03/2028", "terça-feira, 29/02/2028", "quinta-feira, 02/03/2028", "R$ 566,00"],
+    ["29/02 sem ano a 02/03 sem ano em ano não bissexto (P5 e P7)", "2026-11-13", "29/02", "02/03", "terça-feira, 29/02/2028", "quinta-feira, 02/03/2028", "R$ 566,00"],
     ["sexta que vem dita na segunda", "2026-11-16", "sexta que vem", "domingo", "sexta-feira, 20/11/2026", "domingo, 22/11/2026", "R$ 664,20"],
     ["sexta dita na sexta -> semana seguinte", "2026-11-13", "sexta", "23/11", "sexta-feira, 20/11/2026", "segunda-feira, 23/11/2026", "R$ 909,70"],
+    ["de segunda a sexta dito na quarta (P5)", "2026-11-11", "segunda", "sexta", "segunda-feira, 16/11/2026", "sexta-feira, 20/11/2026", "R$ 1.057,00"],
+    ["de 29/12 a 02/01 na virada de ano (P5)", "2026-11-13", "29/12", "02/01", "terça-feira, 29/12/2026", "sábado, 02/01/2027", "R$ 1.106,10"],
+    ["de sábado a sábado -> 7 noites seguintes (P5)", "2026-11-13", "sábado", "sábado", "sábado, 14/11/2026", "sábado, 21/11/2026", "R$ 1.891,70"],
+    ["ano com dois dígitos 20/12/26 a 22/12/26 (P7)", "2026-11-13", "20/12/26", "22/12/26", "domingo, 20/12/2026", "terça-feira, 22/12/2026", "R$ 566,00"],
   ];
 
   it.each(COTACOES)("%s", async (_caso, hoje, checkin, checkout, entradaEsperada, saidaEsperada, totalEsperado) => {
@@ -98,15 +102,16 @@ describe("cotação e pedido com datas resolvidas por código", () => {
     expect(saida.handoff).toBe(false);
   });
 
-  it("fim de semana e Natal não são mapeados e pedem entrada e saída sem total (L1a e L1)", async () => {
-    for (const expressao of ["fim de semana", "este fim de semana", "no Natal", "Natal", "no feriado"]) {
+  it("fim de semana, Natal e dia sem mês (dia 15) não são mapeados e pedem data completa sem total (L1a, L1 e P6)", async () => {
+    for (const expressao of ["fim de semana", "este fim de semana", "no Natal", "Natal", "no feriado", "dia 15", "15"]) {
       const { turno } = montar("2026-11-13");
       const { modelo, recebidas } = roteiro(
         pedeFerramentas(chamar("cotar", { imovel_id: "GRM-301", checkin: expressao, checkout: expressao })),
-        diz("Qual é a data exata de entrada e de saída que você deseja?"),
+        diz("Qual é a data completa de entrada e de saída que você deseja?"),
       );
       const saida = await turno(1, `quanto fica ${expressao}?`, modelo);
       const resultado = recebidas[1]!.findLast((m) => m.role === "tool")!.content;
+      expect(resultado).toContain("data completa");
       expect(resultado).toContain("entrada");
       expect(resultado).toContain("saída");
       expect(resultado).not.toContain("R$");
@@ -115,8 +120,8 @@ describe("cotação e pedido com datas resolvidas por código", () => {
     }
   });
 
-  it("data inexistente (30/02 sem ano e 29/02/2027) pede a data correta sem total", async () => {
-    for (const dataRuim of ["30/02", "29/02/2027"]) {
+  it("data inexistente (30/02 sem ano, 29/02/2027 e 29/02/26) pede a data correta sem total", async () => {
+    for (const dataRuim of ["30/02", "29/02/2027", "29/02/26"]) {
       const { turno } = montar("2026-11-13");
       const { modelo, recebidas } = roteiro(
         pedeFerramentas(chamar("cotar", { imovel_id: "GRM-301", checkin: dataRuim, checkout: "03/03/2027" })),
@@ -131,9 +136,15 @@ describe("cotação e pedido com datas resolvidas por código", () => {
     }
   });
 
-  it("saída no mesmo dia ou anterior à entrada continua recusada sem total", async () => {
-    for (const [checkin, checkout] of [["hoje", "hoje"], ["18/01/2027", "15/01/2027"]] as const) {
-      const { turno } = montar("2026-11-13");
+  it("saída no mesmo dia ou anterior à entrada (com ano explícito, ISO ou relativa) continua recusada sem total", async () => {
+    for (const [hoje, checkin, checkout] of [
+      ["2026-11-13", "hoje", "hoje"],
+      ["2026-11-13", "18/01/2027", "15/01/2027"],
+      ["2026-11-13", "18/01/27", "15/01/27"],
+      ["2026-11-13", "2027-01-18", "2027-01-15"],
+      ["2026-11-11", "segunda", "amanhã"],
+    ] as const) {
+      const { turno } = montar(hoje);
       const { modelo, recebidas } = roteiro(
         pedeFerramentas(chamar("cotar", { imovel_id: "RIO-402", checkin, checkout })),
         diz("A saída precisa ser depois da entrada."),
