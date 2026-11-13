@@ -1,12 +1,17 @@
 // Uma sessão de conversa = um Durable Object. Guarda o histórico e o estado do lead
 // em SQLite e garante uma mensagem por vez.
 import { DurableObject } from "cloudflare:workers";
+import { textoDoResumo } from "./agente/ferramentas/lead";
 import { CONTINGENCIA, rodarTurno } from "./agente/loop";
 import { criarCatalogo } from "./catalogo";
 import type { Env } from "./env";
-import { type Cofre, destinoDosLeads, destinoPermitido, ESTADO_INICIAL, type EstadoLead, type Pendente, postarLead } from "./lead";
+import {
+  apresentarResumo, type Cofre, destinoDosLeads, destinoPermitido, ESTADO_INICIAL, type EstadoLead,
+  lerConfirmacao, pedidoDeConfirmacaoPendente, type Pendente, pendenteAberto, postarLead,
+} from "./lead";
 import { criarModelo, type Mensagem, type Modelo } from "./modelo";
 import { dataCivilEmSaoPaulo } from "./nucleo/datas";
+import { idiomaDoHospede } from "./nucleo/idioma";
 
 export interface RespostaDoChat {
   reply: string;
@@ -29,8 +34,9 @@ export interface Dependencias {
 export const TETO_WORKER_MS = 55_000;
 /** Orçamento do trabalho externo de cada turno (contrato seção 2). */
 const ORCAMENTO_MS = 45_000;
-/** Teto total desde a chegada ao Worker, abaixo do teto do Worker para devolver contingência limpa. */
-export const TETO_SESSAO_MS = 53_000;
+/** Teto total desde a chegada ao Worker, 5 s abaixo do teto do Worker para devolver contingência limpa (A3). */
+export const TETO_SESSAO_MS = 50_000;
+const FOLGA_WORKER_MS = TETO_WORKER_MS - TETO_SESSAO_MS;
 const SEM_USO = { entrada: 0, saida: 0, chamadas: 0 };
 // ponytail: o modelo recebe só as últimas mensagens; conversa mais longa que isso
 // esquece o começo. Trocar por resumo do histórico se as conversas reais passarem disso.
@@ -68,6 +74,8 @@ export class Sessao extends DurableObject<Env> {
   // O Durable Object intercala pedidos enquanto espera o modelo ou o catálogo. Esta
   // corrente de promises é o que garante uma mensagem por vez, na ordem de chegada.
   private fila: Promise<unknown> = Promise.resolve();
+  private idEmCurso: string | null = null;
+  private readonly desistidos = new Set<string>();
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -81,11 +89,14 @@ export class Sessao extends DurableObject<Env> {
    * rejeita: processamento que lança vira a resposta de contingência (contrato L18), e
    * por isso uma mensagem que falha não trava as seguintes.
    */
-  conversar(mensagem: string, chegada: number = Date.now(), idPedido?: string): Promise<RespostaDoChat> {
+  conversar(mensagem: string, chegada: number = Date.now(), idPedido?: string, prazoWorker?: number): Promise<RespostaDoChat> {
     const entradaNaFila = Date.now();
-    const vez = this.fila.then(() => this.processar(mensagem, chegada, entradaNaFila, idPedido)).catch((erro: unknown): RespostaDoChat => {
+    const vez = this.fila.then(() => this.processar(mensagem, chegada, entradaNaFila, idPedido, prazoWorker)).catch((erro: unknown): RespostaDoChat => {
       try {
         this.gravar("handoff", true);
+        if (pendenteAberto(this.ler<EstadoLead>("lead", ESTADO_INICIAL))) {
+          this.gravar("reapresentar", true);
+        }
       } catch {
         // Melhor esforço: erro de armazenamento não impede resposta limpa de contingência.
       }
@@ -102,9 +113,16 @@ export class Sessao extends DurableObject<Env> {
     return vez;
   }
 
-  /** Chamada curta de melhor esforço quando o Worker desiste e devolve contingência (A5b). */
-  async registrarContingenciaNoWorker(_idPedido?: string): Promise<void> {
-    this.gravar("handoff", true);
+  /** Chamada curta de melhor esforço quando o Worker desiste e devolve contingência (A0, A3, A5b). */
+  async registrarContingenciaNoWorker(idPedido?: string): Promise<void> {
+    const emCurso = idPedido !== undefined && this.idEmCurso === idPedido;
+    if (emCurso) this.desistidos.add(idPedido);
+    this.ctx.storage.transactionSync(() => {
+      this.gravar("handoff", true);
+      if (idPedido && (emCurso || pendenteAberto(this.ler<EstadoLead>("lead", ESTADO_INICIAL)))) {
+        this.gravar("reapresentar", true);
+      }
+    });
   }
 
   private gravarPedido(idPedido: string, resposta: RespostaDoChat): void {
@@ -141,10 +159,23 @@ export class Sessao extends DurableObject<Env> {
     return inicio < 0 ? [] : linhas.slice(inicio);
   }
 
-  private async processar(mensagem: string, chegada: number, entradaNaFila: number, idPedido?: string): Promise<RespostaDoChat> {
+  private async processar(
+    mensagem: string,
+    chegada: number,
+    entradaNaFila: number,
+    idPedido?: string,
+    prazoWorker?: number,
+  ): Promise<RespostaDoChat> {
     if (idPedido) {
       const gravada = this.respostaDoPedido(idPedido);
-      if (gravada) return gravada;
+      if (gravada) {
+        // Pedido repetido significa que a entrega anterior falhou: se há resumo em aberto,
+        // ele precisa ser reapresentado antes de valer um "sim" (A0).
+        if (pendenteAberto(this.ler<EstadoLead>("lead", ESTADO_INICIAL))) {
+          this.gravar("reapresentar", true);
+        }
+        return gravada;
+      }
     }
 
     const deps = this.dependencias ??= { modelo: criarModelo(this.env.AI, this.env.MODELO), buscar: fetch };
@@ -152,10 +183,18 @@ export class Sessao extends DurableObject<Env> {
     const tetoMs = deps.tetoMs ?? TETO_SESSAO_MS;
     const inicio = Date.now();
     const esperaNaFila = Math.max(0, inicio - entradaNaFila);
-    const prazo = Math.min(chegada + orcamentoMs + esperaNaFila, chegada + tetoMs);
+    const tetoWorkerMs = prazoWorker !== undefined ? Math.max(0, prazoWorker - chegada) : undefined;
+    const folgaWorker = tetoWorkerMs !== undefined ? Math.min(FOLGA_WORKER_MS, Math.ceil(tetoWorkerMs * 0.1)) : 0;
+    const limiteWorker = prazoWorker !== undefined ? prazoWorker - folgaWorker : Infinity;
+    const prazo = Math.min(chegada + orcamentoMs + esperaNaFila, chegada + tetoMs, limiteWorker);
 
     if (inicio >= prazo) {
-      this.gravar("handoff", true);
+      this.ctx.storage.transactionSync(() => {
+        this.gravar("handoff", true);
+        if (pendenteAberto(this.ler<EstadoLead>("lead", ESTADO_INICIAL))) {
+          this.gravar("reapresentar", true);
+        }
+      });
       console.log(JSON.stringify({
         evento: "prazo_esgotado_na_fila",
         sessao: this.ctx.id.toString().slice(0, 12),
@@ -166,164 +205,271 @@ export class Sessao extends DurableObject<Env> {
       return { reply: CONTINGENCIA, handoff: true, uso: SEM_USO };
     }
 
-    const modeloReal = deps.modelo;
-    const buscar = deps.buscar;
-    const turno = this.ler("turno", 0) + 1;
-    this.gravar("turno", turno);
+    if (idPedido) this.idEmCurso = idPedido;
+    try {
+      const modeloReal = deps.modelo;
+      const buscar = deps.buscar;
+      const turno = this.ler("turno", 0) + 1;
+      this.gravar("turno", turno);
 
-    // `envios` (marcador "enviando" etc.) é gravado na hora antes do POST para sobreviver a
-    // reinício do objeto; `pendente` só é gravado junto com o histórico na transação do fim
-    // do turno, para um resumo não entregue nunca ficar confirmável.
-    const estadoInicial = this.ler<EstadoLead>("lead", ESTADO_INICIAL);
-    const pendentePersistido = estadoInicial.pendente;
-    let pendenteEmCurso: Pendente | null = pendentePersistido;
-    let turnoAberto = true;
-    let falhaExterna: CausaContingencia | null = null;
-    let ultimaEtapa: "modelo" | "catalogo" | "lead" | null = null;
+      const deveReapresentar = this.ler("reapresentar", false);
+      const estadoInicial = this.ler<EstadoLead>("lead", ESTADO_INICIAL);
+      const pendentePersistido = estadoInicial.pendente;
+      const pendenteAbertoInicial = pendenteAberto(estadoInicial);
 
-    const cofre: Cofre = {
-      ler: () => {
-        const atual = this.ler<EstadoLead>("lead", ESTADO_INICIAL);
-        return { pendente: pendenteEmCurso, envios: atual.envios };
-      },
-      salvar: (estado) => {
-        if (!turnoAberto) return;
-        pendenteEmCurso = estado.pendente;
-        const atual = this.ler<EstadoLead>("lead", ESTADO_INICIAL);
-        if (JSON.stringify(estado.envios) !== JSON.stringify(atual.envios)) {
-          this.gravar("lead", { pendente: atual.pendente, envios: estado.envios });
+      if (deveReapresentar && pendenteAbertoInicial && lerConfirmacao(mensagem, pendenteAbertoInicial) === "sim") {
+        let pendenteEmCurso: Pendente | null = pendenteAbertoInicial;
+        const cofreLocal: Cofre = {
+          ler: () => ({ ...estadoInicial, pendente: pendenteEmCurso }),
+          salvar: (estado) => { pendenteEmCurso = estado.pendente; },
+        };
+        const historicoAtual = this.historico();
+        const idioma = idiomaDoHospede([
+          ...historicoAtual.filter((m) => m.role === "user").map((m) => m.content),
+          mensagem,
+        ]);
+        if (pedidoDeConfirmacaoPendente(cofreLocal, turno, idioma) === undefined) {
+          apresentarResumo(
+            cofreLocal,
+            pendenteAbertoInicial.reserva,
+            pendenteAbertoInicial.totalCentavos,
+            turno,
+            pendenteAbertoInicial.nomeDoImovel,
+          );
         }
-      },
-    };
+        const aviso = idioma === "en"
+          ? "I have not sent this request yet. To avoid any mistake, please check the request once more."
+          : "Ainda não enviei este pedido. Para não haver engano, confira o pedido mais uma vez.";
+        const reply = `${aviso}\n\n${textoDoResumo(pendenteAbertoInicial, idioma)}`;
+        const resposta: RespostaDoChat = { reply, handoff: false, uso: SEM_USO };
 
-    const modeloSeguro: Modelo = async (mensagens, ferramentas) => {
-      ultimaEtapa = "modelo";
-      try {
-        const retorno = await modeloReal(mensagens, ferramentas);
-        falhaExterna = null;
-        if (retorno.chamadas.length > 0) ultimaEtapa = null;
-        return retorno;
-      } catch (erro) {
-        if (!turnoAberto) return { texto: "", chamadas: [], uso: { entrada: 0, saida: 0 } };
-        falhaExterna = { origem: Date.now() >= prazo ? "prazo" : "modelo", erro: nomeDoErro(erro) };
-        throw erro;
-      }
-    };
-
-    const buscarCatalogo: typeof fetch = async (entrada, init) => {
-      ultimaEtapa = "catalogo";
-      try {
-        const resposta = await buscar(entrada, init);
-        if (!turnoAberto) {
-          await resposta.body?.cancel();
-          return respostaVaziaDoCatalogo(entrada);
+        const estourouWorker = prazoWorker !== undefined && Date.now() >= limiteWorker;
+        const desistido = idPedido !== undefined && this.desistidos.has(idPedido);
+        if (estourouWorker || desistido) {
+          const respostaContingencia: RespostaDoChat = { reply: CONTINGENCIA, handoff: true, uso: SEM_USO };
+          this.ctx.storage.transactionSync(() => {
+            this.gravar("handoff", true);
+            this.gravar("reapresentar", true);
+            if (idPedido) this.gravarPedido(idPedido, respostaContingencia);
+          });
+          console.log(JSON.stringify({
+            evento: "turno",
+            sessao: this.ctx.id.toString().slice(0, 12),
+            turno,
+            ms: Date.now() - chegada,
+            chamadas_modelo: 0,
+            tokens_entrada: 0,
+            tokens_saida: 0,
+            ferramentas: [],
+            handoff: true,
+            contingencia: true,
+            origem: "prazo",
+            erro: "TempoEsgotado",
+            envios: Object.values(estadoInicial.envios),
+          }));
+          return respostaContingencia;
         }
-        falhaExterna = null;
+
+        this.ctx.storage.transactionSync(() => {
+          this.ctx.storage.sql.exec("INSERT INTO historico (mensagem) VALUES (?)", JSON.stringify({ role: "user", content: mensagem }));
+          this.ctx.storage.sql.exec("INSERT INTO historico (mensagem) VALUES (?)", JSON.stringify({ role: "assistant", content: reply }));
+          const atual = this.ler<EstadoLead>("lead", ESTADO_INICIAL);
+          this.gravar("lead", { ...atual, pendente: pendenteEmCurso });
+          this.ctx.storage.sql.exec("DELETE FROM estado WHERE chave = 'reapresentar'");
+          if (idPedido) this.gravarPedido(idPedido, resposta);
+        });
+
+        console.log(JSON.stringify({
+          evento: "turno",
+          sessao: this.ctx.id.toString().slice(0, 12),
+          turno,
+          ms: Date.now() - chegada,
+          chamadas_modelo: 0,
+          tokens_entrada: 0,
+          tokens_saida: 0,
+          ferramentas: [],
+          handoff: false,
+          contingencia: false,
+          envios: Object.values(estadoInicial.envios),
+        }));
         return resposta;
-      } catch (erro) {
-        if (!turnoAberto) return respostaVaziaDoCatalogo(entrada);
-        falhaExterna = { origem: Date.now() >= prazo ? "prazo" : "catalogo", erro: nomeDoErro(erro) };
-        throw erro;
       }
-    };
 
-    const catalogoBruto = criarCatalogo(this.env.CATALOGO_URL, buscarCatalogo);
-    const envolverCatalogo = <A extends unknown[], R>(fn: (...args: A) => Promise<R>) => async (...args: A): Promise<R> => {
-      ultimaEtapa = "catalogo";
-      try {
-        const resultado = await fn(...args);
-        falhaExterna = null;
-        return resultado;
-      } catch (erro) {
-        if (turnoAberto) falhaExterna ??= { origem: Date.now() >= prazo ? "prazo" : "catalogo", erro: nomeDoErro(erro) };
-        throw erro;
-      }
-    };
+      // `envios` (marcador "enviando" etc.) é gravado na hora antes do POST para sobreviver a
+      // reinício do objeto; `pendente` só é gravado junto com o histórico na transação do fim
+      // do turno, para um resumo não entregue nunca ficar confirmável.
+      let pendenteEmCurso: Pendente | null = pendentePersistido;
+      let turnoAberto = true;
+      let falhaExterna: CausaContingencia | null = null;
+      let ultimaEtapa: "modelo" | "catalogo" | "lead" | null = null;
 
-    const destino = destinoDosLeads(this.env.LEADS_URL, this.env.CATALOGO_URL);
-
-    const saida = await rodarTurno({
-      mensagem,
-      historico: this.historico(),
-      houveHandoff: this.ler("handoff", false),
-      modelo: modeloSeguro,
-      prazo,
-      contexto: {
-        catalogo: {
-          cidades: envolverCatalogo(() => catalogoBruto.cidades()),
-          buscar: envolverCatalogo((filtro) => catalogoBruto.buscar(filtro)),
-          ficha: envolverCatalogo((id) => catalogoBruto.ficha(id)),
+      const cofre: Cofre = {
+        ler: () => {
+          const atual = this.ler<EstadoLead>("lead", ESTADO_INICIAL);
+          return { pendente: pendenteEmCurso, envios: atual.envios };
         },
-        cofre,
-        turno,
+        salvar: (estado) => {
+          if (!turnoAberto) return;
+          pendenteEmCurso = estado.pendente;
+          const atual = this.ler<EstadoLead>("lead", ESTADO_INICIAL);
+          if (JSON.stringify(estado.envios) !== JSON.stringify(atual.envios)) {
+            this.gravar("lead", { pendente: atual.pendente, envios: estado.envios });
+          }
+        },
+      };
+
+      const modeloSeguro: Modelo = async (mensagens, ferramentas) => {
+        ultimaEtapa = "modelo";
+        try {
+          const retorno = await modeloReal(mensagens, ferramentas);
+          falhaExterna = null;
+          if (retorno.chamadas.length > 0) ultimaEtapa = null;
+          return retorno;
+        } catch (erro) {
+          if (!turnoAberto) return { texto: "", chamadas: [], uso: { entrada: 0, saida: 0 } };
+          falhaExterna = { origem: Date.now() >= prazo ? "prazo" : "modelo", erro: nomeDoErro(erro) };
+          throw erro;
+        }
+      };
+
+      const buscarCatalogo: typeof fetch = async (entrada, init) => {
+        ultimaEtapa = "catalogo";
+        try {
+          const resposta = await buscar(entrada, init);
+          if (!turnoAberto) {
+            await resposta.body?.cancel();
+            return respostaVaziaDoCatalogo(entrada);
+          }
+          falhaExterna = null;
+          return resposta;
+        } catch (erro) {
+          if (!turnoAberto) return respostaVaziaDoCatalogo(entrada);
+          falhaExterna = { origem: Date.now() >= prazo ? "prazo" : "catalogo", erro: nomeDoErro(erro) };
+          throw erro;
+        }
+      };
+
+      const catalogoBruto = criarCatalogo(this.env.CATALOGO_URL, buscarCatalogo);
+      const envolverCatalogo = <A extends unknown[], R>(fn: (...args: A) => Promise<R>) => async (...args: A): Promise<R> => {
+        ultimaEtapa = "catalogo";
+        try {
+          const resultado = await fn(...args);
+          falhaExterna = null;
+          return resultado;
+        } catch (erro) {
+          if (turnoAberto) falhaExterna ??= { origem: Date.now() >= prazo ? "prazo" : "catalogo", erro: nomeDoErro(erro) };
+          throw erro;
+        }
+      };
+
+      const destino = destinoDosLeads(this.env.LEADS_URL, this.env.CATALOGO_URL);
+
+      const saida = await rodarTurno({
         mensagem,
-        hoje: dataCivilEmSaoPaulo(deps.agora ? deps.agora() : Date.now()),
-        envio: {
-          ligado: this.env.ENVIO_LEADS === "ligado",
-          destinoPermitido: destinoPermitido(this.env.AMBIENTE, destino),
-          postar: async (corpo) => {
-            if (!turnoAberto) {
-              falhaExterna ??= { origem: "prazo", erro: "TempoEsgotado" };
-              return Promise.reject(new Error("turno encerrado"));
-            }
-            ultimaEtapa = "lead";
-            try {
-              const status = await postarLead(buscar, this.env.LEADS_URL ?? "", corpo);
-              falhaExterna = null;
-              return status;
-            } catch (erro) {
-              falhaExterna = { origem: Date.now() >= prazo ? "prazo" : "lead", erro: nomeDoErro(erro) };
-              throw erro;
-            }
+        historico: this.historico(),
+        houveHandoff: this.ler("handoff", false),
+        modelo: modeloSeguro,
+        prazo,
+        contexto: {
+          catalogo: {
+            cidades: envolverCatalogo(() => catalogoBruto.cidades()),
+            buscar: envolverCatalogo((filtro) => catalogoBruto.buscar(filtro)),
+            ficha: envolverCatalogo((id) => catalogoBruto.ficha(id)),
+          },
+          cofre,
+          turno,
+          mensagem,
+          hoje: dataCivilEmSaoPaulo(deps.agora ? deps.agora() : Date.now()),
+          envio: {
+            ligado: this.env.ENVIO_LEADS === "ligado",
+            destinoPermitido: destinoPermitido(this.env.AMBIENTE, destino),
+            postar: async (corpo) => {
+              if (!turnoAberto) {
+                falhaExterna ??= { origem: "prazo", erro: "TempoEsgotado" };
+                return Promise.reject(new Error("turno encerrado"));
+              }
+              ultimaEtapa = "lead";
+              try {
+                const status = await postarLead(buscar, this.env.LEADS_URL ?? "", corpo);
+                falhaExterna = null;
+                return status;
+              } catch (erro) {
+                falhaExterna = { origem: Date.now() >= prazo ? "prazo" : "lead", erro: nomeDoErro(erro) };
+                throw erro;
+              }
+            },
           },
         },
-      },
-    });
+      });
 
-    turnoAberto = false;
-    const pendenteFinal = saida.contingencia
-      ? (pendenteEmCurso === pendentePersistido ? pendentePersistido : null)
-      : pendenteEmCurso;
+      turnoAberto = false;
+      const estourouWorker = prazoWorker !== undefined && Date.now() >= limiteWorker;
+      const desistido = idPedido !== undefined && this.desistidos.has(idPedido);
+      const contingenciaFinal = saida.contingencia || estourouWorker || desistido;
 
-    const resposta: RespostaDoChat = { reply: saida.reply, handoff: saida.handoff, uso: saida.uso };
+      const pendenteFinal = contingenciaFinal
+        ? (pendenteEmCurso === pendentePersistido ? pendentePersistido : null)
+        : pendenteEmCurso;
 
-    // Tudo ou nada: o histórico, o resumo pendente e o registro do pedido valem juntos ou não valem.
-    this.ctx.storage.transactionSync(() => {
-      for (const nova of saida.novas) {
-        this.ctx.storage.sql.exec("INSERT INTO historico (mensagem) VALUES (?)", JSON.stringify(nova));
+      const replyFinal = contingenciaFinal ? CONTINGENCIA : saida.reply;
+      const handoffFinal = contingenciaFinal ? true : saida.handoff;
+      const novasFinais = !saida.contingencia && contingenciaFinal
+        ? [...saida.novas.slice(0, -1), { role: "assistant" as const, content: CONTINGENCIA }]
+        : saida.novas;
+
+      const resposta: RespostaDoChat = { reply: replyFinal, handoff: handoffFinal, uso: saida.uso };
+
+      // Tudo ou nada: o histórico, o resumo pendente e o registro do pedido valem juntos ou não valem.
+      this.ctx.storage.transactionSync(() => {
+        for (const nova of novasFinais) {
+          this.ctx.storage.sql.exec("INSERT INTO historico (mensagem) VALUES (?)", JSON.stringify(nova));
+        }
+        if (handoffFinal) this.gravar("handoff", true);
+        const atual = this.ler<EstadoLead>("lead", ESTADO_INICIAL);
+        if (JSON.stringify(pendenteFinal) !== JSON.stringify(atual.pendente)) {
+          this.gravar("lead", { ...atual, pendente: pendenteFinal });
+        }
+        if (deveReapresentar && !contingenciaFinal) {
+          this.ctx.storage.sql.exec("DELETE FROM estado WHERE chave = 'reapresentar'");
+        }
+        if (contingenciaFinal && pendenteAberto({ ...atual, pendente: pendenteFinal })) {
+          this.gravar("reapresentar", true);
+        }
+        if (idPedido) this.gravarPedido(idPedido, resposta);
+      });
+
+      const causa: CausaContingencia | null = contingenciaFinal
+        ? (estourouWorker || desistido
+          ? { origem: "prazo", erro: "TempoEsgotado" }
+          : (falhaExterna ?? (Date.now() >= prazo
+            ? { origem: "prazo", erro: "TempoEsgotado" }
+            : ultimaEtapa === "modelo"
+              ? { origem: "modelo", erro: "Error" }
+              : { origem: "interno", erro: "Error" })))
+        : null;
+
+      // Um log por turno, sem texto de mensagem nem dado pessoal (contrato L22).
+      console.log(JSON.stringify({
+        evento: "turno",
+        sessao: this.ctx.id.toString().slice(0, 12),
+        turno,
+        ms: Date.now() - chegada,
+        chamadas_modelo: saida.uso.chamadas,
+        tokens_entrada: saida.uso.entrada,
+        tokens_saida: saida.uso.saida,
+        ferramentas: saida.ferramentas,
+        handoff: handoffFinal,
+        contingencia: contingenciaFinal,
+        ...(causa ?? {}),
+        envios: Object.values(cofre.ler().envios),
+      }));
+
+      return resposta;
+    } finally {
+      if (idPedido) {
+        if (this.idEmCurso === idPedido) this.idEmCurso = null;
+        this.desistidos.delete(idPedido);
       }
-      if (saida.handoff) this.gravar("handoff", true);
-      const atual = this.ler<EstadoLead>("lead", ESTADO_INICIAL);
-      if (JSON.stringify(pendenteFinal) !== JSON.stringify(atual.pendente)) {
-        this.gravar("lead", { ...atual, pendente: pendenteFinal });
-      }
-      if (idPedido) this.gravarPedido(idPedido, resposta);
-    });
-
-    const causa: CausaContingencia | null = saida.contingencia
-      ? (falhaExterna ?? (Date.now() >= prazo
-        ? { origem: "prazo", erro: "TempoEsgotado" }
-        : ultimaEtapa === "modelo"
-          ? { origem: "modelo", erro: "Error" }
-          : { origem: "interno", erro: "Error" }))
-      : null;
-
-    // Um log por turno, sem texto de mensagem nem dado pessoal (contrato L22).
-    console.log(JSON.stringify({
-      evento: "turno",
-      sessao: this.ctx.id.toString().slice(0, 12),
-      turno,
-      ms: Date.now() - chegada,
-      chamadas_modelo: saida.uso.chamadas,
-      tokens_entrada: saida.uso.entrada,
-      tokens_saida: saida.uso.saida,
-      ferramentas: saida.ferramentas,
-      handoff: saida.handoff,
-      contingencia: saida.contingencia,
-      ...(causa ?? {}),
-      envios: Object.values(cofre.ler().envios),
-    }));
-
-    return resposta;
+    }
   }
 }

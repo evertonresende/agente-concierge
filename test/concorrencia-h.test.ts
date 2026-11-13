@@ -39,7 +39,7 @@ function postChat(sessionId: string, message: string, variaveis: Env = ambiente)
 }
 
 function comNamespaceRealEnvolvido(
-  interceptar: (realStub: DurableObjectStub<Sessao>, args: [string, number?, string?]) => Promise<RespostaDoChat>,
+  interceptar: (realStub: DurableObjectStub<Sessao>, args: [string, number?, string?, number?]) => Promise<RespostaDoChat>,
 ): Env {
   return {
     ...ambiente,
@@ -48,8 +48,11 @@ function comNamespaceRealEnvolvido(
       getByName(nome: string) {
         const realStub = ambiente.SESSAO.getByName(nome);
         return {
-          conversar(mensagem: string, chegada?: number, idPedido?: string) {
-            return interceptar(realStub, [mensagem, chegada, idPedido]);
+          conversar(mensagem: string, chegada?: number, idPedido?: string, prazoWorker?: number) {
+            return interceptar(realStub, [mensagem, chegada, idPedido, prazoWorker]);
+          },
+          registrarContingenciaNoWorker(idPedido?: string) {
+            return realStub.registrarContingenciaNoWorker(idPedido);
           },
         };
       },
@@ -702,8 +705,9 @@ describe("concorrência endurecida e falhas (frente H)", () => {
     }
   });
 
-  it("item 3: TETO_SESSAO_MS é menor que o teto do Worker e abaixo de 60 s", () => {
+  it("item 3: TETO_SESSAO_MS é menor que o teto do Worker com folga mínima de 5 s e abaixo de 60 s", () => {
     expect(TETO_SESSAO_MS).toBeLessThan(TETO_WORKER_MS);
+    expect(TETO_WORKER_MS - TETO_SESSAO_MS).toBeGreaterThanOrEqual(5_000);
     expect(TETO_WORKER_MS).toBeLessThan(60_000);
   });
 
@@ -1073,5 +1077,221 @@ describe("concorrência endurecida e falhas (frente H)", () => {
     const handoffWorker = await runInDurableObject(stubWorker, (_s, state) =>
       state.storage.sql.exec<{ valor: string }>("SELECT valor FROM estado WHERE chave = 'handoff'").toArray()[0]?.valor ?? null);
     expect(handoffWorker).toBe("true");
+  });
+
+  it("A0 (i): resposta de resumo perdida nas duas tentativas → primeiro 'sim' reapresenta o resumo com 0 leads sem chamar agente → segundo 'sim' envia 1 lead", async () => {
+    const id = `a0-duas-perdas-${++proxima}`;
+    const mundo = criarMundo();
+    let chamadasModelo = 0;
+    const modelo: Modelo = async (mensagens) => {
+      chamadasModelo++;
+      return ultimaDoHospede(mensagens) === "sim"
+        ? pedeFerramentas(chamar("confirmar_reserva"))
+        : pedeFerramentas(chamar("montar_resumo", DADOS));
+    };
+    const stub = ambiente.SESSAO.getByName(`sessao:${id}`);
+    await runInDurableObject(stub, (s: Sessao) => {
+      s.dependencias = { modelo, buscar: mundo.buscar };
+    });
+
+    // Wrapper sem registrarContingenciaNoWorker para provar que a repetição do idPedido já marca reapresentar.
+    let entregasPerdidas = 0;
+    const envDuasPerdas: Env = {
+      ...ambiente,
+      SESSAO: {
+        getByName(nome: string) {
+          const real = ambiente.SESSAO.getByName(nome);
+          return {
+            async conversar(msg: string, c?: number, i?: string, p?: number) {
+              entregasPerdidas++;
+              await real.conversar(msg, c, i, p);
+              throw new Error("resposta perdida no transporte");
+            },
+          };
+        },
+      } as unknown as Env["SESSAO"],
+    };
+
+    const falhaResumo = await postChat(id, "quero fechar", envDuasPerdas);
+    expect(falhaResumo.status).toBe(200);
+    expect(entregasPerdidas).toBe(2);
+    expect(await falhaResumo.json()).toMatchObject({ handoff: true });
+    expect(chamadasModelo).toBe(1);
+    expect(mundo.leads).toEqual([]);
+
+    const chamadasAntesDoSim = chamadasModelo;
+    const primeiroSim = await postChat(id, "sim");
+    expect(primeiroSim.status).toBe(200);
+    expect(chamadasModelo).toBe(chamadasAntesDoSim);
+    expect(primeiroSim.headers.get("x-chamadas-modelo")).toBe("0");
+    const dadoPrimeiroSim = await primeiroSim.json<{ reply: string; handoff: boolean }>();
+    expect(dadoPrimeiroSim.handoff).toBe(false);
+    expect(dadoPrimeiroSim.reply).toContain("Resumo do seu pedido de reserva:");
+    expect(dadoPrimeiroSim.reply).toContain("Ana Lima");
+    expect(dadoPrimeiroSim.reply).toContain("R$ 2.156,00");
+    expect(dadoPrimeiroSim.reply).toMatch(/confirmar, responda "sim"/);
+    expect(mundo.leads).toEqual([]);
+
+    const segundoSim = await postChat(id, "sim");
+    expect(segundoSim.status).toBe(200);
+    const dadoSegundoSim = await segundoSim.json<{ reply: string; handoff: boolean }>();
+    expect(dadoSegundoSim.handoff).toBe(false);
+    expect(dadoSegundoSim.reply).toMatch(/foi registrado/);
+    expect(mundo.leads).toHaveLength(1);
+  });
+
+  it("A0 (ii): perda só na primeira tentativa, segunda entregue → primeiro 'sim' reapresenta o resumo com 0 leads → segundo 'sim' envia 1 lead", async () => {
+    const id = `a0-uma-perda-${++proxima}`;
+    const mundo = criarMundo();
+    let chamadasModelo = 0;
+    const modelo: Modelo = async (mensagens) => {
+      chamadasModelo++;
+      return ultimaDoHospede(mensagens) === "sim"
+        ? pedeFerramentas(chamar("confirmar_reserva"))
+        : pedeFerramentas(chamar("montar_resumo", DADOS));
+    };
+    const stub = ambiente.SESSAO.getByName(`sessao:${id}`);
+    await runInDurableObject(stub, (s: Sessao) => {
+      s.dependencias = { modelo, buscar: mundo.buscar };
+    });
+
+    let tentativas = 0;
+    const envUmaPerda = comNamespaceRealEnvolvido(async (real, args) => {
+      tentativas++;
+      const resposta = await real.conversar(...args);
+      if (tentativas === 1) throw new Error("perda só na primeira entrega");
+      return resposta;
+    });
+
+    const resumoEntregue = await postChat(id, "quero fechar", envUmaPerda);
+    expect(resumoEntregue.status).toBe(200);
+    expect(tentativas).toBe(2);
+    expect((await resumoEntregue.json<{ reply: string }>()).reply).toContain("Resumo do seu pedido de reserva:");
+    expect(chamadasModelo).toBe(1);
+
+    const primeiroSim = await postChat(id, "sim");
+    expect(primeiroSim.status).toBe(200);
+    expect(chamadasModelo).toBe(1);
+    expect((await primeiroSim.json<{ reply: string }>()).reply).toContain("Resumo do seu pedido de reserva:");
+    expect(mundo.leads).toEqual([]);
+
+    const segundoSim = await postChat(id, "sim");
+    expect(segundoSim.status).toBe(200);
+    expect((await segundoSim.json<{ reply: string }>()).reply).toMatch(/foi registrado/);
+    expect(mundo.leads).toHaveLength(1);
+  });
+
+  it("A3 (iii): cenário S5 (atraso na volta da RPC e estouro na folga antes da transação) → 0 leads no primeiro 'sim'", async () => {
+    // Subcaso A: objeto conclui dentro do orçamento, mas volta da RPC atrasa além do teto do Worker.
+    const idA = `a3-s5-volta-${++proxima}`;
+    const mundoA = criarMundo();
+    const modeloA: Modelo = async (mensagens) => {
+      const ultima = ultimaDoHospede(mensagens);
+      if (ultima === "sim") return pedeFerramentas(chamar("confirmar_reserva"));
+      if (ultima === "quero fechar") {
+        await pausa(180);
+        return pedeFerramentas(chamar("montar_resumo", DADOS));
+      }
+      return diz("ok");
+    };
+    const stubA = ambiente.SESSAO.getByName(`sessao:${idA}`);
+    await runInDurableObject(stubA, (s: Sessao) => {
+      s.dependencias = { modelo: modeloA, buscar: mundoA.buscar, tetoMs: 265, orcamentoMs: 265 };
+    });
+    const envVoltaLenta = comNamespaceRealEnvolvido(async (real, args) => {
+      const r = await real.conversar(...args);
+      await pausa(120);
+      return r;
+    });
+
+    const reqA = new Request("https://agente.teste/chat", {
+      method: "POST",
+      body: JSON.stringify({ session_id: idA, message: "quero fechar" }),
+    });
+    const respA = await tratarChat(reqA, envVoltaLenta, 250);
+    expect(respA.status).toBe(200);
+    expect(await respA.json()).toMatchObject({ handoff: true });
+    await pausa(150);
+
+    const simA1 = await postChat(idA, "sim");
+    expect(simA1.status).toBe(200);
+    expect(mundoA.leads).toEqual([]);
+    expect((await simA1.json<{ reply: string }>()).reply).toContain("Resumo do seu pedido de reserva:");
+
+    const simA2 = await postChat(idA, "sim");
+    expect(simA2.status).toBe(200);
+    expect(mundoA.leads).toHaveLength(1);
+
+    // Subcaso B: turno ultrapassa a folga do Worker antes da transação → tratado como contingência, sem pendente confirmável.
+    const idB = `a3-s5-folga-${++proxima}`;
+    const mundoB = criarMundo();
+    const modeloB: Modelo = async (mensagens) => {
+      const ultima = ultimaDoHospede(mensagens);
+      if (ultima === "sim") return pedeFerramentas(chamar("confirmar_reserva"));
+      if (ultima === "quero fechar") {
+        await pausa(230);
+        return pedeFerramentas(chamar("montar_resumo", DADOS));
+      }
+      return diz("ok");
+    };
+    const stubB = ambiente.SESSAO.getByName(`sessao:${idB}`);
+    await runInDurableObject(stubB, (s: Sessao) => {
+      s.dependencias = { modelo: modeloB, buscar: mundoB.buscar, tetoMs: 265, orcamentoMs: 265 };
+    });
+    const reqB = new Request("https://agente.teste/chat", {
+      method: "POST",
+      body: JSON.stringify({ session_id: idB, message: "quero fechar" }),
+    });
+    const respB = await tratarChat(reqB, ambiente, 250);
+    expect(respB.status).toBe(200);
+    expect(await respB.json()).toMatchObject({ handoff: true });
+    await pausa(80);
+
+    await postChat(idB, "sim");
+    expect(mundoB.leads).toEqual([]);
+  });
+
+  it("A0 (iv): marca reapresentar posta e mensagem que muda dado ('na verdade somos 3') → segue caminho normal, limpa marca e gera 0 leads", async () => {
+    const id = `a0-muda-dado-${++proxima}`;
+    const mundo = criarMundo();
+    const recebidas: string[] = [];
+    const modelo: Modelo = async (mensagens) => {
+      const ultima = ultimaDoHospede(mensagens);
+      recebidas.push(ultima);
+      if (ultima === "na verdade somos 3") {
+        return pedeFerramentas(chamar("montar_resumo", { ...DADOS, hospedes: 3 }));
+      }
+      if (ultima === "sim") return pedeFerramentas(chamar("confirmar_reserva"));
+      return pedeFerramentas(chamar("montar_resumo", DADOS));
+    };
+    const stub = ambiente.SESSAO.getByName(`sessao:${id}`);
+    await runInDurableObject(stub, (s: Sessao) => {
+      s.dependencias = { modelo, buscar: mundo.buscar };
+    });
+
+    const envFalha = comNamespaceRealEnvolvido(async (real, args) => {
+      await real.conversar(...args);
+      throw new Error("falha após gravar resumo inicial");
+    });
+
+    const falha = await postChat(id, "quero fechar", envFalha);
+    expect(falha.status).toBe(200);
+    expect(await falha.json()).toMatchObject({ handoff: true });
+
+    const mudanca = await postChat(id, "na verdade somos 3");
+    expect(mudanca.status).toBe(200);
+    expect(recebidas).toContain("na verdade somos 3");
+    const dadoMudanca = await mudanca.json<{ reply: string; handoff: boolean }>();
+    expect(dadoMudanca.reply).toContain("Hóspedes: 3");
+    expect(mundo.leads).toEqual([]);
+
+    const marca = await runInDurableObject(stub, (_s, state) =>
+      state.storage.sql.exec<{ valor: string }>("SELECT valor FROM estado WHERE chave = 'reapresentar'").toArray()[0]?.valor ?? null);
+    expect(marca).toBeNull();
+
+    // Depois de receber o resumo novo (3 hóspedes), o "sim" confirma normalmente o resumo de 3 hóspedes.
+    const sim = await postChat(id, "sim");
+    expect(sim.status).toBe(200);
+    expect(mundo.leads).toMatchObject([{ hospedes: 3 }]);
   });
 });

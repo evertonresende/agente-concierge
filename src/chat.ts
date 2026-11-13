@@ -130,7 +130,7 @@ export async function tratarChat(pedido: Request, env: Env, tetoMs = TETO_WORKER
       }
       try {
         // O prefixo deixa o session_id vazio valer como uma sessão qualquer (contrato L17a).
-        const chamada = env.SESSAO.getByName(`sessao:${session_id}`).conversar(message, chegada, idPedido);
+        const chamada = env.SESSAO.getByName(`sessao:${session_id}`).conversar(message, chegada, idPedido, prazo);
         // Evita rejeição não tratada se o teto do Worker vencer antes da promessa da sessão.
         chamada.catch(() => {});
         const resposta = await comPrazo(chamada, restante);
