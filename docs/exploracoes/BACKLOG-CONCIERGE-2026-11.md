@@ -54,7 +54,7 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 | M1 | agente-concierge | Revisão curta do Marco 1 | A | alta | 0,5 | subagentes Opus 5.5 + conselho | concluída (`docs/revisoes/m1.md`; achados com dono) | — |
 | I | agente-concierge | Escolha do modelo por eval | A, B2 | alta | 1 | subagente em worktree · Opus 5.5, esforço médio desde a X16 | fase 1 entregue; medindo DeepSeek 4.1 e GLM-5.3 em ritmo abaixo do limite (X19); escolha do principal é do Éverton | `t3/` (subagente) |
 | E | agente-concierge | Datas | Marco 1, L1, L1a, L1b, L2 | alta | 1,5 | subagente em worktree · Gemini 4 Hydrogen | concluída: na `main` (81873fa) | `t3/datas-relativas-sao-paulo` |
-| F | agente-concierge | Lead robusto | Marco 1, L6, L7, L9, L10, L11, L15 (textos fixos), L20 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16) | rodando | `frente-f` |
+| F | agente-concierge | Lead robusto | Marco 1, L6, L7, L9, L10, L11, L15 (textos fixos), L20 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16) | concluída: na `main` (801c8a2); verificador independente rodando | `frente-f` |
 | G | agente-concierge | Robustez e handoff | Marco 1, L3, L4, L5, L5a, L12, L13a, L15, L16, L16a, L19, L21 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16) | rodando | `frente-g` |
 | H | agente-concierge | Concorrência endurecida e falha interna | Marco 1, L17, L17a, L18 | alta | 1 | subagente em worktree · Gemini 4 Hydrogen | reprovada no CHECK 2 (Worker não sobe no runtime real); em correção | `t3/durable-session-concurrency` |
 | J | agente-concierge | Página de chat em dois passos: design (canvas) e implementação | passo 1: nada; passo 2: Marco 1 e aprovação do Éverton | baixa | 0,7 + 1 | thread T3 · Fable 5.2 | passo 1 concluído (canvas aprovado pelo Éverton, com dois ajustes); passo 2 entregue (b8991ce) | `frente-j` |
@@ -317,6 +317,28 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   DeepSeek 4.1 Flash em 2º; a frente I mede também a recusa simultânea do principal e do reserva
   por limite e propõe a saída. O limite de uso do Claude deixou de ser restrição: voltam as
   rodadas de verificador independente por frente (F, G e a correção da H), em esforço padrão
+- 13/11 19h34 · TETO DE CARGA, pedido pelo Éverton depois do incidente (o `systemd-oomd` matou
+  quatro sessões do Claude, uma do Gemini e uma do OpenCode às 19h23):
+  1. Suíte de testes e `tsc`: UMA por vez na máquina toda, por trava de arquivo
+     (`flock ~/.cache/agente-concierge/suite.lock npm test -- --maxWorkers=3`, idem para
+     `npm run tipos`). Vale para frentes, verificadores e para a coordenação.
+  2. Servidor local de agente para CHECK 2 (portas 8788 a 8792): um por vez na máquina; sobe
+     só para a rodada e cai pelo PID da porta quando ela termina.
+  3. Rodada de evals sem pausa: uma por vez. As rodadas com pausa da frente I ficam fora dessa
+     conta (uma conversa por vez, 13 s entre turnos).
+  4. `workerd` locais ao todo: no máximo 6 (até 4 da medição da frente I, o webhook falso
+     compartilhado da 8799 e 1 de CHECK 2).
+  5. Sessões de agente: as 5 frentes vivas mais 1 verificador; sem subagentes dentro das frentes.
+  A coordenação confere portas e memória a cada relatório que chega
+- 13/11 19h34 · F · concluída: lista inteira publicada (262c787, 583 testes), ensaio de merge limpo,
+  na `main` (merge 801c8a2) e em `dev`. Em `dev`: `BLOCO marco1: 100%`, `EVAL OK`;
+  `funciona-leads` 86% (13 de 15), faltando `lead-05` e `lead-06`, que fecham com duas ligações
+  no laço da G (quarto argumento de `pedidoDeConfirmacaoPendente` e `respostaASimAposRegistro`
+  antes do modelo) e com um ajuste de regex da B2. Verificador independente da trava (Opus)
+  rodando sobre a branch dela. G e B2 avisadas
+- 13/11 19h34 · conferência depois do incidente: G (em Opus, já no item 6 da lista dela, com o
+  trabalho do disco commitado), H (sessão viva, correção em curso) e I (servidores de volta,
+  GLM-5.3 Flash commitado em 895d8aa) retomadas às 19h25; E está concluída desde 18h51
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
