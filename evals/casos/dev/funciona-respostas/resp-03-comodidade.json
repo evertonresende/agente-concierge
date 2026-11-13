@@ -1,0 +1,20 @@
+{
+  "id": "resp-03-comodidade",
+  "bloco": "funciona-respostas",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "O chalé de Gramado (GRM-301) tem lareira?",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": [
+          "\\bsim\\b|(?:possui|tem|conta\\s+com|inclui|oferece).*lareira",
+          "lareira"
+        ],
+        "resposta_nao_contem": [
+          "n[aã]o\\s+(?:tem|possui)\\s+lareira"
+        ]
+      }
+    }
+  ]
+}

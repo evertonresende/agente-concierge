@@ -1,0 +1,17 @@
+{
+  "id": "resp-07-cidade-vazia",
+  "bloco": "funciona-respostas",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Vocês têm algum imóvel em Curitiba?",
+      "espera": {
+        "handoff": false,
+        "sem_total": true,
+        "resposta_contem": [
+          "n[aã]o\\s+(?:temos|h[aá]|possu[ií]mos|encontrei|encontramos)|sem\\s+im[oó]veis|nenhum\\s+im[oó]vel"
+        ]
+      }
+    }
+  ]
+}

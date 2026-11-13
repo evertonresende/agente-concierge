@@ -1,0 +1,31 @@
+{
+  "id": "lead-02-sem-confirmacao",
+  "bloco": "funciona-leads",
+  "confirma": true,
+  "turnos": [
+    {
+      "mensagem": "Quero fechar o GRM-301 de 15/01/2027 a 18/01/2027 para 2 pessoas. Sou {{nome}}, telefone {{telefone}}.",
+      "espera": {
+        "handoff": false,
+        "leads_ate_agora": 0,
+        "estadia": { "imovel_id": "GRM-301", "checkin": "2027-01-15", "checkout": "2027-01-18", "hospedes": 2 }
+      }
+    },
+    {
+      "mensagem": "Ah, antes de confirmar, qual é o bairro desse imóvel mesmo?",
+      "espera": {
+        "handoff": false,
+        "leads_ate_agora": 0,
+        "resposta_contem": ["Planalto"]
+      }
+    },
+    {
+      "mensagem": "Obrigado, por enquanto não vou fechar ainda.",
+      "espera": {
+        "handoff": false,
+        "leads_ate_agora": 0
+      }
+    }
+  ],
+  "leads_esperados": []
+}

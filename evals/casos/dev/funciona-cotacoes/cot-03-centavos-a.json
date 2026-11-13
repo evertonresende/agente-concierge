@@ -1,0 +1,15 @@
+{
+  "id": "cot-03-centavos-a",
+  "bloco": "funciona-cotacoes",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Quero cotar o RIO-402 de 15/01/2027 a 16/01/2027 para 2 pessoas.",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": ["R\\$ 369,60"],
+        "estadia": { "imovel_id": "RIO-402", "checkin": "2027-01-15", "checkout": "2027-01-16", "hospedes": 2 }
+      }
+    }
+  ]
+}

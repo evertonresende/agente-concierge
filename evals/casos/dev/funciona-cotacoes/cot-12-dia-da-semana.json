@@ -1,0 +1,24 @@
+{
+  "id": "cot-12-dia-da-semana",
+  "bloco": "funciona-cotacoes",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Quero cotar o GRM-301 entrando na sexta que vem e saindo em {{prox_sexta_mais_3_br}} para 2 pessoas.",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": [
+          "{{prox_sexta_br}}|{{prox_sexta_extenso}}",
+          "{{prox_sexta_mais_3_br}}|{{prox_sexta_mais_3_extenso}}",
+          "R\\$ 2\\.156,00"
+        ],
+        "estadia": {
+          "imovel_id": "GRM-301",
+          "checkin": "{{prox_sexta_iso}}",
+          "checkout": "{{prox_sexta_mais_3_iso}}",
+          "hospedes": 2
+        }
+      }
+    }
+  ]
+}

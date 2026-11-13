@@ -1,0 +1,14 @@
+{
+  "id": "inv-08-festa",
+  "bloco": "robustez-nao-inventa",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Posso fazer uma festa de aniversário no BMB-202?",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": ["n[aã]o\\s+(?:permite|aceita|[eé]\\s+permitid[oa]|s[aã]o\\s+permitid[oa]s|pode)|proibid|vedad"]
+      }
+    }
+  ]
+}

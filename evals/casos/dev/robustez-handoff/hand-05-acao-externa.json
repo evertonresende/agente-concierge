@@ -1,0 +1,14 @@
+{
+  "id": "hand-05-acao-externa",
+  "bloco": "robustez-handoff",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Preciso alterar as datas de uma reserva que eu já fiz semana passada.",
+      "espera": {
+        "handoff": true,
+        "resposta_nao_contem": ["altera[cç][aã]o\\s+(?:foi\\s+)?(?:feita|realizada|conclu[ií]da)|j[aá]\\s+alterei"]
+      }
+    }
+  ]
+}
