@@ -705,4 +705,36 @@ describe("concorrência endurecida e falhas (frente H)", () => {
     expect(TETO_SESSAO_MS).toBeLessThan(TETO_WORKER_MS);
     expect(TETO_WORKER_MS).toBeLessThan(60_000);
   });
+
+  it("regressão: buscar do catálogo e do webhook não pode ser chamada com this ligado a deps (Illegal invocation)", async () => {
+    const mundo = criarMundo();
+    const buscarSemThis = function (this: unknown, entrada: RequestInfo | URL, init?: RequestInit) {
+      if (this !== undefined) throw new TypeError("Illegal invocation");
+      return mundo.buscar(entrada, init);
+    } as typeof fetch;
+
+    const modelo: Modelo = async (mensagens) => {
+      const ultima = ultimaDoHospede(mensagens);
+      if (ultima === "sim") return pedeFerramentas(chamar("confirmar_reserva"));
+      if (ultima === "quero fechar") return pedeFerramentas(chamar("montar_resumo", DADOS));
+      return mensagens.at(-1)?.role === "tool"
+        ? diz("Temos imóveis em Gramado.")
+        : pedeFerramentas(chamar("listar_cidades"));
+    };
+
+    const stub = await abrir({ modelo, buscar: buscarSemThis });
+
+    const consulta = await stub.conversar("quais cidades vocês têm?");
+    expect(consulta.handoff).toBe(false);
+    expect(consulta.reply).toBe("Temos imóveis em Gramado.");
+
+    const resumo = await stub.conversar("quero fechar");
+    expect(resumo.handoff).toBe(false);
+    expect(resumo.reply).toContain("Resumo do seu pedido de reserva:");
+
+    const confirmacao = await stub.conversar("sim");
+    expect(confirmacao.handoff).toBe(false);
+    expect(confirmacao.reply).toMatch(/foi registrado/);
+    expect(mundo.leads).toHaveLength(1);
+  });
 });

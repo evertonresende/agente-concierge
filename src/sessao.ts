@@ -119,6 +119,8 @@ export class Sessao extends DurableObject<Env> {
     }
 
     const modeloReal = deps.modelo;
+    const buscar = deps.buscar;
+    const agora = deps.agora ?? Date.now;
     const turno = this.ler("turno", 0) + 1;
     this.gravar("turno", turno);
 
@@ -156,7 +158,7 @@ export class Sessao extends DurableObject<Env> {
 
     const buscarCatalogo: typeof fetch = async (entrada, init) => {
       try {
-        const resposta = await deps.buscar(entrada, init);
+        const resposta = await buscar(entrada, init);
         if (!turnoAberto) {
           await resposta.body?.cancel();
           return respostaVaziaDoCatalogo(entrada);
@@ -181,13 +183,13 @@ export class Sessao extends DurableObject<Env> {
         cofre,
         turno,
         mensagem,
-        hoje: dataCivilEmSaoPaulo((deps.agora ?? Date.now)()),
+        hoje: dataCivilEmSaoPaulo(agora()),
         envio: {
           ligado: this.env.ENVIO_LEADS === "ligado",
           destinoPermitido: destinoPermitido(this.env.AMBIENTE, destino),
           postar: (corpo) => {
             if (!turnoAberto) return Promise.reject(new Error("turno encerrado"));
-            return postarLead(deps.buscar, this.env.LEADS_URL ?? "", corpo);
+            return postarLead(buscar, this.env.LEADS_URL ?? "", corpo);
           },
         },
       },
