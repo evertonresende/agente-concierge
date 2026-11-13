@@ -241,6 +241,9 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
     fica vermelho porque ainda procura os casos em `para-dev/`. Devolvida, com exceção de dono
     para ela editar esse teste, mais o `con-07` e o `lead-12`
   - F e G · avisadas da troca de modelo; fecham o turno num ponto consistente e esperam "continue"
+- 13/11 18h46 · Éverton ajustou a X16 (X17): candidato GPT liberado na frente I só pelo AI Gateway
+  com billing unificado, sem chave e sem compra de crédito. Frente I avisada; aplica depois da
+  rodada do GLM-5.3 que está em curso
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -659,6 +662,12 @@ Mudança do Éverton (13/11 às 18h35, `DECISOES.md` X16): o candidato da OpenAI
 plano e a chave `OPENAI_API_KEY` não é usada em nenhuma chamada, nem como reserva. Os
 três candidatos e o modelo reserva rodam sem chave de terceiro (Workers AI). O
 `@cf/openai/gpt-oss-120b` continua valendo: roda no Workers AI.
+
+Ajuste do Éverton (13/11 às 18h46, X17): um modelo GPT pode entrar como candidato a
+mais, só pelo AI Gateway com o billing unificado da Cloudflare (créditos pré-pagos),
+nunca pela OpenAI direto e sem chave. Ninguém compra crédito nem mexe em cobrança. Se
+a chamada falhar por falta de crédito: registrar o erro, seguir só com o Workers AI e
+avisar o Éverton no resumo da leva. O reserva continua no Workers AI.
 
 ### Tasks
 - [ ] Rodar o conjunto dev (nunca o reservado) com 3 candidatos, mesmo código, todos de
