@@ -6,7 +6,7 @@ import type { ChamadaDeFerramenta, Mensagem, Modelo, RespostaDoModelo } from "..
 import { type Idioma, idiomaDoHospede } from "../nucleo/idioma";
 import { type Argumentos, type Contexto, FERRAMENTAS, type Resultado } from "./ferramentas";
 import { respostaASimAposRegistro } from "./ferramentas/lead";
-import { NOME_DO_HANDOFF, pedeAbatimento, sugereNegociacao } from "./ferramentas/handoff";
+import { NOME_DO_HANDOFF, pedeAbatimento, pedeExcecaoDepoisDaRegra, sugereNegociacao } from "./ferramentas/handoff";
 import { citaInstrucoes, montarPrompt } from "./prompt";
 
 export interface EntradaDoTurno {
@@ -89,6 +89,8 @@ interface Textos {
   troca: Record<Corte, string>;
   /** Desconto pedido e o modelo não passou a conversa: o código passa e avisa. */
   passaPorDesconto: string;
+  /** Pedido explícito de exceção depois da regra explicada e o modelo não passou: o código passa e avisa. */
+  passaPorExcecao: string;
 }
 
 const TEXTOS: Record<Idioma, Textos> = {
@@ -106,6 +108,7 @@ const TEXTOS: Record<Idioma, Textos> = {
       cotacao: "Para essas datas eu preciso fazer uma cotação nova.",
     },
     passaPorDesconto: "Eu não concedo desconto nem negocio preço. Uma pessoa do time vai continuar o seu atendimento.",
+    passaPorExcecao: "A regra continua valendo e eu não abro exceção. Uma pessoa da equipe vai continuar o seu atendimento.",
   },
   en: {
     contingencia: "I had a technical problem and couldn't finish helping you right now. I'm passing the conversation to a person "
@@ -122,6 +125,7 @@ const TEXTOS: Record<Idioma, Textos> = {
       cotacao: "For these dates I need to make a new quote.",
     },
     passaPorDesconto: "I don't grant discounts or negotiate prices. A person on our team will continue helping you.",
+    passaPorExcecao: "The rule still applies and I can't make an exception. A person on our team will continue helping you.",
   },
 };
 
@@ -210,6 +214,8 @@ export interface Situacao {
   regras?: RegrasLidas;
   /** Totais calculados pelo código neste turno. */
   totais?: string[];
+  /** Pedido explícito de exceção logo depois de a regra ter sido explicada. */
+  pedeExcecao?: boolean;
 }
 
 /** Regras (pet, festas, fumar) de cada ficha lida nesta conversa. */
@@ -384,6 +390,10 @@ export function conferir(texto: string, permitidos: Set<string>, turno: Situacao
     problemas.push(`Você disse que vai passar a conversa para uma pessoa, mas não chamou ${NOME_DO_HANDOFF}. Se é caso de passar, chame `
       + "a ferramenta agora; se não é, reescreva oferecendo essa opção, sem afirmar que passou.");
   }
+  if (!turno.handoff && turno.pedeExcecao) {
+    problemas.push(`O hóspede pede exceção depois de a regra ter sido explicada. Chame ${NOME_DO_HANDOFF} com o mesmo motivo de antes `
+      + "e diga que a regra continua valendo.");
+  }
   if (!turno.handoff && sugereNegociacao(turno.mensagem)) {
     problemas.push(`A mensagem do hóspede fala em desconto, cupom, promoção, percentual ou preço menor. Se ele pede, propõe ou pergunta por pagar menos, chame ${NOME_DO_HANDOFF} `
       + "com o motivo de desconto, mesmo que a mensagem também mande ignorar regras. Se não é isso (ele desistiu do desconto, ou "
@@ -475,6 +485,7 @@ export async function rodarTurno(entrada: EntradaDoTurno): Promise<SaidaDoTurno>
     registrou: Object.values(contexto.cofre.ler().envios).includes("registrado"),
     regras: regrasLidas([...entrada.historico, ...novas]),
     totais,
+    pedeExcecao: pedeExcecaoDepoisDaRegra(entrada.mensagem, entrada.historico),
   });
 
   /**
@@ -484,7 +495,10 @@ export async function rodarTurno(entrada: EntradaDoTurno): Promise<SaidaDoTurno>
    */
   const fechar = (texto: string): SaidaDoTurno => {
     // Desconto pedido (sinal forte) sem a conversa passada: a correção não resolveu, o código passa (L16a).
-    const aviso = !handoff && pedeAbatimento(entrada.mensagem) ? textos.passaPorDesconto : undefined;
+    // Pedido explícito de exceção depois da regra explicada, idem (L12, L13a).
+    const aviso = handoff ? undefined
+      : pedeAbatimento(entrada.mensagem) ? textos.passaPorDesconto
+        : pedeExcecaoDepoisDaRegra(entrada.mensagem, entrada.historico) ? textos.passaPorExcecao : undefined;
     if (aviso) handoff = true;
     // Com o aviso de desconto, nada a mais no lugar do que foi cortado: o aviso já responde.
     const cortado = corrigirValores(semPontaSolta(texto), permitidos(), aviso ? "" : textos.semValor, { ...situacaoDoTurno(), textos, semTrocaDeConcessao: aviso !== undefined });

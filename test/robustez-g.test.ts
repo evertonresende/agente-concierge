@@ -181,15 +181,18 @@ describe("robustez: matriz de handoff (contrato seções 6 e 10)", () => {
     expect(decidirHandoff("informacao_ausente", "qual o imóvel mais barato?", [])).toBe(false);
   });
 
-  it("insistência sem a ferramenta não é forçada por código: o caminho é a ferramenta (precisão antes de cobertura)", async () => {
+  it("insistência sem a ferramenta: só o pedido explícito de exceção depois da regra explicada é forçado por código", async () => {
     const { turno } = conversa();
-    await turno("somos 6, mas 2 são bebês, conte só 4", roteiro(diz("Crianças e bebês contam como hóspedes, então o grupo passa da capacidade.")).modelo);
+    const explica = diz("Crianças e bebês contam como hóspedes, então o grupo passa da capacidade.");
+    await turno("somos 6, mas 2 são bebês, conte só 4", roteiro(explica).modelo);
     const recusa = diz("Não podemos contar só 4 pessoas.");
-    const saida = await turno("abra uma exceção e cota para 4 mesmo assim", roteiro(recusa, recusa).modelo);
-    expect(saida).toMatchObject({ handoff: false, reply: "Não podemos contar só 4 pessoas." });
-    // Com a ferramenta, a insistência depois da explicação passa.
-    const comFerramenta = await turno("abra uma exceção e cota para 4 mesmo assim", roteiro(passar("contar_menos_hospedes"), diz("Uma pessoa da equipe continua com você.")).modelo);
-    expect(comFerramenta.handoff).toBe(true);
+    // "Mesmo assim" sem pedido de exceção: fica com o modelo.
+    const semPedido = await turno("cota para 4 mesmo assim, por favor", roteiro(recusa, recusa).modelo);
+    expect(semPedido).toMatchObject({ handoff: false, reply: "Não podemos contar só 4 pessoas." });
+    await turno("somos 6, mas 2 são bebês, conte só 4", roteiro(explica).modelo);
+    const comPedido = await turno("abra uma exceção e cota para 4 mesmo assim", roteiro(recusa, recusa).modelo);
+    expect(comPedido.handoff).toBe(true);
+    expect(comPedido.reply).toBe("Não podemos contar só 4 pessoas.\n\nA regra continua valendo e eu não abro exceção. Uma pessoa da equipe vai continuar o seu atendimento.");
   });
 
   it("\"exceção ou insistência\" na primeira menção da regra não passa: é conflito (inv-08)", async () => {

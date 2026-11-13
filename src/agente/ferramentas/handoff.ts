@@ -153,6 +153,21 @@ function jaExplicou(motivos: string[], historico: Mensagem[]): boolean {
   return motivos.some((motivo) => usou(motivo, anterior) || (resposta !== undefined && EXPLICACAO[motivo]!.test(resposta.content)));
 }
 
+/** Antes de "exceção": quem abre mão dela ("sem exceção", "não preciso de exceção", "entendi que não tem exceção"). */
+const ABRE_MAO_DA_EXCECAO = /\b(?:sem|without|no|nao\s+(?:quero|preciso|precisa|tem|ha|existe|da\s+para|vai\s+ter)|entendi\s+que\s+nao|tudo\s+bem\s+(?:se\s+)?nao)\b[^.,;!?]{0,20}$/;
+
+/**
+ * Pedido explícito de exceção, sem abrir mão dela, logo depois de a regra ter sido
+ * explicada (L12, L13a). Sinal estreito: "mesmo assim" e "por favor" sozinhos não
+ * contam, porque quem aceitou a regra também diz isso.
+ */
+export function pedeExcecaoDepoisDaRegra(mensagem: string, historico: Mensagem[]): boolean {
+  const limpa = normalizar(mensagem);
+  const achado = PEDE_EXCECAO.exec(limpa);
+  if (!achado || ABRE_MAO_DA_EXCECAO.test(limpa.slice(Math.max(0, achado.index - 40), achado.index))) return false;
+  return jaExplicou(REGRAS, historico);
+}
+
 /**
  * Decide se a conversa passa. Motivo fora da lista passa: o modelo chamou a ferramenta
  * de passar, e perder um handoff devido custa mais que passar um a mais.

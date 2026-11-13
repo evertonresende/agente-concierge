@@ -3,7 +3,7 @@
 // mensagem comum de cotação e de lead. O sinal fraco (sugereNegociacao) só alerta e pede
 // correção ao modelo, e também não pode disparar em mensagem comum.
 import { describe, expect, it } from "vitest";
-import { decidirHandoff, pedeAbatimento, sugereNegociacao } from "../src/agente/ferramentas/handoff";
+import { decidirHandoff, pedeAbatimento, pedeExcecaoDepoisDaRegra, sugereNegociacao } from "../src/agente/ferramentas/handoff";
 import type { Mensagem } from "../src/modelo";
 import { chamar, diz, roteiro } from "./apoio";
 import { conversa } from "./apoio-g";
@@ -117,5 +117,25 @@ describe("insistência pela ferramenta: vale só a explicação do turno anterio
       { role: "assistant", content: "O RIO-402 fica no Rio." },
     ];
     expect(decidirHandoff("conflito_com_regra_do_imovel", "Posso fazer uma festa no RIO-402?", historico)).toBe(false);
+  });
+});
+
+describe("rede de pedido de exceção: explícito, sem abrir mão, logo depois da regra", () => {
+  const explicado: Mensagem[] = [{ role: "user", content: "vou levar meu cachorro" }, { role: "assistant", content: "O GRM-301 não aceita pet." }];
+
+  it.each([
+    ...NEGATIVAS,
+    "Tudo bem, sem exceção então, vou sem o pet.",
+    "Entendi que não tem exceção, deixo o cachorro em casa.",
+    "Ok, não preciso de exceção.",
+    "Fine, no exception needed, I'll leave the dog.",
+    "Por favor, deixa eu levar, prometo que ele não faz bagunça.",
+  ])("não dispara: %s", (mensagem) => {
+    expect(pedeExcecaoDepoisDaRegra(mensagem, explicado)).toBe(false);
+  });
+
+  it.each(["Dá pra abrir uma exceção só dessa vez?", "Can you make an exception for him?", "Abre uma exceção pra mim, por favor."])("dispara: %s", (mensagem) => {
+    expect(pedeExcecaoDepoisDaRegra(mensagem, explicado)).toBe(true);
+    expect(pedeExcecaoDepoisDaRegra(mensagem, [{ role: "user", content: "oi" }, { role: "assistant", content: "O GRM-301 fica em Gramado." }])).toBe(false);
   });
 });
