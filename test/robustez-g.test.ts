@@ -74,7 +74,9 @@ describe("robustez: texto do catálogo é dado, nunca instrução (CA-13)", () =
     expect([...valoresDoCodigo(historico)].sort()).toEqual(["R$ 2.156,00", "R$ 590,00", "R$ 708,00"].concat("R$ 150,00").sort());
     // No turno seguinte o modelo tenta usar o valor do nome: sai.
     const depois = await turno("e a diária?", roteiro(diz("A diária agora é R$ 1,00. Posso ajudar em algo mais?")).modelo);
-    expect(depois.reply).toBe("Posso ajudar em algo mais?");
+    // A frase com o valor sai; como há resumo pendente, o código repete o pedido de confirmação.
+    expect(depois.reply).toBe('Posso ajudar em algo mais?\n\nO seu pedido de reserva do GRM-301 ainda aguarda a sua confirmação. '
+      + 'Posso enviar ao time comercial? Para confirmar, responda "sim".');
     expect(mundo.leads).toEqual([]);
   });
 
@@ -319,6 +321,34 @@ describe("robustez: conferência depois da resposta (CA-05)", () => {
     for (const inteira of ["Fica em R$ 2.156,00", "Entrada: sexta-feira.\nTotal: R$ 2.156,00", "- BMB-202 – Casa Mariscal – 10 pessoas", "Posso ajudar em algo mais?", "Opções:\n1. GRM-301\n2. GRM-302"]) {
       expect(semPontaSolta(inteira)).toBe(inteira);
     }
+  });
+
+  it("textos de código saem no idioma do hóspede; o total continua em reais (L15)", async () => {
+    const { turno } = conversa();
+    const esqueceu = await turno("How much is it for these dates, please?", roteiro(pedeFerramentas(chamar("cotar", ESTADIA)), diz("Here is your quote.")).modelo);
+    expect(esqueceu.reply).toBe("Here is your quote.\n\nTotal for the stay: R$ 2.156,00");
+    const inventou = await turno("And what is the price for one night?", roteiro(diz("It is 500 reais.")).modelo);
+    expect(inventou.reply).toMatch(/^I don't have that amount confirmed/);
+    const falhou = await turno("Can you help me with that, please?", roteiro(new Error("fora do ar"), new Error("fora do ar")).modelo);
+    expect(falhou).toMatchObject({ contingencia: true, handoff: true });
+    expect(falhou.reply).toMatch(/^I had a technical problem/);
+    const portugues = await turno("quanto fica para essas datas?", roteiro(pedeFerramentas(chamar("cotar", ESTADIA)), diz("Segue a cotação.")).modelo);
+    expect(portugues.reply).toBe("Segue a cotação.\n\nTotal da estadia: R$ 2.156,00");
+  });
+
+  it("com resumo pendente, a resposta do modelo termina com o pedido de confirmação do código, fora da conferência", async () => {
+    const { turno, mundo } = conversa();
+    await turno("quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
+    const pergunta = await turno("tem wifi?", roteiro(pedeFerramentas(chamar("ver_imovel", { imovel_id: "GRM-301" })), diz("Sim, tem wifi.")).modelo);
+    expect(pergunta.reply).toBe('Sim, tem wifi.\n\nO seu pedido de reserva do GRM-301 ainda aguarda a sua confirmação. '
+      + 'Posso enviar ao time comercial? Para confirmar, responda "sim".');
+    // O sim seguinte vale, porque a resposta anterior trouxe o pedido.
+    const sim = await turno("sim", roteiro(pedeFerramentas(chamar("confirmar_reserva"))).modelo);
+    expect(sim.reply).toMatch(/registrad/i);
+    expect(mundo.leads).toHaveLength(1);
+    // Sem resumo pendente, nada é acrescentado.
+    const depois = await turno("tem lareira?", roteiro(diz("Sim, tem lareira.")).modelo);
+    expect(depois.reply).toBe("Sim, tem lareira.");
   });
 
   it("nome interno de ferramenta ou de motivo não chega ao hóspede", async () => {

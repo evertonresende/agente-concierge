@@ -1,7 +1,9 @@
 // Loop de ferramentas de um turno: o modelo pede ferramentas, o código executa e
 // devolve o resultado, até sair uma resposta. O loop tem limite de voltas e de tempo, e
 // nunca lança: em qualquer falha devolve a resposta de contingência (contrato L18).
+import { pedidoDeConfirmacaoPendente } from "../lead";
 import type { ChamadaDeFerramenta, Mensagem, Modelo, RespostaDoModelo } from "../modelo";
+import { type Idioma, idiomaDoHospede } from "../nucleo/idioma";
 import { type Argumentos, type Contexto, FERRAMENTAS, type Resultado } from "./ferramentas";
 import { NOME_DO_HANDOFF, pedeAbatimento } from "./ferramentas/handoff";
 import { montarPrompt } from "./prompt";
@@ -73,39 +75,27 @@ export function limpar(texto: string): string {
 /** Texto com um caractere repetido dezenas de vezes: o modelo degenerou, não é resposta. */
 const DEGENERADA = /(.)\1{24,}/s;
 
-type Idioma = "pt" | "en";
-
 /**
  * Textos de código deste arquivo, em português e em inglês (contrato L15). Outro idioma
  * recebe o português.
  */
-const TEXTOS: Record<Idioma, { semValor: string; total: (valor: string) => string }> = {
+const TEXTOS: Record<Idioma, { contingencia: string; semValor: string; total: (valor: string) => string }> = {
   pt: {
+    contingencia: CONTINGENCIA,
     semValor: "Não tenho esse valor confirmado. Para um valor exato, me diga o imóvel e as datas de entrada e de saída.",
     total: (valor) => `Total da estadia: ${valor}`,
   },
   en: {
+    contingencia: "I had a technical problem and couldn't finish helping you right now. I'm passing the conversation to a person "
+      + "on our team, who will continue with you.",
     semValor: "I don't have that amount confirmed. For an exact amount, tell me the property and the check-in and check-out dates.",
     total: (valor) => `Total for the stay: ${valor}`,
   },
 };
 
-/**
- * Ponto único de troca do idioma dos textos de código. O detector é um só e é da frente
- * F (`idiomaDoHospede`, em src/nucleo/idioma.ts); enquanto ele não está na main, vale o
- * português. A contingência (L18) segue em português até lá.
- */
-function idiomaDoTurno(_entrada: EntradaDoTurno): Idioma {
-  return "pt";
-}
-
-/**
- * Gancho da trava de confirmação da frente F: com resumo pendente, a resposta escrita
- * pelo modelo termina com o pedido de confirmação gerado por código. A função da F
- * (`pedidoDeConfirmacaoPendente`, em src/lead.ts) ainda não está na main; até lá, nada.
- */
-function pedidoDeConfirmacao(_contexto: Contexto, _idioma: Idioma): string | undefined {
-  return undefined;
+/** Idioma dos textos de código do turno: o detector único, da frente F, sobre as mensagens do hóspede (L15). */
+function idiomaDoTurno(entrada: EntradaDoTurno): Idioma {
+  return idiomaDoHospede([...entrada.historico.filter((m) => m.role === "user").map((m) => m.content), entrada.mensagem]);
 }
 
 const VALOR_DO_CODIGO = /R\$ \d{1,3}(?:\.\d{3})*,\d{2}/g;
@@ -286,7 +276,9 @@ export async function rodarTurno(entrada: EntradaDoTurno): Promise<SaidaDoTurno>
   /** Resposta escrita pelo modelo, já sem o que não pode chegar ao hóspede. */
   const fechar = (texto: string): SaidaDoTurno => {
     const conferido = comTotais(corrigirValores(semPontaSolta(texto), permitidos(), textos.semValor), totais, textos);
-    const pedido = pedidoDeConfirmacao(contexto, idioma);
+    // Com resumo pendente, a resposta escrita pelo modelo termina com o pedido de
+    // confirmação gerado por código, que não passa pela conferência (trava da frente F).
+    const pedido = pedidoDeConfirmacaoPendente(contexto.cofre, contexto.turno, idioma);
     return terminar(pedido ? `${conferido}\n\n${pedido}` : conferido);
   };
 
@@ -352,7 +344,7 @@ export async function rodarTurno(entrada: EntradaDoTurno): Promise<SaidaDoTurno>
         if (resultado.recusa) totais.length = 0;
         respostaFinal ??= resultado.respostaFinal;
       }
-      if (falhou) return terminar(CONTINGENCIA, true);
+      if (falhou) return terminar(textos.contingencia, true);
       if (respostaFinal !== undefined) return terminar(respostaFinal);
     }
   } catch {
@@ -361,5 +353,5 @@ export async function rodarTurno(entrada: EntradaDoTurno): Promise<SaidaDoTurno>
   // A correção não veio (modelo falhou, prazo ou limite de voltas): vale o rascunho, com
   // o que não pode chegar ao hóspede retirado por código. Nunca vira contingência.
   if (rascunho !== undefined) return fechar(rascunho);
-  return terminar(CONTINGENCIA, true);
+  return terminar(textos.contingencia, true);
 }
