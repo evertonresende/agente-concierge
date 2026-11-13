@@ -53,11 +53,11 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 | D | agente-concierge | Simulador de hóspede hostil | B2 (formato de caso) | média | 2,5 | thread T3 · Gemini 4 Hydrogen | rodando (reprovada pelo verificador; em correção) | `frente-d` |
 | M1 | agente-concierge | Revisão curta do Marco 1 | A | alta | 0,5 | subagentes Opus 5.5 + conselho | concluída (`docs/revisoes/m1.md`; achados com dono) | — |
 | I | agente-concierge | Escolha do modelo por eval | A, B2 | alta | 1 | subagente em worktree · Opus 5.5 | pendente | — |
-| E | agente-concierge | Datas | Marco 1, L1, L1a, L1b, L2 | alta | 1,5 | subagente em worktree · Gemini 4 Hydrogen | pendente | — |
-| F | agente-concierge | Lead robusto | Marco 1, L6, L7, L9, L10, L11, L15 (textos fixos), L20 | alta | 2,5 | thread T3 · Fable 5.2 | pendente | — |
-| G | agente-concierge | Robustez e handoff | Marco 1, L3, L4, L5, L5a, L12, L13a, L15, L16, L16a, L19, L21 | alta | 2,5 | thread T3 · Fable 5.2 | pendente | — |
-| H | agente-concierge | Concorrência endurecida e falha interna | Marco 1, L17, L17a, L18 | alta | 1 | subagente em worktree · Gemini 4 Hydrogen | pendente | — |
-| J | agente-concierge | Página de chat em dois passos: design (canvas) e implementação | passo 1: nada; passo 2: Marco 1 e aprovação do Éverton | baixa | 0,7 + 1 | thread T3 · Fable 5.2 | passo 1 concluído (canvas aprovado pelo Éverton, com dois ajustes); passo 2 espera o Marco 1 | `frente-j` |
+| E | agente-concierge | Datas | Marco 1, L1, L1a, L1b, L2 | alta | 1,5 | subagente em worktree · Gemini 4 Hydrogen | rodando | `frente-e` |
+| F | agente-concierge | Lead robusto | Marco 1, L6, L7, L9, L10, L11, L15 (textos fixos), L20 | alta | 2,5 | thread T3 · Fable 5.2 | rodando | `frente-f` |
+| G | agente-concierge | Robustez e handoff | Marco 1, L3, L4, L5, L5a, L12, L13a, L15, L16, L16a, L19, L21 | alta | 2,5 | thread T3 · Fable 5.2 | rodando | `frente-g` |
+| H | agente-concierge | Concorrência endurecida e falha interna | Marco 1, L17, L17a, L18 | alta | 1 | subagente em worktree · Gemini 4 Hydrogen | pronta (sai quando D ou J terminar: no máximo 5 frentes vivas) | — |
+| J | agente-concierge | Página de chat em dois passos: design (canvas) e implementação | passo 1: nada; passo 2: Marco 1 e aprovação do Éverton | baixa | 0,7 + 1 | thread T3 · Fable 5.2 | passo 1 concluído (canvas aprovado pelo Éverton, com dois ajustes); passo 2 rodando | `frente-j` |
 | M2 | agente-concierge | Revisão de código, segurança e segunda opinião | leva 2 integrada | alta | 1,5 | subagentes Opus 5.5 + conselho | pendente | — |
 | L | agente-concierge | Custo por conversa e monitor diário | leva 2 integrada | média | 1 | subagente em worktree · Gemini 4 Hydrogen | pendente | — |
 | K | agente-concierge | Produção com o envio real desligado | M2 | alta | 1,5 | thread T3 · Opus 5.5 | pendente | — |
@@ -148,6 +148,17 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   Latência do bloco: p95 de 8,1 s. Relatório em `evals/relatorios/`. Critérios 2 a 5
   esperam o passo 2 da B2; o 8 espera a frente K
 
+- 13/11 17h44 · A · encerrada. Último commit: o contexto das ferramentas ganhou a mensagem do
+  turno e a data de hoje em São Paulo, para E e F não dependerem de arquivos de outras
+  frentes · 59b441f, merge f55d1a9 (130 testes)
+- 13/11 17h44 · B2 · correções entregues (D1 a D9, 87 casos, decisões aplicadas); coordenadora
+  reproduziu os três CHECK e provou por fora o `EVAL PARCIAL` com saída 2; verificador
+  relendo um recorte; conjunto dev inteiro rodando contra `dev` para medir a base
+- 13/11 17h44 · **Éverton liberou a leva 2** e os portões seguintes (X2); lacuna nova durante a
+  ausência dele segue a recomendação da coordenação como provisória (X15)
+- 13/11 17h44 · leva 2 despachada da `main` em diante deste commit: E (Gemini, subagente), F e
+  G (Fable, threads), J passo 2 (Fable, thread). H sai quando D ou J terminar
+
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
   (frente J, passo 1).
@@ -183,16 +194,16 @@ mexer na configuração.
 | `src/catalogo.ts` (cliente do catálogo) | A | G | — |
 | `src/agente/loop.ts`, `src/agente/prompt.ts` | A | G | — |
 | `src/agente/ferramentas/catalogo.ts`, `handoff.ts`, `index.ts`, `tipos.ts` | A | G | — |
-| `src/agente/ferramentas/cotacao.ts` | A | E | — |
-| `src/agente/ferramentas/lead.ts`, `src/agente/ferramentas/pedido.ts`, `src/lead.ts` | A | F | — |
-| `src/env.ts` | A | I (portão); depois H | — |
+| `src/agente/ferramentas/cotacao.ts`, `src/agente/ferramentas/pedido.ts` (onde as datas dos argumentos são interpretadas) | A | E | — |
+| `src/agente/ferramentas/lead.ts`, `src/lead.ts` | A | F | — |
+| `src/env.ts` | A | I, que roda junto com a leva 2; outra frente pede à coordenadora | — |
 | `test/apoio.ts` | A | congelado: ninguém altera; apoio novo vai em `test/apoio-<frente>.ts` da própria frente | — |
 | `src/nucleo/dinheiro.ts`, `src/nucleo/preco.ts` | A | — | — |
 | `src/nucleo/datas.ts` | A | E | — |
 | `src/nucleo/telefone.ts` | — | F | — |
 | `src/pagina.ts` | A (mínima) | J (passo 2) | — |
 | `docs/desenhos/pagina-canvas.html` | J (passo 1) | — | — |
-| `test/**` | A | cada frente, só os testes dos seus arquivos | — |
+| `test/**` | A | E: `test/nucleo/datas.test.ts`; F: `test/lead.test.ts`; G: `test/loop.test.ts`, `test/catalogo.test.ts`; H: `test/sessao.test.ts`, `test/chat.test.ts`; I: `test/modelo.test.ts`. Teste novo vai em arquivo novo da frente (`test/<tema>-<letra da frente>.test.ts`). `test/nucleo/preco.test.ts` e `dinheiro.test.ts`: ninguém | — |
 | `falso/**` | B1 | — | — |
 | `evals/rodar.mjs`, `evals/teste-do-runner.mjs`, `evals/lib/**`, `evals/casos/dev/**`, `evals/README.md` | B2 | B2 recebe casos novos de D e de C | — |
 | `evals/simulador/**` (casos fixos para o conjunto dev saem em `evals/simulador/para-dev/<bloco>/`; quem move é B2) | D | D | — |
@@ -205,8 +216,12 @@ mexer na configuração.
 | `docs/exploracoes/**`, `docs/prompts/**`, `docs/revisoes/m1.md`, `docs/revisoes/m2.md`, `docs/conselho/**`, `docs/CONTRATO.md`, `docs/EVALS.md`, `CLAUDE.md`, `AGENTS.md` | coordenadora | coordenadora | coordenadora |
 
 Acoplamento entre E e F: `cotacao.ts` (E) chama `resumir`, de `ferramentas/lead.ts` (F),
-e os dois usam `pedido.ts` (F). F não muda a assinatura do que `cotacao.ts` usa sem
-avisar a coordenadora; E não edita `lead.ts` nem `pedido.ts`.
+e os dois usam `prepararPedido`, de `pedido.ts` (E), que é quem interpreta as datas. F não
+muda a assinatura de `resumir` sem avisar a coordenadora e passa as datas a
+`prepararPedido` como vieram; E não edita `lead.ts` e não muda a assinatura de
+`prepararPedido` sem avisar. O `Contexto` das ferramentas (`tipos.ts`, G) já traz
+`mensagem` (texto do hóspede no turno) e `hoje` (data civil em São Paulo): acréscimo a
+ele é só aditivo e avisado.
 
 As frentes de eval (B1, B2, C, D) **não tocam** `package.json` da raiz, lockfile,
 config de teste nem `wrangler.jsonc`. O harness é Node 24 sem dependências; o webhook

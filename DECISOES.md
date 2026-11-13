@@ -133,6 +133,17 @@ Ditas pelo Éverton ao abrir a sessão coordenadora, salvo onde a linha diz outr
 | X12 | Os commits de documentação da coordenadora chegam à `main` por merge `--no-ff` da branch dela, antes de cada despacho | dito pelo Éverton: as frentes nascem da `main` e precisam nascer com o `AGENTS.md` e as lacunas decididas |
 | X13 | Dita durante a leva 1: a frente J (página de chat) sai do DeepSeek e roda em Claude Fable 5.2, numa thread, em dois passos. Passo 1, em paralelo à leva 1: um canvas de design em `docs/desenhos/pagina-canvas.html`, numa direção só (a do site do Éverton), que ele aprova na própria thread. Passo 2, depois do Marco 1 e da aprovação: implementar o design aprovado em `src/pagina.ts`. Tetos de 40 minutos e de 1 hora; o acabamento segue como primeiro item da linha de corte | o Éverton não disse o motivo; leitura da coordenação: a página é o que aparece na demonstração e no vídeo, e ele quer aprovar o visual antes de gastar tempo de código |
 | X14 | Dita durante a leva 1: na leva 2 e na leva 3, as frentes E, H e L passam do Claude Opus 5.5 para o Gemini 4 Hydrogen. F, G e J ficam no Claude | dito pelo Éverton: o limite semanal de uso do Claude chegou a 79% |
+| X15 | Dita ao liberar a leva 2: nos portões seguintes vale a X2 e a coordenadora segue sozinha. Enquanto o Éverton estiver fora, lacuna nova do contrato não para a frente: vale a recomendação da coordenação, marcada como provisória na tabela abaixo e listada no resumo da leva; ele confirma ou reverte ao voltar. Ligar o envio real e tornar o repositório público continuam esperando a ordem dele | dito pelo Éverton: ele ia ficar fora por um tempo e não queria frente parada |
+
+## Decisões provisórias (aguardam o Éverton)
+
+Tomadas pela coordenação durante a ausência dele, pela X15. Cada uma vale até ele
+confirmar ou reverter.
+
+| ID | Situação | Regra provisória | Motivo | Estado |
+|---|---|---|---|---|
+| P1 | Data sem ano que cai hoje, ou que já passou neste ano | Igual a hoje: é hoje (a L2 aceita entrada hoje). Já passou neste ano: é a do ano seguinte | a decisão 9 diz "próxima ocorrência" e a L2 aceita entrada hoje; a data fica declarada na resposta e o hóspede corrige | provisória |
+| P2 | Dia da semana sem data dito no próprio dia ("sexta" numa sexta) | É a ocorrência da semana seguinte; para hoje existe a palavra "hoje" | "que vem" exclui hoje, e cotar a estadia começando hoje por engano é o erro mais caro; a data fica declarada na resposta | provisória |
 
 ## Decisões de engenharia do planejamento
 
