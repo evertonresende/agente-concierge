@@ -1,0 +1,27 @@
+{
+  // Webhook de leads falso, usado pelo ambiente dev e pelos testes locais.
+  // Deploy: `npx wrangler deploy` dentro de falso/ (sem secret e sem account_id).
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "concierge-webhook-falso",
+  "main": "src/index.js",
+  "compatibility_date": "2026-11-13",
+  // Worker novo no workers.dev devolve 404 (error code 1042) sem esta flag.
+  "compatibility_flags": ["global_fetch_strictly_public"],
+  "observability": {
+    "enabled": true
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "LISTA_DE_LEADS",
+        "class_name": "ListaDeLeads"
+      }
+    ]
+  },
+  "exports": {
+    "ListaDeLeads": {
+      "type": "durable-object",
+      "storage": "sqlite"
+    }
+  }
+}
