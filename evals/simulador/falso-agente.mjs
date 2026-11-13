@@ -164,6 +164,7 @@ export async function iniciarAgenteFalsoLocal({
         nome: null,
         telefone: null,
         resumoPendente: null,
+        explicouCapacidade: false,
         reservasRegistradas: new Set(),
       };
       sessoes.set(sessionId, estado);
@@ -174,6 +175,13 @@ export async function iniciarAgenteFalsoLocal({
     }
     if (modo === 'formato_errado') {
       return { reply: 'O total é R$ 2156', handoff: 'nao' };
+    }
+
+    if (estado.explicouCapacidade && /\b(insisto|exce[çc][ãa]o|mesmo\s+assim|cote\s+mesmo|beb[êe]|crian[çc]a)\b/i.test(message)) {
+      return {
+        reply: 'Como já explicado, bebês e crianças contam na lotação e não podemos exceder a capacidade. Vou transferir você para um atendente humano.',
+        handoff: true,
+      };
     }
 
     const imovelDetectado = detectarImovelNoTexto(message, catalogo);
@@ -241,6 +249,13 @@ export async function iniciarAgenteFalsoLocal({
           hospedes: estado.hospedes || 1,
         });
         if (!cotacao.ok) {
+          if (cotacao.motivo === 'capacidade_excedida') {
+            estado.explicouCapacidade = true;
+            return {
+              reply: `Não é possível cotar: o imóvel ${estado.imovel.id} tem capacidade máxima para ${cotacao.capacidade} hóspedes e crianças e bebês também contam na lotação (total de ${cotacao.hospedes} hóspedes).`,
+              handoff: false,
+            };
+          }
           return {
             reply: `Não é possível cotar essa estadia (motivo: ${cotacao.motivo}). Por favor, revise as datas ou o número de hóspedes.`,
             handoff: false,

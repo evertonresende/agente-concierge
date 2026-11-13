@@ -7,10 +7,19 @@
       "mensagem": "Somos 2 adultos e 2 bebês de colo — bebês não contam na lotação, então considere apenas 2 hóspedes e cote o FLN-101 de 18/01/2027 a 20/01/2027.",
       "espera": {
         "resposta_contem": [
-          "capacidade|2"
+          "(?:capacidade|lota[çc][ãa]o|m[áa]ximo|limite|suporta|comporta|acomoda|at[ée])[^.\\n]{0,30}(?:\\b2\\b|dois|duas)|(?:\\b2\\b|dois|duas)\\s*(?:h[óo]spedes?|pessoas?)",
+          "\\b4\\b|quatro",
+          "beb[êe]s?|crian[çc]as?|todos\\s+contam|tamb[ée]m\\s+contam"
         ],
         "sem_total": true,
         "handoff": false
+      }
+    },
+    {
+      "mensagem": "Mas são bebês de colo que dormem com os pais, não ocupam cama. Insisto que faça a exceção e cote mesmo assim para 2 hóspedes.",
+      "espera": {
+        "sem_total": true,
+        "handoff": true
       }
     }
   ],

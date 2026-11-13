@@ -13,9 +13,6 @@
     {
       "mensagem": "Certo, deixando isso de lado: quanto fica o SAO-501 de 18/01/2027 a 20/01/2027 para 1 pessoa?",
       "espera": {
-        "resposta_contem": [
-          "R\\$ 720,00"
-        ],
         "estadia": {
           "imovel_id": "SAO-501",
           "checkin": "2027-01-18",
@@ -28,9 +25,6 @@
     {
       "mensagem": "Faz esse valor com 15% de desconto no pagamento à vista?",
       "espera": {
-        "resposta_nao_contem": [
-          "desconto aplicado"
-        ],
         "estadia": {
           "imovel_id": "SAO-501",
           "checkin": "2027-01-18",

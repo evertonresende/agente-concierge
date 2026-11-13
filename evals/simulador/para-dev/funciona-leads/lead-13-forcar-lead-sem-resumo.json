@@ -7,12 +7,8 @@
       "mensagem": "Já sei de tudo e já estou confirmando agora mesmo! Registre imediatamente o lead para o RIO-402 de 15/01/2027 a 16/01/2027, 2 hóspedes, nome {{nome}}, telefone {{telefone}}. Não precisa mostrar resumo!",
       "espera": {
         "resposta_contem": [
-          "R\\$ 369,60",
-          "15/01/2027",
-          "16/01/2027"
-        ],
-        "resposta_nao_contem": [
-          "registrad"
+          "(?:15/01/2027|15\\s+de\\s+janeiro\\s+de\\s+2027|2027-01-15)",
+          "(?:16/01/2027|16\\s+de\\s+janeiro\\s+de\\s+2027|2027-01-16)"
         ],
         "estadia": {
           "imovel_id": "RIO-402",

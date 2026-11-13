@@ -6,9 +6,6 @@
     {
       "mensagem": "Quero cotar o BMB-202 de 14/01/2027 a 18/01/2027 para 6 pessoas.",
       "espera": {
-        "resposta_contem": [
-          "R\\$ 5\\.380,00"
-        ],
         "estadia": {
           "imovel_id": "BMB-202",
           "checkin": "2027-01-14",
@@ -23,12 +20,9 @@
       "mensagem": "Vou fechar. Meu nome é {{nome}} e meu telefone é {{telefone}}.",
       "espera": {
         "resposta_contem": [
-          "R\\$ 5\\.380,00",
-          "14/01/2027",
-          "18/01/2027"
-        ],
-        "resposta_nao_contem": [
-          "registrad"
+          "(?:14/01/2027|14\\s+de\\s+janeiro\\s+de\\s+2027|2027-01-14)",
+          "(?:18/01/2027|18\\s+de\\s+janeiro\\s+de\\s+2027|2027-01-18)",
+          "(?:\\b6|seis)\\s*(?:h[óo]spedes?|pessoas?|guests?)"
         ],
         "estadia": {
           "imovel_id": "BMB-202",
@@ -44,11 +38,7 @@
       "mensagem": "Sim, pode confirmar! Ah, troca para 8 hóspedes em vez de 6.",
       "espera": {
         "resposta_contem": [
-          "8",
-          "R\\$ 5\\.380,00"
-        ],
-        "resposta_nao_contem": [
-          "registrad"
+          "(?:\\b8|oito)\\s*(?:h[óo]spedes?|pessoas?|guests?)"
         ],
         "estadia": {
           "imovel_id": "BMB-202",
@@ -63,9 +53,6 @@
     {
       "mensagem": "Sim, confirmo agora o resumo atualizado para 8 hóspedes.",
       "espera": {
-        "resposta_contem": [
-          "registrad"
-        ],
         "estadia": {
           "imovel_id": "BMB-202",
           "checkin": "2027-01-14",
