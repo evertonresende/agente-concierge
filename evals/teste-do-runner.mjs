@@ -445,6 +445,55 @@ function testarJuizPreco() {
   assert.equal(casaEspera(con10.turnos[2].espera, 'Reservation forwarded to our team. Thank you!'), true);
   assert.equal(casaEspera(con10.turnos[2].espera, 'Seu pedido foi enviado para a equipe.'), false);
 
+  const con07 = carregarCasoDev('contrato/con-07-confirmacoes.json');
+  const conj07 = con07.turnos[2].espera_conjunto;
+  const casaConj07 = (r1, r2) => {
+    const textos = [r1, r2];
+    const p1 = conj07.pelo_menos_um_contem.map((p) => new RegExp(p, 'i'));
+    const ex1 = conj07.exatamente_um_contem.map((p) => new RegExp(p, 'i'));
+    const n1 = conj07.nenhum_contem.map((p) => new RegExp(p, 'i'));
+    return (
+      p1.every((r) => textos.some((t) => r.test(t))) &&
+      ex1.every((r) => textos.filter((t) => r.test(t)).length === 1) &&
+      n1.every((r) => textos.every((t) => !r.test(t)))
+    );
+  };
+  const respPrimeiraReal = 'Pronto! Seu pedido de reserva foi registrado e encaminhado ao nosso time comercial.';
+  assert.equal(
+    casaConj07(respPrimeiraReal, 'Já registramos o seu pedido de reserva. Não é necessário confirmar novamente.'),
+    true
+  );
+  assert.equal(
+    casaConj07(respPrimeiraReal, 'Esse pedido (GRM-301) já está registrado com o nosso time comercial. Não enviei de novo.'),
+    true
+  );
+  assert.equal(
+    casaConj07(respPrimeiraReal, 'Seu pedido já foi registrado anteriormente.'),
+    true
+  );
+  assert.equal(casaConj07(respPrimeiraReal, respPrimeiraReal), false);
+  assert.equal(
+    casaConj07(
+      'Já registramos o seu pedido de reserva.',
+      'Já registramos o seu pedido de reserva.'
+    ),
+    false
+  );
+  assert.equal(casaConj07(respPrimeiraReal, 'Vamos registrar o seu pedido em breve.'), false);
+  assert.equal(casaConj07(respPrimeiraReal, 'Seu pedido será registrado pelo time.'), false);
+  assert.equal(casaConj07(respPrimeiraReal, 'Não consegui registrar o seu pedido de reserva.'), false);
+  assert.equal(casaConj07('Não foi registrado.', 'Já registramos o seu pedido.'), false);
+
+  const lead06 = carregarCasoDev('funciona-leads/lead-06-duplo-sim.json');
+  assert.equal(casaEspera(lead06.turnos[1].espera, respPrimeiraReal), true);
+  assert.equal(casaEspera(lead06.turnos[1].espera, 'Vamos registrar depois.'), false);
+  assert.equal(casaEspera(lead06.turnos[1].espera, 'Será registrado.'), false);
+  assert.equal(
+    casaEspera(lead06.turnos[2].espera, 'Já registramos o seu pedido de reserva. Não é necessário confirmar novamente.'),
+    true
+  );
+  assert.equal(casaEspera(lead06.turnos[2].espera, 'Vamos registrar o pedido.'), false);
+
   // Placeholders de data em America/Sao_Paulo
   const refMs = Date.UTC(2026, 10, 13); // sexta 2026-11-13
   assert.equal(resolverPlaceholderData('hoje_iso', refMs), '2026-11-13');
