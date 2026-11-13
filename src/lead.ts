@@ -210,7 +210,8 @@ export type ResultadoConfirmacao =
   | { tipo: "nao_confirmou"; leitura: Exclude<Leitura, "sim">; pendente: Pendente }
   /** O sim não veio logo depois de um resumo ou pedido de confirmação do código: o resumo é mostrado de novo. */
   | { tipo: "reapresentado"; pendente: Pendente }
-  | { tipo: "ja_registrado"; pendente: Pendente }
+  /** `repetido`: o sim veio logo depois do registro ou de outro aviso de "já registrado" (o hóspede repetiu o sim). */
+  | { tipo: "ja_registrado"; pendente: Pendente; repetido: boolean }
   | { tipo: "total_mudou"; pendente: Pendente }
   | { tipo: "recusada"; explicacao: string }
   | { tipo: "registrado"; pendente: Pendente }
@@ -232,10 +233,13 @@ function marcar(cofre: Cofre, chave: string, situacao: SituacaoEnvio): void {
   cofre.salvar({ ...estado, envios: { ...estado.envios, [chave]: situacao } });
 }
 
-function jaMarcada(situacao: SituacaoEnvio, pendente: Pendente): ResultadoConfirmacao {
-  return situacao === "registrado"
-    ? { tipo: "ja_registrado", pendente }
-    : { tipo: "nao_registrado", motivo: "ja_tentado" };
+/** Confirmação de uma reserva que já teve envio: nada é enviado de novo (L7, L11). */
+function jaMarcada(cofre: Cofre, situacao: SituacaoEnvio, pendente: Pendente, turnoAtual: number): ResultadoConfirmacao {
+  if (situacao !== "registrado") return { tipo: "nao_registrado", motivo: "ja_tentado" };
+  // No resumo já registrado, `turno` guarda o turno do registro ou do último aviso de "já registrado".
+  const repetido = turnoAtual <= pendente.turno + 1;
+  if (repetido && turnoAtual > pendente.turno) cofre.salvar({ ...cofre.ler(), pendente: { ...pendente, turno: turnoAtual } });
+  return { tipo: "ja_registrado", pendente, repetido };
 }
 
 /** Uma tentativa de POST: o status e os dados apontados num 422, ou "incerto" se a resposta não chegou. */
@@ -256,7 +260,7 @@ export async function confirmar(cofre: Cofre, turnoAtual: number, mensagem: stri
   if (!pendente) return { tipo: "sem_resumo" };
   const chave = chaveDaReserva(pendente.reserva);
   const anterior = envios[chave];
-  if (reservaFechada(anterior)) return jaMarcada(anterior!, pendente);
+  if (reservaFechada(anterior)) return jaMarcada(cofre, anterior!, pendente, turnoAtual);
   if (turnoAtual <= pendente.turno) return { tipo: "mesmo_turno" };
 
   const leitura = lerConfirmacao(mensagem, pendente);
@@ -300,7 +304,7 @@ export async function confirmar(cofre: Cofre, turnoAtual: number, mensagem: stri
   // então duas confirmações que chegaram juntas não passam as duas.
   const agora = cofre.ler();
   const corrida = agora.envios[chave];
-  if (reservaFechada(corrida)) return jaMarcada(corrida!, pendente);
+  if (reservaFechada(corrida)) return jaMarcada(cofre, corrida!, pendente, turnoAtual);
   if (!agora.pendente || chaveDaReserva(agora.pendente.reserva) !== chave) return { tipo: "sem_resumo" };
   marcar(cofre, chave, "enviando");
 
@@ -313,7 +317,8 @@ export async function confirmar(cofre: Cofre, turnoAtual: number, mensagem: stri
     return { tipo: "nao_registrado", motivo: "incerto" };
   }
   if (resposta.status === 201) {
-    marcar(cofre, chave, "registrado");
+    const estado = cofre.ler();
+    cofre.salvar({ ...estado, pendente: { ...pendente, turno: turnoAtual }, envios: { ...estado.envios, [chave]: "registrado" } });
     return { tipo: "registrado", pendente };
   }
   // Com certeza não registrou: a confirmação foi gasta, mas a reserva não fica bloqueada.

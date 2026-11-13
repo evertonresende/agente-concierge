@@ -118,7 +118,9 @@ export const montarResumo = definir(
   "montar_resumo",
   "Monta o resumo do pedido de reserva e mostra ao hóspede para confirmação. Chame quando o hóspede quer fechar e "
     + "você tem TODOS os dados: imóvel, entrada, saída, número de hóspedes, nome e telefone. Faltou algum, pergunte "
-    + "antes. Chame de novo sempre que qualquer dado mudar depois de um resumo. Esta ferramenta não envia nada.",
+    + "antes. Chame de novo sempre que qualquer dado mudar depois de um resumo. Vale também para outra reserva na "
+    + "mesma conversa: se o hóspede disser que os dados são os mesmos, use o nome e o telefone que ele já informou. "
+    + "Esta ferramenta não envia nada.",
   {
     imovel_id: { type: "string" },
     checkin: { type: "string", description: "Data de entrada, como o hóspede escreveu" },
@@ -219,7 +221,19 @@ export const confirmarReserva = definir(
       case "recusada":
         return { paraOModelo: { recusada: true, motivo: resultado.explicacao, instrucao: "Nada foi enviado. Explique o motivo ao hóspede." } };
       case "ja_registrado":
-        return jaRegistrado(resultado.pendente);
+        // Sim repetido logo depois do registro: aviso fixo. Com outra conversa no meio, o
+        // hóspede pode estar confirmando outra reserva, que ainda não teve resumo.
+        return resultado.repetido
+          ? jaRegistrado(resultado.pendente)
+          : {
+            paraOModelo: {
+              ja_registrado: true,
+              enviado: false,
+              instrucao: "O último resumo desta conversa já foi registrado antes; nada foi enviado agora. Se o hóspede está "
+                + "confirmando OUTRA reserva (outro imóvel, outras datas ou outro número de hóspedes), chame montar_resumo com "
+                + "os dados dela. Senão, diga que o pedido já está registrado e que não foi enviado de novo.",
+            },
+          };
       case "total_mudou":
         return {
           paraOModelo: { total_mudou: true, enviado: false },
