@@ -269,6 +269,25 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   manter o gateway sem provedor de terceiro; gateway próprio para `producao`
 - 13/11 18h59 · Éverton decidiu (X18): a branch da frente I entra por merge normal, com o histórico
   como aconteceu. B2 · seguimento conferido (98 casos, simulador 12 de 12) e levado à `main`
+- 13/11 19h06 · medida intermediária: 98 casos contra `dev` com a `main` até a frente E (sem os
+  passos 2 a 4 da F, sem G e sem H): 83 de 98. contrato 77%, funciona-cotacoes 100%,
+  funciona-leads 80%, funciona-recusas 81%, funciona-respostas 90%, marco1 100%,
+  robustez-handoff 85%, robustez-manipulacao 84%, robustez-nao-inventa 70%. p95 de 10,7 s,
+  máximo de 26,2 s. Relatório em `evals/relatorios/2026-11-13-dev-98-main-ate-frente-e.json`.
+  Reprovados repassados aos donos: F (`con-07`, `lead-06`, `lead-08`, `con-10`) e G (`rec-01`,
+  `rec-10`, `resp-10`, `hand-10`, `hand-11`, `man-07`, `man-13`, `inv-04`, `inv-07`, `inv-08`);
+  `lead-05` fecha com a ligação da G
+- 13/11 19h06 · F e G · a troca de modelo na própria conversa não pegou (o turno seguinte ainda
+  executou em Fable), então as duas foram retomadas em sessão nova, com a nota de estado de cada
+  uma, a lista de achados da revisão de código delas e os pontos da coordenação. Conferido na F:
+  executa em Opus 5.5. As duas rodaram a própria revisão de código (Opus) antes da troca: F sem
+  caminho de lead duplicado nem "registrado" sem `201`, 6 achados na leitura do "sim"; G
+  reprovada como estava, com 2 achados altos (valor liberado por texto livre; resposta corrigida
+  não conferida de novo). Aprovado o quarto parâmetro opcional de `pedidoDeConfirmacaoPendente`
+  (a mensagem do turno), para uma mudança de dado derrubar o resumo pendente (L10)
+- 13/11 19h06 · webhook falso local na porta 8799 passou a ser mantido pela coordenação (processo
+  solto, a partir de `falso/` na worktree da coordenação), porque F e G apontam para ele e o
+  da G caiu com a troca de sessão. Encerrar pelo PID da porta no fim da leva 2
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
