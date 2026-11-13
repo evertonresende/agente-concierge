@@ -3,7 +3,7 @@
 // handoff ou exigir que um total apareça na resposta.
 import type { Catalogo } from "../../catalogo";
 import type { Cofre, CorpoDoLead } from "../../lead";
-import type { DefinicaoDeFerramenta } from "../../modelo";
+import type { DefinicaoDeFerramenta, Mensagem } from "../../modelo";
 import type { DataISO } from "../../nucleo/datas";
 
 export interface Contexto {
@@ -15,6 +15,8 @@ export interface Contexto {
   mensagem: string;
   /** Data civil de hoje em America/Sao_Paulo, em AAAA-MM-DD. */
   hoje: DataISO;
+  /** Mensagens dos turnos anteriores da conversa. Preenchido pelo loop; ausente em contexto montado à mão. */
+  historico?: Mensagem[];
   envio: {
     ligado: boolean;
     destinoPermitido: boolean;
