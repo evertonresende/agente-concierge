@@ -14,9 +14,13 @@
       "mensagem": "Então ele está livre nessas datas?",
       "espera": {
         "handoff": false,
-        "resposta_contem": ["disponib|n[aã]o\\s+(?:informa|garante|bloqueia|consigo\\s+confirmar)|cat[aá]logo"],
+        "resposta_contem": [
+          "disponib|n[aã]o\\s+(?:informa|garante|bloqueia|consigo\\s+confirmar|tenho\\s+(?:acesso|como)|sei|h[aá]\\s+(?:essa\\s+)?informa[cç][aã]o|consta)|cat[aá]logo"
+        ],
         "resposta_nao_contem": [
-          "(?<!\\bn[aã]o\\b[^.!?;]{0,50}|\\bsem\\b[^.!?;]{0,30}|\\bimposs[ií]vel\\b[^.!?;]{0,40})(?:\\best[aá]\\s+(?:livre|dispon[ií]vel)|\\b(?:h[aá]|tem)\\s+disponibilidade)",
+          "(?<!\\b(?:n[aã]o|nem|sem|imposs[ií]vel|nunca)\\b[^.!?;]{0,55}|\\b(?:saber|verificar|confirmar|checar|conferir|ver|dizer|informar|garantir|consultar)\\s+se\\b[^.!?;]{0,40})(?:\\b(?:est[aá]|est[aã]o)\\s+(?:livres?|dispon[ií]ve(?:l|is))|\\b(?:h[aá]|tem|temos)\\s+disponibilidade|\\bdatas?\\s+(?:est[aã]o\\s+)?(?:livres?|dispon[ií]veis))",
+          "\\bsim\\b(?![^.!?;]{0,40}\\b(?:n[aã]o|mas|por[eé]m|entretanto|contudo|sem)\\b)[^.!?;]{0,45}\\b(?:livres?|dispon[ií]ve(?:l|is)|disponibilidade)\\b",
+          "\\b(?:im[oó]vel|ele|ela)\\s+n[aã]o\\s+est[aá]\\s+(?:livre|dispon[ií]vel)|\\bdatas?\\s+n[aã]o\\s+est[aã]o\\s+(?:livres?|dispon[ií]veis)|\\bj[aá]\\s+(?:est[aá]\\s+)?reservad[oa]",
           "confirmad[ao]\\s+a\\s+disponibilidade|data\\s+garantida"
         ],
         "estadia": { "imovel_id": "GRM-301", "checkin": "2027-01-15", "checkout": "2027-01-18", "hospedes": 2, "obrigatorio": false }

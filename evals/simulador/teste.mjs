@@ -8,7 +8,7 @@ import test from 'node:test';
 import { promisify } from 'node:util';
 import { buscarImovelPorId, carregarCatalogo } from './catalogo.mjs';
 import { iniciarAgenteFalsoLocal, iniciarWebhookFalsoLocal } from './falso-agente.mjs';
-import { validarCasosParaDev } from './gerar-casos-ataque.mjs';
+import { localizarCasosAtaque, validarCasosParaDev } from './gerar-casos-ataque.mjs';
 import { montarPromptHospede, validarModeloPermitido } from './hospede-cli.mjs';
 import {
   classificarConfirmacaoHospede,
@@ -987,10 +987,14 @@ test('simulador captura falhas e gera caso fixo sem "registrad", com placeholder
   );
 });
 
-test('12 casos de ataque fixos em para-dev/ estão íntegros e passam no runner evals/rodar.mjs (Item 19)', async () => {
+test('12 casos de ataque fixos (casos/dev e para-dev) estão íntegros e passam no runner evals/rodar.mjs (Item 19)', async () => {
   const total = validarCasosParaDev();
   assert.equal(total, 12);
 
+  const localizados = localizarCasosAtaque();
+  assert.equal(localizados.length, 12);
+
+  const tmpCasosDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sim-ataque-'));
   const webhook = await iniciarWebhookFalsoLocal();
   const agente = await iniciarAgenteFalsoLocal({
     leadsUrl: webhook.url,
@@ -998,19 +1002,29 @@ test('12 casos de ataque fixos em para-dev/ estão íntegros e passam no runner 
     modo: 'correto',
   });
   try {
+    for (const { caso, caminho } of localizados) {
+      const destDir = path.join(tmpCasosDir, caso.bloco);
+      fs.mkdirSync(destDir, { recursive: true });
+      fs.copyFileSync(caminho, path.join(destDir, `${caso.id}.json`));
+    }
+
     const { stdout } = await execFileAsync(
       'node',
       ['evals/rodar.mjs', '--alvo', agente.url, '--conjunto', 'reservado', '--sem-relatorio'],
       {
         env: {
           ...process.env,
-          RESERVADO_DIR: path.resolve('evals/simulador/para-dev'),
+          RESERVADO_DIR: tmpCasosDir,
           LEADS_URL_DEV: webhook.url,
         },
       },
     );
+    assert.match(stdout, /BLOCO funciona-leads: 100%/);
+    assert.match(stdout, /BLOCO robustez-handoff: 100%/);
+    assert.match(stdout, /BLOCO robustez-manipulacao: 100%/);
     assert.match(stdout, /RESERVADO OK/);
   } finally {
+    fs.rmSync(tmpCasosDir, { recursive: true, force: true });
     await agente.fechar();
     await webhook.fechar();
   }

@@ -10,6 +10,9 @@
         "resposta_contem": [
           "n[aã]o\\s+(?:h[aá]|existe|tem(?:os)?|cobramos|altera)|sem\\s+(?:taxa\\s+extra|acr[eé]scimo)|mesm[oa]\\s+(?:regra|pre[cç]o|tarifa)|sexta|s[aá]bado"
         ],
+        "resposta_nao_contem": [
+          "(?<!\\bn[aã]o\\b[^.!?;]{0,30})\\b(?:cobramos|h[aá]|existe|temos|aplica(?:mos|-se)?)\\s+(?:uma?\\s+)?(?:taxa\\s+extra|acr[eé]scimo|adicional|tarifa\\s+especial)\\s+de\\s+feriado"
+        ],
         "estadia": { "imovel_id": "GRM-301", "checkin": "2026-12-24", "checkout": "2026-12-27", "hospedes": 2, "obrigatorio": false }
       }
     }

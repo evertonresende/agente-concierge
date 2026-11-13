@@ -266,10 +266,72 @@ export function calcularEstadia({ imovel_id, checkin, checkout, hospedes }) {
   };
 }
 
+const REGEX_TERMO_COMPONENTE =
+  /\b(?:di[aá]rias?|noites?|hospedagem|sub-?total|limpeza|taxa(?:\s+de\s+limpeza)?|fim\s+de\s+semana|fds|(?:\d+|uma?)\s+norma(?:l|is)|sexta(?:-feira)?|s[aá]bado|domingo|segunda(?:-feira)?|ter[cç]a(?:-feira)?|quarta(?:-feira)?|quinta(?:-feira)?|dias?\s+[uú]te(?:l|is)|semana|unit[aá]ri[oa]|por\s+noite|cada\s+noite|daily|night(?:s)?|rate(?:s)?|weekend|weekday(?:s)?|cleaning|fee)\b/i;
+
+function temPrefixoR$(texto, indice) {
+  const antes = texto.slice(Math.max(0, indice - 10), indice);
+  return /R\$\s*$/i.test(antes);
+}
+
+/**
+ * Detecta valores monetários escritos sem o prefixo obrigatório "R$"
+ * (ex.: "1.900 reais", "1900,00", "faço por 1.900").
+ */
+export function verificarValoresSemR$(texto) {
+  const erros = [];
+  const avisados = new Set();
+  const registrar = (indice, trecho) => {
+    const chave = `${indice}:${trecho}`;
+    if (avisados.has(chave)) return;
+    avisados.add(chave);
+    erros.push(`Valor monetário sem prefixo "R$": "${trecho.trim()}"`);
+  };
+
+  // 1) Número seguido de palavra monetária explícita ("1.900 reais", "500 BRL")
+  const reMoedaPalavra = /\b\d+(?:[.,]\d+)*\s+(?:reais|real|brl)\b/gi;
+  let m;
+  while ((m = reMoedaPalavra.exec(texto)) !== null) {
+    if (!temPrefixoR$(texto, m.index)) {
+      registrar(m.index, m[0]);
+    }
+  }
+
+  // 2) Valor com duas casas decimais separado por vírgula sem "R$" (ex.: "1.900,00", "590,00")
+  const reDecimalSemR = /(?<!\d[.,])\b(?:\d{1,3}(?:\.\d{3})+|\d+),\d{2}\b(?!\d)/g;
+  while ((m = reDecimalSemR.exec(texto)) !== null) {
+    if (temPrefixoR$(texto, m.index)) continue;
+    const charAntes = m.index > 0 ? texto[m.index - 1] : '';
+    if (charAntes === '/' || charAntes === ':' || charAntes === '-') continue;
+    const depois = texto.slice(m.index + m[0].length);
+    if (
+      /^\s*(?:%|reais\b|real\b|brl\b|km\b|metros?\b|m[²2]?\b|pessoas?\b|h[oó]spedes?\b|noites?\b|dias?\b|horas?\b|h\b|min(?:utos?)?\b|segundos?\b|caracteres?\b|kg\b|g\b|l\b|litros?\b)/i.test(
+        depois
+      )
+    ) {
+      continue;
+    }
+    registrar(m.index, m[0]);
+  }
+
+  // 3) Contexto monetário seguido de número inteiro/milhar sem "R$" (ex.: "faço por 1.900", "total de 1900")
+  const reContextoSemR =
+    /\b(?:valor(?:\s+total)?|total(?:\s+(?:geral|final|da\s+estadia|das?\s+di[aá]rias?))?|pre[cç]o|di[aá]ria|taxa(?:\s+de\s+limpeza)?|limpeza|sub-?total|fa[cç]o|fecho|fechamos|cobr(?:o|amos)|custa(?:m)?|or[cç]amento|desconto|(?:sai|fica(?:r[aá])?))\s+(?:de\s+|em\s+|por\s+|é\s+|seria\s+|fica(?:\s+em|\s+por)?\s+|cerca\s+de\s+|aproximadamente\s+|[:=]\s*)*(\d{1,3}(?:\.\d{3})+|\d{2,})(?![.,:/-]\d)(?!\s*(?:%|por\s+cento\b|reais\b|real\b|brl\b|pessoas?\b|h[oó]spedes?\b|noites?\b|dias?\b|quartos?\b|banheiros?\b|vagas?\b|im[oó]ve(?:l|is)\b|op[cç](?:[aã]o|[oõ]es)\b|cidades?\b|anos?\b|mes(?:es)?\b|metros?\b|km\b|m[²2]?\b|horas?\b|h\b|min(?:utos?)?\b|segundos?\b|caracteres?\b|letras?\b|palavras?\b|vezes?\b|x\b|de\s+(?:janeiro|fevereiro|mar[cç]o|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)\b))/gi;
+  while ((m = reContextoSemR.exec(texto)) !== null) {
+    const idxNum = m.index + m[0].lastIndexOf(m[1]);
+    if (temPrefixoR$(texto, idxNum)) continue;
+    const prefixoEntre = texto.slice(m.index, idxNum);
+    if (/\b(?:para|entre)\b/i.test(prefixoEntre)) continue;
+    registrar(idxNum, m[1]);
+  }
+
+  return erros;
+}
+
 /**
  * Verifica todas as ocorrências de "R$ ..." na resposta quanto ao formato estrito
  * do contrato (§2 e con-05): "R$ d.ddd,dd" (ponto de milhar obrigatório >= 1000,
- * espaço após R$, vírgula e duas casas decimais).
+ * espaço após R$, vírgula e duas casas decimais), além de acusar valores monetários sem "R$".
  */
 export function verificarFormatoMoeda(texto) {
   const erros = [];
@@ -284,6 +346,8 @@ export function verificarFormatoMoeda(texto) {
       erros.push(`Formato monetário inválido: "${bruto}" (esperado "R$ d.ddd,dd")`);
     }
   }
+
+  erros.push(...verificarValoresSemR$(texto));
   return erros;
 }
 
@@ -297,29 +361,94 @@ export function extrairValoresCentavos(texto) {
   while ((m = regexEstrito.exec(texto)) !== null) {
     const centavos = parseValorBrlParaCentavos(m[1]);
     if (centavos !== null) {
-      valores.push({ texto: m[0], centavos });
+      valores.push({ texto: m[0], centavos, indice: m.index });
     }
   }
   return valores;
+}
+
+function extrairClausulaAoRedor(texto, indice, tamanho) {
+  let ini = indice;
+  while (ini > 0) {
+    const ch = texto[ini - 1];
+    if (ch === '\n' || ch === ';' || ch === '!' || ch === '?') break;
+    if (ch === '.' && !(/\d/.test(texto[ini - 2] || '') && /\d/.test(texto[ini] || ''))) break;
+    if (ch === ',' && !/\d{2}/.test(texto.slice(ini, ini + 2))) break;
+    ini--;
+  }
+
+  let fim = indice + tamanho;
+  while (fim < texto.length) {
+    const ch = texto[fim];
+    if (ch === '\n' || ch === ';' || ch === '!' || ch === '?') break;
+    if (ch === '.' && !(/\d/.test(texto[fim - 1] || '') && /\d/.test(texto[fim + 1] || ''))) break;
+    if (ch === ',' && !/\d{2}/.test(texto.slice(fim + 1, fim + 3))) break;
+    fim++;
+  }
+
+  return {
+    antes: texto.slice(ini, indice),
+    depois: texto.slice(indice + tamanho, fim),
+  };
+}
+
+function subtotalNomeadoComoComponente(texto, valorObj) {
+  const { antes, depois } = extrairClausulaAoRedor(texto, valorObj.indice, valorObj.texto.length);
+
+  // Isola o trecho desde a ocorrência anterior de "R$ ..." (se houver) nesta cláusula
+  const reAnterior = /R\$\s*(?:[1-9]\d{0,2}(?:\.\d{3})*|0),\d{2}/g;
+  let fimAnterior = 0;
+  let mAnt;
+  while ((mAnt = reAnterior.exec(antes)) !== null) {
+    fimAnterior = mAnt.index + mAnt[0].length;
+  }
+  const antesSemValorAnterior = antes.slice(fimAnterior);
+
+  const idxParen = antesSemValorAnterior.lastIndexOf('(');
+  const trechoAposParen = idxParen >= 0 ? antesSemValorAnterior.slice(idxParen + 1) : antesSemValorAnterior;
+  const prefixoOferta =
+    idxParen >= 0 && trechoAposParen.trim() === ''
+      ? antesSemValorAnterior.slice(0, idxParen)
+      : trechoAposParen;
+
+  // Não aceita subtotal disfarçado de desconto/oferta ou de total geral da estadia
+  if (/(?:fa[cç]o|fecho|fechamos|sai)\s+por|desconto\s+(?:de|para)|com\s+desconto/i.test(prefixoOferta)) {
+    return false;
+  }
+  if (/(?<!\bsub)\btotal\b(?!\s+(?:das?|de)\s+(?:di[aá]rias?|noites?|hospedagem))/i.test(prefixoOferta)) {
+    return false;
+  }
+
+  const mProx = /R\$\s*(?:[1-9]\d{0,2}(?:\.\d{3})*|0),\d{2}/.exec(depois);
+  const depoisAteProx = mProx ? depois.slice(0, mProx.index) : depois;
+
+  const trechoContextoAntes =
+    idxParen >= 0 && !REGEX_TERMO_COMPONENTE.test(trechoAposParen)
+      ? antesSemValorAnterior
+      : trechoAposParen;
+
+  return REGEX_TERMO_COMPONENTE.test(`${trechoContextoAntes} ${depoisAteProx}`);
 }
 
 /**
  * Juiz determinístico de preço para uma resposta (CA-05):
  * - Confere o total calculado pela regra do contrato §3 em centavos inteiros.
  * - Se obrigatorio=true (padrão), exige que o total calculado apareça formatado na resposta.
- * - Qualquer outro valor em R$ citado na resposta só é aceito se pertencer aos
- *   componentes/subtotais coerentes da estadia ou a `valoresTolerados`.
+ * - Qualquer outro valor em R$ citado na resposta só é aceito se pertencer a `valoresTolerados`
+ *   ou aos componentes/subtotais coerentes da estadia nomeados como componente no texto.
+ * - Acusa valores monetários escritos sem "R$".
  */
 export function julgarPrecoResposta(texto, estadiasInput, opcoes = {}) {
   const lista = Array.isArray(estadiasInput) ? estadiasInput : [estadiasInput];
   const erros = [];
-  const permitidos = new Set();
+  const totaisOuTolerados = new Set();
+  const componentesPermitidos = new Set();
 
   const valoresTolerados = Array.isArray(opcoes.valoresTolerados) ? opcoes.valoresTolerados : [];
   for (const vt of valoresTolerados) {
     const cent = parseValorToleradoCentavos(vt);
     if (cent !== null) {
-      permitidos.add(cent);
+      totaisOuTolerados.add(cent);
     }
   }
 
@@ -337,19 +466,19 @@ export function julgarPrecoResposta(texto, estadiasInput, opcoes = {}) {
       );
     }
 
-    permitidos.add(calc.totalCentavos);
-    permitidos.add(calc.diariaCentavos);
-    permitidos.add(calc.diariaFdsCentavos);
-    permitidos.add(calc.subtotalNormaisCentavos);
-    permitidos.add(calc.subtotalFdsCentavos);
-    permitidos.add(calc.subtotalNoitesCentavos);
-    permitidos.add(calc.taxaLimpezaCentavos);
+    totaisOuTolerados.add(calc.totalCentavos);
+    componentesPermitidos.add(calc.diariaCentavos);
+    componentesPermitidos.add(calc.diariaFdsCentavos);
+    componentesPermitidos.add(calc.subtotalNormaisCentavos);
+    componentesPermitidos.add(calc.subtotalFdsCentavos);
+    componentesPermitidos.add(calc.subtotalNoitesCentavos);
+    componentesPermitidos.add(calc.taxaLimpezaCentavos);
 
     if (calc.noites <= 31) {
       for (let k = 0; k <= calc.noitesNormais; k++) {
         for (let m = 0; m <= calc.noitesFds; m++) {
           if (k + m > 0) {
-            permitidos.add(k * calc.diariaCentavos + m * calc.diariaFdsCentavos);
+            componentesPermitidos.add(k * calc.diariaCentavos + m * calc.diariaFdsCentavos);
           }
         }
       }
@@ -358,29 +487,37 @@ export function julgarPrecoResposta(texto, estadiasInput, opcoes = {}) {
 
   const encontrados = extrairValoresCentavos(texto);
   for (const v of encontrados) {
-    if (!permitidos.has(v.centavos)) {
-      erros.push(`Valor citado "${v.texto}" não bate com o cálculo determinístico da estadia`);
+    if (totaisOuTolerados.has(v.centavos)) continue;
+    if (componentesPermitidos.has(v.centavos)) {
+      if (!subtotalNomeadoComoComponente(texto, v)) {
+        erros.push(`Valor "${v.texto}" aparece sem rótulo de componente (diária/taxa)`);
+      }
+      continue;
     }
+    erros.push(`Valor citado "${v.texto}" não bate com o cálculo determinístico da estadia`);
   }
 
+  erros.push(...verificarValoresSemR$(texto));
   return erros;
 }
 
 /**
  * Verifica `sem_total` (CA-06):
  * - Sem `imovelId`: qualquer valor em R$ (salvo `valoresTolerados`) é proibido.
- * - Com `imovelId`: tolera a diária, diária de fds e taxa de limpeza daquele imóvel,
- *   proibindo qualquer outro valor (como um total calculado).
+ * - Com `imovelId`: tolera a diária, diária de fds e taxa de limpeza daquele imóvel
+ *   quando nomeados como componente, proibindo qualquer outro valor (como um total calculado).
+ * - Também acusa valores monetários sem "R$".
  */
 export function julgarSemTotal(texto, imovelId = null, valoresTolerados = []) {
   const erros = [];
-  const permitidos = new Set();
+  const tolerados = new Set();
+  const componentes = new Set();
 
   if (Array.isArray(valoresTolerados)) {
     for (const vt of valoresTolerados) {
       const cent = parseValorToleradoCentavos(vt);
       if (cent !== null) {
-        permitidos.add(cent);
+        tolerados.add(cent);
       }
     }
   }
@@ -391,21 +528,27 @@ export function julgarSemTotal(texto, imovelId = null, valoresTolerados = []) {
       erros.push(`Imóvel desconhecido em sem_total: ${imovelId}`);
       return erros;
     }
-    permitidos.add(tarifa.diaria_centavos);
-    permitidos.add(Math.trunc((120 * tarifa.diaria_centavos + 50) / 100));
-    permitidos.add(tarifa.taxa_limpeza_centavos);
+    componentes.add(tarifa.diaria_centavos);
+    componentes.add(Math.trunc((120 * tarifa.diaria_centavos + 50) / 100));
+    componentes.add(tarifa.taxa_limpeza_centavos);
   }
 
   const valores = extrairValoresCentavos(texto);
   for (const v of valores) {
-    if (!permitidos.has(v.centavos)) {
-      erros.push(`não deveria citar valor total em R$ (${v.texto})`);
+    if (tolerados.has(v.centavos)) continue;
+    if (componentes.has(v.centavos)) {
+      if (!subtotalNomeadoComoComponente(texto, v)) {
+        erros.push(`não deveria citar valor em R$ sem rótulo de componente (${v.texto})`);
+      }
+      continue;
     }
+    erros.push(`não deveria citar valor total em R$ (${v.texto})`);
   }
 
   if (valores.length === 0 && /R\$\s*\d/i.test(texto)) {
     erros.push('não deveria citar valor total em R$');
   }
 
+  erros.push(...verificarValoresSemR$(texto));
   return erros;
 }
