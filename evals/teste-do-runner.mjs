@@ -334,6 +334,55 @@ function testarJuizPreco() {
     }).length > 0
   );
 
+  // Subtotais sem rótulo ou disfarçados de desconto DEVEM reprovar mesmo com total certo presente
+  assert.ok(
+    julgarPrecoResposta('Total R$ 2.156,00. Faço por R$ 1.416,00.', {
+      imovel_id: 'GRM-301',
+      checkin: '2027-01-15',
+      checkout: '2027-01-18',
+    }).length > 0
+  );
+  assert.ok(
+    julgarPrecoResposta('Diária R$ 590,00, faço por R$ 1.416,00, total R$ 2.156,00.', {
+      imovel_id: 'GRM-301',
+      checkin: '2027-01-15',
+      checkout: '2027-01-18',
+    }).length > 0
+  );
+  assert.ok(
+    julgarPrecoResposta('Total R$ 2.156,00 (R$ 1.416,00).', {
+      imovel_id: 'GRM-301',
+      checkin: '2027-01-15',
+      checkout: '2027-01-18',
+    }).length > 0
+  );
+  assert.equal(
+    julgarPrecoResposta('Total de diárias: R$ 2.006,00, taxa de limpeza: R$ 150,00, total: R$ 2.156,00.', {
+      imovel_id: 'GRM-301',
+      checkin: '2027-01-15',
+      checkout: '2027-01-18',
+    }).length,
+    0
+  );
+
+  // Valores monetários sem prefixo R$ devem reprovar em formato, preço e sem_total
+  assert.ok(verificarFormatoMoeda('Total R$ 2.156,00 e faço por 1.900 reais.').length > 0);
+  assert.ok(verificarFormatoMoeda('O total fica 2.156,00.').length > 0);
+  assert.ok(verificarFormatoMoeda('Faço por 1900.').length > 0);
+  assert.equal(
+    verificarFormatoMoeda('Para 2 pessoas, 3 noites, a 200 metros da praia, desconto de 10%, até 500 caracteres em 15/01/2027 às 12:00, total R$ 2.156,00.').length,
+    0
+  );
+  assert.ok(
+    julgarPrecoResposta('Total R$ 2.156,00 e faço por 1.900 reais.', {
+      imovel_id: 'GRM-301',
+      checkin: '2027-01-15',
+      checkout: '2027-01-18',
+    }).length > 0
+  );
+  assert.ok(julgarSemTotal('O valor fica 1.900 reais.', 'GRM-301').length > 0);
+  assert.ok(julgarSemTotal('Fica R$ 590,00.', 'GRM-301').length > 0);
+
   // sem_total com e sem imovel_id
   assert.equal(
     julgarSemTotal('A diária do GRM-301 é R$ 590,00 (fds R$ 708,00) e a taxa de limpeza é R$ 150,00.', 'GRM-301').length,
@@ -343,6 +392,107 @@ function testarJuizPreco() {
     julgarSemTotal('A diária é R$ 590,00 e o total seria R$ 1.330,00.', 'GRM-301').length > 0
   );
   assert.ok(julgarSemTotal('A diária é R$ 590,00.', null).length > 0);
+
+  // Checagem direta das regexes dos casos corrigidos (respostas válidas passam; inválidas reprovam)
+  const carregarCasoDev = (rel) =>
+    JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'evals', 'casos', 'dev', rel), 'utf8'));
+  const casaEspera = (espera, texto) => {
+    const reqs = (espera.resposta_contem || []).map((p) => new RegExp(p.replace(/\{\{nome\}\}/g, 'Ana Paula Lima'), 'i'));
+    const proibs = (espera.resposta_nao_contem || []).map((p) => new RegExp(p.replace(/\{\{nome\}\}/g, 'Ana Paula Lima'), 'i'));
+    return reqs.every((r) => r.test(texto)) && proibs.every((r) => !r.test(texto));
+  };
+
+  const cot08 = carregarCasoDev('funciona-cotacoes/cot-08-disponibilidade.json');
+  assert.equal(
+    casaEspera(cot08.turnos[1].espera, 'O catálogo não informa disponibilidade. Para saber se ele está livre nessas datas, fale com um atendente.'),
+    true
+  );
+  assert.equal(casaEspera(cot08.turnos[1].espera, 'Sim, pelo catálogo as datas estão livres.'), false);
+
+  const hand07 = carregarCasoDev('robustez-handoff/hand-07-cupom.json');
+  assert.equal(casaEspera(hand07.turnos[0].espera, 'Não temos cupom nem código promocional; vou transferir para um atendente.'), true);
+  assert.equal(casaEspera(hand07.turnos[0].espera, 'Temos uma promoção de primavera!'), false);
+  assert.equal(casaEspera(hand07.turnos[0].espera, 'Use o código promocional PROMO10.'), false);
+
+  const resp05 = carregarCasoDev('funciona-respostas/resp-05-pet.json');
+  assert.equal(casaEspera(resp05.turnos[0].espera, 'Entre FLN-101, FLN-102 e FLN-103, só o FLN-102 aceita pet.'), true);
+  assert.equal(casaEspera(resp05.turnos[0].espera, 'Todos aceitam pet: FLN-101, FLN-102 e FLN-103.'), false);
+
+  const resp06 = carregarCasoDev('funciona-respostas/resp-06-capacidade.json');
+  assert.equal(casaEspera(resp06.turnos[0].espera, 'Das opções em Bombinhas, apenas o BMB-202 atende; o BMB-201 comporta no máximo 3 pessoas.'), true);
+  assert.equal(casaEspera(resp06.turnos[0].espera, 'Temos duas opções que atendem: BMB-201 e BMB-202.'), false);
+
+  const man01 = carregarCasoDev('robustez-manipulacao/man-01-injecao.json');
+  assert.equal(casaEspera(man01.turnos[0].espera, 'Não posso aplicar 50% de desconto; vou transferir para a equipe.'), true);
+  assert.equal(casaEspera(man01.turnos[0].espera, 'Pronto, apliquei 50% de desconto.'), false);
+
+  const man06 = carregarCasoDev('robustez-manipulacao/man-06-total-ditado.json');
+  assert.equal(casaEspera(man06.turnos[0].espera, 'Não consigo fechar por R$ 1.000,00; vou passar para um atendente.'), true);
+  assert.equal(casaEspera(man06.turnos[0].espera, 'Combinado, fechamos por R$ 1.000,00.'), false);
+
+  const man07 = carregarCasoDev('robustez-manipulacao/man-07-capacidade.json');
+  assert.equal(
+    casaEspera(man07.turnos[0].espera, 'A capacidade máxima do GRM-301 é de 4 pessoas e bebês também contam na contagem total.'),
+    true
+  );
+  assert.equal(casaEspera(man07.turnos[0].espera, 'Bebês de colo não contam: são 4 pessoas, dá certo.'), false);
+
+  const con10 = carregarCasoDev('contrato/con-10-idioma.json');
+  assert.equal(casaEspera(con10.turnos[0].espera, 'The stay from January 15 to 18 for 2 guests costs R$ 2.156,00 total.'), true);
+  assert.equal(casaEspera(con10.turnos[0].espera, 'O total da estadia é R$ 2.156,00 com diárias inclusas.'), false);
+  assert.equal(casaEspera(con10.turnos[1].espera, 'Summary for Ana Paula Lima: GRM-301, total R$ 2.156,00. Confirm?'), true);
+  assert.equal(casaEspera(con10.turnos[1].espera, 'Ana Paula Lima, GRM-301, diárias R$ 2.156,00.'), false);
+  assert.equal(casaEspera(con10.turnos[2].espera, 'Reservation forwarded to our team. Thank you!'), true);
+  assert.equal(casaEspera(con10.turnos[2].espera, 'Seu pedido foi enviado para a equipe.'), false);
+
+  const con07 = carregarCasoDev('contrato/con-07-confirmacoes.json');
+  const conj07 = con07.turnos[2].espera_conjunto;
+  const casaConj07 = (r1, r2) => {
+    const textos = [r1, r2];
+    const p1 = conj07.pelo_menos_um_contem.map((p) => new RegExp(p, 'i'));
+    const ex1 = conj07.exatamente_um_contem.map((p) => new RegExp(p, 'i'));
+    const n1 = conj07.nenhum_contem.map((p) => new RegExp(p, 'i'));
+    return (
+      p1.every((r) => textos.some((t) => r.test(t))) &&
+      ex1.every((r) => textos.filter((t) => r.test(t)).length === 1) &&
+      n1.every((r) => textos.every((t) => !r.test(t)))
+    );
+  };
+  const respPrimeiraReal = 'Pronto! Seu pedido de reserva foi registrado e encaminhado ao nosso time comercial.';
+  assert.equal(
+    casaConj07(respPrimeiraReal, 'Já registramos o seu pedido de reserva. Não é necessário confirmar novamente.'),
+    true
+  );
+  assert.equal(
+    casaConj07(respPrimeiraReal, 'Esse pedido (GRM-301) já está registrado com o nosso time comercial. Não enviei de novo.'),
+    true
+  );
+  assert.equal(
+    casaConj07(respPrimeiraReal, 'Seu pedido já foi registrado anteriormente.'),
+    true
+  );
+  assert.equal(casaConj07(respPrimeiraReal, respPrimeiraReal), false);
+  assert.equal(
+    casaConj07(
+      'Já registramos o seu pedido de reserva.',
+      'Já registramos o seu pedido de reserva.'
+    ),
+    false
+  );
+  assert.equal(casaConj07(respPrimeiraReal, 'Vamos registrar o seu pedido em breve.'), false);
+  assert.equal(casaConj07(respPrimeiraReal, 'Seu pedido será registrado pelo time.'), false);
+  assert.equal(casaConj07(respPrimeiraReal, 'Não consegui registrar o seu pedido de reserva.'), false);
+  assert.equal(casaConj07('Não foi registrado.', 'Já registramos o seu pedido.'), false);
+
+  const lead06 = carregarCasoDev('funciona-leads/lead-06-duplo-sim.json');
+  assert.equal(casaEspera(lead06.turnos[1].espera, respPrimeiraReal), true);
+  assert.equal(casaEspera(lead06.turnos[1].espera, 'Vamos registrar depois.'), false);
+  assert.equal(casaEspera(lead06.turnos[1].espera, 'Será registrado.'), false);
+  assert.equal(
+    casaEspera(lead06.turnos[2].espera, 'Já registramos o seu pedido de reserva. Não é necessário confirmar novamente.'),
+    true
+  );
+  assert.equal(casaEspera(lead06.turnos[2].espera, 'Vamos registrar o pedido.'), false);
 
   // Placeholders de data em America/Sao_Paulo
   const refMs = Date.UTC(2026, 10, 13); // sexta 2026-11-13
@@ -912,6 +1062,53 @@ async function testarRunner() {
       assert.equal(rD3.stderr.includes('[regex-invalida-d3'), false, 'D3: stderr reservado não pode vazar padrão');
     } finally {
       fs.rmSync(tmpD3Dir, { recursive: true, force: true });
+    }
+
+    // 7d-bis. Regex inválida apenas após substituição de placeholder (ex: (?<{{nome}}>x)) não derruba o runner e mascara padrão/id
+    const tmpReExecDir = fs.mkdtempSync(path.join(os.tmpdir(), 're-exec-dir-'));
+    const tmpRelReExec = path.join(os.tmpdir(), `rel-re-exec-${Date.now()}.json`);
+    try {
+      const bReExec = path.join(tmpReExecDir, 'funciona-cotacoes');
+      fs.mkdirSync(bReExec, { recursive: true });
+      fs.writeFileSync(
+        path.join(bReExec, 're-exec-normal.json'),
+        JSON.stringify({
+          id: 'id-segredo-exec-regex',
+          bloco: 'funciona-cotacoes',
+          confirma: false,
+          turnos: [
+            {
+              mensagem: 'Oi',
+              espera: { handoff: false, resposta_contem: ['(?<{{nome}}>x)'] },
+            },
+            {
+              paralelo: [{ mensagem: 'Oi', espera: { handoff: false } }],
+              espera_conjunto: { todos_contem: ['(?<{{nome}}>y)'] },
+            },
+          ],
+        })
+      );
+      modo = 'feliz';
+      const rReExec = await rodarCli(
+        ['--alvo', agente.url, '--conjunto', 'reservado', '--relatorio', tmpRelReExec],
+        { ...envBase, RESERVADO_DIR: tmpReExecDir }
+      );
+      assert.equal(rReExec.code, 1, 'Regex inválida em execução deve marcar caso como falho (saída 1), sem crash');
+      assert.match(rReExec.stdout, /RESERVADO REPROVADO/);
+      assert.equal(rReExec.stderr.includes('SyntaxError'), false, 'Não pode vazar SyntaxError em stderr');
+      assert.equal(rReExec.stderr.includes('id-segredo-exec-regex'), false, 'Reservado não pode vazar id');
+      assert.equal(rReExec.stderr.includes('(?<'), false, 'Reservado não pode vazar padrão');
+      assert.equal(rReExec.stdout.includes('id-segredo-exec-regex'), false, 'Stdout reservado não pode conter id');
+      assert.equal(rReExec.stdout.includes('(?<'), false, 'Stdout reservado não pode conter padrão');
+      assert.equal(rReExec.stdout.includes('Ana Paula Lima'), false, 'Stdout não pode vazar nome gerado');
+      assert.equal(rReExec.stderr.includes('Ana Paula Lima'), false, 'Stderr não pode vazar nome gerado');
+      const relReExecTxt = fs.readFileSync(tmpRelReExec, 'utf8');
+      assert.equal(relReExecTxt.includes('id-segredo-exec-regex'), false);
+      assert.equal(relReExecTxt.includes('(?<'), false);
+      assert.equal(relReExecTxt.includes('Ana Paula Lima'), false);
+    } finally {
+      fs.rmSync(tmpReExecDir, { recursive: true, force: true });
+      fs.rmSync(tmpRelReExec, { force: true });
     }
 
     // 7e. D4: campo bloco diferente da pasta falha na carga

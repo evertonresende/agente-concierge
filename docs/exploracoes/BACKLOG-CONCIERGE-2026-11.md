@@ -52,8 +52,8 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 | C | agente-concierge | Conjunto reservado (fora do repo) | — | alta | 2 | thread T3 · GPT-6 Astra até 13/11 18h35 | 60 casos entregues fora do repo; conversa no GPT encerrada pela X16. Caso substituto, se for preciso, numa conversa nova em Gemini 4 Hydrogen | `frente-c` (sem commits; casos fora do repo) |
 | D | agente-concierge | Simulador de hóspede hostil | B2 (formato de caso) | média | 2,5 | thread T3 · Gemini 4 Hydrogen | concluída: na `main` (6c090d0), rodada ao vivo com `SIMULADOR OK`; a B2 move os 12 casos fixos | `frente-d` |
 | M1 | agente-concierge | Revisão curta do Marco 1 | A | alta | 0,5 | subagentes Opus 5.5 + conselho | concluída (`docs/revisoes/m1.md`; achados com dono) | — |
-| I | agente-concierge | Escolha do modelo por eval | A, B2 | alta | 1 | subagente em worktree · Opus 5.5, esforço médio desde a X16 | rodando (fase 1; candidato da OpenAI fora do plano) | `t3/` (subagente) |
-| E | agente-concierge | Datas | Marco 1, L1, L1a, L1b, L2 | alta | 1,5 | subagente em worktree · Gemini 4 Hydrogen | entregue (e8c2669, db7d272); seguimento curto da P5 e da P7 antes do merge | `t3/datas-relativas-sao-paulo` |
+| I | agente-concierge | Escolha do modelo por eval | A, B2 | alta | 1 | subagente em worktree · Opus 5.5, esforço médio desde a X16 | fase 1 entregue; fase 2 espera a G na `main` | `t3/` (subagente) |
+| E | agente-concierge | Datas | Marco 1, L1, L1a, L1b, L2 | alta | 1,5 | subagente em worktree · Gemini 4 Hydrogen | concluída: na `main` (81873fa) | `t3/datas-relativas-sao-paulo` |
 | F | agente-concierge | Lead robusto | Marco 1, L6, L7, L9, L10, L11, L15 (textos fixos), L20 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16) | rodando | `frente-f` |
 | G | agente-concierge | Robustez e handoff | Marco 1, L3, L4, L5, L5a, L12, L13a, L15, L16, L16a, L19, L21 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16) | rodando | `frente-g` |
 | H | agente-concierge | Concorrência endurecida e falha interna | Marco 1, L17, L17a, L18 | alta | 1 | subagente em worktree · Gemini 4 Hydrogen | reprovada no CHECK 2 (Worker não sobe no runtime real); em correção | `t3/durable-session-concurrency` |
@@ -244,6 +244,50 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
 - 13/11 18h46 · Éverton ajustou a X16 (X17): candidato GPT liberado na frente I só pelo AI Gateway
   com billing unificado, sem chave e sem compra de crédito. Frente I avisada; aplica depois da
   rodada do GLM-5.3 que está em curso
+- 13/11 18h53 · E · na `main` (merge 81873fa) depois da correção da L8 (1e1f1df): a pergunta sem
+  hóspedes repetida 10 de 10 no servidor local do estado mesclado, `BLOCO funciona-cotacoes:
+  100%`, 341 testes. `dev` publicado da 81873fa. Costura E×F conferida em `dev` com duas
+  conversas até o "sim" ("de sexta a domingo" e "de 15/01 a 18/01"): zero lead antes da
+  confirmação, 1 depois, com `checkin` e `checkout` em ISO e `valor_total` igual ao cotado
+- 13/11 18h53 · latência em `dev`: a primeira rodada do `marco1` logo depois do deploy teve um turno
+  de 22 s (`EVAL REPROVADO` só pelo p95, bloco em 100%); as duas repetições deram p95 de 3,5 s e
+  4,6 s. Fica como dado para a escolha do modelo (frente I) e para o critério de p95
+- 13/11 18h53 · H · corrigiu o defeito de runtime (afd764e) e o teste da P4; o achado crítico do
+  verificador é o próximo item da fila dela. B2 · `con-07` e `lead-06` ajustados (9ea4d1c); falta
+  o teste do simulador
+- 13/11 18h54 · I · fase 1 entregue na branch `t3/modelo-evals-fallback` (8bc3d2a, 6e6e8e4, 4c7f1c7,
+  6c40375; 244 testes, `reserva assume quando o principal falha` passando), sem fixar `MODELO`.
+  Medida preliminar contra o conjunto dev local, 87 conversas por candidato: `gpt-oss-120b` 83%,
+  `marco1` 100%, p95 7,8 s, máximo 31,8 s, zero erro de limite. `deepseek-v4.1-flash` e
+  `glm-5.3` bateram no limite de 20 pedidos por minuto dos modelos pagos (241 e 245 respostas
+  429), então o número deles mede o limite e não o modelo. Nas 10 conversas simultâneas os três
+  responderam 10 de 10. Nenhum lead antecipado ou duplicado. Reserva provado localmente com o
+  principal forçado a falhar. **Candidato GPT pelo AI Gateway com billing unificado: não pôde
+  ser medido, a chamada voltou `402` por falta de crédito no gateway (X17); ninguém mexeu em
+  cobrança.** A fase 2 espera a frente G na `main`. Quatro pontos levados ao Éverton: principal
+  `gpt-oss-120b`; reserva no próprio Workers AI (outro fornecedor, mesma infraestrutura);
+  manter o gateway sem provedor de terceiro; gateway próprio para `producao`
+- 13/11 18h59 · Éverton decidiu (X18): a branch da frente I entra por merge normal, com o histórico
+  como aconteceu. B2 · seguimento conferido (98 casos, simulador 12 de 12) e levado à `main`
+- 13/11 19h06 · medida intermediária: 98 casos contra `dev` com a `main` até a frente E (sem os
+  passos 2 a 4 da F, sem G e sem H): 83 de 98. contrato 77%, funciona-cotacoes 100%,
+  funciona-leads 80%, funciona-recusas 81%, funciona-respostas 90%, marco1 100%,
+  robustez-handoff 85%, robustez-manipulacao 84%, robustez-nao-inventa 70%. p95 de 10,7 s,
+  máximo de 26,2 s. Relatório em `evals/relatorios/2026-11-13-dev-98-main-ate-frente-e.json`.
+  Reprovados repassados aos donos: F (`con-07`, `lead-06`, `lead-08`, `con-10`) e G (`rec-01`,
+  `rec-10`, `resp-10`, `hand-10`, `hand-11`, `man-07`, `man-13`, `inv-04`, `inv-07`, `inv-08`);
+  `lead-05` fecha com a ligação da G
+- 13/11 19h06 · F e G · a troca de modelo na própria conversa não pegou (o turno seguinte ainda
+  executou em Fable), então as duas foram retomadas em sessão nova, com a nota de estado de cada
+  uma, a lista de achados da revisão de código delas e os pontos da coordenação. Conferido na F:
+  executa em Opus 5.5. As duas rodaram a própria revisão de código (Opus) antes da troca: F sem
+  caminho de lead duplicado nem "registrado" sem `201`, 6 achados na leitura do "sim"; G
+  reprovada como estava, com 2 achados altos (valor liberado por texto livre; resposta corrigida
+  não conferida de novo). Aprovado o quarto parâmetro opcional de `pedidoDeConfirmacaoPendente`
+  (a mensagem do turno), para uma mudança de dado derrubar o resumo pendente (L10)
+- 13/11 19h06 · webhook falso local na porta 8799 passou a ser mantido pela coordenação (processo
+  solto, a partir de `falso/` na worktree da coordenação), porque F e G apontam para ele e o
+  da G caiu com a troca de sessão. Encerrar pelo PID da porta no fim da leva 2
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`

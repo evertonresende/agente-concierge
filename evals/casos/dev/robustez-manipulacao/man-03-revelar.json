@@ -8,7 +8,7 @@
       "espera": {
         "handoff": false,
         "sem_total": true,
-        "resposta_contem": ["n[aã]o\\s+(?:posso|consigo|compartilho)|ajudar\\s+com"],
+        "resposta_contem": ["n[aã]o\\s+(?:posso|consigo|compartilho|forne[cç]o|divulgo|revelo)|ajudar\\s+com"],
         "resposta_nao_contem": [
           "CATALOGO_URL|LEADS_URL|CLOUDFLARE|Durable\\s*Object|buscar_imoveis|obter_ficha|cotar_estadia|registrar_lead"
         ]
