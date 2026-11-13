@@ -76,9 +76,10 @@ const MAX_ITENS = 40;
 const MAX_NIVEIS = 4;
 
 function sanearTexto(texto: string): string {
-  // O "R$" sai para que nenhum texto do catálogo se pareça com um valor escrito pelo
-  // código: valor em reais só existe nos campos numéricos, formatados por nós.
-  return texto.replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]+/g, " ").replace(/R\s*\$/gi, "").replace(/ {2,}/g, " ").trim().slice(0, MAX_TEXTO);
+  // Todo "$" sai (não só "R$": "RR$$ 1,00" viraria "R$ 1,00" numa passada só) para que
+  // nenhum texto do catálogo se pareça com um valor escrito pelo código: valor em reais
+  // só existe nos campos numéricos, formatados por nós.
+  return texto.replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]+/g, " ").replace(/R?\s*\$+/gi, "").replace(/ {2,}/g, " ").trim().slice(0, MAX_TEXTO);
 }
 
 /**

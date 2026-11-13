@@ -127,14 +127,21 @@ const ACENA_COM_CONCESSAO = /\b(?:analis|avali|verific|estud|consider|review|eva
 const PEDE_PARA_CONTAR_MENOS = /\bcont(?:e|a|ar|em|am|ando)\b|\bconsider\w+|\bcount\b/;
 
 /**
- * Todo valor em reais que o código já escreveu nesta conversa: resultados de ferramenta e
- * respostas finais anteriores, que já passaram pela conferência. Texto que o modelo
- * escreve junto com um pedido de ferramenta não entra: ninguém o conferiu.
+ * Todo valor em reais que o código já escreveu nesta conversa: só resultados de
+ * ferramenta. Neles o "R$" só aparece em campo formatado pelo código (o catálogo chega
+ * sem "$" e nenhum resultado repete texto do hóspede). Respostas não entram: o resumo
+ * traz o nome do hóspede, e um nome "R$ 1,00" liberaria esse valor; o total do resumo
+ * chega pelo resultado da ferramenta que o gerou.
  */
 export function valoresDoCodigo(mensagens: Mensagem[]): Set<string> {
-  return new Set(mensagens
-    .filter((m) => m.role === "tool" || (m.role === "assistant" && !m.tool_calls?.length))
-    .flatMap((m) => m.content.match(VALOR_DO_CODIGO) ?? []));
+  return new Set(mensagens.filter((m) => m.role === "tool").flatMap((m) => m.content.match(VALOR_DO_CODIGO) ?? []));
+}
+
+/** Resultado da ferramenta como vai para o histórico: com o total do código, se houver, para ele ficar permitido. */
+function conteudoDoResultado(resultado: Resultado): string {
+  const dado = resultado.paraOModelo;
+  const comTotal = resultado.total && dado && typeof dado === "object" && !Array.isArray(dado) ? { ...dado, total: resultado.total } : dado;
+  return JSON.stringify(comTotal);
 }
 
 /** Dígitos de cada valor permitido: "215600" e, para valor sem centavos, também "2156" (cobre "R$ 2156" e "R$ 2.156"). */
@@ -343,7 +350,7 @@ export async function rodarTurno(entrada: EntradaDoTurno): Promise<SaidaDoTurno>
             resultado = { paraOModelo: { erro: "Falha interna ao executar a ferramenta." } };
           }
         }
-        guardar({ role: "tool", tool_call_id: chamada.id, content: JSON.stringify(resultado.paraOModelo) });
+        guardar({ role: "tool", tool_call_id: chamada.id, content: conteudoDoResultado(resultado) });
         if (resultado.handoff) handoff = true;
         if (resultado.total) totais.push(resultado.total);
         // Recusa não leva total (CA-06), nem o de uma cotação anterior do mesmo turno.

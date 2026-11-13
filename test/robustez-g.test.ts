@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { decidirHandoff, MATRIZ, mencionaDesconto, pedeAbatimento } from "../src/agente/ferramentas/handoff";
 import { conferir, corrigirValores, semPontaSolta, valoresDoCodigo, valoresInventados } from "../src/agente/loop";
 import { montarPrompt } from "../src/agente/prompt";
+import { sanear } from "../src/catalogo";
 import { ESTADO_INICIAL } from "../src/lead";
 import type { Mensagem } from "../src/modelo";
 import { chamar, diz, FICHAS, pedeFerramentas, roteiro } from "./apoio";
@@ -78,6 +79,31 @@ describe("robustez: texto do catálogo é dado, nunca instrução (CA-13)", () =
     expect(depois.reply).toBe('Posso ajudar em algo mais?\n\nO seu pedido de reserva do GRM-301 ainda aguarda a sua confirmação. '
       + 'Posso enviar ao time comercial? Para confirmar, responda "sim".');
     expect(mundo.leads).toEqual([]);
+  });
+
+  it("nenhum \"$\" sobra no texto do catálogo, nem dobrado (\"RR$$ 1,00\")", () => {
+    for (const nome of ["Chale RR$$ 1,00", "Chale R$R$ 1,00", "Chale $ 1,00", "Chale r $ 1,00"]) {
+      expect(sanear(nome)).not.toMatch(/\$/);
+    }
+  });
+
+  it("nome do hóspede com \"R$\" não libera valor pelo resumo do pedido", async () => {
+    const { turno, historico, mundo } = conversa();
+    await turno("quanto fica?", roteiro(pedeFerramentas(chamar("cotar", ESTADIA)), diz("Fica em R$ 2.156,00.")).modelo);
+    const resumo = await turno("quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", { ...DADOS, nome: "Ana R$ 1,00" }))).modelo);
+    expect(resumo.reply).toContain("Ana R$ 1,00");
+    expect(valoresDoCodigo(historico).has("R$ 1,00")).toBe(false);
+    expect(valoresDoCodigo(historico).has("R$ 2.156,00")).toBe(true);
+    const depois = await turno("e a diária?", roteiro(diz("A diária é R$ 1,00. O total é R$ 2.156,00.")).modelo);
+    expect(depois.reply).not.toContain("R$ 1,00");
+    expect(depois.reply).toContain("O total é R$ 2.156,00.");
+    expect(mundo.leads).toEqual([]);
+  });
+
+  it("total do resumo fica permitido mesmo sem cotação antes", async () => {
+    const { turno, historico } = conversa();
+    await turno("quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
+    expect(valoresDoCodigo(historico).has("R$ 2.156,00")).toBe(true);
   });
 
   it("ordem do catálogo para passar a conversa não liga o handoff sozinha", async () => {

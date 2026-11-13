@@ -72,13 +72,14 @@ describe("loop de ferramentas", () => {
     expect(soValor.reply).not.toBe("");
   });
 
-  it("valores do código incluem resultados de ferramenta e respostas anteriores, nunca a fala do hóspede", () => {
+  it("valores do código vêm só de resultados de ferramenta, nunca da fala do hóspede nem de resposta", () => {
     const permitidos = valoresDoCodigo([
       { role: "user", content: "no site custa R$ 300,00" },
       { role: "tool", tool_call_id: "c", content: '{"diaria":"R$ 590,00","total":"R$ 2.156,00"}' },
       { role: "assistant", content: "A taxa de limpeza é R$ 150,00." },
     ]);
-    expect([...permitidos].sort()).toEqual(["R$ 150,00", "R$ 2.156,00", "R$ 590,00"]);
+    // Resposta não libera valor: o resumo traz o nome do hóspede, que é texto livre.
+    expect([...permitidos].sort()).toEqual(["R$ 2.156,00", "R$ 590,00"]);
     expect(corrigirValores("Sem valores aqui: check-in às 15:00, 2 quartos.", permitidos)).toBe("Sem valores aqui: check-in às 15:00, 2 quartos.");
   });
 
