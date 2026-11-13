@@ -45,7 +45,10 @@ function situacao(estado: EstadoLead, houveHandoff: boolean): string {
     linhas.push("Nenhum resumo aguardando confirmação.");
   }
   const registrados = Object.values(estado.envios).filter((s) => s === "registrado").length;
-  if (registrados > 0) linhas.push(`Pedidos já registrados nesta conversa: ${registrados}.`);
+  if (registrados > 0) {
+    linhas.push(`Pedidos já registrados nesta conversa: ${registrados}. Se o hóspede confirmar de novo um pedido que já foi `
+      + "registrado, diga que ele já está registrado e que não foi enviado outra vez.");
+  }
   if (houveHandoff) linhas.push("Esta conversa já foi passada para uma pessoa do time antes; continue atendendo normalmente.");
   return linhas.join("\n");
 }
