@@ -351,6 +351,165 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   tentar de novo dentro do turno; menos chamadas por turno (não repetir quando o erro é de
   limite, no laço da G); crédito no gateway. As três rodadas com pausa (GLM-5.3 Flash, DeepSeek
   4.1 Flash e GLM-5.3) começaram depois da rajada, com zero 429 nos 3 primeiros minutos
+- 13/11 19h50 · Éverton decidiu (X21 e acréscimo da L18): Claude Haiku 5.5 vira candidato a
+  principal, pela chave da Anthropic dele no AI Gateway, com GLM-5.3 Flash de reserva; medição
+  do Haiku (98 casos e rajada, raciocínio baixo e médio) quando ele avisar que a chave está no
+  arquivo de ambiente; `gpt-oss-120b` não entra como terceiro nível; recusa por limite vai
+  direto para o reserva e não conta para a nova tentativa. Frentes I (`src/modelo.ts`: marca o
+  erro de limite e prepara o caminho do Haiku) e G (`src/agente/loop.ts`: não repete quando o
+  erro vem marcado) avisadas. Combinado entre as duas, sem importar código uma da outra: o erro
+  lançado pelo modelo quando principal e reserva recusam por limite leva a propriedade
+  `porLimite: true`
+- 13/11 19h53 · F · verificador independente (Opus, esforço padrão) sobre a trava mesclada:
+  REPROVADO. Passou: nenhum "registrado" sem `201`, nenhum segundo POST depois de `201` ou de
+  resultado incerto, marcador antes do POST, 28 de 28 mensagens com dado diferente sem lead, P4,
+  12 de 12 defeitos plantados pegos. Reprovou: (A1, alta) hesitação com dado ("acho que sim, mas
+  somos 3") recebe só "Está tudo certo?" e o "sim" seguinte envia o dado antigo; (A2, média-alta)
+  `pedidoDeConfirmacaoPendente` mantém o resumo em 16 de 22 formas de mudança; (A3, média) `422`
+  com campo apontado repete sem handoff; (A4, média) "sim" com interrogação de outra escrita ou
+  emoji envia. Devolvida com a regra invertida: todo pedido de confirmação de código traz o
+  resumo completo, e o rearme é negado por padrão (na dúvida, derruba o resumo). A frente já
+  estava na `main` e em `dev` (só webhook falso); as correções entram como commits novos.
+  Regra provisória P11 sobre palavras curtas. Relatório do verificador fora do repositório
+- 13/11 19h53 · G · relatório das 19h43, lido na conversa dela: itens 1 a 8 da revisão commitados
+  (c8b92a3 a 19ac5a6), mais 5d6541b e 94d2b90; CHECK 2 local com os três blocos de robustez em
+  100%, `funciona-respostas` 100%, `funciona-leads` 93% e `funciona-recusas` 90% (`lead-07` e
+  `rec-10` falharam uma vez e passaram à mão: pedidas mais duas rodadas e a resposta real, não
+  conta como verde). As duas ligações da F prontas e sem commit por um erro de tipo num teste da
+  F: autorizada a trocar essa linha (`test/textos-f.test.ts:17`). Um merge dela (b2d4495) saiu
+  sem rodapé e fica assim. A frente G informou que a queda das 19h20 foi provavelmente dela: um
+  `vitest --root /`, que varre o disco inteiro. Em curso: a parte dela da L18 (`porLimite`)
+- 13/11 20h04 · H · relatório da frente (fc52fe2): `fetch` deixou de ser chamado como método de
+  objeto (f5510cb, com teste de regressão), o log de contingência ganhou origem e classe do erro
+  (1ceb403) e há prova de que `postar` depois do prazo não dispara POST (75ab6ed). Conferido pela
+  coordenadora: ensaio do merge sobre a `main` limpo, 606 testes, tipos e gate verdes; no runtime
+  real (servidor local, ambiente `dev`) o servidor sobe, `contrato` 88% e `funciona-leads` 86%,
+  com as mesmas falhas que a `main` tem em `dev` (`con-07`, `lead-05`, `lead-06`: pendências de
+  casos da B2 e das ligações da G, não da H). Segunda rodada de verificador independente (Opus)
+  em curso; o merge espera o veredito
+- 13/11 20h04 · I · preparação do Haiku pronta numa cópia temporária, sem a chave: chamada pela
+  binding de IA com o gateway (sem SDK e sem secret novo no Worker), nível de raciocínio por
+  variável, recusa do modelo tratada como falha do principal, `porLimite` testado. Entra na
+  branch quando as rodadas com pausa terminarem (por volta das 20h50). Ponto aberto: os blocos
+  de raciocínio não voltam ao histórico em `src/agente/loop.ts` (arquivo da G); a I testa com a
+  chave real se a API aceita antes de pedir a mudança
+- 13/11 20h04 · B2 · pedido: `man-07` aceitar "time" e "equipe". F avisada da P11 e da linha de
+  `src/agente/ferramentas/lead.ts` a trocar depois que a G entrar. Observação: `con-10-idioma`
+  falhou em 1 de 2 rodadas do bloco `contrato` em `dev`; acompanhar depois da G
+- 13/11 20h06 · Éverton · a chave da Anthropic está no arquivo de ambiente (`ANTHROPIC_API_KEY`),
+  testada por ele. Coordenadora: variável conferida sem imprimir e valor acrescentado por
+  referência aos termos extras do gate (`SIGILO OK`). Frente I liberada para medir o Haiku 5.5
+  agora, sem esperar as rodadas com pausa: chave só no gateway `concierge-dev`, nunca como secret
+  de Worker; 98 casos com `--paralelo 2` e rajada de 10 conversas, em nível baixo e depois médio,
+  reserva GLM-5.3 Flash, um servidor na porta 8797. Teto de carga subiu de 6 para 7 `workerd`
+  só até as rodadas com pausa terminarem (por volta das 20h50). `MODELO` segue sem fixar
+- 13/11 20h10 · B2 · af3934c mesclado na `main` (249ef34): `con-07`, `lead-06` e `man-07` aceitam as
+  duas redações válidas do agente. Conferido: ensaio limpo, 583 testes, gates de evals verdes,
+  `contrato` em 100% contra `dev`. `funciona-leads` segue em 86% em `dev`: `lead-05` e `lead-06`
+  dependem das ligações da G. `lead-12`: o turno 4 passa a ser um sim limpo (um "sim" com dado
+  junto não envia, pela regra endurecida da F) e o caso fica em `para-dev/` até a F entrar
+- 13/11 20h15 · G · relatório final (6b06830), lido na conversa dela: ligações das duas travas da F
+  (c005d01), recusa por limite sem nova tentativa (aa3fffd), 645 testes. CHECK 2 dela: três
+  blocos de robustez em 100%, `funciona-leads` 100% em duas rodadas, `funciona-recusas` 90% e
+  100% (`rec-05`: o caso não aceita "mesma data"; pedido à B2). Conferido pela coordenadora:
+  ensaio do merge limpo, 645 testes, tipos e gate verdes. Em curso: os 98 casos no runtime real
+  (servidor local) e o verificador independente (Opus). O merge espera os dois
+- 13/11 20h15 · incidente · a G apontou duas rodadas de CHECK para a porta 8793, de um servidor da
+  frente I (cerca de 50 conversas entre 19h53 e 19h58). O servidor atingido usa o webhook falso
+  (conferido pelo `/saude`): nenhum POST ao webhook real. A I foi avisada para marcar e refazer
+  os casos da rodada com pausa que caíram nessa janela. Regra nova: as outras frentes só usam as
+  portas 8788 a 8792, com conferência de porta livre antes. A G também deixou dois servidores
+  órfãos (sem porta em escuta, cerca de 1 GB): derrubados pela coordenadora, pelo PID
+- 13/11 20h15 · I · medição do Haiku em curso (nível baixo: 98 casos e depois a rajada), servidor
+  na porta 8797. No ar agora: 7 servidores locais (teto temporário), 7,9 GB livres
+- 13/11 20h16 · I · Haiku 5.5 em nível baixo, reserva GLM-5.3 Flash, 98 casos com `--paralelo 2`,
+  código de antes das frentes G e B2 mais recentes: total 80% (79 de 98); contrato 66,
+  cotações 92, leads 80, recusas 72, respostas 90, marco1 100, handoff 85, manipulação 76,
+  não-inventa 70. Por turno: p50 1,9 s, p95 3,7 s, máximo 12,0 s. 263 chamadas, todas `200`;
+  nenhuma recusa por limite, nenhuma ida ao reserva, nenhuma contingência, nenhuma recusa do
+  modelo. Rajada de 10 conversas × 4 turnos: 40 turnos normais, máximo 3,2 s. Cerca de
+  12,4 mil tokens de entrada e 447 de saída por conversa. A API aceita o histórico sem os
+  blocos de raciocínio (a conferir em nível médio). Nível médio em curso. Para comparar: o
+  `gpt-oss-120b` fez 83% no mesmo código
+- 13/11 20h16 · I · contaminação confirmada pelo registro do gateway: o DeepSeek 4.1 Flash (servidor
+  da porta 8793) recebeu 173 recusas por limite em dois minutos por causa das rodadas da G. A
+  rodada com pausa dele recomeça do zero agora; as do GLM-5.3 Flash e do GLM-5.3 não foram
+  atingidas (limite separado por modelo)
+- 13/11 20h20 · H · segunda rodada do verificador independente (Opus): REPROVADO. O defeito crítico
+  da rodada 1 foi corrigido de verdade (um "sim" repetido pela nova tentativa do Worker não vale
+  duas vezes; resposta gravada sobrevive ao despejo do objeto; 5 mensagens simultâneas em ordem).
+  Bloqueiam: (A0, média a alta) a sessão grava o resumo, as duas tentativas perdem a resposta na
+  volta, o hóspede recebe o aviso de problema técnico e o "sim" seguinte envia lead de um resumo
+  que ele não viu; (A1, média) corpo sem limite de tamanho (30 MB lidos e interpretados); (A2,
+  média) a nova tentativa com orçamento novo continua sem teste. Menores: turno que termina
+  perto do teto e volta tarde (A3), tabela de pedidos sem poda, log do Worker sem origem e
+  classe, handoff de contingência fora do turno sem registro no estado (L3). 16 de 22 defeitos
+  plantados pegos. Devolvida com a regra: resumo cuja entrega falhou é reapresentado antes de
+  valer um "sim". Limite de corpo decidido como provisória P12. Relatório fora do repositório
+- 13/11 20h28 · G · runtime real com a `main` + `frente-g` (98 casos, `--paralelo 2`, modelo atual
+  `gpt-oss-120b`): cotações, leads, recusas, manipulação, não-inventa e marco1 em 100%;
+  respostas 81% e depois 100%; handoff 85% e depois 92% (casos diferentes a cada rodada, todos
+  em turnos de contingência por demora do modelo); contrato 88% nas duas, sempre por
+  `con-10-idioma`. Sonda da coordenadora: a hóspede em inglês recebe três linhas de código em
+  português (datas com dia da semana e total), sem imóvel nem frase do modelo. É regressão da
+  G (L15) e bloqueia o merge: devolvida com pedido de diagnóstico da etapa que esvazia a
+  resposta, correção por regra e três rodadas do bloco. O verificador independente segue
+- 13/11 20h28 · medição · o `gpt-oss-120b` está lento e irregular agora, com e sem a G: cerca de 10%
+  dos turnos passam de 1.500 tokens de saída e de 15 s (p95 entre 15 e 22 s, máximo de 45 s),
+  com contingência em 1 a 2% dos turnos. Meia hora antes o p95 era 5,7 s no mesmo código. Não
+  é defeito de frente; pesa contra esse modelo, que já não é candidato a principal (X19)
+- 13/11 20h31 · F · relatório das 20h09, lido na conversa dela: achados A1 a A6 e a P11 commitados
+  (cabeça 323980b), 622 testes. CHECK 2 de `funciona-leads` caiu de 86% para 73%: `lead-04`
+  ("Sim, confirmo com as novas datas.") e `lead-07` ("Sim, confirmo essa segunda reserva
+  também.") passaram a ser recusados pela regra nova; `lead-05` e `lead-06` esperam as
+  ligações da G. A regra ficou rígida demais com palavras que só apontam para o resumo.
+  Decidido como provisórias P13 (palavra de referência confirma; palavra de novidade só com
+  resumo novo; valor junto do sim nunca confirma) e P14 (mesma reserva não é reenviada depois
+  de duas falhas definitivas). Devolvida para ajustar; depois, verificador independente
+- 13/11 20h32 · I · Haiku 5.5 em nível médio, mesmas condições do nível baixo (código de antes das
+  frentes G e B2 mais recentes): total 82% (81 de 98) contra 80% no baixo; contrato 77,
+  cotações 92, leads 80, recusas 81, respostas 90, marco1 100, handoff 78, manipulação 84,
+  não-inventa 70. Por turno: p50 2,0 s, p95 4,4 s, máximo 11,1 s. 265 chamadas, todas `200`;
+  nenhuma ida ao reserva, recusa por limite, recusa do modelo ou contingência. Rajada: 40
+  turnos normais, máximo 4,1 s. A diferença entre os níveis está dentro do ruído: 12 casos
+  mudaram de resultado entre uma rodada e outra. Doze casos falham nos dois níveis, quatro
+  deles já tratados por B2 e G (`con-07`, `con-10`, `lead-05`, `lead-06`). Blocos de
+  raciocínio: a API aceita o histórico sem eles e repassá-los não trouxe ganho medido (81%),
+  então a linha de `src/agente/loop.ts` não muda. A rodada do DeepSeek recomeçou do zero e
+  termina por volta das 21h35; as do GLM-5.3 Flash e do GLM-5.3, por volta das 20h50
+- 13/11 20h34 · G · diagnóstico do `con-10-idioma`: nenhuma etapa do código esvazia a resposta; é o
+  modelo que escreve as três linhas em português, imitando o resultado de `cotar`, que entrega
+  datas e instrução em português (a hipótese da coordenadora, de corte pela conferência, não
+  se confirmou). Duas exceções de dono autorizadas, porque a frente E está encerrada: a G
+  acrescenta `dataComDia(data, idioma)` em `src/nucleo/datas.ts` (mesmo formato dos textos
+  fixos da F, que depois troca a dela por essa) e edita `src/agente/ferramentas/cotacao.ts`
+  só para as datas e o exemplo da instrução saírem no idioma do hóspede, com o resultado em
+  português idêntico ao de hoje. Camadas extras (reescrita pedida ao modelo) só se a causa
+  corrigida não bastar em 6 sondas
+- 13/11 20h36 · G · verificador independente (Opus) sobre 6b06830: REPROVADO. Passou: L18 (uma
+  chamada com `porLimite`, duas com erro comum, inclusive erro que não é objeto), costura com
+  as travas da F, saneamento e delimitação do catálogo; 30 de 33 defeitos plantados pegos.
+  Reprovou, alta: o próprio código liga `handoff: true` com texto fixo errado em mensagem
+  comum: (1) pedido de desconto reconhecido por engano ("Pode fechar, meu telefone é …",
+  "pago os 150 da limpeza", "100% de certeza", "a 500 m da praia"); (2) "mesmo assim" de quem
+  aceitou a regra vira insistência. Média: registro afirmado pelo modelo sem `201` passa pela
+  conferência; concessão e regra inventadas sem valor em R$ passam; valor em outra forma
+  escapa ("2,3 mil", "400 euros"); o corte por frase leva o aviso de pet e pode deixar dois
+  totais; disponibilidade apontada por engano. Baixa: regra explicada vale para outra regra,
+  custo de CPU sem teto antes do corte, rede de insistência com as palavras dos casos, trecho
+  de instrução que escapa. Devolvida com o princípio "precisão antes de cobertura": rede de
+  código que força handoff só dispara em padrão inequívoco, com bateria negativa de mensagens
+  comuns, ou sai. Relatório fora do repositório
+- 13/11 20h45 · F · P13 e P14 entregues (ba10491): 636 testes; `lead-04` e `lead-07` voltam a
+  enviar; sim com valor junto repete o pedido com zero POST; os exemplos da primeira rodada
+  do verificador continuam com zero POST. Quatro leituras da frente aceitas: "resumo novo"
+  exige ter substituído outro resumo da sessão; "segunda" é ordinal só antes de substantivos
+  como reserva e estadia; o código do imóvel do próprio resumo junto do sim repete o pedido;
+  no rearme do fim do turno, palavra de novidade derruba o resumo. Conferido pela
+  coordenadora: ensaio do merge limpo, 636 testes, tipos e gate verdes; no runtime real,
+  `funciona-leads` 86% em duas rodadas e `contrato` 88%, só com `lead-05`, `lead-06` e
+  `con-07`, os três dependentes das ligações da G; 110 turnos sem contingência. Segunda
+  rodada de verificador independente (Opus) em curso; o merge espera o veredito
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -387,12 +546,12 @@ mexer na configuração.
 | `src/catalogo.ts` (cliente do catálogo) | A | G | — |
 | `src/agente/loop.ts`, `src/agente/prompt.ts` | A | G | — |
 | `src/agente/ferramentas/catalogo.ts`, `handoff.ts`, `index.ts`, `tipos.ts` | A | G | — |
-| `src/agente/ferramentas/cotacao.ts`, `src/agente/ferramentas/pedido.ts` (onde as datas dos argumentos são interpretadas) | A | E | — |
+| `src/agente/ferramentas/cotacao.ts`, `src/agente/ferramentas/pedido.ts` (onde as datas dos argumentos são interpretadas) | A | E (exceção: a G edita `cotacao.ts` só para as datas e o exemplo da instrução saírem no idioma do hóspede) | — |
 | `src/agente/ferramentas/lead.ts`, `src/lead.ts` | A | F | — |
 | `src/env.ts` | A | I, que roda junto com a leva 2; outra frente pede à coordenadora | — |
 | `test/apoio.ts` | A | congelado: ninguém altera; apoio novo vai em `test/apoio-<frente>.ts` da própria frente | — |
 | `src/nucleo/dinheiro.ts`, `src/nucleo/preco.ts` | A | — | — |
-| `src/nucleo/datas.ts` | A | E | — |
+| `src/nucleo/datas.ts` | A | E (exceção: a G acrescenta `dataComDia(data, idioma)`, sem tocar no resto) | — |
 | `src/nucleo/telefone.ts`, `src/nucleo/idioma.ts` (detector único de idioma: `idiomaDoHospede(textos): "pt" \| "en"`; G importa) | — | F | — |
 | `src/pagina.ts` | A (mínima) | J (passo 2) | — |
 | `docs/desenhos/pagina-canvas.html` | J (passo 1) | — | — |
@@ -789,6 +948,15 @@ Flash (2º), sem escolha final. Antes das rodadas com pausa, a frente mede com c
 real o que o agente responde quando o principal e o reserva recusam por limite ao
 mesmo tempo (quantos turnos caem em contingência, o texto, o `handoff`, o status e a
 latência) e traz a proposta de saída, sem implementar.
+
+Decisões do Éverton sobre essa medida (13/11, X21): novo candidato a principal, Claude
+Haiku 5.5 (`claude-haiku-5-5`), pela chave da Anthropic dele guardada no AI Gateway
+(`ANTHROPIC_API_KEY` no arquivo de ambiente; ele avisa quando gravar), com o GLM-5.3
+Flash de reserva. Com a chave lá, a frente mede o Haiku nos 98 casos e na rajada de 10
+conversas simultâneas, com raciocínio em nível baixo e em nível médio. `gpt-oss-120b`
+não entra como último nível de reserva. Recusa por limite vai direto para o reserva e
+não conta para a nova tentativa da L18. As rodadas com pausa do GLM-5.3 Flash e do
+DeepSeek 4.1 Flash continuam e escolhem o reserva. `MODELO` segue sem fixar.
 
 ### Tasks
 - [ ] Rodar o conjunto dev (nunca o reservado) com 3 candidatos, mesmo código, todos de
