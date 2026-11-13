@@ -3,6 +3,7 @@ import { corrigirValores, rodarTurno, valoresDoCodigo } from "../src/agente/loop
 import { type Cofre, ESTADO_INICIAL, type EstadoLead } from "../src/lead";
 import type { Modelo } from "../src/modelo";
 import { chamar, criarContexto, criarMundo, diz, pedeFerramentas, roteiro } from "./apoio";
+import { conversa } from "./apoio-g";
 
 function montar(opcoes: NonNullable<Parameters<typeof criarMundo>[0]> = {}) {
   const mundo = criarMundo(opcoes);
@@ -375,5 +376,32 @@ describe("loop de ferramentas", () => {
     const saida = await turno(1, "oi", emLaco);
     expect(chamadas).toBe(6);
     expect(saida.contingencia).toBe(true);
+  });
+});
+
+describe("ligações da frente F no loop", () => {
+  const ESTADIA = { imovel_id: "GRM-301", checkin: "15/01/2027", checkout: "18/01/2027", hospedes: 2 };
+  const DADOS = { ...ESTADIA, nome: "Ana Lima", telefone: "(11) 98888-0000" };
+
+  it("sim repetido logo depois do registro: texto fixo, sem chamada de modelo e sem novo envio (L15)", async () => {
+    const { turno, mundo } = conversa();
+    await turno("quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
+    await turno("sim", roteiro(pedeFerramentas(chamar("confirmar_reserva", {})), diz("Pedido registrado.")).modelo);
+    expect(mundo.leads).toHaveLength(1);
+    const repetido = await turno("sim", roteiro().modelo);
+    expect(repetido.uso.chamadas).toBe(0);
+    expect(repetido.contingencia).toBe(false);
+    expect(repetido.reply).toContain("Não enviei de novo");
+    expect(mundo.leads).toHaveLength(1);
+  });
+
+  it("dado mudado pelo hóspede sem ferramenta derruba o pedido de confirmação do resumo antigo", async () => {
+    const { turno, mundo } = conversa();
+    await turno("quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
+    const pergunta = await turno("tem wifi?", roteiro(diz("Sim, a ficha lista wifi.")).modelo);
+    expect(pergunta.reply).toContain('responda "sim"');
+    const mudou = await turno("muda a saída para 19/01", roteiro(diz("Claro, anotado.")).modelo);
+    expect(mudou.reply).toBe("Claro, anotado.");
+    expect(mundo.leads).toEqual([]);
   });
 });

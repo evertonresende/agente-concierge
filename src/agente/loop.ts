@@ -5,6 +5,7 @@ import { pedidoDeConfirmacaoPendente } from "../lead";
 import type { ChamadaDeFerramenta, Mensagem, Modelo, RespostaDoModelo } from "../modelo";
 import { type Idioma, idiomaDoHospede } from "../nucleo/idioma";
 import { type Argumentos, type Contexto, FERRAMENTAS, type Resultado } from "./ferramentas";
+import { respostaASimAposRegistro } from "./ferramentas/lead";
 import { insisteEmRegra, NOME_DO_HANDOFF, pedeAbatimento, sugereNegociacao } from "./ferramentas/handoff";
 import { montarPrompt } from "./prompt";
 
@@ -368,10 +369,8 @@ export async function rodarTurno(entrada: EntradaDoTurno): Promise<SaidaDoTurno>
     const conferido = comTotais(aviso ? `${cortado}\n\n${aviso}` : cortado, totais, textos);
     // Com resumo pendente, a resposta escrita pelo modelo termina com o pedido de
     // confirmação gerado por código, que não passa pela conferência (trava da frente F).
-    // Quando a frente F entrar na main, a chamada ganha a mensagem do turno (resumo
-    // mudado pelo hóspede sem ferramenta não rearma o "sim"); troque pela linha abaixo:
-    // const pedido = pedidoDeConfirmacaoPendente(contexto.cofre, contexto.turno, idioma, contexto.mensagem);
-    const pedido = pedidoDeConfirmacaoPendente(contexto.cofre, contexto.turno, idioma);
+    // Com a mensagem do turno: dado mudado pelo hóspede sem ferramenta não rearma o "sim".
+    const pedido = pedidoDeConfirmacaoPendente(contexto.cofre, contexto.turno, idioma, contexto.mensagem);
     return terminar(pedido ? `${conferido}\n\n${pedido}` : conferido);
   };
 
@@ -391,6 +390,10 @@ export async function rodarTurno(entrada: EntradaDoTurno): Promise<SaidaDoTurno>
       }
     }
   }
+
+  // "Sim" repetido logo depois de um pedido registrado: texto fixo, sem modelo e sem envio (L15).
+  const jaRegistrado = respostaASimAposRegistro(contexto);
+  if (jaRegistrado !== undefined) return terminar(jaRegistrado);
 
   try {
     for (let volta = 0; volta < MAX_VOLTAS; volta++) {

@@ -16,7 +16,7 @@ function sessao(envio: Partial<Contexto["envio"]> = {}, statusDoWebhook = 201) {
   const cofre: Cofre = { ler: () => estado, salvar: (e) => { estado = e; } };
   const contexto = (turno: number, mensagem: string, historico?: { role: string; content: string }[]): Contexto => {
     const base = criarContexto(mundo, cofre, turno, mensagem);
-    return { ...base, envio: { ...base.envio, ...envio }, ...(historico ? { historico } : {}) };
+    return { ...base, envio: { ...base.envio, ...envio }, ...(historico ? { historico: historico as Contexto["historico"] } : {}) };
   };
   return {
     mundo,
