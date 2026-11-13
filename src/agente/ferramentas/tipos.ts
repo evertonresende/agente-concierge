@@ -25,6 +25,8 @@ export interface Resultado {
   handoff?: boolean;
   /** Total (texto em reais) que a resposta do turno precisa trazer. */
   total?: string;
+  /** A estadia foi recusada: a resposta do turno não pode ganhar total nenhum. */
+  recusa?: boolean;
 }
 
 export type Argumentos = Record<string, unknown>;

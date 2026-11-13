@@ -58,6 +58,27 @@ describe("loop de ferramentas", () => {
     expect(saida.handoff).toBe(false);
   });
 
+  it("recusa depois de uma cotação válida no mesmo turno não ganha total", async () => {
+    const { turno } = montar();
+    const { modelo } = roteiro(
+      pedeFerramentas(chamar("cotar", { ...ESTADIA, hospedes: undefined })),
+      pedeFerramentas(chamar("cotar", { ...ESTADIA, hospedes: 6 })),
+      diz("O imóvel acomoda no máximo 4 pessoas."),
+    );
+    const saida = await turno(1, "somos 6", modelo);
+    expect(saida.reply).toBe("O imóvel acomoda no máximo 4 pessoas.");
+  });
+
+  it("estadia de anos devolve um resultado pequeno ao modelo", async () => {
+    const { turno } = montar();
+    const { modelo, recebidas } = roteiro(pedeFerramentas(chamar("cotar", { ...ESTADIA, checkout: "15/01/2037" })), diz("ok"));
+    const saida = await turno(1, "dez anos", modelo);
+    const resultado = recebidas[1]!.findLast((m) => m.role === "tool")!.content;
+    expect(resultado.length).toBeLessThan(1500);
+    expect(JSON.parse(resultado)).toMatchObject({ noites: 3653, noites_de_sexta_e_sabado: { quantidade: 1044, valor_de_cada: "R$ 708,00" } });
+    expect(saida.reply).toContain("Total da estadia: R$ ");
+  });
+
   it("data inexistente não é cotada", async () => {
     const { turno } = montar();
     const { modelo, recebidas } = roteiro(pedeFerramentas(chamar("cotar", { ...ESTADIA, checkin: "30/02/2027" })), diz("Qual a data correta?"));
@@ -146,6 +167,28 @@ describe("loop de ferramentas", () => {
     await turno(3, "muda para uma noite só", roteiro(pedeFerramentas(chamar("cotar", { ...ESTADIA, checkout: "16/01/2027" })), diz("O mínimo é de 2 noites.")).modelo);
     expect(estado().pendente).toBeNull();
     await turno(4, "sim", roteiro(pedeFerramentas(chamar("confirmar_reserva")), diz("Preciso montar um novo resumo.")).modelo);
+    expect(mundo.leads).toEqual([]);
+  });
+
+  it("confirmação pedida junto com uma cotação de outra data não envia a reserva antiga", async () => {
+    const { turno, mundo } = montar();
+    await turno(2, "quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
+    // O modelo pede a confirmação ANTES da cotação nova, na mesma resposta.
+    const saida = await turno(3, "sim, mas muda a saída para 19/01/2027", roteiro(
+      pedeFerramentas(chamar("confirmar_reserva"), chamar("cotar", { ...ESTADIA, checkout: "19/01/2027" })),
+    ).modelo);
+    expect(mundo.leads).toEqual([]);
+    expect(saida.reply).toContain("Resumo do seu pedido");
+    expect(saida.reply).toContain("R$ 2.746,00");
+    expect(saida.reply).not.toMatch(/registrad/i);
+    const pedidas = saida.novas.flatMap((m) => (m.role === "assistant" ? m.tool_calls ?? [] : [])).map((c) => c.id);
+    expect(saida.novas.flatMap((m) => (m.role === "tool" ? [m.tool_call_id] : []))).toEqual(pedidas);
+  });
+
+  it("confirmação pedida junto com um resumo de dado novo não envia a reserva antiga", async () => {
+    const { turno, mundo } = montar();
+    await turno(2, "quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
+    await turno(3, "sim, mas somos 3", roteiro(pedeFerramentas(chamar("confirmar_reserva"), chamar("montar_resumo", { ...DADOS, hospedes: 3 }))).modelo);
     expect(mundo.leads).toEqual([]);
   });
 

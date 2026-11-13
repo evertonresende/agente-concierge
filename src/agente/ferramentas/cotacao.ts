@@ -44,6 +44,7 @@ export const cotarEstadia = definir(
     };
     if (!cotacao.ok) {
       return {
+        recusa: true,
         paraOModelo: {
           ...estadia,
           recusada: true,
@@ -57,11 +58,9 @@ export const cotarEstadia = definir(
       total,
       paraOModelo: {
         ...estadia,
-        noites: cotacao.noites.map((n) => ({
-          noite: formatarDataComDia(n.data),
-          valor: formatarReais(n.centavos),
-          acrescimo_de_fim_de_semana: n.comAcrescimo,
-        })),
+        noites: cotacao.noites,
+        noites_comuns: { quantidade: cotacao.noites - cotacao.noitesComAcrescimo, valor_de_cada: formatarReais(cotacao.diariaCentavos) },
+        noites_de_sexta_e_sabado: { quantidade: cotacao.noitesComAcrescimo, valor_de_cada: formatarReais(cotacao.diariaComAcrescimoCentavos) },
         taxa_de_limpeza: formatarReais(cotacao.taxaLimpezaCentavos),
         total,
         hospedes: hospedes ?? "não informado: informe a capacidade e pergunte quantas pessoas são",

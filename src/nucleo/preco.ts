@@ -8,16 +8,19 @@ export interface RegrasDoImovel {
   capacidade: number;
 }
 
-export interface Noite {
-  data: DataISO;
-  centavos: number;
-  comAcrescimo: boolean;
-}
-
 export type MotivoRecusa = "datas_invalidas" | "minimo_noites" | "capacidade" | "hospedes_invalido";
 
 export type Cotacao =
-  | { ok: true; noites: Noite[]; taxaLimpezaCentavos: number; totalCentavos: number }
+  | {
+    ok: true;
+    noites: number;
+    /** Quantas das noites começam numa sexta ou num sábado. */
+    noitesComAcrescimo: number;
+    diariaCentavos: number;
+    diariaComAcrescimoCentavos: number;
+    taxaLimpezaCentavos: number;
+    totalCentavos: number;
+  }
   | { ok: false; motivo: MotivoRecusa; explicacao: string };
 
 /** Diária com 20% a mais; meio centavo arredonda para cima (contrato L14). */
@@ -71,11 +74,22 @@ export function cotar(regras: RegrasDoImovel, checkin: DataISO, checkout: DataIS
     }
   }
 
-  const lista: Noite[] = Array.from({ length: noites }, (_, i) => {
-    const data = somarDias(checkin, i);
-    const comAcrescimo = temAcrescimo(data);
-    return { data, comAcrescimo, centavos: comAcrescimo ? diariaComAcrescimo(regras.diariaCentavos) : regras.diariaCentavos };
-  });
-  const totalCentavos = lista.reduce((soma, n) => soma + n.centavos, 0) + regras.taxaLimpezaCentavos;
-  return { ok: true, noites: lista, taxaLimpezaCentavos: regras.taxaLimpezaCentavos, totalCentavos };
+  // O padrão se repete a cada 7 noites: 2 com acréscimo por semana cheia, mais as do
+  // resto. Sem lista de noites, uma estadia de anos custa o mesmo que uma de dias.
+  const resto = Array.from({ length: noites % 7 }, (_, i) => somarDias(checkin, i)).filter(temAcrescimo).length;
+  const noitesComAcrescimo = Math.floor(noites / 7) * 2 + resto;
+  const diariaComAcrescimoCentavos = diariaComAcrescimo(regras.diariaCentavos);
+  // Cada noite já está arredondada para centavos antes de entrar na soma (L14).
+  const totalCentavos = (noites - noitesComAcrescimo) * regras.diariaCentavos
+    + noitesComAcrescimo * diariaComAcrescimoCentavos
+    + regras.taxaLimpezaCentavos;
+  return {
+    ok: true,
+    noites,
+    noitesComAcrescimo,
+    diariaCentavos: regras.diariaCentavos,
+    diariaComAcrescimoCentavos,
+    taxaLimpezaCentavos: regras.taxaLimpezaCentavos,
+    totalCentavos,
+  };
 }

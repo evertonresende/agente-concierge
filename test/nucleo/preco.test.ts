@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { indiceDiaDaSemana, somarDias } from "../../src/nucleo/datas";
 import { formatarReais, reaisParaCentavos } from "../../src/nucleo/dinheiro";
 import { cotar, diariaComAcrescimo, type RegrasDoImovel } from "../../src/nucleo/preco";
 
@@ -19,8 +20,8 @@ describe("preço", () => {
     const c = cotar(GRM301, "2027-01-15", "2027-01-18", 2);
     expect(c.ok).toBe(true);
     if (!c.ok) return;
-    expect(c.noites.map((n) => n.centavos)).toEqual([70800, 70800, 59000]);
-    expect(c.noites.map((n) => n.comAcrescimo)).toEqual([true, true, false]);
+    // sexta 70800 + sábado 70800 + domingo 59000 + limpeza 15000
+    expect(c).toMatchObject({ noites: 3, noitesComAcrescimo: 2, diariaCentavos: 59000, diariaComAcrescimoCentavos: 70800 });
     expect(c.taxaLimpezaCentavos).toBe(15000);
     expect(c.totalCentavos).toBe(215600);
     expect(formatarReais(c.totalCentavos)).toBe("R$ 2.156,00");
@@ -41,6 +42,31 @@ describe("preço", () => {
     expect(diariaComAcrescimo(3)).toBe(4); // 3,6
     expect(diariaComAcrescimo(4)).toBe(5); // 4,8
     expect(diariaComAcrescimo(5)).toBe(6); // 6,0
+  });
+
+  it("o arredondamento é por noite, não na soma", () => {
+    // 245,53 × 1,2 = 294,636 -> 294,64 por noite. Duas noites: 589,28; arredondando a soma daria 589,27.
+    const c = cotar(regras(245.53, 0, 1, 2), "2027-01-15", "2027-01-17");
+    expect(c).toMatchObject({ ok: true, totalCentavos: 58928 });
+  });
+
+  it("conta as noites de sexta e sábado em estadias de várias semanas, começando em qualquer dia", () => {
+    const r = regras(100, 0, 1, 2);
+    // Confere contra a conta noite a noite, para os 7 dias de início e durações de 1 a 30 noites.
+    for (let inicio = 0; inicio < 7; inicio++) {
+      const checkin = somarDias("2027-01-10", inicio); // 10/01/2027 é domingo
+      for (let noites = 1; noites <= 30; noites++) {
+        const esperado = Array.from({ length: noites }, (_, i) => [5, 6].includes(indiceDiaDaSemana(somarDias(checkin, i))) ? 12000 : 10000)
+          .reduce((a, b) => a + b, 0);
+        const c = cotar(r, checkin, somarDias(checkin, noites));
+        expect(c).toMatchObject({ ok: true, totalCentavos: esperado });
+      }
+    }
+  });
+
+  it("estadia de dez anos é cotada sem montar lista de noites", () => {
+    const c = cotar(GRM301, "2027-01-01", "2037-01-01", 2);
+    expect(c).toMatchObject({ ok: true, noites: 3653, noitesComAcrescimo: 1044 });
   });
 
   it("dias úteis sem acréscimo, e a taxa de limpeza entra uma vez só", () => {

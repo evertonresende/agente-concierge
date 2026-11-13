@@ -27,6 +27,7 @@ export interface SaidaDoTurno {
 }
 
 const MAX_VOLTAS = 6;
+const CONFIRMAR = "confirmar_reserva";
 const TENTATIVAS_DO_MODELO = 2;
 const CONTINGENCIA = "Tive um problema técnico e não consegui concluir o seu atendimento agora. Vou passar a conversa "
   + "para uma pessoa do nosso time, que continua com você.";
@@ -114,10 +115,13 @@ export async function rodarTurno(entrada: EntradaDoTurno): Promise<SaidaDoTurno>
       const resposta = await chamarModelo();
       if (resposta.chamadas.length === 0) return terminar(comTotais(resposta.texto, totais));
 
-      novas.push({ role: "assistant", content: resposta.texto, tool_calls: resposta.chamadas });
+      // A confirmação roda por último no lote: se o modelo pediu junto uma cotação ou um
+      // resumo com dado novo, eles invalidam a confirmação pendente antes (contrato L10).
+      const chamadas = [...resposta.chamadas].sort((a, b) => Number(a.function.name === CONFIRMAR) - Number(b.function.name === CONFIRMAR));
+      novas.push({ role: "assistant", content: resposta.texto, tool_calls: chamadas });
       let respostaFinal: string | undefined;
       let falhou = false;
-      for (const chamada of resposta.chamadas) {
+      for (const chamada of chamadas) {
         // Toda chamada recebe um resultado no histórico, mesmo depois que o turno já foi
         // decidido: histórico com chamada sem resposta quebra o turno seguinte.
         let resultado: Resultado;
@@ -135,6 +139,8 @@ export async function rodarTurno(entrada: EntradaDoTurno): Promise<SaidaDoTurno>
         novas.push({ role: "tool", tool_call_id: chamada.id, content: JSON.stringify(resultado.paraOModelo) });
         if (resultado.handoff) handoff = true;
         if (resultado.total) totais.push(resultado.total);
+        // Recusa não leva total (CA-06), nem o de uma cotação anterior do mesmo turno.
+        if (resultado.recusa) totais.length = 0;
         respostaFinal ??= resultado.respostaFinal;
       }
       if (falhou) return terminar(CONTINGENCIA, true);

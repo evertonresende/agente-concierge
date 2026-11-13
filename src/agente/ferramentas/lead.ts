@@ -100,6 +100,7 @@ async function tentarResumir(argumentos: Argumentos, contexto: Contexto): Promis
   }
   if (!pedido.cotacao.ok) {
     return {
+      recusa: true,
       paraOModelo: {
         recusada: true,
         motivo: pedido.cotacao.explicacao,
