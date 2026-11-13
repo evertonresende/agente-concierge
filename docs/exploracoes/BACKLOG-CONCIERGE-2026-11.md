@@ -446,6 +446,18 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   classe, handoff de contingência fora do turno sem registro no estado (L3). 16 de 22 defeitos
   plantados pegos. Devolvida com a regra: resumo cuja entrega falhou é reapresentado antes de
   valer um "sim". Limite de corpo decidido como provisória P12. Relatório fora do repositório
+- 13/11 20h28 · G · runtime real com a `main` + `frente-g` (98 casos, `--paralelo 2`, modelo atual
+  `gpt-oss-120b`): cotações, leads, recusas, manipulação, não-inventa e marco1 em 100%;
+  respostas 81% e depois 100%; handoff 85% e depois 92% (casos diferentes a cada rodada, todos
+  em turnos de contingência por demora do modelo); contrato 88% nas duas, sempre por
+  `con-10-idioma`. Sonda da coordenadora: a hóspede em inglês recebe três linhas de código em
+  português (datas com dia da semana e total), sem imóvel nem frase do modelo. É regressão da
+  G (L15) e bloqueia o merge: devolvida com pedido de diagnóstico da etapa que esvazia a
+  resposta, correção por regra e três rodadas do bloco. O verificador independente segue
+- 13/11 20h28 · medição · o `gpt-oss-120b` está lento e irregular agora, com e sem a G: cerca de 10%
+  dos turnos passam de 1.500 tokens de saída e de 15 s (p95 entre 15 e 22 s, máximo de 45 s),
+  com contingência em 1 a 2% dos turnos. Meia hora antes o p95 era 5,7 s no mesmo código. Não
+  é defeito de frente; pesa contra esse modelo, que já não é candidato a principal (X19)
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
