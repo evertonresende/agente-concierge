@@ -300,6 +300,19 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   gateway de `producao` (P10) seguem provisórias. B2 acrescenta `--pausa-ms` ao runner; a frente
   I mede DeepSeek 4.1 e GLM-5.3 abaixo de 20 chamadas por minuto quando a opção estiver na
   `main`. Haiku e Luna não são medidos até ele avisar
+- 13/11 19h20 · INCIDENTE: a máquina ficou sem memória (limite de memória do usuário atingido,
+  carga de 36) e derrubou as sessões das frentes F, G, H, I e B2, a da coordenação (retomada
+  sozinha) e todos os servidores locais. Nada commitado se perdeu; G e H tinham trabalho no
+  disco sem commit, preservado. Causa provável: várias suítes do vitest ao mesmo tempo, cada uma
+  com 8 workers, mais os servidores locais e a conferência da coordenação
+- 13/11 19h26 · retomada depois do incidente. Regras de memória passadas a todas as frentes: suíte
+  só com `npm test -- --maxWorkers=2`, conferir a memória disponível (4 GB ou mais) antes de
+  suíte ou servidor, servidor local só durante o CHECK 2, sem subagentes. O `conferir.sh` da
+  coordenação passou a rodar a suíte com 3 workers. Estado: B2 · `--pausa-ms` conferido e na
+  `main` (merge fce21b7); I · avisada, sobe os três servidores de novo e dispara as duas rodadas
+  pausadas; H · religada com o estado do disco (f5510cb commitado, o resto em stage); F
+  (37cab3d, árvore limpa) e G (47649d8 mais mudanças sem commit) · religadas para continuar a
+  lista de cada uma; webhook falso local da 8799 religado pela coordenação
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
