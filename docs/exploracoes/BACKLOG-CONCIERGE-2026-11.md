@@ -379,6 +379,23 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   F: autorizada a trocar essa linha (`test/textos-f.test.ts:17`). Um merge dela (b2d4495) saiu
   sem rodapé e fica assim. A frente G informou que a queda das 19h20 foi provavelmente dela: um
   `vitest --root /`, que varre o disco inteiro. Em curso: a parte dela da L18 (`porLimite`)
+- 13/11 20h04 · H · relatório da frente (fc52fe2): `fetch` deixou de ser chamado como método de
+  objeto (f5510cb, com teste de regressão), o log de contingência ganhou origem e classe do erro
+  (1ceb403) e há prova de que `postar` depois do prazo não dispara POST (75ab6ed). Conferido pela
+  coordenadora: ensaio do merge sobre a `main` limpo, 606 testes, tipos e gate verdes; no runtime
+  real (servidor local, ambiente `dev`) o servidor sobe, `contrato` 88% e `funciona-leads` 86%,
+  com as mesmas falhas que a `main` tem em `dev` (`con-07`, `lead-05`, `lead-06`: pendências de
+  casos da B2 e das ligações da G, não da H). Segunda rodada de verificador independente (Opus)
+  em curso; o merge espera o veredito
+- 13/11 20h04 · I · preparação do Haiku pronta numa cópia temporária, sem a chave: chamada pela
+  binding de IA com o gateway (sem SDK e sem secret novo no Worker), nível de raciocínio por
+  variável, recusa do modelo tratada como falha do principal, `porLimite` testado. Entra na
+  branch quando as rodadas com pausa terminarem (por volta das 20h50). Ponto aberto: os blocos
+  de raciocínio não voltam ao histórico em `src/agente/loop.ts` (arquivo da G); a I testa com a
+  chave real se a API aceita antes de pedir a mudança
+- 13/11 20h04 · B2 · pedido: `man-07` aceitar "time" e "equipe". F avisada da P11 e da linha de
+  `src/agente/ferramentas/lead.ts` a trocar depois que a G entrar. Observação: `con-10-idioma`
+  falhou em 1 de 2 rodadas do bloco `contrato` em `dev`; acompanhar depois da G
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
