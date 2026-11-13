@@ -339,6 +339,46 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
 - 13/11 19h34 · conferência depois do incidente: G (em Opus, já no item 6 da lista dela, com o
   trabalho do disco commitado), H (sessão viva, correção em curso) e I (servidores de volta,
   GLM-5.3 Flash commitado em 895d8aa) retomadas às 19h25; E está concluída desde 18h51
+- 13/11 19h44 · I · rajada da recusa simultânea medida (commit 895d8aa, principal GLM-5.3 Flash,
+  reserva DeepSeek 4.1 Flash, 10 conversas simultâneas de 4 turnos, sem pausa): 80 turnos, 80
+  respostas `200` e nenhum `500`; 26 responderam normal e 54 caíram na contingência com
+  `handoff: true` ("Tive um problema técnico e não consegui concluir o seu atendimento agora. Vou
+  passar a conversa para uma pessoa do nosso time, que continua com você."), em menos de 1 s
+  quase todos; nenhum turno acima de 60 s. No gateway: 136 respostas 429 do GLM-5.3 Flash e 110
+  do DeepSeek. Cada turno de contingência gastou 4 chamadas (o laço tenta 2 vezes e cada
+  tentativa passa pelo principal e pelo reserva). Quatro saídas propostas, nenhuma implementada,
+  levadas ao Éverton: terceiro nível de reserva com limite alto (`gpt-oss-120b`); esperar e
+  tentar de novo dentro do turno; menos chamadas por turno (não repetir quando o erro é de
+  limite, no laço da G); crédito no gateway. As três rodadas com pausa (GLM-5.3 Flash, DeepSeek
+  4.1 Flash e GLM-5.3) começaram depois da rajada, com zero 429 nos 3 primeiros minutos
+- 13/11 19h50 · Éverton decidiu (X21 e acréscimo da L18): Claude Haiku 5.5 vira candidato a
+  principal, pela chave da Anthropic dele no AI Gateway, com GLM-5.3 Flash de reserva; medição
+  do Haiku (98 casos e rajada, raciocínio baixo e médio) quando ele avisar que a chave está no
+  arquivo de ambiente; `gpt-oss-120b` não entra como terceiro nível; recusa por limite vai
+  direto para o reserva e não conta para a nova tentativa. Frentes I (`src/modelo.ts`: marca o
+  erro de limite e prepara o caminho do Haiku) e G (`src/agente/loop.ts`: não repete quando o
+  erro vem marcado) avisadas. Combinado entre as duas, sem importar código uma da outra: o erro
+  lançado pelo modelo quando principal e reserva recusam por limite leva a propriedade
+  `porLimite: true`
+- 13/11 19h53 · F · verificador independente (Opus, esforço padrão) sobre a trava mesclada:
+  REPROVADO. Passou: nenhum "registrado" sem `201`, nenhum segundo POST depois de `201` ou de
+  resultado incerto, marcador antes do POST, 28 de 28 mensagens com dado diferente sem lead, P4,
+  12 de 12 defeitos plantados pegos. Reprovou: (A1, alta) hesitação com dado ("acho que sim, mas
+  somos 3") recebe só "Está tudo certo?" e o "sim" seguinte envia o dado antigo; (A2, média-alta)
+  `pedidoDeConfirmacaoPendente` mantém o resumo em 16 de 22 formas de mudança; (A3, média) `422`
+  com campo apontado repete sem handoff; (A4, média) "sim" com interrogação de outra escrita ou
+  emoji envia. Devolvida com a regra invertida: todo pedido de confirmação de código traz o
+  resumo completo, e o rearme é negado por padrão (na dúvida, derruba o resumo). A frente já
+  estava na `main` e em `dev` (só webhook falso); as correções entram como commits novos.
+  Regra provisória P11 sobre palavras curtas. Relatório do verificador fora do repositório
+- 13/11 19h53 · G · relatório das 19h43, lido na conversa dela: itens 1 a 8 da revisão commitados
+  (c8b92a3 a 19ac5a6), mais 5d6541b e 94d2b90; CHECK 2 local com os três blocos de robustez em
+  100%, `funciona-respostas` 100%, `funciona-leads` 93% e `funciona-recusas` 90% (`lead-07` e
+  `rec-10` falharam uma vez e passaram à mão: pedidas mais duas rodadas e a resposta real, não
+  conta como verde). As duas ligações da F prontas e sem commit por um erro de tipo num teste da
+  F: autorizada a trocar essa linha (`test/textos-f.test.ts:17`). Um merge dela (b2d4495) saiu
+  sem rodapé e fica assim. A frente G informou que a queda das 19h20 foi provavelmente dela: um
+  `vitest --root /`, que varre o disco inteiro. Em curso: a parte dela da L18 (`porLimite`)
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -777,6 +817,15 @@ Flash (2º), sem escolha final. Antes das rodadas com pausa, a frente mede com c
 real o que o agente responde quando o principal e o reserva recusam por limite ao
 mesmo tempo (quantos turnos caem em contingência, o texto, o `handoff`, o status e a
 latência) e traz a proposta de saída, sem implementar.
+
+Decisões do Éverton sobre essa medida (13/11, X21): novo candidato a principal, Claude
+Haiku 5.5 (`claude-haiku-5-5`), pela chave da Anthropic dele guardada no AI Gateway
+(`ANTHROPIC_API_KEY` no arquivo de ambiente; ele avisa quando gravar), com o GLM-5.3
+Flash de reserva. Com a chave lá, a frente mede o Haiku nos 98 casos e na rajada de 10
+conversas simultâneas, com raciocínio em nível baixo e em nível médio. `gpt-oss-120b`
+não entra como último nível de reserva. Recusa por limite vai direto para o reserva e
+não conta para a nova tentativa da L18. As rodadas com pausa do GLM-5.3 Flash e do
+DeepSeek 4.1 Flash continuam e escolhem o reserva. `MODELO` segue sem fixar.
 
 ### Tasks
 - [ ] Rodar o conjunto dev (nunca o reservado) com 3 candidatos, mesmo código, todos de
