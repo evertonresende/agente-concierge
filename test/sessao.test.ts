@@ -1,6 +1,8 @@
 import { evictDurableObject, runInDurableObject } from "cloudflare:test";
 import { env } from "cloudflare:workers";
 import { describe, expect, it } from "vitest";
+import { FERRAMENTAS, type Contexto } from "../src/agente/ferramentas";
+import { definir } from "../src/agente/ferramentas/tipos";
 import type { Env } from "../src/env";
 import type { Mensagem, Modelo } from "../src/modelo";
 import type { Sessao } from "../src/sessao";
@@ -208,6 +210,38 @@ describe("sessão", () => {
       expect(confirmacao.reply).not.toMatch(/registrad/i);
     });
   }
+
+  it("as ferramentas recebem a mensagem do turno e a data de hoje em São Paulo, do relógio injetado", async () => {
+    // Ferramenta de sondagem, só neste teste: guarda o contexto que a sessão montou.
+    const vistos: Contexto[] = [];
+    FERRAMENTAS.push(definir("sondar_contexto", "sonda de teste", {}, [], async (_argumentos, contexto) => {
+      vistos.push(contexto);
+      return { paraOModelo: { ok: true } };
+    }));
+    try {
+      const modelo: Modelo = async (mensagens) => (mensagens.at(-1)!.role === "tool" ? diz("ok") : pedeFerramentas(chamar("sondar_contexto")));
+      const stub = namespace.getByName(`teste-${++proxima}`);
+      let instante = Date.UTC(2027, 0, 16, 2, 59); // 23h59 de 15/01/2027 em São Paulo
+      await runInDurableObject(stub, (sessao: Sessao) => {
+        sessao.dependencias = { modelo, buscar: criarMundo().buscar, agora: () => instante };
+      });
+
+      await stub.conversar("Quero reservar para amanhã.");
+      instante += 2 * 60_000; // 00h01 de 16/01/2027 em São Paulo
+      await stub.conversar("  sim  ");
+      expect(vistos.map((c) => [c.turno, c.mensagem, c.hoje])).toEqual([
+        [1, "Quero reservar para amanhã.", "2027-01-15"],
+        [2, "  sim  ", "2027-01-16"],
+      ]);
+
+      // Sem relógio injetado, vale o relógio real.
+      const semRelogio = await abrir(modelo);
+      await semRelogio.stub.conversar("oi");
+      expect(vistos.at(-1)!.hoje).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    } finally {
+      FERRAMENTAS.pop();
+    }
+  });
 
   it("falha do modelo vira resposta de contingência e não trava a mensagem seguinte", async () => {
     const { modelo } = roteiro(new Error("fora do ar"), new Error("fora do ar"), diz("Olá!"));

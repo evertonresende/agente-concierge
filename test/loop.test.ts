@@ -1,23 +1,15 @@
 import { describe, expect, it } from "vitest";
-import type { Contexto } from "../src/agente/ferramentas";
 import { corrigirValores, rodarTurno, valoresDoCodigo } from "../src/agente/loop";
-import { criarCatalogo } from "../src/catalogo";
-import { type Cofre, ESTADO_INICIAL, type EstadoLead, postarLead } from "../src/lead";
+import { type Cofre, ESTADO_INICIAL, type EstadoLead } from "../src/lead";
 import type { Modelo } from "../src/modelo";
-import { BASE_CATALOGO, chamar, criarMundo, diz, pedeFerramentas, roteiro, URL_LEADS } from "./apoio";
+import { chamar, criarContexto, criarMundo, diz, pedeFerramentas, roteiro } from "./apoio";
 
 function montar(opcoes: NonNullable<Parameters<typeof criarMundo>[0]> = {}) {
   const mundo = criarMundo(opcoes);
   let estado: EstadoLead = ESTADO_INICIAL;
   const cofre: Cofre = { ler: () => estado, salvar: (e) => { estado = e; } };
-  const contexto = (turno: number): Contexto => ({
-    catalogo: criarCatalogo(BASE_CATALOGO, mundo.buscar),
-    cofre,
-    turno,
-    envio: { ligado: true, destinoPermitido: true, postar: (corpo) => postarLead(mundo.buscar, URL_LEADS, corpo) },
-  });
   const turno = (n: number, mensagem: string, modelo: Modelo, prazo = Date.now() + 5_000) =>
-    rodarTurno({ mensagem, historico: [], houveHandoff: false, contexto: contexto(n), modelo, prazo });
+    rodarTurno({ mensagem, historico: [], houveHandoff: false, contexto: criarContexto(mundo, cofre, n, mensagem), modelo, prazo });
   return { mundo, turno, estado: () => estado };
 }
 
