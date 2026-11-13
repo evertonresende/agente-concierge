@@ -4,7 +4,8 @@
 //   2. o total enviado sai de uma nova leitura da ficha; se mudou, não envia;
 //   3. o marcador da reserva é gravado antes do POST, e reserva marcada nunca é
 //      enviada de novo (nem depois de reinício, nem com duas confirmações juntas);
-//   4. só um 201 vira "registrado";
+//   4. só um 201 vira "registrado"; resposta diferente é "não registrado" e libera a
+//      reserva para um novo resumo; resposta que não chegou é "incerto" e a bloqueia (L11);
 //   5. quem reconhece o sim é o código, lendo a mensagem do hóspede (L9): o modelo só
 //      pede a confirmação, e ela vale no turno seguinte a um resumo ou a um pedido de
 //      confirmação que saíram do código.
@@ -21,7 +22,18 @@ export interface Reserva {
   telefone: string;
 }
 
-export type SituacaoEnvio = "enviando" | "registrado" | "falhou";
+/**
+ * Marcador de uma reserva: "enviando" (gravado antes do POST), "registrado" (201),
+ * "nao_registrado" (o webhook respondeu outra coisa: com certeza não entrou) e "incerto"
+ * (tempo esgotado ou sem resposta: pode ter entrado). Só "nao_registrado" permite tentar
+ * de novo; "enviando" que sobrou de um reinício vale como incerto.
+ */
+export type SituacaoEnvio = "enviando" | "registrado" | "nao_registrado" | "incerto";
+
+/** A reserva já teve um envio que entrou ou pode ter entrado: não ganha outro POST na sessão (L7, L11). */
+export function reservaFechada(situacao: SituacaoEnvio | undefined): boolean {
+  return situacao !== undefined && situacao !== "nao_registrado";
+}
 
 export interface Pendente {
   reserva: Reserva;
@@ -56,10 +68,10 @@ export function apresentarResumo(cofre: Cofre, reserva: Reserva, totalCentavos: 
   cofre.salvar({ ...cofre.ler(), pendente: { reserva, totalCentavos, turno, nomeDoImovel } });
 }
 
-/** O resumo que ainda espera o sim do hóspede: existe e a reserva dele nunca foi enviada. */
+/** O resumo que ainda espera o sim do hóspede: existe e a reserva dele ainda pode ser enviada. */
 export function pendenteAberto(estado: EstadoLead): Pendente | null {
   const { pendente, envios } = estado;
-  return pendente && !envios[chaveDaReserva(pendente.reserva)] ? pendente : null;
+  return pendente && !reservaFechada(envios[chaveDaReserva(pendente.reserva)]) ? pendente : null;
 }
 
 /** Algum dado mudou depois do resumo: a confirmação que estava em aberto deixa de valer (L10). */
@@ -163,9 +175,33 @@ export type MotivoNaoRegistrado =
   | "envio_desligado" // ENVIO_LEADS diferente de "ligado" (L24)
   | "destino_proibido" // fora de producao apontando para o webhook real
   | "catalogo" // não deu para reler a ficha
-  | "resposta" // o webhook respondeu algo diferente de 201
+  | "resposta" // o webhook respondeu algo diferente de 201, sem apontar um dado do hóspede
   | "incerto" // tempo esgotado ou sem resposta: pode ter chegado ou não (L11)
-  | "ja_tentado"; // esta reserva já teve um envio que não terminou em 201
+  | "ja_tentado"; // esta reserva já teve um envio de resultado incerto
+
+/** Campos do lead que o hóspede informa e pode corrigir. `valor_total` sai do código. */
+export const CAMPOS_DO_HOSPEDE = ["nome", "telefone", "imovel_id", "checkin", "checkout", "hospedes"] as const;
+export type CampoDoHospede = (typeof CAMPOS_DO_HOSPEDE)[number];
+
+/**
+ * Quais dados do hóspede o corpo de um 422 aponta. O formato real do corpo é
+ * desconhecido, então a leitura é pelo texto: vale o nome de campo que aparecer nele, em
+ * qualquer estrutura. Corpo que não cita campo, que cita `valor_total` (o hóspede não o
+ * corrige) ou que cita todos (eco do lead) não aponta nada.
+ */
+export function camposApontados(corpo: string): CampoDoHospede[] {
+  const texto = semAcento(corpo.slice(0, 4000));
+  if (/\bvalor_total\b/.test(texto)) return [];
+  const campos = CAMPOS_DO_HOSPEDE.filter((campo) => new RegExp(`\\b${campo === "imovel_id" ? "imovel(_id)?" : campo}\\b`).test(texto));
+  return campos.length === CAMPOS_DO_HOSPEDE.length ? [] : campos;
+}
+
+/** O webhook respondeu 422: com certeza não registrou. Leva os dados que o corpo apontou. */
+export class LeadRecusado extends Error {
+  constructor(readonly campos: CampoDoHospede[]) {
+    super("webhook de leads recusou o lead");
+  }
+}
 
 export type ResultadoConfirmacao =
   | { tipo: "sem_resumo" }
@@ -178,12 +214,14 @@ export type ResultadoConfirmacao =
   | { tipo: "total_mudou"; pendente: Pendente }
   | { tipo: "recusada"; explicacao: string }
   | { tipo: "registrado"; pendente: Pendente }
+  /** O webhook recusou (422) apontando dados do hóspede: pedir a correção e refazer o resumo. */
+  | { tipo: "campo_recusado"; campos: CampoDoHospede[] }
   | { tipo: "nao_registrado"; motivo: MotivoNaoRegistrado };
 
 export interface DependenciasDoEnvio {
   /** Lê a ficha de novo e recalcula. `null` = imóvel não encontrado. Lança se o catálogo falhar. */
   recotar(reserva: Reserva): Promise<Cotacao | null>;
-  /** Faz o POST e devolve o status HTTP. Lança em erro de rede ou tempo esgotado. */
+  /** Faz o POST e devolve o status HTTP. Lança `LeadRecusado` no 422 e outro erro quando a resposta não chega. */
   postar(corpo: CorpoDoLead): Promise<number>;
   envioLigado: boolean;
   destinoPermitido: boolean;
@@ -200,6 +238,15 @@ function jaMarcada(situacao: SituacaoEnvio, pendente: Pendente): ResultadoConfir
     : { tipo: "nao_registrado", motivo: "ja_tentado" };
 }
 
+/** Uma tentativa de POST: o status e os dados apontados num 422, ou "incerto" se a resposta não chegou. */
+async function tentarEnvio(deps: DependenciasDoEnvio, corpo: CorpoDoLead): Promise<{ status: number; campos: CampoDoHospede[] } | "incerto"> {
+  try {
+    return { status: await deps.postar(corpo), campos: [] };
+  } catch (erro) {
+    return erro instanceof LeadRecusado ? { status: 422, campos: erro.campos } : "incerto";
+  }
+}
+
 /**
  * O modelo pediu a confirmação. Decide, pela mensagem do hóspede e pelo estado, se o POST
  * sai, e relata o que aconteceu de fato.
@@ -209,7 +256,7 @@ export async function confirmar(cofre: Cofre, turnoAtual: number, mensagem: stri
   if (!pendente) return { tipo: "sem_resumo" };
   const chave = chaveDaReserva(pendente.reserva);
   const anterior = envios[chave];
-  if (anterior) return jaMarcada(anterior, pendente);
+  if (reservaFechada(anterior)) return jaMarcada(anterior!, pendente);
   if (turnoAtual <= pendente.turno) return { tipo: "mesmo_turno" };
 
   const leitura = lerConfirmacao(mensagem, pendente);
@@ -253,23 +300,27 @@ export async function confirmar(cofre: Cofre, turnoAtual: number, mensagem: stri
   // então duas confirmações que chegaram juntas não passam as duas.
   const agora = cofre.ler();
   const corrida = agora.envios[chave];
-  if (corrida) return jaMarcada(corrida, pendente);
+  if (reservaFechada(corrida)) return jaMarcada(corrida!, pendente);
   if (!agora.pendente || chaveDaReserva(agora.pendente.reserva) !== chave) return { tipo: "sem_resumo" };
   marcar(cofre, chave, "enviando");
 
-  let status: number;
-  try {
-    status = await deps.postar(corpoDoLead(pendente.reserva, cotacao.totalCentavos));
-  } catch {
-    marcar(cofre, chave, "falhou");
+  const corpo = corpoDoLead(pendente.reserva, cotacao.totalCentavos);
+  let resposta = await tentarEnvio(deps, corpo);
+  // 5xx: exatamente uma nova tentativa (L11). Resposta que não chegou nunca é repetida.
+  if (resposta !== "incerto" && resposta.status >= 500) resposta = await tentarEnvio(deps, corpo);
+  if (resposta === "incerto") {
+    marcar(cofre, chave, "incerto");
     return { tipo: "nao_registrado", motivo: "incerto" };
   }
-  if (status !== 201) {
-    marcar(cofre, chave, "falhou");
-    return { tipo: "nao_registrado", motivo: "resposta" };
+  if (resposta.status === 201) {
+    marcar(cofre, chave, "registrado");
+    return { tipo: "registrado", pendente };
   }
-  marcar(cofre, chave, "registrado");
-  return { tipo: "registrado", pendente };
+  // Com certeza não registrou: a confirmação foi gasta, mas a reserva não fica bloqueada.
+  // Um novo resumo (com o dado corrigido, ou mais tarde) pode ser confirmado e enviado.
+  const estado = cofre.ler();
+  cofre.salvar({ ...estado, pendente: null, envios: { ...estado.envios, [chave]: "nao_registrado" } });
+  return resposta.campos.length > 0 ? { tipo: "campo_recusado", campos: resposta.campos } : { tipo: "nao_registrado", motivo: "resposta" };
 }
 
 /** "real" quando o webhook mora no mesmo host do catálogo (contrato seção 8); senão "falso". */
@@ -291,7 +342,8 @@ const TEMPO_DO_WEBHOOK_MS = 10_000;
 
 /**
  * POST do lead: uma tentativa só, sem seguir redirecionamento (um 307 reenviaria o corpo
- * a outro host). Devolve só o status; o erro lançado nunca carrega a URL (ela tem token).
+ * a outro host). Devolve o status; no 422 lança `LeadRecusado` com os dados que o corpo
+ * apontou. Sem resposta, lança um erro que nunca carrega a URL (ela tem token).
  */
 export async function postarLead(buscar: typeof fetch, url: string, corpo: CorpoDoLead, tempoMs = TEMPO_DO_WEBHOOK_MS): Promise<number> {
   const controle = new AbortController();
@@ -303,11 +355,13 @@ export async function postarLead(buscar: typeof fetch, url: string, corpo: Corpo
       body: JSON.stringify(corpo),
       redirect: "manual",
       signal: controle.signal,
+    }).catch(() => {
+      throw new Error("webhook de leads sem resposta");
     });
-    await resposta.body?.cancel();
+    // Daqui em diante o status já chegou: falha ao ler ou descartar o corpo não muda o resultado.
+    if (resposta.status === 422) throw new LeadRecusado(camposApontados(await resposta.text().catch(() => "")));
+    await resposta.body?.cancel().catch(() => {});
     return resposta.status;
-  } catch {
-    throw new Error("webhook de leads sem resposta");
   } finally {
     // Relógio pendente segura o Durable Object acordado depois da resposta.
     clearTimeout(relogio);

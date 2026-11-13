@@ -181,7 +181,8 @@ describe("loop de ferramentas", () => {
     expect(saida.reply).not.toMatch(/registrad/i);
     expect(saida.reply).toContain("Não consegui");
     expect(saida.handoff).toBe(true);
-    expect(mundo.leads).toHaveLength(1);
+    // L11: a tentativa e uma nova tentativa.
+    expect(mundo.leads).toHaveLength(2);
   });
 
   it("cotar outra estadia depois do resumo troca o resumo e exige novo sim (L10)", async () => {

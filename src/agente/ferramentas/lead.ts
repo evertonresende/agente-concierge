@@ -1,5 +1,8 @@
 import { regrasDaFicha } from "../../catalogo";
-import { apresentarResumo, chaveDaReserva, confirmar, invalidarPendente, type Leitura, type Pendente, type Reserva } from "../../lead";
+import {
+  apresentarResumo, type CampoDoHospede, chaveDaReserva, confirmar, invalidarPendente, type Leitura, type Pendente, type Reserva,
+  reservaFechada,
+} from "../../lead";
 import { diasEntre, formatarDataComDia } from "../../nucleo/datas";
 import { formatarReais } from "../../nucleo/dinheiro";
 import { cotar } from "../../nucleo/preco";
@@ -57,7 +60,7 @@ export function resumir(contexto: Contexto, pedido: Extract<Pedido, { ok: true }
     reserva, totalCentavos: pedido.cotacao.totalCentavos, turno: contexto.turno, nomeDoImovel: pedido.ficha.nome,
   };
   const anterior = contexto.cofre.ler().envios[chaveDaReserva(reserva)];
-  if (anterior) {
+  if (reservaFechada(anterior)) {
     // O hóspede pediu outra reserva (que já teve envio): o resumo que estava em aberto,
     // de uma reserva diferente, deixa de valer (L10).
     invalidarPendente(contexto.cofre);
@@ -72,6 +75,17 @@ export function resumir(contexto: Contexto, pedido: Extract<Pedido, { ok: true }
     respostaFinal: textoDoResumo(pendente),
     total: formatarReais(pendente.totalCentavos),
   };
+}
+
+const ROTULOS: Record<CampoDoHospede, string> = {
+  nome: "o nome", telefone: "o telefone", imovel_id: "o imóvel", checkin: "a data de entrada", checkout: "a data de saída",
+  hospedes: "o número de hóspedes",
+};
+
+/** O webhook recusou o lead apontando dados do hóspede: pede a correção, sem handoff (L11). */
+function pedeCorrecao(campos: CampoDoHospede[]): string {
+  return `Não consegui registrar o seu pedido: o sistema de reservas não aceitou ${campos.map((c) => ROTULOS[c]).join(", ")}. `
+    + "Pode me informar de novo? Com a correção eu monto um novo resumo para você confirmar.";
 }
 
 /** A mensagem do hóspede não é um sim inequívoco ao resumo: nada foi enviado (L9). */
@@ -205,6 +219,11 @@ export const confirmarReserva = definir(
           respostaFinal: "Pronto! Seu pedido de reserva foi registrado e encaminhado ao nosso time comercial, no total de "
             + `${formatarReais(resultado.pendente.totalCentavos)}. O time entra em contato para os próximos passos. `
             + "Este registro é um pedido: ele ainda não garante a reserva nem bloqueia as datas.",
+        };
+      case "campo_recusado":
+        return {
+          paraOModelo: { registrado: false, dados_recusados: resultado.campos, instrucao: "Com o dado corrigido, chame montar_resumo." },
+          respostaFinal: pedeCorrecao(resultado.campos),
         };
       case "nao_registrado":
         return {
