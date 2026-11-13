@@ -4,8 +4,11 @@
 #
 # Os termos proibidos (domínio da API, token, nome da empresa) não ficam neste
 # arquivo: são derivados em tempo de execução da variável CATALOGO_URL, que vive
-# fora do repositório. Termos extras (apelidos de máquina etc.) podem ser postos,
-# um por linha, em ~/.config/agente-concierge/sigilo-extra.
+# fora do repositório, e do host de toda variável terminada em _URL definida no mesmo
+# arquivo (agente de dev, webhook falso, produção). Termos extras (apelidos de máquina
+# etc.) podem ser postos, um por linha, em ~/.config/agente-concierge/sigilo-extra.
+# Termo que o Éverton mandar liberar (por exemplo, a URL pública no README) vai, um
+# por linha, em ~/.config/agente-concierge/sigilo-liberados.
 #
 # A saída mostra só arquivo:linha, nunca o trecho encontrado.
 set -u
@@ -28,8 +31,12 @@ fixos=$(mktemp); trap 'rm -f "$fixos" "$marca"' EXIT
 {
   printf '%s\n' "$host" "$token" "$empresa"
   hostname; hostname -s
+  for nome in $(sed -n 's/^\([A-Za-z_][A-Za-z0-9_]*_URL[A-Za-z0-9_]*\)=.*/\1/p' "$DIR_CFG/env"); do
+    printf '%s\n' "${!nome}" | sed -E 's#^[a-z]+://([^/:]+).*#\1#'
+  done
   [ -f "$DIR_CFG/sigilo-extra" ] && grep -v '^[[:space:]]*$' "$DIR_CFG/sigilo-extra"
-} | awk 'length($0) >= 4' | sort -u > "$fixos"
+} | awk 'length($0) >= 4' | sort -u \
+  | { if [ -f "$DIR_CFG/sigilo-liberados" ]; then grep -v -x -F -f "$DIR_CFG/sigilo-liberados"; else cat; fi; } > "$fixos"
 
 relata() { # $1 = rótulo; stdin = linhas arquivo:linha
   local linhas; linhas=$(sort -u)
