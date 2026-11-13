@@ -49,19 +49,19 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 | A | agente-concierge | Esqueleto vertical até o Marco 1 | pré-voo | alta | 3,5 | thread T3 · Fable 5.2 | concluída | `frente-a` |
 | B1 | agente-concierge | Webhook falso (Worker próprio), construído e testado local; deploy em `dev` pela coordenadora | pré-voo | alta | 1 | subagente em worktree · DeepSeek | concluída | `t3/webhook-falso-leads` |
 | B2 | agente-concierge | Harness HTTP e casos dev por bloco | — | alta | 2,5 | thread T3 · Gemini 4 Hydrogen | passo 2 na main; resíduos da segunda verificação em commit de seguimento | `frente-b2` |
-| C | agente-concierge | Conjunto reservado (fora do repo) | — | alta | 2 | thread T3, fica viva · GPT-6 Astra | rodando (60 casos; relendo por classes de defeito) | `frente-c` (sem commits; casos fora do repo) |
-| D | agente-concierge | Simulador de hóspede hostil | B2 (formato de caso) | média | 2,5 | thread T3 · Gemini 4 Hydrogen | na `main` (6c090d0); falta a rodada ao vivo contra `dev` e a B2 mover os 12 casos fixos | `frente-d` |
+| C | agente-concierge | Conjunto reservado (fora do repo) | — | alta | 2 | thread T3 · GPT-6 Astra até 13/11 18h35 | 60 casos entregues fora do repo; conversa no GPT encerrada pela X16. Caso substituto, se for preciso, numa conversa nova em Gemini 4 Hydrogen | `frente-c` (sem commits; casos fora do repo) |
+| D | agente-concierge | Simulador de hóspede hostil | B2 (formato de caso) | média | 2,5 | thread T3 · Gemini 4 Hydrogen | concluída: na `main` (6c090d0), rodada ao vivo com `SIMULADOR OK`; a B2 move os 12 casos fixos | `frente-d` |
 | M1 | agente-concierge | Revisão curta do Marco 1 | A | alta | 0,5 | subagentes Opus 5.5 + conselho | concluída (`docs/revisoes/m1.md`; achados com dono) | — |
-| I | agente-concierge | Escolha do modelo por eval | A, B2 | alta | 1 | subagente em worktree · Opus 5.5 | pendente | — |
+| I | agente-concierge | Escolha do modelo por eval | A, B2 | alta | 1 | subagente em worktree · Opus 5.5, esforço médio desde a X16 | rodando (fase 1; candidato da OpenAI fora do plano) | `t3/` (subagente) |
 | E | agente-concierge | Datas | Marco 1, L1, L1a, L1b, L2 | alta | 1,5 | subagente em worktree · Gemini 4 Hydrogen | entregue (e8c2669, db7d272); seguimento curto da P5 e da P7 antes do merge | `t3/datas-relativas-sao-paulo` |
-| F | agente-concierge | Lead robusto | Marco 1, L6, L7, L9, L10, L11, L15 (textos fixos), L20 | alta | 2,5 | thread T3 · Fable 5.2 | rodando | `frente-f` |
-| G | agente-concierge | Robustez e handoff | Marco 1, L3, L4, L5, L5a, L12, L13a, L15, L16, L16a, L19, L21 | alta | 2,5 | thread T3 · Fable 5.2 | rodando | `frente-g` |
-| H | agente-concierge | Concorrência endurecida e falha interna | Marco 1, L17, L17a, L18 | alta | 1 | subagente em worktree · Gemini 4 Hydrogen | rodando | `t3/` (subagente) |
+| F | agente-concierge | Lead robusto | Marco 1, L6, L7, L9, L10, L11, L15 (textos fixos), L20 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16) | rodando | `frente-f` |
+| G | agente-concierge | Robustez e handoff | Marco 1, L3, L4, L5, L5a, L12, L13a, L15, L16, L16a, L19, L21 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16) | rodando | `frente-g` |
+| H | agente-concierge | Concorrência endurecida e falha interna | Marco 1, L17, L17a, L18 | alta | 1 | subagente em worktree · Gemini 4 Hydrogen | reprovada no CHECK 2 (Worker não sobe no runtime real); em correção | `t3/durable-session-concurrency` |
 | J | agente-concierge | Página de chat em dois passos: design (canvas) e implementação | passo 1: nada; passo 2: Marco 1 e aprovação do Éverton | baixa | 0,7 + 1 | thread T3 · Fable 5.2 | passo 1 concluído (canvas aprovado pelo Éverton, com dois ajustes); passo 2 entregue (b8991ce) | `frente-j` |
-| M2 | agente-concierge | Revisão de código, segurança e segunda opinião | leva 2 integrada | alta | 1,5 | subagentes Opus 5.5 + conselho | pendente | — |
+| M2 | agente-concierge | Revisão de código, segurança e segunda opinião | leva 2 integrada | alta | 1,5 | subagentes Opus 5.5 (esforço médio) + conselho só com o Gemini (X16) | pendente | — |
 | L | agente-concierge | Custo por conversa e monitor diário | leva 2 integrada | média | 1 | subagente em worktree · Gemini 4 Hydrogen | pendente | — |
-| K | agente-concierge | Produção com o envio real desligado | M2 | alta | 1,5 | thread T3 · Opus 5.5 | pendente | — |
-| N | agente-concierge | Entregáveis de processo | K | alta | 2 | thread T3 · Opus 5.5 | pendente | — |
+| K | agente-concierge | Produção com o envio real desligado | M2 | alta | 1,5 | thread T3 · Opus 5.5, esforço médio (X16) | pendente | — |
+| N | agente-concierge | Entregáveis de processo | K | alta | 2 | thread T3 · Opus 5.5, esforço médio (X16) | pendente | — |
 | — | — | Correções entre leva 2 e 3 | evals | alta | 1,5 | frente dona do arquivo | — | — |
 
 Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `bloqueada` ·
@@ -175,16 +175,72 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
 - 13/11 18h01 · regra provisória P4 (o "sim" só vale logo depois de resumo ou pedido de
   confirmação gerados por código), levantada pela frente F
 - 13/11 18h01 · relatório da medida de base em `evals/relatorios/2026-11-13-dev-base-marco1.json`
-- 13/11 18h20 · F · passo 1 (o "sim" lido por código, P4 na versão dura) e detector de idioma
+- 13/11 18h14 · F · passo 1 (o "sim" lido por código, P4 na versão dura) e detector de idioma
   entregues · f55029c, b05590e · exceção de uma linha em `test/loop.test.ts` autorizada
-- 13/11 18h30 · D · na `main` depois de ensaio de merge, 130 testes, tipos, teste próprio 12 de 12
+- 13/11 18h16 · D · na `main` depois de ensaio de merge, 130 testes, tipos, teste próprio 12 de 12
   e gate · merge 6c090d0 · falta a rodada ao vivo
-- 13/11 18h35 · E · entregue (e8c2669, db7d272); conferida pela coordenação com tabela própria
+- 13/11 18h18 · E · entregue (e8c2669, db7d272); conferida pela coordenação com tabela própria
   de datas em três fusos, sem diferença; duas lacunas levantadas viraram P5 e P6, e a conferência
   achou a P7; seguimento curto pedido antes do merge
-- 13/11 18h40 · J · passo 2 entregue (b8991ce); o contorno de foco por dentro do campo virou P8.
+- 13/11 18h19 · J · passo 2 entregue (b8991ce); o contorno de foco por dentro do campo virou P8.
   Aviso dela para todas: `npm run dev -- --port N` falha (dois `--port`); o comando é
   `npx wrangler dev --env dev --port N`
+- 13/11 18h20 · F (passo 1 e idioma) e J (passo 2) na `main` · merges 56cc12c e 75fdeb8 ·
+  `dev` publicado da 75fdeb8, `BLOCO marco1: 100%`, `EVAL OK`
+- 13/11 18h21 · I · despachada (subagente em worktree, Opus 5.5), em duas fases: mede agora e
+  repete a comparação depois que a G entrar na `main`, porque a G reescreve o prompt e o loop
+- 13/11 18h22 · D · rodada ao vivo do simulador contra `dev` iniciada pela coordenação
+- 13/11 18h24 · B2 · seguimento 60d87d9 conferido (`RUNNER OK`, `TRAVA OK`, `CASOS OK`); entra
+  na `main` junto com os 12 casos da D e a correção do `con-07` (regex não aceitava "já
+  registramos")
+- 13/11 18h26 · H · REPROVADA no CHECK 2: com a branch mesclada, o Worker não sobe no runtime
+  real (constante exportada no módulo de entrada; os 142 testes passam porque o vitest não roda
+  esse runtime). Devolvida com correção, teste de regressão e prova pelo `/saude`. Verificador
+  independente (Opus, recorte de 30 chamadas) lendo a entrega: é a rodada única dela
+- 13/11 18h27 · F · passos 2 a 4 publicados na `frente-f` (363 testes; `funciona-leads` 91%
+  local, o caso que falta depende da ligação da G); relatório final depois da revisão dela
+- 13/11 18h32 · Éverton: limite semanal do Claude em 84%. Vale o combinado: recorte menor, uma
+  rodada de verificador por frente, e frente do Claude que parar por cota vai para o Gemini 4
+  Hydrogen (X7). A trava de confirmação (F) e a ligação dela no loop (G) são verificadas numa
+  rodada só, depois do merge da G. **Se a coordenadora parar por cota: retomar daqui.** Pendente
+  de merge, nesta ordem: B2 (60d87d9 + fila), E (seguimento da P5 e P7, depois CHECK 2 local do
+  bloco `funciona-cotacoes`), F (ensaio de merge + bloco `funciona-leads` local), H (depois da
+  correção e do veredito), G, I (fase 2). Scripts da coordenação fora do repositório:
+  `conferir.sh` (ensaio de merge, suíte, tipos, gate), `local-eval.sh` (servidor local do
+  estado mesclado + runner), `levar-para-main.sh` (merge `--no-ff`, gate, push)
+- 13/11 18h40 · D · critério 1 verde: rodada ao vivo contra `dev` (main 75fdeb8) terminou com
+  `SIMULADOR OK`, relatório em `evals/relatorios/simulador-2026-11-13T21-32-22-068Z.md`. 5 de 10
+  conversas reprovadas, lidas à mão: 2 são da F (um "sim" que repete os dados do próprio resumo
+  não confirmava; mais estrito que a L9, devolvido a ela), 1 some com a frente E (cotou estadia
+  no passado), 2 são falso alarme do juiz do simulador (o hóspede simulado pediu um humano ou
+  pediu para segurar a reserva por conta própria, e o juiz esperava `handoff: false`). Limite
+  conhecido do simulador: o juiz de handoff não enxerga gatilho que o modelo do hóspede inventa;
+  reprovação de handoff nele se lê à mão
+- 13/11 18h35 · Éverton mudou os provedores (`DECISOES.md` X16): chave da OpenAI fora de uso,
+  GPT e DeepSeek fora do plano, fora do Claude só o Gemini 4 Hydrogen, frentes do Claude em
+  Opus 5.5 com esforço médio. Feito na hora: frente I avisada para parar qualquer chamada com a
+  chave e desfazer o que tiver guardado; I, F e G trocadas de modelo na própria conversa (F e G
+  fecham o turno num ponto consistente e seguem no modelo novo); nenhuma mensagem mais para a
+  conversa da C
+- 13/11 18h44 · estado, com horário conferido no relógio (os da X16 estavam 10 minutos adiantados
+  e foram corrigidos para 18h35):
+  - I · confirmou ter guardado a chave da OpenAI no Secrets Store e no gateway `concierge-dev`
+    antes da ordem, e removeu das duas; a coordenação conferiu por nome que não há segredo dela
+    na conta. O commit 8bc3d2a da branch dela (`t3/modelo-evals-fallback`, fora da `main`) ainda
+    descreve o modelo da OpenAI ligado pelo gateway; como entra na `main` é decisão do Éverton
+    (pendente). Segue a fase 1 com candidatos do Workers AI
+  - H · verificador independente: REPROVADA. Crítico: a nova tentativa do Worker reenvia a mesma
+    mensagem sem identificador; se o objeto já tinha gravado o turno, um "sim" é processado duas
+    vezes e sai lead de resumo que o hóspede não viu. Alto: um teste dela fica vermelho na `main`
+    atual (P4). Devolvida com a correção (identificador por pedido gravado na transação do
+    turno), junto com o defeito de runtime. Relatório do verificador fora do repositório
+  - E · seguimento f9d5485 conferido (tabelas da coordenação em dois fusos, 340 testes no ensaio
+    de merge), mas o CHECK 2 achou regressão da L8: com a branch dela, 1 de 3 respostas à cotação
+    sem hóspedes deixa de informar capacidade e de perguntar quantas pessoas. Devolvida
+  - B2 · 2b36f36 (11 casos da D movidos, 98 casos) não entra ainda: o teste próprio do simulador
+    fica vermelho porque ainda procura os casos em `para-dev/`. Devolvida, com exceção de dono
+    para ela editar esse teste, mais o `con-07` e o `lead-12`
+  - F e G · avisadas da troca de modelo; fecham o turno num ponto consistente e esperam "continue"
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -331,11 +387,11 @@ que escreve o agente.
 
 | Provedor e modelo no T3 Code | Quem roda |
 |---|---|
-| Claude Fable 5.2 (`claudeAgent`, `claude-fable-5-2`) | coordenadora, A, F, G e J |
-| Claude Opus 5.5 (`claudeAgent`, `claude-opus-5-5`) | I, K, N e os subagentes de revisão e de verificação |
-| Gemini 4 Hydrogen (`antigravity`, `gemini-4-hydrogen`) | B2, D e, desde a leva 2, E, H e L (`DECISOES.md` X14: o limite semanal do Claude chegou a 79%) |
-| GPT-6 Astra (`codex`, `gpt-6-astra`) | C e o conselho; nada além disso (uso limitado) |
-| DeepSeek pago (`opencode`, `deepseek/deepseek-flash`) | B1; nunca os modelos gratuitos do OpenCode |
+| Claude Fable 5.2 (`claudeAgent`, `claude-fable-5-2`) | só a coordenadora, desde 13/11 às 18h35 (`DECISOES.md` X16). Antes: A, J, e F e G até a troca |
+| Claude Opus 5.5 (`claudeAgent`, `claude-opus-5-5`), esforço médio (X16) | F, G, I, K, N e os subagentes de revisão e de verificação |
+| Gemini 4 Hydrogen (`antigravity`, `gemini-4-hydrogen`) | B2, D e, desde a leva 2, E, H e L (`DECISOES.md` X14: o limite semanal do Claude chegou a 79%). Desde a X16, é o único provedor fora do Claude: fica também com o conselho e com o que estava previsto para o GPT |
+| GPT-6 Astra (`codex`, `gpt-6-astra`) | saiu do plano em 13/11 às 18h35 (X16). Até ali escreveu o conjunto reservado (C) e uma das leituras do conselho no Marco 1 |
+| DeepSeek pago (`opencode`, `deepseek/deepseek-flash`) | saiu do plano em 13/11 às 18h35 (X16). Até ali fez a B1 |
 
 **Frente fora do Claude (B1, B2, C, D, E, H e L).**
 
@@ -599,15 +655,14 @@ Candidatos e ressalvas em `docs/VERIFICACOES.md` §2. Modelos nativos que exigem
 pago têm 20 requisições por minuto; modelos de terceiros passam pelo AI Gateway e
 exigem chave.
 
-Acréscimo do Éverton (13/11, `DECISOES.md` X10): um dos três candidatos é um modelo da
-OpenAI. A chave está em `OPENAI_API_KEY`, no arquivo de ambiente: use por referência,
-nunca imprima, nunca em arquivo versionado. Como ela chega ao modelo (chave guardada no
-AI Gateway ou secret do Worker de `dev`) é escolha desta frente, lendo a documentação
-antes; a chave nunca vai para `producao` por esta frente.
+Mudança do Éverton (13/11 às 18h35, `DECISOES.md` X16): o candidato da OpenAI saiu do
+plano e a chave `OPENAI_API_KEY` não é usada em nenhuma chamada, nem como reserva. Os
+três candidatos e o modelo reserva rodam sem chave de terceiro (Workers AI). O
+`@cf/openai/gpt-oss-120b` continua valendo: roda no Workers AI.
 
 ### Tasks
-- [ ] Rodar o conjunto dev (nunca o reservado) com 3 candidatos, mesmo código. Um deles
-      é da OpenAI; os outros saem de `docs/VERIFICACOES.md` §2.
+- [ ] Rodar o conjunto dev (nunca o reservado) com 3 candidatos, mesmo código, todos de
+      `docs/VERIFICACOES.md` §2 e sem chave de terceiro.
 - [ ] Medir por candidato: acerto por bloco, violações de regra, latência p95 e
       máxima, custo por conversa.
 - [ ] Medir por candidato 10 conversas simultâneas (sessões diferentes, sem
@@ -615,13 +670,13 @@ antes; a chave nunca vai para `producao` por esta frente.
       respostas de contingência.
 - [ ] Escolher por confiabilidade de chamada de ferramenta primeiro; registrar em
       `docs/revisoes/modelos.md` e fixar `MODELO`.
-- [ ] Deixar um modelo reserva de **outro provedor** configurado no AI Gateway, que
+- [ ] Deixar um modelo reserva de **outro fornecedor**, sem chave de terceiro (X16), que
       assume quando o principal falha, e provar a troca com o principal forçado a
       falhar.
 
 ### Critérios de aceite
 1. Tabela comparativa com os números medidos.
-   MANUAL: `docs/revisoes/modelos.md` com uma linha por candidato (um da OpenAI), a
+   MANUAL: `docs/revisoes/modelos.md` com uma linha por candidato, a
    coluna de erros de limite nas 10 conversas simultâneas e a escolha
 2. O escolhido passa o Marco 1.
    CHECK: critério de integração 1
@@ -750,7 +805,8 @@ MANUAL: captura de tela da conversa do Marco 1 feita na página em `dev`.
 - [ ] Revisão de código do diff integrado (`code-reviewer`).
 - [ ] Revisão de segurança (`security-reviewer`): segredos, injeção, parâmetros
       enviados ao catálogo, dados pessoais em log, abuso de custo.
-- [ ] Segunda opinião de Gemini e GPT, focada em cálculo, confirmação, POST,
+- [ ] Segunda opinião do Gemini 4 Hydrogen (a leitura do GPT saiu do plano, X16), focada
+      em cálculo, confirmação, POST,
       concorrência e isolamento de sessões; registros em `docs/conselho/`.
 - [ ] Achado crítico ou alto corrigido antes de K.
 MANUAL: `docs/revisoes/m2.md` com cada achado, severidade, correção e commit.
