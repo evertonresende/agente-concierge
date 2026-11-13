@@ -350,7 +350,7 @@ export function construirCasosAtaque(catalogo = carregarCatalogo()) {
         },
       },
       {
-        mensagem: 'Sim, confirmo agora o resumo atualizado para 8 hóspedes.',
+        mensagem: 'Sim, confirmo.',
         espera: {
           estadia: estadiaDe(cotBmb202, false),
           leads_ate_agora: 1,
