@@ -47,9 +47,9 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 | Sessão | Repo | Escopo resumido | Depende de | Prioridade | Horas | Roda como | Status | Worktree/Thread |
 |---|---|---|---|---|---|---|---|---|
 | A | agente-concierge | Esqueleto vertical até o Marco 1 | pré-voo | alta | 3,5 | thread T3 · Fable 5.2 | rodando | `frente-a` |
-| B1 | agente-concierge | Webhook falso (Worker próprio), construído e testado local; deploy em `dev` pela coordenadora | pré-voo | alta | 1 | subagente em worktree · DeepSeek | rodando | `t3/webhook-falso-leads` |
+| B1 | agente-concierge | Webhook falso (Worker próprio), construído e testado local; deploy em `dev` pela coordenadora | pré-voo | alta | 1 | subagente em worktree · DeepSeek | concluída (correções de teste em curso) | `t3/webhook-falso-leads` |
 | B2 | agente-concierge | Harness HTTP e casos dev por bloco | — | alta | 2,5 | thread T3 · Gemini 4 Hydrogen | rodando | `frente-b2` |
-| C | agente-concierge | Conjunto reservado (fora do repo) | — | alta | 2 | thread T3, fica viva · GPT-6 Astra | rodando | `frente-c` (sem commits; casos fora do repo) |
+| C | agente-concierge | Conjunto reservado (fora do repo) | — | alta | 2 | thread T3, fica viva · GPT-6 Astra | rodando (56 casos escritos; espera o runner) | `frente-c` (sem commits; casos fora do repo) |
 | D | agente-concierge | Simulador de hóspede hostil | B2 (formato de caso) | média | 2,5 | thread T3 · Gemini 4 Hydrogen | rodando | `frente-d` |
 | M1 | agente-concierge | Revisão curta do Marco 1 | A | alta | 0,5 | subagentes Opus 5.5 + conselho | pendente | — |
 | I | agente-concierge | Escolha do modelo por eval | A, B2 | alta | 1 | subagente em worktree · Opus 5.5 | pendente | — |
@@ -75,19 +75,27 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
 - 13/11 16h00 · leva 1 despachada, todas a partir da `main` em 2d35648, sem sobreposição de
   arquivo: A (Fable 5.2, thread), B1 (DeepSeek, subagente), B2 (Gemini 4 Hydrogen,
   thread), C (GPT-6 Astra, thread) e D (Gemini 4 Hydrogen, thread)
+- 13/11 16h14 · C · 56 casos no reservado, 7 por bloco, 9 com confirmação; contagem e JSON
+  conferidos sem abrir caso; nada no repositório. Critério 1 espera o runner da B2
+- 13/11 16h14 · B1 · webhook falso mergeado e publicado em `dev` pela coordenadora;
+  `LEADS_URL_DEV` gravada. CHECK 1: `FALSO OK` local e contra `dev`; CHECK 2: `SIGILO OK`.
+  Verificador (Opus): aprovado com ressalvas de infraestrutura de teste (modo gravado
+  que não expira, atraso que espera antes de guardar, teste com furos); voltaram para a
+  frente como segunda rodada · 5628055, b255c7a, merge d711b0c
+- Critérios de integração nesta hora: 7 verde; 1 a 6 e 8 vermelhos (dependem de A, B2 e K)
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo).
 - Regras carregadas em toda sessão Claude: `coding-style`, `git-workflow`, `git-sync`,
   `security`, `task-contract`, `testing`.
-- Subagentes: nenhum ainda.
+- Subagentes: `code-reviewer` em Opus 5.5, como verificador da frente B1.
 
 ## Pré-voo (antes da leva 1)
 
 | # | O quê | Quem | Por quê |
 |---|---|---|---|
 | 1 | Plano pago da Cloudflare, na conta pessoal (a mesma da zona do subdomínio de produção) | Éverton: **assinado em 13/11** | o gratuito dá 10 ms de CPU por requisição e ~85 chamadas de modelo por dia; os evals estouram isso (`docs/VERIFICACOES.md` §3). A coordenadora confere antes dos evals em volume |
-| 2 | `AGENTE_URL_PRODUCAO` (o subdomínio do L23) no arquivo de ambiente | Éverton: **ainda falta** (conferido em 13/11, 19h; trava só a frente K) | o hostname não fica em arquivo versionado; sem ele a frente K não sai |
+| 2 | `AGENTE_URL_PRODUCAO` (o subdomínio do L23) no arquivo de ambiente | Éverton: **feito em 13/11** (presença conferida, valor não lido) | o hostname não fica em arquivo versionado; sem ele a frente K não sai |
 | 3 | `CLOUDFLARE_ACCOUNT_ID` no arquivo de ambiente, derivado da zona do domínio do e-mail do autor (é a conta pessoal do Éverton), e a credencial de deploy por referência | coordenadora: **feito em 13/11** (uma zona encontrada; o identificador e a chave da OpenAI também entraram nos termos extras do gate de sigilo) | o token cobre mais de uma conta; sem a conta o primeiro deploy de `dev` não sai |
 | 4 | Olhar no painel se o Bot Fight Mode da zona está ligado e dizer à coordenadora | Éverton: **sem resposta ainda** (trava só a frente K) | o token não lê essa configuração; ligado, ele bloqueia cliente automatizado no domínio inteiro e a decisão L23 (mexer só no hostname) não se sustenta sozinha |
 | 5 | Criar no painel a regra que desliga a checagem de integridade de navegador só para o hostname de produção, ou dar ao token permissão de regras de configuração | Éverton: **sem resposta ainda** (trava só a frente K) | o token provavelmente não cria essa regra; sem ela a frente K para de madrugada e produção não sobe sem ele |
