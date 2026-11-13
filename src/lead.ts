@@ -152,6 +152,8 @@ const COMECA_AFIRMANDO = new RegExp(`^${INICIO}${AFIRMA_OU_CONFIRMA}(?: |$)`);
 // Frase com "?" que é só um pedido educado de envio ("pode fechar a reserva, por favor?").
 const PEDIDO_DE_ENVIO = new RegExp(`^(?:${AFIRMA_OU_CONFIRMA}${DADOS} )*${PODE}${DADOS}(?: (?:${CORTESIA}))*$`);
 
+const MAXIMO_DO_SIM = 120;
+
 function semAcento(texto: string): string {
   return texto.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 }
@@ -197,6 +199,9 @@ export function lerConfirmacao(mensagem: string, pendente: Pendente): Leitura {
   const texto = marcarDadosIguais(semAcento(mensagem), pendente);
   if (PRECO.test(texto)) return "condicao_de_preco";
   const limpo = semPontuacao(texto);
+  // A gramática do sim tem frases que se sobrepõem ("pode sim" = "pode" + "sim"), e o
+  // tempo do regex dobra a cada repetição. Nenhum sim de verdade passa deste tamanho.
+  if (limpo.length > MAXIMO_DO_SIM) return texto.includes("?") && !/\d/.test(texto) ? "pergunta" : "outra";
   if (texto.includes("?")) {
     // "Sim, confirmo! Pode fechar a reserva, por favor?" é um sim com pedido educado;
     // qualquer outra pergunta ("sim, e tem wifi?", "pode fechar?", "sim?") não confirma.
