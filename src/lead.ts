@@ -205,10 +205,10 @@ const PRECO = new RegExp(
     + "|\\b(se|desde que|contanto que|caso|if|unless|provided|as long as)\\b.*\\b(valor|preco|total|price|\\d{3,})",
 );
 const HESITA = /\b(acho|achando|talvez|pode ser|nao sei|sei la|quase|provavel|provavelmente|depende|vou pensar|vou ver|pensando|maybe|i think|i guess|probably|perhaps|not sure|might|kind of|sort of)\b/;
-// Só um "ok", "perfeito" ou "certo", mesmo com um "obrigado": o hóspede pode estar apenas
-// acusando o recebimento. Vale como hesitação.
+// Só um "ok", "perfeito", "certo" ou "s", mesmo com um "obrigado": o hóspede pode estar
+// apenas acusando o recebimento, ou ter digitado sem querer. Vale como hesitação (P11).
 const FRACA = new RegExp("^(?:(?:ok|okay|ta bom|ta|beleza|blz|bom|legal|show|joia|fine|alright|good|great|k"
-  + "|certo|certinho|perfeito|claro|obrigad[oa]|obg|valeu|thanks|thank you)(?: |$))+$");
+  + "|certo|certinho|perfeito|claro|obrigad[oa]|obg|valeu|thanks|thank you|s)(?: |$))+$");
 
 // O sim é uma gramática fechada de frases, não uma lista de palavras soltas: palavras
 // que valem numa frase ("pode enviar", "confirmo o resumo") não podem ser recombinadas em

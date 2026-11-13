@@ -117,7 +117,7 @@ describe("leitura da mensagem diante do resumo pendente", () => {
   const GRM301 = pendente("GRM-301");
 
   for (const mensagem of [
-    "sim", "Sim!", "siiim", "s", "confirmo", "Confirmado.", "pode fechar", "Pode enviar, por favor", "pode mandar", "isso mesmo",
+    "sim", "Sim!", "siiim", "confirmo", "Confirmado.", "pode fechar", "Pode enviar, por favor", "pode mandar", "isso mesmo",
     "tudo certo", "está tudo certo, pode enviar", "Sim, confirmo.", "Sim, confirmo o resumo.",
     "Sim, confirmo definitivamente.", "Sim, confirmo de novo!",
     "Sim, pode fechar.", "Sim sim, pode confirmar a reserva", "Confirmo tudo", "certo, confirmo", "perfeito, pode fechar",

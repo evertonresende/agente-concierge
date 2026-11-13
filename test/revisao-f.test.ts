@@ -249,3 +249,12 @@ describe("sim só com caracteres comuns; \"?\" só com verbo de envio (A4)", () 
     expect(mundo.leads).toEqual([]);
   });
 });
+
+describe("P11: \"s\" e \"ok\" sozinhos repetem o pedido; \"isso\", \"exato\" e \"pode\" confirmam", () => {
+  for (const mensagem of ["s", "S", "s.", "ok"]) {
+    it(`hesitação: "${mensagem}"`, () => expect(lerConfirmacao(mensagem, GRM301)).toBe("hesitacao"));
+  }
+  for (const mensagem of ["isso", "exato", "pode", "Isso!", "Exato."]) {
+    it(`sim: "${mensagem}"`, () => expect(lerConfirmacao(mensagem, GRM301)).toBe("sim"));
+  }
+});
