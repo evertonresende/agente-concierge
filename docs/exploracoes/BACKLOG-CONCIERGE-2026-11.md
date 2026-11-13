@@ -477,6 +477,29 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   raciocínio: a API aceita o histórico sem eles e repassá-los não trouxe ganho medido (81%),
   então a linha de `src/agente/loop.ts` não muda. A rodada do DeepSeek recomeçou do zero e
   termina por volta das 21h35; as do GLM-5.3 Flash e do GLM-5.3, por volta das 20h50
+- 13/11 20h34 · G · diagnóstico do `con-10-idioma`: nenhuma etapa do código esvazia a resposta; é o
+  modelo que escreve as três linhas em português, imitando o resultado de `cotar`, que entrega
+  datas e instrução em português (a hipótese da coordenadora, de corte pela conferência, não
+  se confirmou). Duas exceções de dono autorizadas, porque a frente E está encerrada: a G
+  acrescenta `dataComDia(data, idioma)` em `src/nucleo/datas.ts` (mesmo formato dos textos
+  fixos da F, que depois troca a dela por essa) e edita `src/agente/ferramentas/cotacao.ts`
+  só para as datas e o exemplo da instrução saírem no idioma do hóspede, com o resultado em
+  português idêntico ao de hoje. Camadas extras (reescrita pedida ao modelo) só se a causa
+  corrigida não bastar em 6 sondas
+- 13/11 20h36 · G · verificador independente (Opus) sobre 6b06830: REPROVADO. Passou: L18 (uma
+  chamada com `porLimite`, duas com erro comum, inclusive erro que não é objeto), costura com
+  as travas da F, saneamento e delimitação do catálogo; 30 de 33 defeitos plantados pegos.
+  Reprovou, alta: o próprio código liga `handoff: true` com texto fixo errado em mensagem
+  comum: (1) pedido de desconto reconhecido por engano ("Pode fechar, meu telefone é …",
+  "pago os 150 da limpeza", "100% de certeza", "a 500 m da praia"); (2) "mesmo assim" de quem
+  aceitou a regra vira insistência. Média: registro afirmado pelo modelo sem `201` passa pela
+  conferência; concessão e regra inventadas sem valor em R$ passam; valor em outra forma
+  escapa ("2,3 mil", "400 euros"); o corte por frase leva o aviso de pet e pode deixar dois
+  totais; disponibilidade apontada por engano. Baixa: regra explicada vale para outra regra,
+  custo de CPU sem teto antes do corte, rede de insistência com as palavras dos casos, trecho
+  de instrução que escapa. Devolvida com o princípio "precisão antes de cobertura": rede de
+  código que força handoff só dispara em padrão inequívoco, com bateria negativa de mensagens
+  comuns, ou sai. Relatório fora do repositório
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -513,12 +536,12 @@ mexer na configuração.
 | `src/catalogo.ts` (cliente do catálogo) | A | G | — |
 | `src/agente/loop.ts`, `src/agente/prompt.ts` | A | G | — |
 | `src/agente/ferramentas/catalogo.ts`, `handoff.ts`, `index.ts`, `tipos.ts` | A | G | — |
-| `src/agente/ferramentas/cotacao.ts`, `src/agente/ferramentas/pedido.ts` (onde as datas dos argumentos são interpretadas) | A | E | — |
+| `src/agente/ferramentas/cotacao.ts`, `src/agente/ferramentas/pedido.ts` (onde as datas dos argumentos são interpretadas) | A | E (exceção: a G edita `cotacao.ts` só para as datas e o exemplo da instrução saírem no idioma do hóspede) | — |
 | `src/agente/ferramentas/lead.ts`, `src/lead.ts` | A | F | — |
 | `src/env.ts` | A | I, que roda junto com a leva 2; outra frente pede à coordenadora | — |
 | `test/apoio.ts` | A | congelado: ninguém altera; apoio novo vai em `test/apoio-<frente>.ts` da própria frente | — |
 | `src/nucleo/dinheiro.ts`, `src/nucleo/preco.ts` | A | — | — |
-| `src/nucleo/datas.ts` | A | E | — |
+| `src/nucleo/datas.ts` | A | E (exceção: a G acrescenta `dataComDia(data, idioma)`, sem tocar no resto) | — |
 | `src/nucleo/telefone.ts`, `src/nucleo/idioma.ts` (detector único de idioma: `idiomaDoHospede(textos): "pt" \| "en"`; G importa) | — | F | — |
 | `src/pagina.ts` | A (mínima) | J (passo 2) | — |
 | `docs/desenhos/pagina-canvas.html` | J (passo 1) | — | — |
