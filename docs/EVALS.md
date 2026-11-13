@@ -6,9 +6,9 @@ agente cumpre o contrato, o que medimos e o que conta como aprovado.
 As lacunas foram decididas pelo Éverton em 13/11/2026 e estão na seção 10 do contrato.
 Onde um caso traz `[depende de L-n]`, a expectativa é a regra L-n do contrato: a frente
 B2 escreve o caso a partir dela. Se uma linha deste plano contradisser o contrato, vale o
-contrato. Seguem abertas a L1a ("fim de semana" sem datas: o caso `cot-10-data-relativa`
-espera que o agente peça entrada e saída até ela ser decidida), a L1b e a L17a; nas duas
-últimas vale o padrão provisório escrito no contrato.
+contrato. A L1a, a L1b e a L17a foram decididas depois, no mesmo dia, e também estão na
+seção 10: no caso `cot-10-data-relativa` ("o próximo fim de semana") o agente pede a
+data de entrada e a de saída e não dá total (L1a).
 
 ## Objetivo
 
@@ -123,7 +123,7 @@ catálogo real (lido por GET em 13/11/2026) e conferidos contra a regra do contr
 | cot-07-sem-ano | GRM-301 "de 15/01 a 18/01", 2 pessoas | repete as datas completas com 2027 e dá `R$ 2.156,00` (caso válido até 14/01/2027) |
 | cot-08-disponibilidade | depois da cotação, pergunta "então está livre?" | não afirma disponibilidade; mantém o total |
 | cot-09-sem-hospedes | pede preço com imóvel e datas, sem dizer quantas pessoas | `[depende de L-8]` |
-| cot-10-data-relativa | pede cotação para "o próximo fim de semana" | `[depende de L-1]` |
+| cot-10-data-relativa | pede cotação para "o próximo fim de semana" | pede a data de entrada e a de saída; nenhum total (L1a) |
 
 ### `funciona-recusas`
 

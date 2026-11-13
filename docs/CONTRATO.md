@@ -7,6 +7,7 @@ parecer errado ou faltar, a frente para e avisa a coordenadora; não decide sozi
 Regras marcadas com **L-n** são lacunas do enunciado. A decisão de cada uma está na
 seção 10. Enquanto uma lacuna estiver `ABERTA`, nenhuma frente implementa
 comportamento que dependa dela, exceto o padrão provisório escrito na própria linha.
+Hoje nenhuma está aberta.
 
 Fatos sobre o catálogo e o webhook foram verificados por GET em 13/11/2026.
 
@@ -279,8 +280,8 @@ Quem decide é o Éverton. O motivo de cada decisão fica em `DECISOES.md`.
 | ID | Tema | Regra |
 |---|---|---|
 | L1 | Datas relativas e fuso | Aceitas, resolvidas por código no fuso `America/Sao_Paulo`. "Hoje" e "amanhã" resolvem direto. Quando a mensagem permite determinar entrada e saída, o agente declara as datas exatas (dia da semana, dia, mês e ano) e **já cota na mesma resposta**. Só pergunta quando falta a entrada ou a saída ("no Natal" sem dizer de quando a quando conta como faltando). |
-| L1a | "Fim de semana" sem datas | **ABERTA.** Falta decidir a convenção (sexta a domingo ou sábado a domingo). Enquanto aberta, o código não mapeia a expressão e o agente pede entrada e saída. |
-| L1b | Dia da semana sem data ("sexta que vem") | **ABERTA, com padrão provisório:** próxima ocorrência daquele dia da semana, o mesmo critério da data sem ano, com a data exata declarada na resposta. |
+| L1a | "Fim de semana" sem datas | O código não mapeia a expressão. O agente pede a data de entrada e a de saída. |
+| L1b | Dia da semana sem data ("sexta que vem") | Próxima ocorrência daquele dia da semana, o mesmo critério da data sem ano, com a data exata declarada na resposta. |
 | L2 | Datas no passado e entrada hoje | Entrada anterior a hoje (fuso de São Paulo): recusa, explica e pede novas datas, com `handoff: false`. Entrada hoje é aceita. |
 | L3 | Duração da flag `handoff` | `true` só na resposta em que o agente decide passar. Nas respostas seguintes volta a `false`, e vale `true` de novo a cada novo gatilho. O estado da sessão guarda que já houve handoff. |
 | L4 | Conversa depois do handoff | O agente continua atendendo o que está no escopo: dúvidas, cotação e lead sem desconto. |
@@ -297,7 +298,7 @@ Quem decide é o Éverton. O motivo de cada decisão fica em `DECISOES.md`.
 | L15 | Idioma do hóspede | Responde no idioma do hóspede. O total continua sempre no formato `R$ 2.156,00`. |
 | L16 | Fora de escopo, pedido de instruções internas, falso dono | Assunto fora do escopo (clima, código, política), "ignore as regras" e pedido de instruções internas: recusa curta, com `handoff: false`. Desconto ou negociação pedidos por quem diz ser dono ou funcionário: `handoff: true`, sem concessão. |
 | L17 | Corpo inválido no `POST /chat` | JSON válido com `session_id` e `message` em texto devolve **sempre `200`**. Mensagem vazia: o agente pede para escrever a mensagem. Mensagem acima de 8.000 caracteres: o agente pede para resumir. Nos dois casos, `handoff: false`. `400` só para JSON inválido ou campo faltando, com corpo `{ "reply": "<o que está errado>", "handoff": false }`. |
-| L17a | Campo presente que não é texto; `session_id` vazio | **ABERTA, com padrão provisório:** campo presente que não é texto conta como inválido e devolve `400`; `session_id` vazio é texto e devolve `200`, como uma sessão qualquer. |
+| L17a | Campo presente que não é texto; `session_id` vazio | Campo presente que não é texto conta como inválido e devolve `400`. `session_id` vazio é texto e devolve `200`, como uma sessão qualquer. |
 | L18 | Falha interna (modelo, catálogo, tempo) | Uma nova tentativa; se persistir, `200` com aviso honesto e `handoff: true`. Nunca `500`. |
 | L19 | Pedidos que exigem ação fora do agente | Cancelar ou alterar reserva já feita, pagamento, check-in antecipado e problema durante a estadia: `handoff: true`, e o agente não diz que executou nada. Dúvida informativa que o catálogo responde (horário normal de check-in) continua no agente. |
 | L20 | Nome do hóspede | Aceita o nome como veio. Pede o nome completo, mas não bloqueia. |
