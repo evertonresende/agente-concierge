@@ -51,10 +51,16 @@ export function apresentarResumo(cofre: Cofre, reserva: Reserva, totalCentavos: 
   cofre.salvar({ ...cofre.ler(), pendente: { reserva, totalCentavos, turno } });
 }
 
-/** Algum dado mudou depois do resumo: a confirmação pendente deixa de valer (L10). */
+/** O resumo que ainda espera o sim do hóspede: existe e a reserva dele nunca foi enviada. */
+export function pendenteAberto(estado: EstadoLead): Pendente | null {
+  const { pendente, envios } = estado;
+  return pendente && !envios[chaveDaReserva(pendente.reserva)] ? pendente : null;
+}
+
+/** Algum dado mudou depois do resumo: a confirmação que estava em aberto deixa de valer (L10). */
 export function invalidarPendente(cofre: Cofre): void {
   const estado = cofre.ler();
-  if (estado.pendente) cofre.salvar({ ...estado, pendente: null });
+  if (pendenteAberto(estado)) cofre.salvar({ ...estado, pendente: null });
 }
 
 /** Corpo do POST: os 7 campos do contrato, com o total convertido de centavos na fronteira. */

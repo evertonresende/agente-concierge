@@ -1,41 +1,9 @@
-import { type Ficha, regrasDaFicha } from "../../catalogo";
-import { chaveDaReserva, invalidarPendente, type Pendente } from "../../lead";
-import { type DataISO, formatarDataComDia, interpretarData } from "../../nucleo/datas";
+import { chaveDaReserva, invalidarPendente, pendenteAberto, type Reserva } from "../../lead";
+import { formatarDataComDia } from "../../nucleo/datas";
 import { formatarReais } from "../../nucleo/dinheiro";
-import { cotar, type Cotacao } from "../../nucleo/preco";
-import { type Argumentos, type Contexto, definir, numero, texto } from "./tipos";
-
-export type Pedido =
-  | { ok: true; ficha: Ficha; checkin: DataISO; checkout: DataISO; hospedes: number | undefined; cotacao: Cotacao }
-  | { ok: false; erro: string };
-
-/** Lê imóvel, datas e hóspedes dos argumentos, busca a ficha e aplica a regra de preço. */
-export async function prepararPedido(argumentos: Argumentos, contexto: Contexto): Promise<Pedido> {
-  const id = texto(argumentos, "imovel_id");
-  if (!id) return { ok: false, erro: "Falta o imóvel. Pergunte ao hóspede qual imóvel ele quer." };
-  const entrada = texto(argumentos, "checkin");
-  const saida = texto(argumentos, "checkout");
-  const checkin = entrada ? interpretarData(entrada) : null;
-  const checkout = saida ? interpretarData(saida) : null;
-  if (!checkin || !checkout) {
-    return {
-      ok: false,
-      erro: "Data de entrada ou de saída ausente, inexistente ou incompleta. Peça ao hóspede as duas datas com dia, "
-        + "mês e ano (DD/MM/AAAA). Não informe nenhum total.",
-    };
-  }
-  const ficha = await contexto.catalogo.ficha(id);
-  if (!ficha) return { ok: false, erro: "Imóvel não encontrado no catálogo. Não informe nenhum valor." };
-  const hospedes = numero(argumentos, "hospedes");
-  return { ok: true, ficha, checkin, checkout, hospedes, cotacao: cotar(regrasDaFicha(ficha), checkin, checkout, hospedes) };
-}
-
-/** A cotação pedida é de outra estadia que não a do resumo pendente? (contrato L10) */
-function mudouDepoisDoResumo(pendente: Pendente, pedido: Extract<Pedido, { ok: true }>): boolean {
-  const r = pendente.reserva;
-  const pedida = { ...r, imovel_id: pedido.ficha.id, checkin: pedido.checkin, checkout: pedido.checkout, hospedes: pedido.hospedes ?? r.hospedes };
-  return chaveDaReserva(pedida) !== chaveDaReserva(r);
-}
+import { resumir } from "./lead";
+import { prepararPedido } from "./pedido";
+import { definir } from "./tipos";
 
 export const cotarEstadia = definir(
   "cotar",
@@ -50,12 +18,23 @@ export const cotarEstadia = definir(
   },
   ["imovel_id", "checkin", "checkout"],
   async (argumentos, contexto) => {
-    const pedido = await prepararPedido(argumentos, contexto);
+    // Resumo aguardando o sim: o que esta cotação não disser (hóspedes) vale o do resumo.
+    const aberto = pendenteAberto(contexto.cofre.ler())?.reserva ?? null;
+    const pedido = await prepararPedido(argumentos, contexto, aberto?.hospedes);
     if (!pedido.ok) return { paraOModelo: { erro: pedido.erro } };
 
-    const pendente = contexto.cofre.ler().pendente;
-    const invalidou = pendente !== null && mudouDepoisDoResumo(pendente, pedido);
-    if (invalidou) invalidarPendente(contexto.cofre);
+    // O hóspede pediu outra estadia depois do resumo: a confirmação pendente deixa de
+    // valer (contrato L10). Se a estadia nova é válida, o novo resumo sai daqui mesmo,
+    // em texto de código; o modelo não redige resumo.
+    if (aberto) {
+      const nova: Reserva = {
+        ...aberto, imovel_id: pedido.ficha.id, checkin: pedido.checkin, checkout: pedido.checkout, hospedes: pedido.hospedes ?? aberto.hospedes,
+      };
+      if (chaveDaReserva(nova) !== chaveDaReserva(aberto)) {
+        invalidarPendente(contexto.cofre);
+        if (pedido.cotacao.ok) return resumir(contexto, pedido, aberto.nome, aberto.telefone);
+      }
+    }
 
     const { ficha, cotacao, checkin, checkout, hospedes } = pedido;
     const estadia = {
@@ -87,8 +66,7 @@ export const cotarEstadia = definir(
         total,
         hospedes: hospedes ?? "não informado: informe a capacidade e pergunte quantas pessoas são",
         instrucao: "Informe o total exatamente como está em `total` e as datas com o dia da semana. O valor é uma "
-          + "cotação: não afirme que as datas estão disponíveis."
-          + (invalidou ? " O resumo que aguardava confirmação deixou de valer: para fechar, monte um novo resumo." : ""),
+          + "cotação: não afirme que as datas estão disponíveis.",
       },
     };
   },

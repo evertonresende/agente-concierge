@@ -1,10 +1,10 @@
 import { regrasDaFicha } from "../../catalogo";
-import { apresentarResumo, chaveDaReserva, confirmar, type Pendente, type Reserva } from "../../lead";
+import { apresentarResumo, chaveDaReserva, confirmar, invalidarPendente, type Pendente, type Reserva } from "../../lead";
 import { diasEntre, formatarDataComDia } from "../../nucleo/datas";
 import { formatarReais } from "../../nucleo/dinheiro";
 import { cotar } from "../../nucleo/preco";
-import { prepararPedido } from "./cotacao";
-import { definir, type Resultado, texto } from "./tipos";
+import { type Pedido, prepararPedido } from "./pedido";
+import { type Argumentos, type Contexto, definir, type Resultado, texto } from "./tipos";
 
 // Textos de código. Nenhum deles diz "registrado" antes de um 201 do webhook.
 const PEDE_CONFIRMACAO = "Está tudo certo? Se estiver, responda \"sim\" e eu envio o seu pedido ao time comercial.";
@@ -40,6 +40,28 @@ function jaRegistrado(pendente: Pendente): Resultado {
   };
 }
 
+/**
+ * Grava o resumo como pendente e devolve o texto dele como resposta do turno. Reserva
+ * que já teve envio não ganha resumo novo: o hóspede ouve o que aconteceu com ela.
+ */
+export function resumir(contexto: Contexto, pedido: Extract<Pedido, { ok: true }>, nome: string, telefone: string): Resultado {
+  if (!pedido.cotacao.ok || pedido.hospedes === undefined) throw new Error("resumo pedido sem cotação válida");
+  const reserva: Reserva = {
+    imovel_id: pedido.ficha.id, checkin: pedido.checkin, checkout: pedido.checkout, hospedes: pedido.hospedes, nome, telefone,
+  };
+  const pendente: Pendente = { reserva, totalCentavos: pedido.cotacao.totalCentavos, turno: contexto.turno };
+  const anterior = contexto.cofre.ler().envios[chaveDaReserva(reserva)];
+  if (anterior === "registrado") return jaRegistrado(pendente);
+  if (anterior) return { paraOModelo: { nao_registrado: true }, respostaFinal: INCERTO, handoff: true };
+
+  apresentarResumo(contexto.cofre, reserva, pendente.totalCentavos, contexto.turno);
+  return {
+    paraOModelo: { resumo_apresentado: true, aguardando: "confirmação do hóspede na próxima mensagem" },
+    respostaFinal: textoDoResumo(pendente, pedido.ficha.nome),
+    total: formatarReais(pendente.totalCentavos),
+  };
+}
+
 export const montarResumo = definir(
   "montar_resumo",
   "Monta o resumo do pedido de reserva e mostra ao hóspede para confirmação. Chame quando o hóspede quer fechar e "
@@ -55,44 +77,39 @@ export const montarResumo = definir(
   },
   ["imovel_id", "checkin", "checkout", "hospedes", "nome", "telefone"],
   async (argumentos, contexto) => {
-    const nome = texto(argumentos, "nome");
-    const telefone = texto(argumentos, "telefone");
-    const faltando = [!nome && "nome", !telefone && "telefone", argumentos.hospedes === undefined && "número de hóspedes"]
-      .filter(Boolean);
-    if (!nome || !telefone || faltando.length > 0) {
-      return { paraOModelo: { erro: `Falta: ${faltando.join(", ")}. Pergunte ao hóspede; não invente.` } };
-    }
-    const pedido = await prepararPedido(argumentos, contexto);
-    if (!pedido.ok) return { paraOModelo: { erro: pedido.erro } };
-    if (pedido.hospedes === undefined) {
-      return { paraOModelo: { erro: "Número de hóspedes inválido. Pergunte quantas pessoas são." } };
-    }
-    if (!pedido.cotacao.ok) {
-      return {
-        paraOModelo: {
-          recusada: true,
-          motivo: pedido.cotacao.explicacao,
-          instrucao: "Explique o motivo ao hóspede. Não informe total e não monte resumo enquanto isso não for corrigido.",
-        },
-      };
-    }
-
-    const reserva: Reserva = {
-      imovel_id: pedido.ficha.id, checkin: pedido.checkin, checkout: pedido.checkout, hospedes: pedido.hospedes, nome, telefone,
-    };
-    const pendente: Pendente = { reserva, totalCentavos: pedido.cotacao.totalCentavos, turno: contexto.turno };
-    const anterior = contexto.cofre.ler().envios[chaveDaReserva(reserva)];
-    if (anterior === "registrado") return jaRegistrado(pendente);
-    if (anterior) return { paraOModelo: { nao_registrado: true }, respostaFinal: INCERTO, handoff: true };
-
-    apresentarResumo(contexto.cofre, reserva, pendente.totalCentavos, contexto.turno);
-    return {
-      paraOModelo: { resumo_apresentado: true, aguardando: "confirmação do hóspede na próxima mensagem" },
-      respostaFinal: textoDoResumo(pendente, pedido.ficha.nome),
-      total: formatarReais(pendente.totalCentavos),
-    };
+    const resultado = await tentarResumir(argumentos, contexto);
+    // Pedido de resumo que não virou resumo (dado faltando, estadia recusada): o resumo
+    // anterior também não vale mais, porque o hóspede já não quer aquela reserva (L10).
+    if (resultado.respostaFinal === undefined) invalidarPendente(contexto.cofre);
+    return resultado;
   },
 );
+
+async function tentarResumir(argumentos: Argumentos, contexto: Contexto): Promise<Resultado> {
+  const nome = texto(argumentos, "nome");
+  const telefone = texto(argumentos, "telefone");
+  const faltando = [!nome && "nome", !telefone && "telefone", argumentos.hospedes === undefined && "número de hóspedes"]
+    .filter(Boolean);
+  if (!nome || !telefone || faltando.length > 0) {
+    return { paraOModelo: { erro: `Falta: ${faltando.join(", ")}. Pergunte ao hóspede; não invente.` } };
+  }
+  const pedido = await prepararPedido(argumentos, contexto);
+  if (!pedido.ok) return { paraOModelo: { erro: pedido.erro } };
+  if (pedido.hospedes === undefined) {
+    return { paraOModelo: { erro: "Número de hóspedes inválido. Pergunte quantas pessoas são." } };
+  }
+  if (!pedido.cotacao.ok) {
+    return {
+      paraOModelo: {
+        recusada: true,
+        motivo: pedido.cotacao.explicacao,
+        instrucao: "Explique o motivo ao hóspede. Não informe total e não monte resumo enquanto isso não for corrigido.",
+      },
+    };
+  }
+
+  return resumir(contexto, pedido, nome, telefone);
+}
 
 export const confirmarReserva = definir(
   "confirmar_reserva",

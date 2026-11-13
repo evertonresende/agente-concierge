@@ -118,6 +118,17 @@ describe("trava de confirmação", () => {
     expect(posts).toEqual([]);
   });
 
+  it("invalidar não apaga o resumo de uma reserva já registrada", async () => {
+    const { cofre, estado } = cofreEmMemoria();
+    const { deps, posts } = ambiente();
+    apresentarResumo(cofre, RESERVA, TOTAL, 2);
+    await confirmar(cofre, 3, deps);
+    invalidarPendente(cofre);
+    expect(estado().pendente).not.toBeNull();
+    expect(await confirmar(cofre, 4, deps)).toMatchObject({ tipo: "ja_registrado" });
+    expect(posts).toHaveLength(1);
+  });
+
   it("novo resumo substitui o anterior e exige confirmação em turno posterior a ele", async () => {
     const { cofre } = cofreEmMemoria();
     const { deps, posts } = ambiente();
