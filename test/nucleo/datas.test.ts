@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { diaDaSemana, diasEntre, formatarData, formatarDataComDia, interpretarData, somarDias } from "../../src/nucleo/datas";
+import { dataCivilEmSaoPaulo, diaDaSemana, diasEntre, formatarData, formatarDataComDia, interpretarData, somarDias } from "../../src/nucleo/datas";
 
 describe("datas", () => {
   it("aceita data ISO e DD/MM/AAAA explícitas", () => {
@@ -42,5 +42,17 @@ describe("datas", () => {
   it("formata a data para o hóspede", () => {
     expect(formatarData("2027-01-15")).toBe("15/01/2027");
     expect(formatarDataComDia("2027-01-15")).toBe("sexta-feira, 15/01/2027");
+  });
+
+  it("converte um instante na data civil de São Paulo (UTC-3)", () => {
+    // 23h59 de 15/01 em São Paulo = 02h59 UTC do dia 16: a data UTC já é a do dia seguinte.
+    expect(dataCivilEmSaoPaulo(Date.UTC(2027, 0, 16, 2, 59))).toBe("2027-01-15");
+    // 00h01 de 16/01 em São Paulo = 03h01 UTC do dia 16.
+    expect(dataCivilEmSaoPaulo(Date.UTC(2027, 0, 16, 3, 1))).toBe("2027-01-16");
+    // Meio-dia em São Paulo: as duas datas coincidem.
+    expect(dataCivilEmSaoPaulo(Date.UTC(2027, 0, 15, 15, 0))).toBe("2027-01-15");
+    // Virada do ano e do mês: 22h de 31/12 em São Paulo já é 01h de 01/01 em UTC.
+    expect(dataCivilEmSaoPaulo(Date.UTC(2027, 0, 1, 1, 0))).toBe("2026-12-31");
+    expect(dataCivilEmSaoPaulo(Date.UTC(2028, 2, 1, 2, 0))).toBe("2028-02-29");
   });
 });

@@ -4,12 +4,17 @@
 import type { Catalogo } from "../../catalogo";
 import type { Cofre, CorpoDoLead } from "../../lead";
 import type { DefinicaoDeFerramenta } from "../../modelo";
+import type { DataISO } from "../../nucleo/datas";
 
 export interface Contexto {
   catalogo: Catalogo;
   cofre: Cofre;
   /** Número do turno atual na sessão (cada mensagem do hóspede é um turno). */
   turno: number;
+  /** Texto da mensagem do hóspede neste turno, como chegou. */
+  mensagem: string;
+  /** Data civil de hoje em America/Sao_Paulo, em AAAA-MM-DD. */
+  hoje: DataISO;
   envio: {
     ligado: boolean;
     destinoPermitido: boolean;

@@ -55,3 +55,17 @@ export function formatarData(data: DataISO): string {
 export function formatarDataComDia(data: DataISO): string {
   return `${diaDaSemana(data)}, ${formatarData(data)}`;
 }
+
+const FUSO_DO_NEGOCIO = "America/Sao_Paulo";
+const CALENDARIO_DE_SAO_PAULO = new Intl.DateTimeFormat("en-CA", {
+  timeZone: FUSO_DO_NEGOCIO, year: "numeric", month: "2-digit", day: "2-digit",
+});
+
+/**
+ * Data civil em São Paulo de um instante (milissegundos desde a época). É o "hoje" do
+ * agente: às 02h de UTC ainda é o dia anterior em São Paulo.
+ */
+export function dataCivilEmSaoPaulo(instanteMs: number): DataISO {
+  const partes = Object.fromEntries(CALENDARIO_DE_SAO_PAULO.formatToParts(new Date(instanteMs)).map((p) => [p.type, p.value]));
+  return `${partes.year}-${partes.month}-${partes.day}`;
+}

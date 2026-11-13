@@ -6,6 +6,7 @@ import { criarCatalogo } from "./catalogo";
 import type { Env } from "./env";
 import { type Cofre, destinoDosLeads, destinoPermitido, ESTADO_INICIAL, type EstadoLead, postarLead } from "./lead";
 import { criarModelo, type Mensagem, type Modelo } from "./modelo";
+import { dataCivilEmSaoPaulo } from "./nucleo/datas";
 
 export interface RespostaDoChat {
   reply: string;
@@ -17,6 +18,8 @@ export interface RespostaDoChat {
 export interface Dependencias {
   modelo: Modelo;
   buscar: typeof fetch;
+  /** Relógio (ms desde a época) de onde sai o "hoje" das ferramentas. Sem ele, vale `Date.now`. */
+  agora?: () => number;
 }
 
 /** Orçamento do trabalho externo, contado da chegada do pedido; sobra tempo para a contingência (contrato seção 2). */
@@ -99,6 +102,8 @@ export class Sessao extends DurableObject<Env> {
         catalogo: criarCatalogo(this.env.CATALOGO_URL, deps.buscar),
         cofre,
         turno,
+        mensagem,
+        hoje: dataCivilEmSaoPaulo((deps.agora ?? Date.now)()),
         envio: {
           ligado: this.env.ENVIO_LEADS === "ligado",
           destinoPermitido: destinoPermitido(this.env.AMBIENTE, destino),

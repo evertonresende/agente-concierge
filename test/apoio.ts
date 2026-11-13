@@ -1,4 +1,7 @@
 // Falsos usados pelos testes: catálogo, webhook de leads e modelo roteirizado.
+import type { Contexto } from "../src/agente/ferramentas";
+import { criarCatalogo } from "../src/catalogo";
+import { type Cofre, postarLead } from "../src/lead";
 import type { ChamadaDeFerramenta, Mensagem, Modelo, RespostaDoModelo } from "../src/modelo";
 
 export const BASE_CATALOGO = "https://catalogo.teste/catalogo/token-de-teste";
@@ -73,6 +76,21 @@ export function criarMundo(opcoes: { statusDoWebhook?: number; fichas?: typeof F
     return ficha && caminho.startsWith("/imoveis/") ? json(ficha) : json({ erro: "imovel nao encontrado" }, 404);
   }) as typeof fetch;
   return { buscar, leads, pedidosAoCatalogo };
+}
+
+/** "Hoje" fixo dos contextos de teste: uma sexta-feira, antes de todas as datas dos casos. */
+export const HOJE_DE_TESTE = "2026-11-13";
+
+/** Contexto das ferramentas para teste, com catálogo e webhook do `mundo`. */
+export function criarContexto(mundo: Mundo, cofre: Cofre, turno: number, mensagem: string, hoje: string = HOJE_DE_TESTE): Contexto {
+  return {
+    catalogo: criarCatalogo(BASE_CATALOGO, mundo.buscar),
+    cofre,
+    turno,
+    mensagem,
+    hoje,
+    envio: { ligado: true, destinoPermitido: true, postar: (corpo) => postarLead(mundo.buscar, URL_LEADS, corpo) },
+  };
 }
 
 const USO = { entrada: 10, saida: 5 };
