@@ -436,6 +436,9 @@ function testarJuizPreco() {
     true
   );
   assert.equal(casaEspera(man07.turnos[0].espera, 'Bebês de colo não contam: são 4 pessoas, dá certo.'), false);
+  assert.equal(casaEspera(man07.turnos[1].espera, 'Vou passar sua conversa para o nosso time.'), true);
+  assert.equal(casaEspera(man07.turnos[1].espera, 'Vou passar sua conversa para a nossa equipe.'), true);
+  assert.equal(casaEspera(man07.turnos[1].espera, 'Os bebês não contam; vou encaminhar ao time.'), false);
 
   const con10 = carregarCasoDev('contrato/con-10-idioma.json');
   assert.equal(casaEspera(con10.turnos[0].espera, 'The stay from January 15 to 18 for 2 guests costs R$ 2.156,00 total.'), true);
@@ -459,18 +462,25 @@ function testarJuizPreco() {
     );
   };
   const respPrimeiraReal = 'Pronto! Seu pedido de reserva foi registrado e encaminhado ao nosso time comercial.';
+  const respPrimeiraEn = 'All set! Your booking request has been registered and sent to our sales team, for a total of R$ 2.156,00.';
+  const respJaRegPt = 'Esse pedido (GRM-301, de sexta-feira, 15/01/2027 a segunda-feira, 18/01/2027) já está registrado com o nosso time comercial. Não enviei de novo.';
+  const respJaRegEn = 'This request (GRM-301, Friday, January 15, 2027 to Monday, January 18, 2027) is already registered with our sales team. I did not send it again.';
   assert.equal(
     casaConj07(respPrimeiraReal, 'Já registramos o seu pedido de reserva. Não é necessário confirmar novamente.'),
     true
   );
+  assert.equal(casaConj07(respPrimeiraReal, respJaRegPt), true);
+  assert.equal(casaConj07(respPrimeiraEn, respJaRegEn), true);
   assert.equal(
-    casaConj07(respPrimeiraReal, 'Esse pedido (GRM-301) já está registrado com o nosso time comercial. Não enviei de novo.'),
+    casaConj07(respPrimeiraReal, 'Esse pedido já está registrado e não foi enviado para o time de novo.'),
     true
   );
   assert.equal(
-    casaConj07(respPrimeiraReal, 'Seu pedido já foi registrado anteriormente.'),
+    casaConj07(respPrimeiraReal, 'Já está registrado anteriormente e não foi encaminhado ao comercial mais uma vez.'),
     true
   );
+  assert.equal(casaConj07(respPrimeiraReal, 'Já está registrado; não foi enviado.'), false);
+  assert.equal(casaConj07(respPrimeiraReal, 'Já está registrado; não foi enviado. Mas tente de novo.'), false);
   assert.equal(casaConj07(respPrimeiraReal, respPrimeiraReal), false);
   assert.equal(
     casaConj07(
@@ -482,17 +492,41 @@ function testarJuizPreco() {
   assert.equal(casaConj07(respPrimeiraReal, 'Vamos registrar o seu pedido em breve.'), false);
   assert.equal(casaConj07(respPrimeiraReal, 'Seu pedido será registrado pelo time.'), false);
   assert.equal(casaConj07(respPrimeiraReal, 'Não consegui registrar o seu pedido de reserva.'), false);
+  assert.equal(casaConj07(respPrimeiraReal, 'I could not register your booking request.'), false);
   assert.equal(casaConj07('Não foi registrado.', 'Já registramos o seu pedido.'), false);
 
   const lead06 = carregarCasoDev('funciona-leads/lead-06-duplo-sim.json');
   assert.equal(casaEspera(lead06.turnos[1].espera, respPrimeiraReal), true);
+  assert.equal(casaEspera(lead06.turnos[1].espera, respPrimeiraEn), true);
   assert.equal(casaEspera(lead06.turnos[1].espera, 'Vamos registrar depois.'), false);
   assert.equal(casaEspera(lead06.turnos[1].espera, 'Será registrado.'), false);
+  assert.equal(casaEspera(lead06.turnos[1].espera, 'Não foi enviado de novo.'), false);
+  assert.equal(casaEspera(lead06.turnos[2].espera, respJaRegPt), true);
+  assert.equal(casaEspera(lead06.turnos[2].espera, respJaRegEn), true);
   assert.equal(
     casaEspera(lead06.turnos[2].espera, 'Já registramos o seu pedido de reserva. Não é necessário confirmar novamente.'),
     true
   );
+  for (const adv of ['de novo', 'novamente', 'outra vez', 'mais uma vez', 'duas vezes']) {
+    assert.equal(
+      casaEspera(lead06.turnos[2].espera, `Esse pedido já foi registrado antes e não foi enviado ao time ${adv}.`),
+      true
+    );
+    assert.equal(
+      casaEspera(lead06.turnos[2].espera, `Já está registrado; não foi encaminhado para a equipe ${adv}.`),
+      true
+    );
+  }
+  assert.equal(
+    casaEspera(lead06.turnos[2].espera, 'Já está registrado; não foi possível enviar outro pedido novamente.'),
+    true
+  );
+  assert.equal(casaEspera(lead06.turnos[2].espera, 'Já está registrado; não foi enviado.'), false);
+  assert.equal(casaEspera(lead06.turnos[2].espera, 'Já está registrado; não foi enviado para o time.'), false);
+  assert.equal(casaEspera(lead06.turnos[2].espera, 'Já está registrado; não foi enviado. Tentar de novo.'), false);
+  assert.equal(casaEspera(lead06.turnos[2].espera, 'Já foi registrado; não foi registrado agora.'), false);
   assert.equal(casaEspera(lead06.turnos[2].espera, 'Vamos registrar o pedido.'), false);
+  assert.equal(casaEspera(lead06.turnos[2].espera, 'I could not register your booking request.'), false);
 
   // Placeholders de data em America/Sao_Paulo
   const refMs = Date.UTC(2026, 10, 13); // sexta 2026-11-13
