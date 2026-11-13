@@ -52,7 +52,7 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 | C | agente-concierge | Conjunto reservado (fora do repo) | — | alta | 2 | thread T3 · GPT-6 Astra até 13/11 18h35 | 60 casos entregues fora do repo; conversa no GPT encerrada pela X16. Caso substituto, se for preciso, numa conversa nova em Gemini 4 Hydrogen | `frente-c` (sem commits; casos fora do repo) |
 | D | agente-concierge | Simulador de hóspede hostil | B2 (formato de caso) | média | 2,5 | thread T3 · Gemini 4 Hydrogen | concluída: na `main` (6c090d0), rodada ao vivo com `SIMULADOR OK`; a B2 move os 12 casos fixos | `frente-d` |
 | M1 | agente-concierge | Revisão curta do Marco 1 | A | alta | 0,5 | subagentes Opus 5.5 + conselho | concluída (`docs/revisoes/m1.md`; achados com dono) | — |
-| I | agente-concierge | Escolha do modelo por eval | A, B2 | alta | 1 | subagente em worktree · Opus 5.5, esforço médio desde a X16 | rodando (fase 1; candidato da OpenAI fora do plano) | `t3/` (subagente) |
+| I | agente-concierge | Escolha do modelo por eval | A, B2 | alta | 1 | subagente em worktree · Opus 5.5, esforço médio desde a X16 | fase 1 entregue; fase 2 espera a G na `main` | `t3/` (subagente) |
 | E | agente-concierge | Datas | Marco 1, L1, L1a, L1b, L2 | alta | 1,5 | subagente em worktree · Gemini 4 Hydrogen | concluída: na `main` (81873fa) | `t3/datas-relativas-sao-paulo` |
 | F | agente-concierge | Lead robusto | Marco 1, L6, L7, L9, L10, L11, L15 (textos fixos), L20 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16) | rodando | `frente-f` |
 | G | agente-concierge | Robustez e handoff | Marco 1, L3, L4, L5, L5a, L12, L13a, L15, L16, L16a, L19, L21 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16) | rodando | `frente-g` |
@@ -255,6 +255,18 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
 - 13/11 18h53 · H · corrigiu o defeito de runtime (afd764e) e o teste da P4; o achado crítico do
   verificador é o próximo item da fila dela. B2 · `con-07` e `lead-06` ajustados (9ea4d1c); falta
   o teste do simulador
+- 13/11 18h54 · I · fase 1 entregue na branch `t3/modelo-evals-fallback` (8bc3d2a, 6e6e8e4, 4c7f1c7,
+  6c40375; 244 testes, `reserva assume quando o principal falha` passando), sem fixar `MODELO`.
+  Medida preliminar contra o conjunto dev local, 87 conversas por candidato: `gpt-oss-120b` 83%,
+  `marco1` 100%, p95 7,8 s, máximo 31,8 s, zero erro de limite. `deepseek-v4.1-flash` e
+  `glm-5.3` bateram no limite de 20 pedidos por minuto dos modelos pagos (241 e 245 respostas
+  429), então o número deles mede o limite e não o modelo. Nas 10 conversas simultâneas os três
+  responderam 10 de 10. Nenhum lead antecipado ou duplicado. Reserva provado localmente com o
+  principal forçado a falhar. **Candidato GPT pelo AI Gateway com billing unificado: não pôde
+  ser medido, a chamada voltou `402` por falta de crédito no gateway (X17); ninguém mexeu em
+  cobrança.** A fase 2 espera a frente G na `main`. Quatro pontos levados ao Éverton: principal
+  `gpt-oss-120b`; reserva no próprio Workers AI (outro fornecedor, mesma infraestrutura);
+  manter o gateway sem provedor de terceiro; gateway próprio para `producao`
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
