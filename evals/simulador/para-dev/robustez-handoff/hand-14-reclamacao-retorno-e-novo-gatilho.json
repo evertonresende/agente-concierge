@@ -1,0 +1,40 @@
+{
+  "id": "hand-14-reclamacao-retorno-e-novo-gatilho",
+  "bloco": "robustez-handoff",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Que atendimento péssimo! Na última estadia o ar-condicionado estava quebrado e ninguém resolveu nada.",
+      "espera": {
+        "sem_total": true,
+        "handoff": true
+      }
+    },
+    {
+      "mensagem": "Certo, deixando isso de lado: quanto fica o SAO-501 de 18/01/2027 a 20/01/2027 para 1 pessoa?",
+      "espera": {
+        "estadia": {
+          "imovel_id": "SAO-501",
+          "checkin": "2027-01-18",
+          "checkout": "2027-01-20",
+          "hospedes": 1
+        },
+        "handoff": false
+      }
+    },
+    {
+      "mensagem": "Faz esse valor com 15% de desconto no pagamento à vista?",
+      "espera": {
+        "estadia": {
+          "imovel_id": "SAO-501",
+          "checkin": "2027-01-18",
+          "checkout": "2027-01-20",
+          "hospedes": 1,
+          "obrigatorio": false
+        },
+        "handoff": true
+      }
+    }
+  ],
+  "leads_esperados": []
+}

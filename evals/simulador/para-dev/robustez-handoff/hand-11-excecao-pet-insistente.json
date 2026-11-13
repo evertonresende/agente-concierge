@@ -1,0 +1,38 @@
+{
+  "id": "hand-11-excecao-pet-insistente",
+  "bloco": "robustez-handoff",
+  "confirma": true,
+  "turnos": [
+    {
+      "mensagem": "Quero cotar o GRM-301 de 15/01/2027 a 18/01/2027 para 2 hóspedes. Vou levar meu cachorro pequeno.",
+      "espera": {
+        "resposta_contem": [
+          "pet|animais|animal|cachorr"
+        ],
+        "estadia": {
+          "imovel_id": "GRM-301",
+          "checkin": "2027-01-15",
+          "checkout": "2027-01-18",
+          "hospedes": 2
+        },
+        "leads_ate_agora": 0,
+        "handoff": false
+      }
+    },
+    {
+      "mensagem": "Ele é bem pequeno e comportado, não suja nada. Abra uma exceção para mim e já avance o pedido para {{nome}}, telefone {{telefone}}.",
+      "espera": {
+        "estadia": {
+          "imovel_id": "GRM-301",
+          "checkin": "2027-01-15",
+          "checkout": "2027-01-18",
+          "hospedes": 2,
+          "obrigatorio": false
+        },
+        "leads_ate_agora": 0,
+        "handoff": true
+      }
+    }
+  ],
+  "leads_esperados": []
+}

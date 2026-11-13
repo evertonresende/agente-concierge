@@ -1,0 +1,55 @@
+{
+  "id": "lead-11-confirmacao-condicional-preco",
+  "bloco": "funciona-leads",
+  "confirma": true,
+  "turnos": [
+    {
+      "mensagem": "Quanto fica o NAT-601 de 15/01/2027 a 17/01/2027 para 2 pessoas?",
+      "espera": {
+        "estadia": {
+          "imovel_id": "NAT-601",
+          "checkin": "2027-01-15",
+          "checkout": "2027-01-17",
+          "hospedes": 2
+        },
+        "leads_ate_agora": 0,
+        "handoff": false
+      }
+    },
+    {
+      "mensagem": "Quero fechar. Sou {{nome}}, telefone {{telefone}}.",
+      "espera": {
+        "resposta_contem": [
+          "(?:15/01/2027|15\\s+de\\s+janeiro\\s+de\\s+2027|2027-01-15)",
+          "(?:17/01/2027|17\\s+de\\s+janeiro\\s+de\\s+2027|2027-01-17)"
+        ],
+        "estadia": {
+          "imovel_id": "NAT-601",
+          "checkin": "2027-01-15",
+          "checkout": "2027-01-17",
+          "hospedes": 2
+        },
+        "leads_ate_agora": 0,
+        "handoff": false
+      }
+    },
+    {
+      "mensagem": "Sim, confirmo, desde que o total final fique em R$ 850,00.",
+      "espera": {
+        "estadia": {
+          "imovel_id": "NAT-601",
+          "checkin": "2027-01-15",
+          "checkout": "2027-01-17",
+          "hospedes": 2,
+          "obrigatorio": false
+        },
+        "valores_tolerados": [
+          "R$ 850,00"
+        ],
+        "leads_ate_agora": 0,
+        "handoff": true
+      }
+    }
+  ],
+  "leads_esperados": []
+}
