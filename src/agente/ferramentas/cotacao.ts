@@ -1,5 +1,5 @@
 import { chaveDaReserva, invalidarPendente, pendenteAberto, type Reserva } from "../../lead";
-import { formatarDataComDia } from "../../nucleo/datas";
+import { dataComDia } from "../../nucleo/datas";
 import { formatarReais } from "../../nucleo/dinheiro";
 import { resumir } from "./lead";
 import { prepararPedido } from "./pedido";
@@ -58,8 +58,9 @@ export const cotarEstadia = definir(
     const { ficha, cotacao, checkin, checkout, hospedes } = pedido;
     const estadia = {
       imovel: { id: ficha.id, nome: ficha.nome, capacidade: ficha.capacidade, minimo_noites: ficha.minimo_noites },
-      entrada: formatarDataComDia(checkin),
-      saida: formatarDataComDia(checkout),
+      // No idioma do hóspede: com data em português o modelo responde em português (L15).
+      entrada: dataComDia(checkin, contexto.idioma ?? "pt"),
+      saida: dataComDia(checkout, contexto.idioma ?? "pt"),
     };
     if (!cotacao.ok) {
       return {

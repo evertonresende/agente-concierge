@@ -282,8 +282,12 @@ export function conferir(texto: string, permitidos: Set<string>, turno: { mensag
 }
 
 /** Avisos do turno para o modelo, tirados da mensagem do hóspede por código. */
-function alertasDoTurno(mensagem: string, historico: Mensagem[]): string[] {
+function alertasDoTurno(mensagem: string, historico: Mensagem[], idioma: Idioma): string[] {
   const alertas: string[] = [];
+  if (idioma === "en") {
+    alertas.push("O hóspede escreve em inglês: escreva a resposta inteira em inglês, inclusive rótulos e datas, mesmo que "
+      + "instruções das ferramentas venham em português. Os valores continuam em reais, copiados como vieram.");
+  }
   if (insisteEmRegra(mensagem, historico)) {
     alertas.push(`A mensagem atual insiste ou pede exceção depois de a regra ter sido explicada: chame ${NOME_DO_HANDOFF} com o mesmo motivo nesta resposta.`);
   }
@@ -327,12 +331,12 @@ const FOLGA_PARA_CORRIGIR_MS = 8_000;
 export async function rodarTurno(entrada: EntradaDoTurno): Promise<SaidaDoTurno> {
   const agora = entrada.agora ?? Date.now;
   const definicoes = FERRAMENTAS.map((f) => f.definicao);
+  const idioma = idiomaDoTurno(entrada);
   const sistema: Mensagem = {
     role: "system",
-    content: montarPrompt(entrada.contexto.cofre.ler(), entrada.houveHandoff, alertasDoTurno(entrada.mensagem, entrada.historico)),
+    content: montarPrompt(entrada.contexto.cofre.ler(), entrada.houveHandoff, alertasDoTurno(entrada.mensagem, entrada.historico, idioma)),
   };
-  const contexto: Contexto = { ...entrada.contexto, historico: entrada.historico };
-  const idioma = idiomaDoTurno(entrada);
+  const contexto: Contexto = { ...entrada.contexto, historico: entrada.historico, idioma };
   const textos = TEXTOS[idioma];
   const novas: Mensagem[] = [];
   // O que o modelo vê neste turno: as mensagens novas e, se houver correção, o rascunho

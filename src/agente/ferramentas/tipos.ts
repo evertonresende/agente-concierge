@@ -17,6 +17,8 @@ export interface Contexto {
   hoje: DataISO;
   /** Mensagens dos turnos anteriores da conversa. Preenchido pelo loop; ausente em contexto montado à mão. */
   historico?: Mensagem[];
+  /** Idioma do hóspede no turno (L15), decidido pelo loop; ausente vale português. */
+  idioma?: "pt" | "en";
   envio: {
     ligado: boolean;
     destinoPermitido: boolean;
