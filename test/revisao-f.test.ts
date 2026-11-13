@@ -232,6 +232,16 @@ describe("sim só com caracteres comuns; \"?\" só com verbo de envio (A4)", () 
     expect(lerConfirmacao("Sim, confirmo! Pode fechar a reserva, por favor?", GRM301)).toBe("sim");
   });
   it("sinal de mudança junto de emoji derruba", () => expect(lerConfirmacao("sim 🤔 somos 3", GRM301)).toBe("outra"));
+  it("a lista só pesa sobre o sim: recusa e pergunta com emoji seguem como eram", () => {
+    expect(lerConfirmacao("não 👎", GRM301)).toBe("outra");
+    expect(lerConfirmacao("tem wifi? 😊", GRM301)).toBe("pergunta");
+  });
+  it("letra ou marca que a gramática descarta também não passa", () => {
+    for (const mensagem of ["sim\u0294", "sim\u20E0", "sim\u02BC"]) expect(lerConfirmacao(mensagem, GRM301)).toBe("hesitacao");
+  });
+  it("pergunta longa com sinal de mudança derruba (o sinal vem antes do corte de 120)", () => {
+    expect(lerConfirmacao(`antes de fechar, ${"me conta uma coisa sobre o bairro e o acesso, ".repeat(3)}dá para ir com a minha esposa?`, GRM301)).toBe("outra");
+  });
   it("acentos, apóstrofo e o \"sim\" entre aspas continuam limpos", () => {
     for (const mensagem of ["Sí", "that's correct", "\"sim\"", "Sim, confirmo, está tudo certo."]) expect(lerConfirmacao(mensagem, GRM301)).toBe("sim");
   });

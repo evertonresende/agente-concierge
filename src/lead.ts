@@ -249,7 +249,7 @@ const PEDIDO_DE_ENVIO = new RegExp(`^(?:${AFIRMA_OU_CONFIRMA}${DADOS} )*${PODE_E
 // O que pode aparecer numa confirmação limpa: letra latina (com acento), dígito, espaço,
 // pontuação básica e os símbolos dos dados do resumo (telefone, data, valor). Emoji,
 // símbolo e pontuação de outra escrita (❓, ‽, ¿, o ";" grego) fazem a mensagem não ser um sim.
-const SO_CARACTERES_COMUNS = /^[\p{Script=Latin}\p{M}0-9\s.,!;:?'’"()\-+/$]*$/u;
+const SO_CARACTERES_COMUNS = /^[A-Za-zÀ-ÖØ-öø-ÿ\u0300-\u036f0-9\s.,!;:?'’"()\-+/$]*$/;
 
 const MAXIMO_DO_SIM = 120;
 // Mensagem maior que isto não é confirmação nem resposta neutra a um resumo, e não é lida:
@@ -349,14 +349,12 @@ export function lerConfirmacao(mensagem: string, pendente: Pendente): Leitura {
   const bruto = mensagem.replace(/[？؟]/g, "?");
   const texto = marcarDadosIguais(semAcento(bruto), pendente);
   if (PRECO.test(texto)) return "condicao_de_preco";
-  // Caractere fora da lista permitida: não é sim limpo; repete o pedido, ou derruba se houver sinal de mudança.
-  if (!SO_CARACTERES_COMUNS.test(bruto)) return temSinalDeMudanca(texto) ? "outra" : "hesitacao";
   const limpo = semPontuacao(texto);
   // A gramática do sim tem frases que se sobrepõem ("pode sim" = "pode" + "sim"), e o
   // tempo do regex dobra a cada repetição. Nenhum sim de verdade passa deste tamanho.
-  if (limpo.length > MAXIMO_DO_SIM) return texto.includes("?") && !/\d/.test(texto) ? "pergunta" : "outra";
-  // Sinal de mudança, inclusive junto de hesitação ou de sim: não confirma, e o resumo cai (L10).
+  // Sinal de mudança, inclusive junto de hesitação, pergunta ou sim: não confirma, e o resumo cai (L10).
   if (temSinalDeMudanca(texto)) return "outra";
+  if (limpo.length > MAXIMO_DO_SIM) return texto.includes("?") ? "pergunta" : "outra";
   if (texto.includes("?")) {
     // "Sim, confirmo! Pode fechar a reserva, por favor?" é um sim com pedido educado;
     // qualquer outra pergunta ("sim, e tem wifi?", "pode fechar?", "sim?") não confirma.
@@ -365,7 +363,9 @@ export function lerConfirmacao(mensagem: string, pendente: Pendente): Leitura {
     if (!pedidoEducado) return /\d/.test(texto) ? "outra" : "pergunta";
   }
   if (HESITA.test(limpo) || FRACA.test(limpo)) return "hesitacao";
-  return SIM.test(limpo) ? "sim" : "outra";
+  if (!SIM.test(limpo)) return "outra";
+  // Sim com caractere fora da lista permitida (emoji, ❓, ‽, o ";" grego): não é sim limpo, repete o pedido.
+  return SO_CARACTERES_COMUNS.test(bruto) ? "sim" : "hesitacao";
 }
 
 /** Corpo do POST: os 7 campos do contrato, com o total convertido de centavos na fronteira. */
@@ -522,7 +522,7 @@ export async function confirmar(cofre: Cofre, turnoAtual: number, mensagem: stri
   if (!agora.pendente || chaveDaReserva(agora.pendente.reserva) !== chave) return { tipo: "sem_resumo" };
   // Lido antes do marcador "enviando", que sobrescreve a recusa anterior desta reserva.
   const recusadaAntes = corrida === "nao_registrado";
-  const recusaNaSessao = recusadaAntes || Object.values(agora.envios).includes("nao_registrado");
+  const recusaNaSessao = recusadaAntes || Object.values(agora.envios).some((e) => e === "nao_registrado" || e === "recusado");
   marcar(cofre, chave, "enviando");
 
   const corpo = corpoDoLead(pendente.reserva, cotacao.totalCentavos);

@@ -184,7 +184,7 @@ describe("leitura da mensagem diante do resumo pendente", () => {
     ["sim, confirmo por R$ 2.000,00", "condicao_de_preco"],
     ["Obrigado, por enquanto não vou fechar ainda.", "outra"],
     ["", "outra"],
-    ["👍", "hesitacao"],
+    ["👍", "outra"],
     ["2", "outra"],
   ];
   for (const [mensagem, esperado] of naoSao) {
