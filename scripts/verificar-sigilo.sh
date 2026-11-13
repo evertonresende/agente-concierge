@@ -52,15 +52,32 @@ git grep --cached -I -n -o -E '[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*
 git ls-files --cached | grep -E '(^|/)(\.privado/|\.env($|\.)|\.dev\.vars)' | grep -v -F '.env.example' \
   | relata "arquivo local ou de ambiente versionado"
 
-# 2. Histórico: mensagens de commit, e-mails e operações proibidas.
+# 2. Histórico publicável: branches, tags e o que já está no remoto. Ferramentas de
+#    orquestração criam refs locais de checkpoint (fora de refs/heads e refs/tags) com
+#    outra identidade; elas não são publicadas por `git push` e ficam fora desta
+#    checagem, mas o item 3 garante que nenhuma chegou ao remoto.
+PUBLICAVEL="--branches --tags --remotes"
 if git rev-parse -q --verify HEAD >/dev/null; then
-  git log --all --format='%H %B' | grep -i -F -f "$fixos" | cut -c1-8 \
+  git log $PUBLICAVEL --format='%H %B' | grep -i -F -f "$fixos" | cut -c1-8 \
     | relata "termo proibido em mensagem de commit"
-  git log --all --format='%ae%n%ce' | sort -u | grep -v -x -F "$AUTOR" | sed 's/.*/(e-mail fora do padrão no histórico)/' \
+  git log $PUBLICAVEL --format='%ae%n%ce' | sort -u | grep -v -x -F "$AUTOR" | sed 's/.*/(e-mail fora do padrão no histórico)/' \
     | relata "autor ou committer diferente de $AUTOR"
   git reflog | grep -E -i 'amend|rebase|squash' | cut -d' ' -f1 \
     | relata "amend, rebase ou squash no reflog"
 fi
+
+# 3. Remoto: só branches e tags. Nunca `git push --mirror` nem push de outras refs.
+if git remote get-url origin >/dev/null 2>&1; then
+  if refs_remotas=$(git ls-remote origin 2>/dev/null); then
+    printf '%s\n' "$refs_remotas" | awk '{print $2}' | grep -v -E '^(HEAD|refs/heads/|refs/tags/)' \
+      | relata "ref fora de branches e tags no remoto"
+  else
+    echo "SIGILO: aviso: não consegui listar as refs do remoto (sem rede?)"
+  fi
+fi
+
+locais=$(git for-each-ref --format='%(refname)' | grep -v -c -E '^refs/(heads|tags|remotes)/')
+[ "$locais" -eq 0 ] || echo "SIGILO: aviso: $locais ref(s) local(is) de ferramenta fora de branches e tags; não são publicadas por git push"
 
 [ ! -e "$marca" ] || exit 1
 echo "SIGILO OK"
