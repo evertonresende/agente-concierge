@@ -16,9 +16,9 @@ devolve `handoff: true`. Até esse marco o código de produto tem **uma frente s
 
 | Leva | Frentes | Relógio | Regra |
 |---|---|---|---|
-| 1 | **A** (produto, única) · **B1** webhook falso · **B2** harness e casos dev · **C** reservado · **D** simulador (construção) | 3,5 h | B1, B2, C e D dependem só do contrato e não tocam arquivos de A |
+| 1 | **A** (produto, única) · **B1** webhook falso · **B2** harness e casos dev · **C** reservado · **D** simulador (construção) · **J** passo 1 (design da página, só em `docs/desenhos/`) | 3,5 h | B1, B2, C, D e o passo 1 de J dependem só do contrato e não tocam arquivos de A |
 | Portão | Marco 1 verde · **M1** revisão curta · **I** escolha do modelo | 1 h | leva 2 só sai com Marco 1 verde; M1 e I rodam em paralelo |
-| 2 | **E** datas · **F** lead · **G** robustez e handoff · **H** concorrência · **J** página · **D** (rodadas ao vivo) | 3 h | um dono por arquivo (tabela abaixo) |
+| 2 | **E** datas · **F** lead · **G** robustez e handoff · **H** concorrência · **J** passo 2 (implementa o design aprovado) · **D** (rodadas ao vivo) | 3 h | um dono por arquivo (tabela abaixo) |
 | Integração | merges, correções a partir dos evals dev e do simulador, 1º agregado do reservado | 1,5 h | correção nunca olha caso reservado |
 | 3 | **M2** revisões · **L** custo e monitor · **K** produção · **N** entregáveis | 2 h | K sai depois de M2, com o envio real desligado (L24); ligar o envio só com ordem do Éverton |
 
@@ -57,7 +57,7 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 | F | agente-concierge | Lead robusto | Marco 1, L6, L7, L9, L10, L11, L20 | alta | 2,5 | thread T3 · Fable 5.2 | pendente | — |
 | G | agente-concierge | Robustez e handoff | Marco 1, L3, L4, L5, L12, L15, L16, L19, L21 | alta | 2,5 | thread T3 · Fable 5.2 | pendente | — |
 | H | agente-concierge | Concorrência endurecida e falha interna | Marco 1, L17, L17a, L18 | alta | 1 | subagente em worktree · Opus 5.5 | pendente | — |
-| J | agente-concierge | Página de chat | Marco 1 | baixa | 1 | subagente em worktree · DeepSeek | pendente | — |
+| J | agente-concierge | Página de chat em dois passos: design (canvas) e implementação | passo 1: nada; passo 2: Marco 1 e aprovação do Éverton | baixa | 0,7 + 1 | thread T3 · Fable 5.2 | rodando (passo 1) | `frente-j` |
 | M2 | agente-concierge | Revisão de código, segurança e segunda opinião | leva 2 integrada | alta | 1,5 | subagentes Opus 5.5 + conselho | pendente | — |
 | L | agente-concierge | Custo por conversa e monitor diário | leva 2 integrada | média | 1 | subagente em worktree · Opus 5.5 | pendente | — |
 | K | agente-concierge | Produção com o envio real desligado | M2 | alta | 1,5 | thread T3 · Opus 5.5 | pendente | — |
@@ -84,11 +84,25 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   frente como segunda rodada · 5628055, b255c7a, merge d711b0c
 - Critérios de integração nesta hora: 7 verde; 1 a 6 e 8 vermelhos (dependem de A, B2 e K)
 
+- 13/11 16h30 · B2 · passo 1 (runner inicial, formato de caso e bloco `marco1`) conferido pela
+  coordenadora e mergeado para liberar C e D · 2cbdb99, merge 2759766. Passo 2 entregue
+  (79 casos, `RUNNER OK`, `TRAVA OK` e `CASOS OK` reproduzidos pela coordenadora); dois
+  verificadores (Opus) lendo o runner e os casos antes do merge
+- 13/11 16h30 · C · revisão com o formato final: 60 casos, 10 com confirmação, conferidos só
+  por contagem
+- 13/11 16h30 · B1 · segunda rodada entregue (`FALSO OK` com 15 grupos); verificador relendo
+- 13/11 16h30 · J · mudada pelo Éverton: Fable 5.2, thread, design aprovado por ele antes de
+  implementar; passo 1 despachado
+- Pré-voo: o Éverton disse que a regra do hostname foi criada; o estado do Bot Fight
+  Mode (ligado ou desligado) ficou ambíguo na resposta e foi perguntado de novo
+
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
-- Skills: `cloudflare-token` (coordenadora, pré-voo).
+- Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
+  (frente J, passo 1).
 - Regras carregadas em toda sessão Claude: `coding-style`, `git-workflow`, `git-sync`,
   `security`, `task-contract`, `testing`.
-- Subagentes: `code-reviewer` em Opus 5.5, como verificador da frente B1.
+- Subagentes: `code-reviewer` em Opus 5.5, como verificador das frentes B1 e B2;
+  `design-reviewer` (frente J, passo 1).
 
 ## Pré-voo (antes da leva 1)
 
@@ -97,8 +111,8 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
 | 1 | Plano pago da Cloudflare, na conta pessoal (a mesma da zona do subdomínio de produção) | Éverton: **assinado em 13/11** | o gratuito dá 10 ms de CPU por requisição e ~85 chamadas de modelo por dia; os evals estouram isso (`docs/VERIFICACOES.md` §3). A coordenadora confere antes dos evals em volume |
 | 2 | `AGENTE_URL_PRODUCAO` (o subdomínio do L23) no arquivo de ambiente | Éverton: **feito em 13/11** (presença conferida, valor não lido) | o hostname não fica em arquivo versionado; sem ele a frente K não sai |
 | 3 | `CLOUDFLARE_ACCOUNT_ID` no arquivo de ambiente, derivado da zona do domínio do e-mail do autor (é a conta pessoal do Éverton), e a credencial de deploy por referência | coordenadora: **feito em 13/11** (uma zona encontrada; o identificador e a chave da OpenAI também entraram nos termos extras do gate de sigilo) | o token cobre mais de uma conta; sem a conta o primeiro deploy de `dev` não sai |
-| 4 | Olhar no painel se o Bot Fight Mode da zona está ligado e dizer à coordenadora | Éverton: **sem resposta ainda** (trava só a frente K) | o token não lê essa configuração; ligado, ele bloqueia cliente automatizado no domínio inteiro e a decisão L23 (mexer só no hostname) não se sustenta sozinha |
-| 5 | Criar no painel a regra que desliga a checagem de integridade de navegador só para o hostname de produção, ou dar ao token permissão de regras de configuração | Éverton: **sem resposta ainda** (trava só a frente K) | o token provavelmente não cria essa regra; sem ela a frente K para de madrugada e produção não sobe sem ele |
+| 4 | Olhar no painel se o Bot Fight Mode da zona está ligado e dizer à coordenadora | Éverton: **resposta ambígua, perguntado de novo** (trava só a frente K) | o token não lê essa configuração; ligado, ele bloqueia cliente automatizado no domínio inteiro e a decisão L23 (mexer só no hostname) não se sustenta sozinha |
+| 5 | Criar no painel a regra que desliga a checagem de integridade de navegador só para o hostname de produção, ou dar ao token permissão de regras de configuração | Éverton: **criada, segundo ele** (a frente K confere lendo as regras da zona) | o token provavelmente não cria essa regra; sem ela a frente K para de madrugada e produção não sobe sem ele |
 | 6 | Lacunas decididas no contrato (seção 10) | feito em 13/11; a L1a, a L1b e a L17a foram decididas na abertura da coordenação (valem os padrões que eram provisórios); nenhuma aberta | frente não implementa lacuna aberta |
 | 7 | Fichas do catálogo fora do repositório, sem URL nem token, para as frentes fora do Claude | coordenadora: **feito em 13/11** (`~/.local/share/agente-concierge/catalogo/fichas.json`) | essas frentes não recebem a URL do catálogo |
 
@@ -122,7 +136,8 @@ mexer na configuração.
 | `src/nucleo/dinheiro.ts`, `src/nucleo/preco.ts` | A | — | — |
 | `src/nucleo/datas.ts` | A | E | — |
 | `src/nucleo/telefone.ts` | — | F | — |
-| `src/pagina.ts` | A (mínima) | J | — |
+| `src/pagina.ts` | A (mínima) | J (passo 2) | — |
+| `docs/desenhos/pagina-canvas.html` | J (passo 1) | — | — |
 | `test/**` | A | cada frente, só os testes dos seus arquivos | — |
 | `falso/**` | B1 | — | — |
 | `evals/rodar.mjs`, `evals/teste-do-runner.mjs`, `evals/lib/**`, `evals/casos/dev/**`, `evals/README.md` | B2 | B2 recebe casos novos de D e de C | — |
@@ -216,13 +231,13 @@ que escreve o agente.
 
 | Provedor e modelo no T3 Code | Quem roda |
 |---|---|
-| Claude Fable 5.2 (`claudeAgent`, `claude-fable-5-2`) | coordenadora, A, F e G |
+| Claude Fable 5.2 (`claudeAgent`, `claude-fable-5-2`) | coordenadora, A, F, G e J |
 | Claude Opus 5.5 (`claudeAgent`, `claude-opus-5-5`) | E, H, I, K, L, N e os subagentes de revisão e de verificação |
 | Gemini 4 Hydrogen (`antigravity`, `gemini-4-hydrogen`) | B2 e D |
 | GPT-6 Astra (`codex`, `gpt-6-astra`) | C e o conselho; nada além disso (uso limitado) |
-| DeepSeek pago (`opencode`, `deepseek/deepseek-flash`) | B1 e J; nunca os modelos gratuitos do OpenCode |
+| DeepSeek pago (`opencode`, `deepseek/deepseek-flash`) | B1; nunca os modelos gratuitos do OpenCode |
 
-**Frente fora do Claude (B1, B2, C, D e J).**
+**Frente fora do Claude (B1, B2, C e D).**
 
 1. Lê o `AGENTS.md` da raiz, que traz as regras do `CLAUDE.md` (esses agentes não leem
    o `CLAUDE.md`).
@@ -582,8 +597,36 @@ objeto com lead em estado `enviando`.
 
 ## Sessão J — Página de chat
 
-Uma página estática em `src/pagina.ts` que conversa pelo `POST /chat`, mostra quando
-houve handoff e funciona no celular. Primeira a ser cortada.
+Mudada pelo Éverton durante a leva 1 (`DECISOES.md` X13): roda em Claude Fable 5.2,
+numa thread do T3, em dois passos. O acabamento continua sendo o primeiro item da linha
+de corte.
+
+### Passo 1 — design (agora, em paralelo à leva 1; teto de 40 minutos)
+Não toca em `src/`. Entrega um canvas em `docs/desenhos/pagina-canvas.html`, feito com as
+skills `design-hifi` e `design-guidelines` do Éverton, e **para**: o Éverton aprova na
+própria thread.
+
+- Uma direção só. Sem variações lado a lado e sem a rodada de perguntas da skill: as
+  respostas estão aqui. Tela completa, web, em duas larguras (desktop e celular).
+- Direção: a do site do Éverton. Fonte Inter, sem cantos arredondados, fundo `#fafafa`,
+  texto `#141414`, rótulos em maiúsculas com espaçamento largo, muito espaço em branco.
+- Conteúdo: conversa com histórico; campo de envio; estados de enviando e de erro; aviso
+  visível quando vier `handoff: true`; três botões de exemplo (a cotação do exemplo do
+  contrato, uma pergunta de comodidade, um pedido de desconto); rodapé com o link do
+  repositório e a frase "agente de demonstração, dados fictícios".
+- Texto real, sem lorem ipsum: a conversa do Marco 1.
+- Funciona só com teclado e tem contraste legível. Uma rodada do `design-reviewer` antes
+  de mostrar.
+- Para o Éverton ver: capturas de tela nas duas larguras e o arquivo servido na porta
+  8090.
+
+MANUAL: `docs/desenhos/pagina-canvas.html` na branch, capturas nas duas larguras
+mostradas na thread, e a aprovação do Éverton escrita na thread.
+
+### Passo 2 — implementação (depois do Marco 1 e da aprovação; teto de 1 hora)
+Implementa o design aprovado em `src/pagina.ts`: uma página estática que conversa pelo
+`POST /chat`, mostra quando houve handoff e funciona no celular.
+
 MANUAL: captura de tela da conversa do Marco 1 feita na página em `dev`.
 
 ## Sessão M2 — Revisões antes de produção
