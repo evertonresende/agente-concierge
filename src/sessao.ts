@@ -30,7 +30,7 @@ export const TETO_WORKER_MS = 55_000;
 /** Orçamento do trabalho externo de cada turno (contrato seção 2). */
 const ORCAMENTO_MS = 45_000;
 /** Teto total desde a chegada ao Worker, abaixo do teto do Worker para devolver contingência limpa. */
-const TETO_SESSAO_MS = 53_000;
+export const TETO_SESSAO_MS = 53_000;
 const SEM_USO = { entrada: 0, saida: 0, chamadas: 0 };
 // ponytail: o modelo recebe só as últimas mensagens; conversa mais longa que isso
 // esquece o começo. Trocar por resumo do histórico se as conversas reais passarem disso.
@@ -56,6 +56,7 @@ export class Sessao extends DurableObject<Env> {
     super(ctx, env);
     ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS historico (id INTEGER PRIMARY KEY AUTOINCREMENT, mensagem TEXT NOT NULL)");
     ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS estado (chave TEXT PRIMARY KEY, valor TEXT NOT NULL)");
+    ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS pedidos (id TEXT PRIMARY KEY, resposta TEXT NOT NULL)");
   }
 
   /**
@@ -63,14 +64,21 @@ export class Sessao extends DurableObject<Env> {
    * rejeita: processamento que lança vira a resposta de contingência (contrato L18), e
    * por isso uma mensagem que falha não trava as seguintes.
    */
-  conversar(mensagem: string, chegada: number = Date.now()): Promise<RespostaDoChat> {
+  conversar(mensagem: string, chegada: number = Date.now(), idPedido?: string): Promise<RespostaDoChat> {
     const entradaNaFila = Date.now();
-    const vez = this.fila.then(() => this.processar(mensagem, chegada, entradaNaFila)).catch((): RespostaDoChat => {
+    const vez = this.fila.then(() => this.processar(mensagem, chegada, entradaNaFila, idPedido)).catch((): RespostaDoChat => {
       console.log(JSON.stringify({ evento: "falha_no_turno", sessao: this.ctx.id.toString().slice(0, 12) }));
       return { reply: CONTINGENCIA, handoff: true, uso: SEM_USO };
     });
     this.fila = vez;
     return vez;
+  }
+
+  private respostaDoPedido(idPedido: string): RespostaDoChat | null {
+    const linha = this.ctx.storage.sql
+      .exec<{ resposta: string }>("SELECT resposta FROM pedidos WHERE id = ?", idPedido)
+      .toArray()[0];
+    return linha ? (JSON.parse(linha.resposta) as RespostaDoChat) : null;
   }
 
   private ler<T>(chave: string, padrao: T): T {
@@ -92,7 +100,12 @@ export class Sessao extends DurableObject<Env> {
     return inicio < 0 ? [] : linhas.slice(inicio);
   }
 
-  private async processar(mensagem: string, chegada: number, entradaNaFila: number): Promise<RespostaDoChat> {
+  private async processar(mensagem: string, chegada: number, entradaNaFila: number, idPedido?: string): Promise<RespostaDoChat> {
+    if (idPedido) {
+      const gravada = this.respostaDoPedido(idPedido);
+      if (gravada) return gravada;
+    }
+
     const deps = this.dependencias ??= { modelo: criarModelo(this.env.AI, this.env.MODELO), buscar: fetch };
     const orcamentoMs = deps.orcamentoMs ?? ORCAMENTO_MS;
     const tetoMs = deps.tetoMs ?? TETO_SESSAO_MS;
@@ -185,7 +198,9 @@ export class Sessao extends DurableObject<Env> {
       ? (pendenteEmCurso === pendentePersistido ? pendentePersistido : null)
       : pendenteEmCurso;
 
-    // Tudo ou nada: o histórico e o resumo pendente do turno valem juntos ou não valem.
+    const resposta: RespostaDoChat = { reply: saida.reply, handoff: saida.handoff, uso: saida.uso };
+
+    // Tudo ou nada: o histórico, o resumo pendente e o registro do pedido valem juntos ou não valem.
     this.ctx.storage.transactionSync(() => {
       for (const nova of saida.novas) {
         this.ctx.storage.sql.exec("INSERT INTO historico (mensagem) VALUES (?)", JSON.stringify(nova));
@@ -194,6 +209,9 @@ export class Sessao extends DurableObject<Env> {
       const atual = this.ler<EstadoLead>("lead", ESTADO_INICIAL);
       if (JSON.stringify(pendenteFinal) !== JSON.stringify(atual.pendente)) {
         this.gravar("lead", { ...atual, pendente: pendenteFinal });
+      }
+      if (idPedido) {
+        this.ctx.storage.sql.exec("INSERT OR IGNORE INTO pedidos (id, resposta) VALUES (?, ?)", idPedido, JSON.stringify(resposta));
       }
     });
 
@@ -212,6 +230,6 @@ export class Sessao extends DurableObject<Env> {
       envios: Object.values(cofre.ler().envios),
     }));
 
-    return { reply: saida.reply, handoff: saida.handoff, uso: saida.uso };
+    return resposta;
   }
 }

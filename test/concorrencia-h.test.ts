@@ -1,10 +1,13 @@
 import { evictDurableObject, runInDurableObject } from "cloudflare:test";
 import { env } from "cloudflare:workers";
 import { describe, expect, it } from "vitest";
+import { FERRAMENTAS } from "../src/agente/ferramentas";
+import { definir } from "../src/agente/ferramentas/tipos";
 import type { Env } from "../src/env";
-import worker from "../src/index";
+import worker, { tratarChat } from "../src/index";
+import { apresentarResumo, type EstadoLead } from "../src/lead";
 import type { Mensagem, Modelo } from "../src/modelo";
-import type { Dependencias, Sessao } from "../src/sessao";
+import { type Dependencias, type RespostaDoChat, type Sessao, TETO_SESSAO_MS, TETO_WORKER_MS } from "../src/sessao";
 import { chamar, criarMundo, diz, type Mundo, pedeFerramentas, ultimaDoHospede } from "./apoio";
 
 const ambiente = env as unknown as Env;
@@ -27,11 +30,30 @@ async function abrir(dependencias: Dependencias) {
   return stub;
 }
 
-function postChat(sessionId: string, message: string): Promise<Response> {
+function postChat(sessionId: string, message: string, variaveis: Env = ambiente): Promise<Response> {
   return worker.fetch(new Request("https://agente.teste/chat", {
     method: "POST",
     body: JSON.stringify({ session_id: sessionId, message }),
-  }), ambiente);
+  }), variaveis);
+}
+
+function comNamespaceRealEnvolvido(
+  interceptar: (realStub: DurableObjectStub<Sessao>, args: [string, number?, string?]) => Promise<RespostaDoChat>,
+): Env {
+  return {
+    ...ambiente,
+    SESSAO: {
+      ...ambiente.SESSAO,
+      getByName(nome: string) {
+        const realStub = ambiente.SESSAO.getByName(nome);
+        return {
+          conversar(mensagem: string, chegada?: number, idPedido?: string) {
+            return interceptar(realStub, [mensagem, chegada, idPedido]);
+          },
+        };
+      },
+    } as unknown as Env["SESSAO"],
+  };
 }
 
 describe("concorrência endurecida e falhas (frente H)", () => {
@@ -386,5 +408,214 @@ describe("concorrência endurecida e falhas (frente H)", () => {
     const cortadaModelo = await stub3.conversar("oi");
     expect(cortadaModelo.handoff).toBe(true);
     await pausa(250);
+  });
+
+  it("item 1a: objeto real lança depois de gravar o turno → retentativa devolve a mesma resposta com a mensagem 1 vez no histórico e zero POST extra", async () => {
+    const id = `retentativa-pos-gravacao-${++proxima}`;
+    const mundo = criarMundo();
+    let chamadasModelo = 0;
+    const modelo: Modelo = async () => {
+      chamadasModelo++;
+      return diz("Olá, pedido recebido!");
+    };
+
+    const realStub = ambiente.SESSAO.getByName(`sessao:${id}`);
+    await runInDurableObject(realStub, (sessao: Sessao) => {
+      sessao.dependencias = { modelo, buscar: mundo.buscar };
+    });
+
+    let tentativas = 0;
+    const envComFalha = comNamespaceRealEnvolvido(async (stub, args) => {
+      tentativas++;
+      const resposta = await stub.conversar(...args);
+      if (tentativas === 1) throw new Error("falha de RPC depois de gravar");
+      return resposta;
+    });
+
+    const r1 = await postChat(id, "oi", envComFalha);
+    expect(r1.status).toBe(200);
+    expect(tentativas).toBe(2);
+    expect(chamadasModelo).toBe(1);
+    expect(await r1.json()).toEqual({ reply: "Olá, pedido recebido!", handoff: false });
+    expect(r1.headers.get("x-chamadas-modelo")).toBe("1");
+
+    const historicoGravado = await runInDurableObject(realStub, (_sessao, state) =>
+      state.storage.sql.exec<{ mensagem: string }>("SELECT mensagem FROM historico ORDER BY id").toArray()
+        .map((l) => JSON.parse(l.mensagem) as Mensagem));
+    expect(historicoGravado).toEqual([
+      { role: "user", content: "oi" },
+      { role: "assistant", content: "Olá, pedido recebido!" },
+    ]);
+    expect(mundo.leads).toEqual([]);
+  });
+
+  it("item 1b: objeto real lança depois de gravar 'sim' com resumo pendente → no máximo o efeito da 1ª passagem, nunca lead vindo da 2ª", async () => {
+    // Subcaso 1 (regra P4): resumo no turno 1, pergunta no turno 2; no turno 3 ("sim"), a 1ª passagem
+    // apenas reapresenta o resumo e grava, depois lança. A 2ª passagem não pode ler "sim" como confirmação.
+    const id1 = `retentativa-sim-p4-${++proxima}`;
+    const mundo1 = criarMundo();
+    let chamadasNoSim1 = 0;
+    const modelo1: Modelo = async (mensagens) => {
+      const ultima = ultimaDoHospede(mensagens);
+      if (ultima === "quero fechar") return pedeFerramentas(chamar("montar_resumo", DADOS));
+      if (ultima === "sim") {
+        chamadasNoSim1++;
+        return pedeFerramentas(chamar("confirmar_reserva"));
+      }
+      return diz("O check-in é às 15:00.");
+    };
+    const stub1 = ambiente.SESSAO.getByName(`sessao:${id1}`);
+    await runInDurableObject(stub1, (sessao: Sessao) => {
+      sessao.dependencias = { modelo: modelo1, buscar: mundo1.buscar };
+    });
+
+    expect((await postChat(id1, "quero fechar")).status).toBe(200);
+    expect((await postChat(id1, "qual o horário?")).status).toBe(200);
+
+    let tentativas1 = 0;
+    const envFalha1 = comNamespaceRealEnvolvido(async (stub, args) => {
+      tentativas1++;
+      const resposta = await stub.conversar(...args);
+      if (tentativas1 === 1) throw new Error("falha após gravar reapresentação");
+      return resposta;
+    });
+    const respSim1 = await postChat(id1, "sim", envFalha1);
+    expect(respSim1.status).toBe(200);
+    expect(tentativas1).toBe(2);
+    expect(chamadasNoSim1).toBe(1);
+    const dado1 = await respSim1.json<{ reply: string; handoff: boolean }>();
+    expect(dado1.handoff).toBe(false);
+    expect(dado1.reply).toContain("Ainda não enviei nada");
+    expect(mundo1.leads).toEqual([]);
+
+    const usersNoHistorico1 = await runInDurableObject(stub1, (_sessao, state) =>
+      state.storage.sql.exec<{ mensagem: string }>("SELECT mensagem FROM historico ORDER BY id").toArray()
+        .map((l) => JSON.parse(l.mensagem) as Mensagem)
+        .filter((m) => m.role === "user")
+        .map((m) => m.content));
+    expect(usersNoHistorico1).toEqual(["quero fechar", "qual o horário?", "sim"]);
+
+    // Subcaso 2: "sim" no turno seguinte ao resumo → 1ª passagem envia 1 lead e grava, depois lança;
+    // a 2ª passagem devolve a mesma resposta gravada, com exatamente 1 POST e "sim" 1 vez no histórico.
+    const id2 = `retentativa-sim-envio-${++proxima}`;
+    const mundo2 = criarMundo();
+    let postsIniciados = 0;
+    let chamadasNoSim2 = 0;
+    const buscarContado = (async (entrada: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.method === "POST") postsIniciados++;
+      return mundo2.buscar(entrada, init);
+    }) as typeof fetch;
+    const modelo2: Modelo = async (mensagens) => {
+      const ultima = ultimaDoHospede(mensagens);
+      if (ultima === "sim") {
+        chamadasNoSim2++;
+        return pedeFerramentas(chamar("confirmar_reserva"));
+      }
+      return pedeFerramentas(chamar("montar_resumo", DADOS));
+    };
+    const stub2 = ambiente.SESSAO.getByName(`sessao:${id2}`);
+    await runInDurableObject(stub2, (sessao: Sessao) => {
+      sessao.dependencias = { modelo: modelo2, buscar: buscarContado };
+    });
+
+    expect((await postChat(id2, "quero fechar")).status).toBe(200);
+    let tentativas2 = 0;
+    const envFalha2 = comNamespaceRealEnvolvido(async (stub, args) => {
+      tentativas2++;
+      const resposta = await stub.conversar(...args);
+      if (tentativas2 === 1) throw new Error("falha após gravar confirmação");
+      return resposta;
+    });
+    const respSim2 = await postChat(id2, "sim", envFalha2);
+    expect(respSim2.status).toBe(200);
+    expect(tentativas2).toBe(2);
+    expect(chamadasNoSim2).toBe(1);
+    expect(postsIniciados).toBe(1);
+    expect(mundo2.leads).toHaveLength(1);
+    const dado2 = await respSim2.json<{ reply: string; handoff: boolean }>();
+    expect(dado2.handoff).toBe(false);
+    expect(dado2.reply).toMatch(/foi registrado/);
+
+    const usersNoHistorico2 = await runInDurableObject(stub2, (_sessao, state) =>
+      state.storage.sql.exec<{ mensagem: string }>("SELECT mensagem FROM historico ORDER BY id").toArray()
+        .map((l) => JSON.parse(l.mensagem) as Mensagem)
+        .filter((m) => m.role === "user")
+        .map((m) => m.content));
+    expect(usersNoHistorico2).toEqual(["quero fechar", "sim"]);
+  });
+
+  it("item 1c: objeto real lança antes de gravar → retentativa processa 1 vez e responde", async () => {
+    const id = `retentativa-antes-gravar-${++proxima}`;
+    const mundo = criarMundo();
+    let chamadasModelo = 0;
+    const modelo: Modelo = async () => {
+      chamadasModelo++;
+      return diz("Processada na tentativa 2!");
+    };
+
+    const realStub = ambiente.SESSAO.getByName(`sessao:${id}`);
+    await runInDurableObject(realStub, (sessao: Sessao) => {
+      sessao.dependencias = { modelo, buscar: mundo.buscar };
+    });
+
+    let tentativas = 0;
+    const envComFalha = comNamespaceRealEnvolvido(async (stub, args) => {
+      tentativas++;
+      if (tentativas === 1) throw new Error("falha antes de gravar no objeto");
+      return stub.conversar(...args);
+    });
+
+    const resposta = await postChat(id, "oi", envComFalha);
+    expect(resposta.status).toBe(200);
+    expect(tentativas).toBe(2);
+    expect(chamadasModelo).toBe(1);
+    expect(await resposta.json()).toEqual({ reply: "Processada na tentativa 2!", handoff: false });
+
+    const historicoGravado = await runInDurableObject(realStub, (_sessao, state) =>
+      state.storage.sql.exec<{ mensagem: string }>("SELECT mensagem FROM historico ORDER BY id").toArray()
+        .map((l) => JSON.parse(l.mensagem) as Mensagem));
+    expect(historicoGravado).toEqual([
+      { role: "user", content: "oi" },
+      { role: "assistant", content: "Processada na tentativa 2!" },
+    ]);
+  });
+
+  it("item 1d e item 3: duas tentativas somadas respeitam o teto do Worker sem orçamento novo na retentativa", async () => {
+    const id = `teto-retentativa-${++proxima}`;
+    const mundo = criarMundo();
+    const realStub = ambiente.SESSAO.getByName(`sessao:${id}`);
+    await runInDurableObject(realStub, (sessao: Sessao) => {
+      sessao.dependencias = {
+        modelo: async () => {
+          await pausa(90);
+          return diz("resposta que passaria se houvesse orçamento novo");
+        },
+        buscar: mundo.buscar,
+      };
+    });
+
+    let tentativas = 0;
+    const envComFalha = comNamespaceRealEnvolvido(async (stub, args) => {
+      tentativas++;
+      if (tentativas === 1) {
+        await pausa(80);
+        throw new Error("falha transitória na 1ª tentativa");
+      }
+      return stub.conversar(...args);
+    });
+
+    const inicio = Date.now();
+    const req = new Request("https://agente.teste/chat", {
+      method: "POST",
+      body: JSON.stringify({ session_id: id, message: "oi" }),
+    });
+    const resposta = await tratarChat(req, envComFalha, 120);
+    const decorrido = Date.now() - inicio;
+
+    expect(resposta.status).toBe(200);
+    expect(tentativas).toBe(2);
+    expect(decorrido).toBeLessThan(155);
+    expect(await resposta.json()).toMatchObject({ handoff: true });
+    await pausa(110);
   });
 });

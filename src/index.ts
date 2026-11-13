@@ -59,6 +59,7 @@ export async function tratarChat(pedido: Request, env: Env, tetoMs = TETO_WORKER
       return responder(200, "Sua mensagem ficou longa demais para eu ler de uma vez. Pode resumir em poucas linhas?", false);
     }
 
+    const idPedido = crypto.randomUUID();
     for (let tentativa = 1; ; tentativa++) {
       const restante = prazo - Date.now();
       if (restante <= 0) {
@@ -67,7 +68,7 @@ export async function tratarChat(pedido: Request, env: Env, tetoMs = TETO_WORKER
       }
       try {
         // O prefixo deixa o session_id vazio valer como uma sessão qualquer (contrato L17a).
-        const chamada = env.SESSAO.getByName(`sessao:${session_id}`).conversar(message, chegada);
+        const chamada = env.SESSAO.getByName(`sessao:${session_id}`).conversar(message, chegada, idPedido);
         // Evita rejeição não tratada se o teto do Worker vencer antes da promessa da sessão.
         chamada.catch(() => {});
         const resposta = await comPrazo(chamada, restante);
