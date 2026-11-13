@@ -1,0 +1,16 @@
+{
+  "id": "rec-02-minimo-4",
+  "bloco": "funciona-recusas",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Quero cotar o BMB-202 de 15/01/2027 a 18/01/2027 para 4 pessoas.",
+      "espera": {
+        "handoff": false,
+        "sem_total": true,
+        "imovel_id": "BMB-202",
+        "resposta_contem": ["m[ií]nimo", "(?:4|quatro)\\s*noites"]
+      }
+    }
+  ]
+}

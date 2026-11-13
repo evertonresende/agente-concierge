@@ -48,15 +48,15 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 |---|---|---|---|---|---|---|---|---|
 | A | agente-concierge | Esqueleto vertical até o Marco 1 | pré-voo | alta | 3,5 | thread T3 · Fable 5.2 | concluída | `frente-a` |
 | B1 | agente-concierge | Webhook falso (Worker próprio), construído e testado local; deploy em `dev` pela coordenadora | pré-voo | alta | 1 | subagente em worktree · DeepSeek | concluída | `t3/webhook-falso-leads` |
-| B2 | agente-concierge | Harness HTTP e casos dev por bloco | — | alta | 2,5 | thread T3 · Gemini 4 Hydrogen | rodando (passo 1 na main; passo 2 reprovado pelo verificador, em correção) | `frente-b2` |
+| B2 | agente-concierge | Harness HTTP e casos dev por bloco | — | alta | 2,5 | thread T3 · Gemini 4 Hydrogen | passo 2 na main; resíduos da segunda verificação em commit de seguimento | `frente-b2` |
 | C | agente-concierge | Conjunto reservado (fora do repo) | — | alta | 2 | thread T3, fica viva · GPT-6 Astra | rodando (60 casos; relendo por classes de defeito) | `frente-c` (sem commits; casos fora do repo) |
-| D | agente-concierge | Simulador de hóspede hostil | B2 (formato de caso) | média | 2,5 | thread T3 · Gemini 4 Hydrogen | rodando (reprovada pelo verificador; em correção) | `frente-d` |
+| D | agente-concierge | Simulador de hóspede hostil | B2 (formato de caso) | média | 2,5 | thread T3 · Gemini 4 Hydrogen | correções entregues (19 itens); conferência pela rodada ao vivo, depois do merge da B2 | `frente-d` |
 | M1 | agente-concierge | Revisão curta do Marco 1 | A | alta | 0,5 | subagentes Opus 5.5 + conselho | concluída (`docs/revisoes/m1.md`; achados com dono) | — |
 | I | agente-concierge | Escolha do modelo por eval | A, B2 | alta | 1 | subagente em worktree · Opus 5.5 | pendente | — |
 | E | agente-concierge | Datas | Marco 1, L1, L1a, L1b, L2 | alta | 1,5 | subagente em worktree · Gemini 4 Hydrogen | rodando | `frente-e` |
 | F | agente-concierge | Lead robusto | Marco 1, L6, L7, L9, L10, L11, L15 (textos fixos), L20 | alta | 2,5 | thread T3 · Fable 5.2 | rodando | `frente-f` |
 | G | agente-concierge | Robustez e handoff | Marco 1, L3, L4, L5, L5a, L12, L13a, L15, L16, L16a, L19, L21 | alta | 2,5 | thread T3 · Fable 5.2 | rodando | `frente-g` |
-| H | agente-concierge | Concorrência endurecida e falha interna | Marco 1, L17, L17a, L18 | alta | 1 | subagente em worktree · Gemini 4 Hydrogen | pronta (sai quando D ou J terminar: no máximo 5 frentes vivas) | — |
+| H | agente-concierge | Concorrência endurecida e falha interna | Marco 1, L17, L17a, L18 | alta | 1 | subagente em worktree · Gemini 4 Hydrogen | rodando | `t3/` (subagente) |
 | J | agente-concierge | Página de chat em dois passos: design (canvas) e implementação | passo 1: nada; passo 2: Marco 1 e aprovação do Éverton | baixa | 0,7 + 1 | thread T3 · Fable 5.2 | passo 1 concluído (canvas aprovado pelo Éverton, com dois ajustes); passo 2 rodando | `frente-j` |
 | M2 | agente-concierge | Revisão de código, segurança e segunda opinião | leva 2 integrada | alta | 1,5 | subagentes Opus 5.5 + conselho | pendente | — |
 | L | agente-concierge | Custo por conversa e monitor diário | leva 2 integrada | média | 1 | subagente em worktree · Gemini 4 Hydrogen | pendente | — |
@@ -159,6 +159,23 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
 - 13/11 17h44 · leva 2 despachada da `main` em diante deste commit: E (Gemini, subagente), F e
   G (Fable, threads), J passo 2 (Fable, thread). H sai quando D ou J terminar
 
+- 13/11 17h56 · base medida: agente do Marco 1 contra os 87 casos dev (runner da B2 em 7afe770,
+  contra `dev`): 72 de 87; marco1 e robustez-handoff 100%, funciona-leads 66%,
+  robustez-nao-inventa 70%, funciona-recusas 72%; nenhum lead sem confirmação nem
+  duplicado; p95 de 10,6 s, máximo de 34 s
+- 13/11 17h56 · D · correções entregues · 0ca85ff, 493a3a4. H despachada (Gemini) na vaga
+- 13/11 17h56 · G · levantou textos de código fora da lista da L15: regra provisória P3 e
+  detector único de idioma com a frente F (`src/nucleo/idioma.ts`)
+
+- 13/11 18h01 · B2 · passo 2 na `main` (87 casos, runner corrigido) · 6b34703, 7052906, cde0094,
+  7afe770, merge 77f8828. Segundo verificador (Opus, recorte): o runner passou no que
+  era crítico e alto; numa amostra de 13 casos, 3 ainda reprovam agente correto e 7
+  deixam passar agente errado. Devolvidos para um commit de seguimento, sem nova rodada
+  de verificador. `CASOS OK`, `RUNNER OK` e 130 testes na `main`
+- 13/11 18h01 · regra provisória P4 (o "sim" só vale logo depois de resumo ou pedido de
+  confirmação gerados por código), levantada pela frente F
+- 13/11 18h01 · relatório da medida de base em `evals/relatorios/2026-11-13-dev-base-marco1.json`
+
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
   (frente J, passo 1).
@@ -200,7 +217,7 @@ mexer na configuração.
 | `test/apoio.ts` | A | congelado: ninguém altera; apoio novo vai em `test/apoio-<frente>.ts` da própria frente | — |
 | `src/nucleo/dinheiro.ts`, `src/nucleo/preco.ts` | A | — | — |
 | `src/nucleo/datas.ts` | A | E | — |
-| `src/nucleo/telefone.ts` | — | F | — |
+| `src/nucleo/telefone.ts`, `src/nucleo/idioma.ts` (detector único de idioma: `idiomaDoHospede(textos): "pt" \| "en"`; G importa) | — | F | — |
 | `src/pagina.ts` | A (mínima) | J (passo 2) | — |
 | `docs/desenhos/pagina-canvas.html` | J (passo 1) | — | — |
 | `test/**` | A | E: `test/nucleo/datas.test.ts`; F: `test/lead.test.ts`; G: `test/loop.test.ts`, `test/catalogo.test.ts`; H: `test/sessao.test.ts`, `test/chat.test.ts`; I: `test/modelo.test.ts`. Teste novo vai em arquivo novo da frente (`test/<tema>-<letra da frente>.test.ts`). `test/nucleo/preco.test.ts` e `dinheiro.test.ts`: ninguém | — |

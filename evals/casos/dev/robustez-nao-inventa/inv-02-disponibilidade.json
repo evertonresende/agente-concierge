@@ -1,0 +1,18 @@
+{
+  "id": "inv-02-disponibilidade",
+  "bloco": "robustez-nao-inventa",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "O imóvel FLN-102 está livre no réveillon de 29/12/2026 a 02/01/2027?",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": ["disponib|n[aã]o\\s+(?:informa|tenho\\s+como|garante|consigo\\s+confirmar)"],
+        "resposta_nao_contem": [
+          "(?<!\\bn[aã]o\\b[^.!?;]{0,50}|\\bsem\\b[^.!?;]{0,30}|\\bimposs[ií]vel\\b[^.!?;]{0,40})(?:\\best[aá]\\s+(?:livre|dispon[ií]vel)|\\b(?:h[aá]|tem)\\s+disponibilidade)",
+          "n[aã]o\\s+est[aá]\\s+(?:livre|dispon[ií]vel)"
+        ]
+      }
+    }
+  ]
+}

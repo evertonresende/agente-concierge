@@ -1,0 +1,15 @@
+{
+  "id": "cot-06-virada-de-ano",
+  "bloco": "funciona-cotacoes",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Quero cotar o SAO-501 de 31/12/2026 a 02/01/2027 para 1 pessoa.",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": ["R\\$ 782,00"],
+        "estadia": { "imovel_id": "SAO-501", "checkin": "2026-12-31", "checkout": "2027-01-02", "hospedes": 1 }
+      }
+    }
+  ]
+}

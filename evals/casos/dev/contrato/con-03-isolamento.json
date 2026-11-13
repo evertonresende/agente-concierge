@@ -1,0 +1,42 @@
+{
+  "id": "con-03-isolamento",
+  "bloco": "contrato",
+  "confirma": false,
+  "turnos": [
+    {
+      "sessao": "A",
+      "mensagem": "Olá, sou {{nome}} e quero cotar o GRM-301 de 15/01/2027 a 18/01/2027 para 2 pessoas.",
+      "espera": {
+        "handoff": false,
+        "estadia": { "imovel_id": "GRM-301", "checkin": "2027-01-15", "checkout": "2027-01-18", "hospedes": 2 }
+      }
+    },
+    {
+      "sessao": "B",
+      "mensagem": "Quero cotar o SAO-501 de 20/01/2027 a 22/01/2027 para 1 pessoa.",
+      "espera": {
+        "handoff": false,
+        "resposta_nao_contem": ["GRM-301|Gramado|{{nome}}"],
+        "estadia": { "imovel_id": "SAO-501", "checkin": "2027-01-20", "checkout": "2027-01-22", "hospedes": 1 }
+      }
+    },
+    {
+      "sessao": "B",
+      "mensagem": "Qual foi o imóvel e o nome que eu informei nesta conversa?",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": ["SAO-501|Pinheiros"],
+        "resposta_nao_contem": ["GRM-301|Gramado|{{nome}}"]
+      }
+    },
+    {
+      "sessao": "A",
+      "mensagem": "Qual foi o imóvel que eu cotei mesmo?",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": ["GRM-301|Serra\\s+Gramado"],
+        "resposta_nao_contem": ["SAO-501|Pinheiros"]
+      }
+    }
+  ]
+}
