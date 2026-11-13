@@ -58,6 +58,18 @@ async function executar(chamada: ChamadaDeFerramenta, contexto: Contexto): Promi
   return ferramenta.executar(argumentos, contexto);
 }
 
+/**
+ * Acerta o que o modelo escreve e que quebraria a leitura literal da resposta: hífen e
+ * espaço especiais (um "GRM‑301" com hífen não separável não casa com "GRM-301") e
+ * marcação de negrito, que a página mostra como asteriscos.
+ */
+export function limpar(texto: string): string {
+  return texto.replace(/[\u2010\u2011]/g, "-").replace(/[\u00a0\u202f]/g, " ").replace(/\*\*/g, "");
+}
+
+/** Texto com um caractere repetido dezenas de vezes: o modelo degenerou, não é resposta. */
+const DEGENERADA = /(.)\1{24,}/s;
+
 /** Garante na resposta todo total calculado no turno, no texto que saiu do código. */
 function comTotais(texto: string, totais: string[]): string {
   const faltando = [...new Set(totais)].filter((t) => !texto.includes(t));
@@ -87,8 +99,10 @@ export async function rodarTurno(entrada: EntradaDoTurno): Promise<SaidaDoTurno>
         const resposta = await comPrazo(entrada.modelo([sistema, ...entrada.historico, ...novas], definicoes), entrada.prazo - agora());
         uso.entrada += resposta.uso.entrada;
         uso.saida += resposta.uso.saida;
-        if (resposta.texto === "" && resposta.chamadas.length === 0) throw new Error("resposta vazia do modelo");
-        return resposta;
+        const texto = limpar(resposta.texto);
+        if (texto === "" && resposta.chamadas.length === 0) throw new Error("resposta vazia do modelo");
+        if (DEGENERADA.test(texto)) throw new Error("resposta degenerada do modelo");
+        return { ...resposta, texto };
       } catch (erro) {
         if (erro instanceof TempoEsgotado || tentativa >= TENTATIVAS_DO_MODELO) throw erro;
       }

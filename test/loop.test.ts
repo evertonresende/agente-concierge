@@ -200,6 +200,19 @@ describe("loop de ferramentas", () => {
     expect(ficha.taxa_limpeza).toBe("R$ 75,00");
   });
 
+  it("limpa negrito, hífen e espaço especiais do texto do modelo", async () => {
+    const { turno } = montar();
+    const saida = await turno(1, "quanto fica?", roteiro(pedeFerramentas(chamar("cotar", ESTADIA)), diz("O **GRM\u2011301** fica em R$\u00a02.156,00 de sexta\u2011feira a segunda.")).modelo);
+    expect(saida.reply).toBe("O GRM-301 fica em R$ 2.156,00 de sexta-feira a segunda.");
+  });
+
+  it("resposta degenerada do modelo é descartada e pedida de novo", async () => {
+    const { turno } = montar();
+    const saida = await turno(1, "oi", roteiro(diz("!".repeat(400)), diz("Olá!")).modelo);
+    expect(saida).toMatchObject({ reply: "Olá!", contingencia: false });
+    expect(saida.uso.chamadas).toBe(2);
+  });
+
   it("modelo falhou uma vez: tenta de novo e responde", async () => {
     const { turno } = montar();
     const saida = await turno(1, "oi", roteiro(new Error("fora do ar"), diz("Olá!")).modelo);
