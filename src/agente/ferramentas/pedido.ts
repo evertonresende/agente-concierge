@@ -1,6 +1,6 @@
 // Leitura comum do pedido de estadia que o modelo manda para cotar e para resumir.
 import { type Ficha, regrasDaFicha } from "../../catalogo";
-import { type DataISO, interpretarData } from "../../nucleo/datas";
+import { type DataISO, ehDataInexistente, formatarDataComDia, resolverData } from "../../nucleo/datas";
 import { cotar, type Cotacao } from "../../nucleo/preco";
 import { type Argumentos, type Contexto, numero, texto } from "./tipos";
 
@@ -17,13 +17,27 @@ export async function prepararPedido(argumentos: Argumentos, contexto: Contexto,
   if (!id) return { ok: false, erro: "Falta o imóvel. Pergunte ao hóspede qual imóvel ele quer." };
   const entrada = texto(argumentos, "checkin");
   const saida = texto(argumentos, "checkout");
-  const checkin = entrada ? interpretarData(entrada) : null;
-  const checkout = saida ? interpretarData(saida) : null;
+  const checkin = entrada ? resolverData(entrada, contexto.hoje) : null;
+  const checkout = saida ? resolverData(saida, contexto.hoje) : null;
   if (!checkin || !checkout) {
+    const inexistente = (entrada && !checkin && ehDataInexistente(entrada))
+      || (saida && !checkout && ehDataInexistente(saida));
     return {
       ok: false,
-      erro: "Data de entrada ou de saída ausente, inexistente ou incompleta. Peça ao hóspede as duas datas com dia, "
-        + "mês e ano (DD/MM/AAAA). Não informe nenhum total.",
+      erro: inexistente
+        ? "Data de entrada ou de saída inexistente no calendário. Peça ao hóspede a data correta de entrada e de saída. "
+          + "Não informe nenhum total e não passe para humano."
+        : "Não foi possível determinar a data de entrada ou de saída. Expressões como \"fim de semana\", \"Natal\" ou "
+          + "\"feriado\" não definem as datas: peça ao hóspede a data exata de entrada e a de saída. "
+          + "Não informe nenhum total e não passe para humano.",
+    };
+  }
+  if (checkin < contexto.hoje) {
+    return {
+      ok: false,
+      erro: `A data de entrada (${formatarDataComDia(checkin)}) já passou (hoje é ${formatarDataComDia(contexto.hoje)}). `
+        + "Não é possível cotar ou reservar datas no passado. Explique o motivo ao hóspede e peça novas datas de "
+        + "entrada e de saída. Não informe nenhum total e não passe para humano.",
     };
   }
   const ficha = await contexto.catalogo.ficha(id);

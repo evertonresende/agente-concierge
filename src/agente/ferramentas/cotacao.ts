@@ -8,12 +8,22 @@ import { definir } from "./tipos";
 export const cotarEstadia = definir(
   "cotar",
   "Calcula o total de uma estadia pela regra de preço. É a ÚNICA fonte de valores: nunca calcule nem altere um "
-    + "total por conta própria. Passe as datas como o hóspede escreveu, em DD/MM/AAAA ou AAAA-MM-DD. `hospedes` é "
-    + "opcional: sem ele a cotação sai do mesmo jeito. Pode devolver uma recusa com o motivo, sem total.",
+    + "total por conta própria. Passe as datas como o hóspede escreveu (por exemplo: \"hoje\", \"amanhã\", "
+    + "\"depois de amanhã\", \"sexta\", \"sexta que vem\", \"15/01\", \"15 de janeiro\", \"15/01/2027\" ou "
+    + "\"2027-01-15\"): quem resolve e valida as datas é o código, no fuso America/Sao_Paulo. Se o hóspede disser "
+    + "apenas \"fim de semana\", \"Natal\" ou \"feriado\" sem datas de entrada e saída, peça a data de entrada e a de "
+    + "saída (não invente datas). `hospedes` é opcional: sem ele a cotação sai do mesmo jeito. Pode devolver uma "
+    + "recusa com o motivo, sem total.",
   {
     imovel_id: { type: "string", description: "Id do imóvel, ex.: GRM-301" },
-    checkin: { type: "string", description: "Data de entrada, DD/MM/AAAA ou AAAA-MM-DD" },
-    checkout: { type: "string", description: "Data de saída, DD/MM/AAAA ou AAAA-MM-DD" },
+    checkin: {
+      type: "string",
+      description: "Data de entrada exatamente como o hóspede escreveu (ex.: \"amanhã\", \"sexta que vem\", \"15/01\", \"15 de janeiro\", \"15/01/2027\" ou \"2027-01-15\"). Não converta por conta própria.",
+    },
+    checkout: {
+      type: "string",
+      description: "Data de saída exatamente como o hóspede escreveu (ex.: \"depois de amanhã\", \"domingo\", \"18/01\", \"18 de janeiro\", \"18/01/2027\" ou \"2027-01-18\"). Não converta por conta própria.",
+    },
     hospedes: { type: "integer", description: "Número de pessoas (adultos, crianças e bebês contam; pet não)" },
   },
   ["imovel_id", "checkin", "checkout"],
@@ -29,7 +39,7 @@ export const cotarEstadia = definir(
     });
     if (!pedido.ok) {
       invalidarPendente(contexto.cofre);
-      return { paraOModelo: { erro: pedido.erro } };
+      return { recusa: true, paraOModelo: { erro: pedido.erro } };
     }
 
     // O hóspede pediu outra estadia depois do resumo: a confirmação pendente deixa de
@@ -73,8 +83,7 @@ export const cotarEstadia = definir(
         taxa_de_limpeza: formatarReais(cotacao.taxaLimpezaCentavos),
         total,
         hospedes: hospedes ?? "não informado: informe a capacidade e pergunte quantas pessoas são",
-        instrucao: "Informe o total exatamente como está em `total` e as datas com o dia da semana. O valor é uma "
-          + "cotação: não afirme que as datas estão disponíveis.",
+        instrucao: `Declare na resposta as duas datas exatas com dia da semana, dia, mês e ano (entrada ${estadia.entrada} e saída ${estadia.saida}), para o hóspede poder corrigir, e informe o total exatamente como está em \`total\`. O valor é uma cotação: não afirme que as datas estão disponíveis.`,
       },
     };
   },
