@@ -486,6 +486,30 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   só para as datas e o exemplo da instrução saírem no idioma do hóspede, com o resultado em
   português idêntico ao de hoje. Camadas extras (reescrita pedida ao modelo) só se a causa
   corrigida não bastar em 6 sondas
+- 13/11 20h36 · G · verificador independente (Opus) sobre 6b06830: REPROVADO. Passou: L18 (uma
+  chamada com `porLimite`, duas com erro comum, inclusive erro que não é objeto), costura com
+  as travas da F, saneamento e delimitação do catálogo; 30 de 33 defeitos plantados pegos.
+  Reprovou, alta: o próprio código liga `handoff: true` com texto fixo errado em mensagem
+  comum: (1) pedido de desconto reconhecido por engano ("Pode fechar, meu telefone é …",
+  "pago os 150 da limpeza", "100% de certeza", "a 500 m da praia"); (2) "mesmo assim" de quem
+  aceitou a regra vira insistência. Média: registro afirmado pelo modelo sem `201` passa pela
+  conferência; concessão e regra inventadas sem valor em R$ passam; valor em outra forma
+  escapa ("2,3 mil", "400 euros"); o corte por frase leva o aviso de pet e pode deixar dois
+  totais; disponibilidade apontada por engano. Baixa: regra explicada vale para outra regra,
+  custo de CPU sem teto antes do corte, rede de insistência com as palavras dos casos, trecho
+  de instrução que escapa. Devolvida com o princípio "precisão antes de cobertura": rede de
+  código que força handoff só dispara em padrão inequívoco, com bateria negativa de mensagens
+  comuns, ou sai. Relatório fora do repositório
+- 13/11 20h45 · F · P13 e P14 entregues (ba10491): 636 testes; `lead-04` e `lead-07` voltam a
+  enviar; sim com valor junto repete o pedido com zero POST; os exemplos da primeira rodada
+  do verificador continuam com zero POST. Quatro leituras da frente aceitas: "resumo novo"
+  exige ter substituído outro resumo da sessão; "segunda" é ordinal só antes de substantivos
+  como reserva e estadia; o código do imóvel do próprio resumo junto do sim repete o pedido;
+  no rearme do fim do turno, palavra de novidade derruba o resumo. Conferido pela
+  coordenadora: ensaio do merge limpo, 636 testes, tipos e gate verdes; no runtime real,
+  `funciona-leads` 86% em duas rodadas e `contrato` 88%, só com `lead-05`, `lead-06` e
+  `con-07`, os três dependentes das ligações da G; 110 turnos sem contingência. Segunda
+  rodada de verificador independente (Opus) em curso; o merge espera o veredito
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -522,7 +546,7 @@ mexer na configuração.
 | `src/catalogo.ts` (cliente do catálogo) | A | G | — |
 | `src/agente/loop.ts`, `src/agente/prompt.ts` | A | G | — |
 | `src/agente/ferramentas/catalogo.ts`, `handoff.ts`, `index.ts`, `tipos.ts` | A | G | — |
-| `src/agente/ferramentas/cotacao.ts`, `src/agente/ferramentas/pedido.ts` (onde as datas dos argumentos são interpretadas) | A | E | — |
+| `src/agente/ferramentas/cotacao.ts`, `src/agente/ferramentas/pedido.ts` (onde as datas dos argumentos são interpretadas) | A | E (exceção: a G edita `cotacao.ts` só para as datas e o exemplo da instrução saírem no idioma do hóspede) | — |
 | `src/agente/ferramentas/lead.ts`, `src/lead.ts` | A | F | — |
 | `src/env.ts` | A | I, que roda junto com a leva 2; outra frente pede à coordenadora | — |
 | `test/apoio.ts` | A | congelado: ninguém altera; apoio novo vai em `test/apoio-<frente>.ts` da própria frente | — |
