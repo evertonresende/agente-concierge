@@ -29,7 +29,8 @@ export interface SaidaDoTurno {
 const MAX_VOLTAS = 6;
 const CONFIRMAR = "confirmar_reserva";
 const TENTATIVAS_DO_MODELO = 2;
-const CONTINGENCIA = "Tive um problema técnico e não consegui concluir o seu atendimento agora. Vou passar a conversa "
+/** Aviso honesto de falha interna; sempre acompanha `handoff: true` (contrato L18). */
+export const CONTINGENCIA = "Tive um problema técnico e não consegui concluir o seu atendimento agora. Vou passar a conversa "
   + "para uma pessoa do nosso time, que continua com você.";
 
 class TempoEsgotado extends Error {}
@@ -71,11 +72,51 @@ export function limpar(texto: string): string {
 /** Texto com um caractere repetido dezenas de vezes: o modelo degenerou, não é resposta. */
 const DEGENERADA = /(.)\1{24,}/s;
 
+const VALOR_DO_CODIGO = /R\$ \d{1,3}(?:\.\d{3})*,\d{2}/g;
+// "R$ 2.156,00", "R$2156", "R$ 2,156.00" e também "2156 reais".
+const VALOR_NO_TEXTO = /R\$\s*\d(?:[\d.,]*\d)?|\d(?:[\d.,]*\d)?\s*reais\b/gi;
+const SEM_VALOR = "Não tenho esse valor confirmado. Para um valor exato, me diga o imóvel e as datas de entrada e de saída.";
+
+/** Todo valor em reais que o código já escreveu nesta conversa: resultados de ferramenta e respostas anteriores. */
+export function valoresDoCodigo(mensagens: Mensagem[]): Set<string> {
+  return new Set(mensagens.filter((m) => m.role === "tool" || m.role === "assistant").flatMap((m) => m.content.match(VALOR_DO_CODIGO) ?? []));
+}
+
+/**
+ * Nenhum valor em reais chega ao hóspede sem ter saído do código (contrato seção 7).
+ * Valor que o código devolveu, escrito em outro formato, volta ao formato do código;
+ * valor que o código nunca devolveu sai junto com a frase que o trazia.
+ */
+export function corrigirValores(texto: string, permitidos: Set<string>): string {
+  // "215600" e, para valor sem centavos, também "2156": cobre "R$ 2156" e "R$ 2.156".
+  const porDigitos = new Map<string, string>();
+  for (const valor of permitidos) {
+    const digitos = valor.replace(/\D/g, "");
+    porDigitos.set(digitos, valor);
+    if (digitos.endsWith("00")) porDigitos.set(digitos.slice(0, -2), valor);
+  }
+  // Frases e os separadores entre elas, para devolver o texto com a mesma forma.
+  const partes = texto.split(/((?<=[.!?:;])[ \t]+|\n)/);
+  let saida = "";
+  for (let i = 0; i < partes.length; i += 2) {
+    let inventado = false;
+    const frase = partes[i]!.replace(VALOR_NO_TEXTO, (achado) => {
+      const certo = porDigitos.get(achado.replace(/\D/g, ""));
+      if (!certo) inventado = true;
+      return certo ?? achado;
+    });
+    if (!inventado) saida += frase + (partes[i + 1] ?? "");
+  }
+  const resultado = saida.replace(/\n{3,}/g, "\n\n").trim();
+  return resultado === "" && texto.trim() !== "" ? SEM_VALOR : resultado;
+}
+
 /** Garante na resposta todo total calculado no turno, no texto que saiu do código. */
 function comTotais(texto: string, totais: string[]): string {
   const faltando = [...new Set(totais)].filter((t) => !texto.includes(t));
   if (faltando.length === 0) return texto;
-  return `${texto}\n\n${faltando.map((t) => `Total da estadia: ${t}`).join("\n")}`;
+  const linhas = faltando.map((t) => `Total da estadia: ${t}`).join("\n");
+  return texto === SEM_VALOR ? linhas : `${texto}\n\n${linhas}`;
 }
 
 export async function rodarTurno(entrada: EntradaDoTurno): Promise<SaidaDoTurno> {
@@ -113,7 +154,10 @@ export async function rodarTurno(entrada: EntradaDoTurno): Promise<SaidaDoTurno>
   try {
     for (let volta = 0; volta < MAX_VOLTAS; volta++) {
       const resposta = await chamarModelo();
-      if (resposta.chamadas.length === 0) return terminar(comTotais(resposta.texto, totais));
+      if (resposta.chamadas.length === 0) {
+        const permitidos = valoresDoCodigo([...entrada.historico, ...novas]);
+        return terminar(comTotais(corrigirValores(resposta.texto, permitidos), totais));
+      }
 
       // A confirmação roda por último no lote: se o modelo pediu junto uma cotação ou um
       // resumo com dado novo, eles invalidam a confirmação pendente antes (contrato L10).

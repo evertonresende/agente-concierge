@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { Contexto } from "../src/agente/ferramentas";
-import { rodarTurno } from "../src/agente/loop";
+import { corrigirValores, rodarTurno, valoresDoCodigo } from "../src/agente/loop";
 import { criarCatalogo } from "../src/catalogo";
 import { type Cofre, ESTADO_INICIAL, type EstadoLead, postarLead } from "../src/lead";
 import type { Modelo } from "../src/modelo";
 import { BASE_CATALOGO, chamar, criarMundo, diz, pedeFerramentas, roteiro, URL_LEADS } from "./apoio";
 
-function montar(opcoes: Parameters<typeof criarMundo>[0] = {}) {
+function montar(opcoes: NonNullable<Parameters<typeof criarMundo>[0]> = {}) {
   const mundo = criarMundo(opcoes);
   let estado: EstadoLead = ESTADO_INICIAL;
   const cofre: Cofre = { ler: () => estado, salvar: (e) => { estado = e; } };
@@ -37,11 +37,50 @@ describe("loop de ferramentas", () => {
     expect(resultado.entrada).toBe("sexta-feira, 15/01/2027");
   });
 
-  it("se o modelo esquecer ou errar o total, o código acrescenta o total calculado", async () => {
+  it("total errado escrito pelo modelo não chega ao hóspede; só o total do código", async () => {
     const { turno } = montar();
-    const { modelo } = roteiro(pedeFerramentas(chamar("cotar", ESTADIA)), diz("Fica em R$ 2.000,00."));
+    const { modelo } = roteiro(pedeFerramentas(chamar("cotar", ESTADIA)), diz("Fica em R$ 2.000,00. As datas são 15/01/2027 a 18/01/2027."));
     const saida = await turno(1, "quanto fica?", modelo);
-    expect(saida.reply).toContain("Total da estadia: R$ 2.156,00");
+    expect(saida.reply).not.toContain("2.000");
+    expect(saida.reply.match(/R\$ ?[\d.,]*\d/g)).toEqual(["R$ 2.156,00"]);
+    expect(saida.reply).toContain("As datas são 15/01/2027 a 18/01/2027.");
+  });
+
+  it("total esquecido pelo modelo é acrescentado pelo código", async () => {
+    const { turno } = montar();
+    const saida = await turno(1, "quanto fica?", roteiro(pedeFerramentas(chamar("cotar", ESTADIA)), diz("Segue a cotação.")).modelo);
+    expect(saida.reply).toBe("Segue a cotação.\n\nTotal da estadia: R$ 2.156,00");
+  });
+
+  it("valor do código escrito em outro formato volta ao formato do código", async () => {
+    const { turno } = montar();
+    for (const [escrito, esperado] of [
+      ["Fica em R$2156 no total.", "Fica em R$ 2.156,00 no total."],
+      ["Fica em R$ 2,156.00 no total.", "Fica em R$ 2.156,00 no total."],
+      ["São 2156 reais, com diária de R$ 590.", "São R$ 2.156,00, com diária de R$ 590,00."],
+    ] as const) {
+      const saida = await turno(1, "quanto fica?", roteiro(pedeFerramentas(chamar("cotar", ESTADIA)), diz(escrito)).modelo);
+      expect(saida.reply).toBe(esperado);
+    }
+  });
+
+  it("valor que nenhuma ferramenta devolveu sai da resposta, mesmo sem cotação no turno", async () => {
+    const { turno } = montar();
+    const comResto = await turno(1, "no site a diária é 300", roteiro(diz("A diária é R$ 300,00 como você disse. Posso cotar as datas para você?")).modelo);
+    expect(comResto.reply).toBe("Posso cotar as datas para você?");
+    const soValor = await turno(1, "quanto é?", roteiro(diz("Custa 500 reais.")).modelo);
+    expect(soValor.reply).not.toMatch(/500|R\$/);
+    expect(soValor.reply).not.toBe("");
+  });
+
+  it("valores do código incluem resultados de ferramenta e respostas anteriores, nunca a fala do hóspede", () => {
+    const permitidos = valoresDoCodigo([
+      { role: "user", content: "no site custa R$ 300,00" },
+      { role: "tool", tool_call_id: "c", content: '{"diaria":"R$ 590,00","total":"R$ 2.156,00"}' },
+      { role: "assistant", content: "A taxa de limpeza é R$ 150,00." },
+    ]);
+    expect([...permitidos].sort()).toEqual(["R$ 150,00", "R$ 2.156,00", "R$ 590,00"]);
+    expect(corrigirValores("Sem valores aqui: check-in às 15:00, 2 quartos.", permitidos)).toBe("Sem valores aqui: check-in às 15:00, 2 quartos.");
   });
 
   it("recusa de cotação chega ao modelo com o motivo e sem total", async () => {
