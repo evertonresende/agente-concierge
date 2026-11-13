@@ -9,7 +9,7 @@
 //   5. quem reconhece o sim é o código, lendo a mensagem do hóspede (L9): o modelo só
 //      pede a confirmação, e ela vale no turno seguinte a um resumo ou a um pedido de
 //      confirmação que saíram do código.
-import { type DataISO, diasEntre, interpretarData } from "./nucleo/datas";
+import { type DataISO, diasEntre, formatarDataComDia, indiceDiaDaSemana, interpretarData } from "./nucleo/datas";
 import { centavosParaReais, formatarReais } from "./nucleo/dinheiro";
 import type { Cotacao } from "./nucleo/preco";
 import { normalizarTelefone } from "./nucleo/telefone";
@@ -82,12 +82,79 @@ export function invalidarPendente(cofre: Cofre): void {
   if (pendenteAberto(estado)) cofre.salvar({ ...estado, pendente: null });
 }
 
-/** Pedido de confirmação, texto fixo de código nos dois idiomas (L15). */
-export function textoDoPedidoDeConfirmacao(pendente: Pendente, idioma: "pt" | "en"): string {
-  const id = pendente.reserva.imovel_id;
-  return idioma === "en"
-    ? `Your booking request for ${id} is still waiting for your confirmation. May I send it to our sales team? To confirm, reply "yes".`
-    : `O seu pedido de reserva do ${id} ainda aguarda a sua confirmação. Posso enviar ao time comercial? Para confirmar, responda "sim".`;
+// Textos fixos de código do resumo, em português e em inglês (L15). Todo pedido de
+// confirmação gerado por código traz o resumo inteiro: o sim seguinte vale sempre para um
+// resumo mostrado no turno imediatamente anterior (L10). Outro idioma recebe português.
+export type IdiomaDoResumo = "pt" | "en";
+const DIAS_EM_INGLES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const MESES_EM_INGLES = [
+  "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December",
+];
+
+/** "2027-01-15" -> "sexta-feira, 15/01/2027" ou "Friday, January 15, 2027". */
+export function dataComDia(data: DataISO, idioma: IdiomaDoResumo): string {
+  if (idioma === "pt") return formatarDataComDia(data);
+  const [ano, mes, dia] = data.split("-").map(Number);
+  return `${DIAS_EM_INGLES[indiceDiaDaSemana(data)]}, ${MESES_EM_INGLES[mes! - 1]} ${dia}, ${ano}`;
+}
+
+interface DadosDoResumo {
+  imovel: string; entrada: string; saida: string; noites: number; hospedes: number; nome: string; soPrimeiroNome: boolean;
+  telefone: string; total: string;
+}
+
+const TEXTOS_DO_RESUMO = {
+  pt: {
+    pedeConfirmacao: "Está tudo certo? Para confirmar, responda \"sim\" e eu envio o seu pedido ao time comercial.",
+    aguarda: "O seu pedido de reserva ainda aguarda a sua confirmação.",
+    linhas: (d: DadosDoResumo) => [
+      "Resumo do seu pedido de reserva:",
+      `- Imóvel: ${d.imovel}`,
+      `- Entrada: ${d.entrada}`,
+      `- Saída: ${d.saida} (${d.noites} ${d.noites === 1 ? "noite" : "noites"})`,
+      `- Hóspedes: ${d.hospedes}`,
+      `- Nome: ${d.nome}${d.soPrimeiroNome ? " (se puder, me diga também o sobrenome)" : ""}`,
+      `- Telefone: ${d.telefone}`,
+      `- Total: ${d.total}`,
+    ],
+  },
+  en: {
+    pedeConfirmacao: "Is everything correct? To confirm, reply \"yes\" and I will send your request to our sales team.",
+    aguarda: "Your booking request is still waiting for your confirmation.",
+    linhas: (d: DadosDoResumo) => [
+      "Summary of your booking request:",
+      `- Property: ${d.imovel}`,
+      `- Check-in: ${d.entrada}`,
+      `- Check-out: ${d.saida} (${d.noites} ${d.noites === 1 ? "night" : "nights"})`,
+      `- Guests: ${d.hospedes}`,
+      `- Name: ${d.nome}${d.soPrimeiroNome ? " (if you can, please tell me your last name too)" : ""}`,
+      `- Phone: ${d.telefone}`,
+      `- Total: ${d.total}`,
+    ],
+  },
+} satisfies Record<IdiomaDoResumo, unknown>;
+
+/** Resumo mostrado ao hóspede antes da confirmação (contrato seção 5), com o pedido de confirmação no fim. */
+export function textoDoResumo(pendente: Pendente, idioma: IdiomaDoResumo = "pt"): string {
+  const r = pendente.reserva;
+  const t = TEXTOS_DO_RESUMO[idioma];
+  const linhas = t.linhas({
+    imovel: pendente.nomeDoImovel ? `${pendente.nomeDoImovel} (${r.imovel_id})` : r.imovel_id,
+    entrada: dataComDia(r.checkin, idioma),
+    saida: dataComDia(r.checkout, idioma),
+    noites: diasEntre(r.checkin, r.checkout),
+    hospedes: r.hospedes,
+    nome: r.nome,
+    soPrimeiroNome: !r.nome.includes(" "),
+    telefone: r.telefone,
+    total: formatarReais(pendente.totalCentavos),
+  });
+  return [...linhas, "", t.pedeConfirmacao].join("\n");
+}
+
+/** Pedido de confirmação repetido por código: o resumo inteiro de novo, nunca só a pergunta (L10, L15). */
+export function textoDoPedidoDeConfirmacao(pendente: Pendente, idioma: IdiomaDoResumo): string {
+  return `${TEXTOS_DO_RESUMO[idioma].aguarda}\n\n${textoDoResumo(pendente, idioma)}`;
 }
 
 /**

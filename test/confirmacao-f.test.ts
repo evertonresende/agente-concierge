@@ -90,7 +90,7 @@ describe("o sim é validado por código", () => {
   it("pedido de confirmação repetido por código no fim de um turno de pergunta habilita o sim seguinte", async () => {
     const { mundo, cofre, confirma } = await comResumo();
     const pedido = pedidoDeConfirmacaoPendente(cofre, 3, "pt");
-    expect(pedido).toMatch(/GRM-301.*confirmar, responda "sim"/);
+    expect(pedido).toMatch(/GRM-301.*confirmar, responda "sim"/s);
     // No mesmo turno o pedido não sai duas vezes.
     expect(pedidoDeConfirmacaoPendente(cofre, 3, "pt")).toBeUndefined();
     await confirma(4, "sim");
@@ -104,7 +104,7 @@ describe("o sim é validado por código", () => {
     expect(pedidoDeConfirmacaoPendente(vazio, 3, "pt")).toBeUndefined();
     const { cofre } = await comResumo();
     expect(pedidoDeConfirmacaoPendente(cofre, 2, "pt")).toBeUndefined();
-    expect(pedidoDeConfirmacaoPendente(cofre, 3, "en")).toMatch(/GRM-301.*To confirm, reply "yes"/);
+    expect(pedidoDeConfirmacaoPendente(cofre, 3, "en")).toMatch(/GRM-301.*To confirm, reply "yes"/s);
   });
 });
 

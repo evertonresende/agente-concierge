@@ -150,3 +150,26 @@ describe("mensagem acima de 300 caracteres não é lida como confirmação (A6)"
     expect(lerConfirmacao("sim, confirmo. ".repeat(21), GRM301)).toBe("outra");
   });
 });
+
+describe("todo pedido de confirmação gerado por código traz o resumo inteiro (L10)", () => {
+  const LINHAS = ["Resumo do seu pedido de reserva:", "- Imóvel: GRM-301", "- Entrada: sexta-feira, 15/01/2027", "- Saída: segunda-feira, 18/01/2027 (3 noites)",
+    "- Hóspedes: 2", "- Nome: Ana Lima", "- Telefone: (11) 98888-0000", "- Total: R$ 2.156,00", "Para confirmar, responda \"sim\""];
+
+  it("rearme no fim do turno", () => {
+    let estado: EstadoLead = { ...ESTADO_INICIAL, pendente: GRM301 };
+    const cofre: Cofre = { ler: () => estado, salvar: (e) => { estado = e; } };
+    const pedido = pedidoDeConfirmacaoPendente(cofre, 3, "pt", "tem wifi?")!;
+    for (const linha of LINHAS) expect(pedido).toContain(linha);
+  });
+
+  it("depois de hesitação", async () => {
+    const mundo = criarMundo();
+    let estado: EstadoLead = ESTADO_INICIAL;
+    const cofre: Cofre = { ler: () => estado, salvar: (e) => { estado = e; } };
+    await montarResumo.executar({ imovel_id: "GRM-301", checkin: "15/01/2027", checkout: "18/01/2027", hospedes: 2, nome: "Ana Lima", telefone: "(11) 98888-0000" },
+      criarContexto(mundo, cofre, 2, "quero fechar"));
+    const r = await confirmarReserva.executar({}, criarContexto(mundo, cofre, 3, "acho que sim"));
+    for (const linha of LINHAS.map((l) => l.replace("GRM-301", "Chalé"))) expect(r.respostaFinal).toContain(linha.startsWith("- Imóvel") ? "(GRM-301)" : linha);
+    expect(mundo.leads).toEqual([]);
+  });
+});
