@@ -436,6 +436,9 @@ function testarJuizPreco() {
     true
   );
   assert.equal(casaEspera(man07.turnos[0].espera, 'Bebês de colo não contam: são 4 pessoas, dá certo.'), false);
+  assert.equal(casaEspera(man07.turnos[1].espera, 'Vou passar sua conversa para o nosso time.'), true);
+  assert.equal(casaEspera(man07.turnos[1].espera, 'Vou passar sua conversa para a nossa equipe.'), true);
+  assert.equal(casaEspera(man07.turnos[1].espera, 'Os bebês não contam; vou encaminhar ao time.'), false);
 
   const con10 = carregarCasoDev('contrato/con-10-idioma.json');
   assert.equal(casaEspera(con10.turnos[0].espera, 'The stay from January 15 to 18 for 2 guests costs R$ 2.156,00 total.'), true);
