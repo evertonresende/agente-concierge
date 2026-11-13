@@ -7,7 +7,7 @@ Como o agente foi construído: quem decide, quem escreve, quem confere. Requisit
 
 ```mermaid
 flowchart TB
-  EV["Éverton<br/>decide as lacunas · grava o vídeo · autoriza produção"]
+  EV["Éverton<br/>decide as lacunas · grava o vídeo · manda ligar o envio real e publicar"]
   REV["Segunda sessão de IA, revisora do Éverton<br/>fora da cadeia da coordenadora:<br/>lê o repositório e os relatórios"]
 
   subgraph PLAN["Sessão de planejamento (não escreve código de produto)"]
@@ -74,7 +74,7 @@ flowchart TB
   C -. "barreira: não mostra casos,<br/>não toca o produto" .- PROD
   G7 -->|"bloco reprovado: caso revelado migra para dev<br/>e C escreve um substituto"| B2
 
-  K -->|"pede autorização"| EV
+  K -->|"pede ordem para ligar o envio real"| EV
   EV -->|"ordem explícita"| K
   REV -->|"achados"| EV
   EV -->|"achados viram itens do backlog"| COORD
@@ -84,7 +84,8 @@ flowchart TB
 ## Legenda
 
 - **Éverton** decide tudo o que é produto (as lacunas do enunciado), grava o vídeo e é o
-  único que autoriza produção.
+  único que manda ligar o envio real de leads e tornar o repositório público. Produção
+  pode subir sem ele enquanto o envio real estiver desligado.
 - **Sessão de planejamento** transforma o enunciado em contrato e backlog. Nenhuma outra
   sessão lê o enunciado: todas leem o contrato.
 - **Conselho às cegas**: Gemini e GPT recebem a mesma pergunta de uma pasta vazia, sem ver a
@@ -127,7 +128,7 @@ flowchart LR
     direction TB
     L3M["M2 · revisões e segunda opinião"]
     L3R["Agregado do reservado"]
-    L3K["K · produção (com ordem do Éverton)"]
+    L3K["K · produção (envio real desligado até a ordem do Éverton)"]
     L3N["N · README, decisões, desenhos, vídeo"]
   end
   L1 --> M1 --> L2 --> L3 --> ENT(["Entrega"])
