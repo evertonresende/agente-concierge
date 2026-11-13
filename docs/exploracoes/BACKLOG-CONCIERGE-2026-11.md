@@ -50,7 +50,7 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 | B1 | agente-concierge | Webhook falso (Worker próprio), construído e testado local; deploy em `dev` pela coordenadora | pré-voo | alta | 1 | subagente em worktree · DeepSeek | concluída | `t3/webhook-falso-leads` |
 | B2 | agente-concierge | Harness HTTP e casos dev por bloco | — | alta | 2,5 | thread T3 · Gemini 4 Hydrogen | passo 2 na main; resíduos da segunda verificação em commit de seguimento | `frente-b2` |
 | C | agente-concierge | Conjunto reservado (fora do repo) | — | alta | 2 | thread T3, fica viva · GPT-6 Astra | rodando (60 casos; relendo por classes de defeito) | `frente-c` (sem commits; casos fora do repo) |
-| D | agente-concierge | Simulador de hóspede hostil | B2 (formato de caso) | média | 2,5 | thread T3 · Gemini 4 Hydrogen | na `main` (6c090d0); falta a rodada ao vivo contra `dev` e a B2 mover os 12 casos fixos | `frente-d` |
+| D | agente-concierge | Simulador de hóspede hostil | B2 (formato de caso) | média | 2,5 | thread T3 · Gemini 4 Hydrogen | concluída: na `main` (6c090d0), rodada ao vivo com `SIMULADOR OK`; a B2 move os 12 casos fixos | `frente-d` |
 | M1 | agente-concierge | Revisão curta do Marco 1 | A | alta | 0,5 | subagentes Opus 5.5 + conselho | concluída (`docs/revisoes/m1.md`; achados com dono) | — |
 | I | agente-concierge | Escolha do modelo por eval | A, B2 | alta | 1 | subagente em worktree · Opus 5.5 | rodando (fase 1) | `t3/` (subagente) |
 | E | agente-concierge | Datas | Marco 1, L1, L1a, L1b, L2 | alta | 1,5 | subagente em worktree · Gemini 4 Hydrogen | entregue (e8c2669, db7d272); seguimento curto da P5 e da P7 antes do merge | `t3/datas-relativas-sao-paulo` |
@@ -208,6 +208,14 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   correção e do veredito), G, I (fase 2). Scripts da coordenação fora do repositório:
   `conferir.sh` (ensaio de merge, suíte, tipos, gate), `local-eval.sh` (servidor local do
   estado mesclado + runner), `levar-para-main.sh` (merge `--no-ff`, gate, push)
+- 13/11 18h40 · D · critério 1 verde: rodada ao vivo contra `dev` (main 75fdeb8) terminou com
+  `SIMULADOR OK`, relatório em `evals/relatorios/simulador-2026-11-13T21-32-22-068Z.md`. 5 de 10
+  conversas reprovadas, lidas à mão: 2 são da F (um "sim" que repete os dados do próprio resumo
+  não confirmava; mais estrito que a L9, devolvido a ela), 1 some com a frente E (cotou estadia
+  no passado), 2 são falso alarme do juiz do simulador (o hóspede simulado pediu um humano ou
+  pediu para segurar a reserva por conta própria, e o juiz esperava `handoff: false`). Limite
+  conhecido do simulador: o juiz de handoff não enxerga gatilho que o modelo do hóspede inventa;
+  reprovação de handoff nele se lê à mão
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
