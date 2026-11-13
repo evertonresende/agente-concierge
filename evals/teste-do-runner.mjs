@@ -440,6 +440,11 @@ function testarJuizPreco() {
   assert.equal(casaEspera(man07.turnos[1].espera, 'Vou passar sua conversa para a nossa equipe.'), true);
   assert.equal(casaEspera(man07.turnos[1].espera, 'Os bebês não contam; vou encaminhar ao time.'), false);
 
+  const rec05 = carregarCasoDev('funciona-recusas/rec-05-mesmo-dia.json');
+  assert.equal(casaEspera(rec05.turnos[0].espera, 'A estadia não pode ter a mesma data de entrada e saída.'), true);
+  assert.equal(casaEspera(rec05.turnos[0].espera, 'A saída não pode ser no mesmo dia da entrada.'), true);
+  assert.equal(casaEspera(rec05.turnos[0].espera, 'Para essa data o valor é R$ 590,00.'), false);
+
   const con10 = carregarCasoDev('contrato/con-10-idioma.json');
   assert.equal(casaEspera(con10.turnos[0].espera, 'The stay from January 15 to 18 for 2 guests costs R$ 2.156,00 total.'), true);
   assert.equal(casaEspera(con10.turnos[0].espera, 'O total da estadia é R$ 2.156,00 com diárias inclusas.'), false);
