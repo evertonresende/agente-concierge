@@ -36,7 +36,7 @@ describe("trava de confirmação", () => {
   it("sem resumo apresentado, a confirmação não envia nada", async () => {
     const { cofre } = cofreEmMemoria();
     const { deps, posts } = ambiente();
-    expect(await confirmar(cofre, 5, deps)).toEqual({ tipo: "sem_resumo" });
+    expect(await confirmar(cofre, 5, "sim", deps)).toEqual({ tipo: "sem_resumo" });
     expect(posts).toEqual([]);
   });
 
@@ -44,7 +44,7 @@ describe("trava de confirmação", () => {
     const { cofre } = cofreEmMemoria();
     const { deps, posts } = ambiente();
     apresentarResumo(cofre, RESERVA, TOTAL, 2);
-    expect(await confirmar(cofre, 2, deps)).toEqual({ tipo: "mesmo_turno" });
+    expect(await confirmar(cofre, 2, "sim", deps)).toEqual({ tipo: "mesmo_turno" });
     expect(posts).toEqual([]);
   });
 
@@ -52,7 +52,7 @@ describe("trava de confirmação", () => {
     const { cofre, estado } = cofreEmMemoria();
     const { deps, posts } = ambiente();
     apresentarResumo(cofre, RESERVA, TOTAL, 2);
-    expect(await confirmar(cofre, 3, deps)).toMatchObject({ tipo: "registrado" });
+    expect(await confirmar(cofre, 3, "sim", deps)).toMatchObject({ tipo: "registrado" });
     expect(posts).toEqual([{
       nome: "Ana Lima", telefone: "(11) 98888-0000", imovel_id: "GRM-301",
       checkin: "2027-01-15", checkout: "2027-01-18", hospedes: 2, valor_total: 2156,
@@ -64,8 +64,8 @@ describe("trava de confirmação", () => {
     const { cofre } = cofreEmMemoria();
     const { deps, posts } = ambiente();
     apresentarResumo(cofre, RESERVA, TOTAL, 2);
-    await confirmar(cofre, 3, deps);
-    expect(await confirmar(cofre, 4, deps)).toMatchObject({ tipo: "ja_registrado" });
+    await confirmar(cofre, 3, "sim", deps);
+    expect(await confirmar(cofre, 4, "sim", deps)).toMatchObject({ tipo: "ja_registrado" });
     expect(posts).toHaveLength(1);
   });
 
@@ -73,9 +73,9 @@ describe("trava de confirmação", () => {
     const { cofre } = cofreEmMemoria();
     const { deps, posts } = ambiente();
     apresentarResumo(cofre, RESERVA, TOTAL, 2);
-    await confirmar(cofre, 3, deps);
+    await confirmar(cofre, 3, "sim", deps);
     apresentarResumo(cofre, { ...RESERVA, telefone: "11 98888 0000" }, TOTAL, 4);
-    expect(await confirmar(cofre, 5, deps)).toMatchObject({ tipo: "ja_registrado" });
+    expect(await confirmar(cofre, 5, "sim", deps)).toMatchObject({ tipo: "ja_registrado" });
     expect(posts).toHaveLength(1);
   });
 
@@ -83,7 +83,7 @@ describe("trava de confirmação", () => {
     const { cofre } = cofreEmMemoria();
     const { deps, posts } = ambiente();
     apresentarResumo(cofre, RESERVA, TOTAL, 2);
-    const resultados = await Promise.all([confirmar(cofre, 3, deps), confirmar(cofre, 3, deps)]);
+    const resultados = await Promise.all([confirmar(cofre, 3, "sim", deps), confirmar(cofre, 3, "sim", deps)]);
     expect(posts).toHaveLength(1);
     expect(resultados.map((r) => r.tipo).sort()).toEqual(["nao_registrado", "registrado"]);
   });
@@ -95,7 +95,7 @@ describe("trava de confirmação", () => {
       postar: async () => { marcadorNaHoraDoPost = estado().envios[chaveDaReserva(RESERVA)]; return 201; },
     });
     apresentarResumo(cofre, RESERVA, TOTAL, 2);
-    await confirmar(cofre, 3, deps);
+    await confirmar(cofre, 3, "sim", deps);
     expect(marcadorNaHoraDoPost).toBe("enviando");
   });
 
@@ -105,7 +105,7 @@ describe("trava de confirmação", () => {
       envios: { [chaveDaReserva(RESERVA)]: "enviando" },
     });
     const { deps, posts } = ambiente();
-    expect(await confirmar(cofre, 3, deps)).toEqual({ tipo: "nao_registrado", motivo: "ja_tentado" });
+    expect(await confirmar(cofre, 3, "sim", deps)).toEqual({ tipo: "nao_registrado", motivo: "ja_tentado" });
     expect(posts).toEqual([]);
   });
 
@@ -114,7 +114,7 @@ describe("trava de confirmação", () => {
     const { deps, posts } = ambiente();
     apresentarResumo(cofre, RESERVA, TOTAL, 2);
     invalidarPendente(cofre);
-    expect(await confirmar(cofre, 3, deps)).toEqual({ tipo: "sem_resumo" });
+    expect(await confirmar(cofre, 3, "sim", deps)).toEqual({ tipo: "sem_resumo" });
     expect(posts).toEqual([]);
   });
 
@@ -122,10 +122,10 @@ describe("trava de confirmação", () => {
     const { cofre, estado } = cofreEmMemoria();
     const { deps, posts } = ambiente();
     apresentarResumo(cofre, RESERVA, TOTAL, 2);
-    await confirmar(cofre, 3, deps);
+    await confirmar(cofre, 3, "sim", deps);
     invalidarPendente(cofre);
     expect(estado().pendente).not.toBeNull();
-    expect(await confirmar(cofre, 4, deps)).toMatchObject({ tipo: "ja_registrado" });
+    expect(await confirmar(cofre, 4, "sim", deps)).toMatchObject({ tipo: "ja_registrado" });
     expect(posts).toHaveLength(1);
   });
 
@@ -134,8 +134,8 @@ describe("trava de confirmação", () => {
     const { deps, posts } = ambiente();
     apresentarResumo(cofre, RESERVA, TOTAL, 2);
     apresentarResumo(cofre, { ...RESERVA, checkout: "2027-01-17" }, 156600, 3);
-    expect(await confirmar(cofre, 3, deps)).toEqual({ tipo: "mesmo_turno" });
-    expect(await confirmar(cofre, 4, deps)).toMatchObject({ tipo: "registrado" });
+    expect(await confirmar(cofre, 3, "sim", deps)).toEqual({ tipo: "mesmo_turno" });
+    expect(await confirmar(cofre, 4, "sim", deps)).toMatchObject({ tipo: "registrado" });
     expect(posts).toMatchObject([{ checkout: "2027-01-17", valor_total: 1566 }]);
   });
 
@@ -143,13 +143,13 @@ describe("trava de confirmação", () => {
     const { cofre, estado } = cofreEmMemoria();
     const { deps, posts } = ambiente({ regras: { ...GRM301, diariaCentavos: 60000 } });
     apresentarResumo(cofre, RESERVA, TOTAL, 2);
-    const r = await confirmar(cofre, 3, deps);
+    const r = await confirmar(cofre, 3, "sim", deps);
     expect(r).toMatchObject({ tipo: "total_mudou", pendente: { totalCentavos: 219000, turno: 3 } });
     expect(posts).toEqual([]);
     expect(estado().envios).toEqual({});
     // O novo resumo foi mostrado no turno 3: só um turno seguinte confirma, com o total novo.
-    expect(await confirmar(cofre, 3, deps)).toEqual({ tipo: "mesmo_turno" });
-    expect(await confirmar(cofre, 4, deps)).toMatchObject({ tipo: "registrado" });
+    expect(await confirmar(cofre, 3, "sim", deps)).toEqual({ tipo: "mesmo_turno" });
+    expect(await confirmar(cofre, 4, "sim", deps)).toMatchObject({ tipo: "registrado" });
     expect(posts).toMatchObject([{ valor_total: 2190 }]);
   });
 
@@ -157,7 +157,7 @@ describe("trava de confirmação", () => {
     const { cofre, estado } = cofreEmMemoria();
     const { deps, posts } = ambiente({ regras: { ...GRM301, capacidade: 1 } });
     apresentarResumo(cofre, RESERVA, TOTAL, 2);
-    expect(await confirmar(cofre, 3, deps)).toMatchObject({ tipo: "recusada" });
+    expect(await confirmar(cofre, 3, "sim", deps)).toMatchObject({ tipo: "recusada" });
     expect(posts).toEqual([]);
     expect(estado().pendente).toBeNull();
   });
@@ -166,7 +166,7 @@ describe("trava de confirmação", () => {
     const { cofre, estado } = cofreEmMemoria();
     const { deps, posts } = ambiente({ recotar: async () => { throw new Error("catálogo fora"); } });
     apresentarResumo(cofre, RESERVA, TOTAL, 2);
-    expect(await confirmar(cofre, 3, deps)).toEqual({ tipo: "nao_registrado", motivo: "catalogo" });
+    expect(await confirmar(cofre, 3, "sim", deps)).toEqual({ tipo: "nao_registrado", motivo: "catalogo" });
     expect(posts).toEqual([]);
     expect(estado().envios).toEqual({});
   });
@@ -178,7 +178,7 @@ describe("resposta do webhook", () => {
       const { cofre, estado } = cofreEmMemoria();
       const { deps, posts } = ambiente({ status });
       apresentarResumo(cofre, RESERVA, TOTAL, 2);
-      expect(await confirmar(cofre, 3, deps)).toEqual({ tipo: "nao_registrado", motivo: "resposta" });
+      expect(await confirmar(cofre, 3, "sim", deps)).toEqual({ tipo: "nao_registrado", motivo: "resposta" });
       expect(posts).toHaveLength(1);
       expect(estado().envios[chaveDaReserva(RESERVA)]).toBe("falhou");
     });
@@ -189,8 +189,8 @@ describe("resposta do webhook", () => {
     let tentativas = 0;
     const { deps } = ambiente({ postar: async () => { tentativas++; throw new Error("tempo esgotado"); } });
     apresentarResumo(cofre, RESERVA, TOTAL, 2);
-    expect(await confirmar(cofre, 3, deps)).toEqual({ tipo: "nao_registrado", motivo: "incerto" });
-    expect(await confirmar(cofre, 4, deps)).toEqual({ tipo: "nao_registrado", motivo: "ja_tentado" });
+    expect(await confirmar(cofre, 3, "sim", deps)).toEqual({ tipo: "nao_registrado", motivo: "incerto" });
+    expect(await confirmar(cofre, 4, "sim", deps)).toEqual({ tipo: "nao_registrado", motivo: "ja_tentado" });
     expect(tentativas).toBe(1);
   });
 });
@@ -200,7 +200,7 @@ describe("envio desligado e destino", () => {
     const { cofre, estado } = cofreEmMemoria();
     const { deps, posts } = ambiente({ envioLigado: false });
     apresentarResumo(cofre, RESERVA, TOTAL, 2);
-    expect(await confirmar(cofre, 3, deps)).toEqual({ tipo: "nao_registrado", motivo: "envio_desligado" });
+    expect(await confirmar(cofre, 3, "sim", deps)).toEqual({ tipo: "nao_registrado", motivo: "envio_desligado" });
     expect(posts).toEqual([]);
     expect(estado().envios).toEqual({});
   });
@@ -209,7 +209,7 @@ describe("envio desligado e destino", () => {
     const { cofre } = cofreEmMemoria();
     const { deps, posts } = ambiente({ destinoPermitido: false });
     apresentarResumo(cofre, RESERVA, TOTAL, 2);
-    expect(await confirmar(cofre, 3, deps)).toEqual({ tipo: "nao_registrado", motivo: "destino_proibido" });
+    expect(await confirmar(cofre, 3, "sim", deps)).toEqual({ tipo: "nao_registrado", motivo: "destino_proibido" });
     expect(posts).toEqual([]);
   });
 
