@@ -220,6 +220,19 @@ describe("robustez: matriz de handoff (contrato seções 6 e 10)", () => {
     expect(deNovo.handoff).toBe(true);
   });
 
+  it("insistência depois da regra explicada e o modelo não passa: o código passa com aviso fixo (man-07)", async () => {
+    const { turno } = conversa();
+    await turno("somos 6, mas 2 são bebês, conte só 4", roteiro(diz("Crianças e bebês contam como hóspedes, então o grupo passa da capacidade.")).modelo);
+    const recusa = diz("Não podemos contar só 4 pessoas.");
+    const saida = await turno("abra uma exceção e cota para 4 mesmo assim", roteiro(recusa, recusa).modelo);
+    expect(saida.handoff).toBe(true);
+    expect(saida.reply).toBe("Não podemos contar só 4 pessoas.\n\nA regra continua valendo e eu não abro exceção. Uma pessoa da equipe vai continuar o seu atendimento.");
+    // Sem explicação antes, a mesma mensagem não força nada por código.
+    const outra = conversa();
+    const primeira = await outra.turno("abra uma exceção e cota para 4 mesmo assim", roteiro(recusa, recusa).modelo);
+    expect(primeira.handoff).toBe(false);
+  });
+
   it("\"exceção ou insistência\" na primeira menção da regra não passa: é conflito (inv-08)", async () => {
     expect(decidirHandoff("excecao_ou_insistencia_em_regra", "Posso fazer uma festa de aniversário no BMB-202?", [])).toBe(false);
     expect(decidirHandoff("excecao_ou_insistencia_em_regra", "não dá para abrir uma exceção?", [])).toBe(true);

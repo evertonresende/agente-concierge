@@ -135,6 +135,11 @@ function jaExplicou(motivos: string[], historico: Mensagem[]): boolean {
   return motivos.some((motivo) => jaUsou(motivo, historico) || (ultima !== undefined && EXPLICACAO[motivo]!.test(ultima.content)));
 }
 
+/** O hóspede insiste ou pede exceção depois de a regra (pet, fumo, festa, contagem) ter sido explicada (L12, L13a). */
+export function insisteEmRegra(mensagem: string, historico: Mensagem[]): boolean {
+  return INSISTE.test(normalizar(mensagem)) && jaExplicou(REGRAS, historico);
+}
+
 /**
  * Decide se a conversa passa. Motivo fora da lista passa: o modelo chamou a ferramenta
  * de passar, e perder um handoff devido custa mais que passar um a mais.
@@ -174,7 +179,9 @@ export const passarParaHumano = definir(
         handoff: true,
         paraOModelo: {
           passou: true,
-          instrucao: `A conversa foi passada. Avise o hóspede que uma pessoa do time vai continuar o atendimento. ${motivo && Object.hasOwn(MATRIZ, motivo) ? MATRIZ[motivo]!.orientacao ?? "" : ""} `
+          instrucao: "A conversa foi passada. Diga em uma frase o que você não pode fazer pelo pedido (por exemplo: abrir exceção "
+            + "à regra, contar menos hóspedes, dar desconto) e avise que uma pessoa da equipe vai continuar o atendimento. "
+            + `${motivo && Object.hasOwn(MATRIZ, motivo) ? MATRIZ[motivo]!.orientacao ?? "" : ""} `
             + "Não prometa nem sugira desconto, exceção, condição especial ou prazo, e não diga que a pessoa vai analisar ou "
             + "avaliar o pedido: diga só que ela continua o atendimento. Você continua ajudando com dúvidas, cotação e pedido sem desconto.",
         },
