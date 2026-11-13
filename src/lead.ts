@@ -200,7 +200,8 @@ function marcarDadosIguais(texto: string, pendente: Pendente): string {
  * então na dúvida a resposta é "não confirmou".
  */
 export function lerConfirmacao(mensagem: string, pendente: Pendente): Leitura {
-  const texto = marcarDadosIguais(semAcento(mensagem), pendente);
+  // Ponto de interrogação de largura cheia (？) e árabe (؟) também fazem pergunta.
+  const texto = marcarDadosIguais(semAcento(mensagem).replace(/[？؟]/g, "?"), pendente);
   if (PRECO.test(texto)) return "condicao_de_preco";
   const limpo = semPontuacao(texto);
   // A gramática do sim tem frases que se sobrepõem ("pode sim" = "pode" + "sim"), e o

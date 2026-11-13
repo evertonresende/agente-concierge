@@ -41,3 +41,10 @@ describe("palavra de reconhecimento sozinha repete o pedido, como o ok", () => {
     it(`com a frase de envio continua sim: "${mensagem}"`, () => expect(lerConfirmacao(mensagem, GRM301)).toBe("sim"));
   }
 });
+
+describe("outros pontos de interrogação também fazem pergunta", () => {
+  for (const mensagem of ["sim？", "pode fechar؟", "confirmado？"]) {
+    it(`pergunta: "${mensagem}"`, () => expect(lerConfirmacao(mensagem, GRM301)).toBe("pergunta"));
+  }
+  it("pergunta com dado novo continua \"outra\"", () => expect(lerConfirmacao("pode ser para 3 pessoas？", GRM301)).toBe("outra"));
+});
