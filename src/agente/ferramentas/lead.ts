@@ -6,6 +6,7 @@ import {
 import { diasEntre, formatarDataComDia } from "../../nucleo/datas";
 import { formatarReais } from "../../nucleo/dinheiro";
 import { cotar } from "../../nucleo/preco";
+import { normalizarTelefone } from "../../nucleo/telefone";
 import { type Pedido, prepararPedido } from "./pedido";
 import { type Argumentos, type Contexto, definir, type Resultado, texto } from "./tipos";
 
@@ -30,7 +31,7 @@ export function textoDoResumo(pendente: Pendente): string {
     `- Entrada: ${formatarDataComDia(r.checkin)}`,
     `- Saída: ${formatarDataComDia(r.checkout)} (${noites} ${noites === 1 ? "noite" : "noites"})`,
     `- Hóspedes: ${r.hospedes}`,
-    `- Nome: ${r.nome}`,
+    `- Nome: ${r.nome}${r.nome.includes(" ") ? "" : " (se puder, me diga também o sobrenome)"}`,
     `- Telefone: ${r.telefone}`,
     `- Total: ${formatarReais(pendente.totalCentavos)}`,
     "",
@@ -120,11 +121,14 @@ export const montarResumo = definir(
     + "antes. Chame de novo sempre que qualquer dado mudar depois de um resumo. Esta ferramenta não envia nada.",
   {
     imovel_id: { type: "string" },
-    checkin: { type: "string", description: "DD/MM/AAAA ou AAAA-MM-DD" },
-    checkout: { type: "string", description: "DD/MM/AAAA ou AAAA-MM-DD" },
+    checkin: { type: "string", description: "Data de entrada, como o hóspede escreveu" },
+    checkout: { type: "string", description: "Data de saída, como o hóspede escreveu" },
     hospedes: { type: "integer" },
-    nome: { type: "string", description: "Nome do hóspede, como ele informou" },
-    telefone: { type: "string", description: "Telefone do hóspede, como ele informou" },
+    nome: {
+      type: "string",
+      description: "Nome do hóspede, como ele informou. Peça o nome completo; se ele só der o primeiro nome, use assim mesmo.",
+    },
+    telefone: { type: "string", description: "Telefone do hóspede, como ele informou, com DDD ou com + e código do país" },
   },
   ["imovel_id", "checkin", "checkout", "hospedes", "nome", "telefone"],
   async (argumentos, contexto) => {
@@ -141,12 +145,23 @@ export const montarResumo = definir(
 );
 
 async function tentarResumir(argumentos: Argumentos, contexto: Contexto): Promise<Resultado> {
-  const nome = texto(argumentos, "nome");
-  const telefone = texto(argumentos, "telefone");
-  const faltando = [!nome && "nome", !telefone && "telefone", argumentos.hospedes === undefined && "número de hóspedes"]
+  // O nome vai como o hóspede informou (L20), numa linha só: ele entra no texto do resumo.
+  const nome = texto(argumentos, "nome")?.replace(/\s+/g, " ").slice(0, 120);
+  const informado = texto(argumentos, "telefone");
+  const faltando = [!nome && "nome", !informado && "telefone", argumentos.hospedes === undefined && "número de hóspedes"]
     .filter(Boolean);
-  if (!nome || !telefone || faltando.length > 0) {
+  if (!nome || !informado || faltando.length > 0) {
     return { paraOModelo: { erro: `Falta: ${faltando.join(", ")}. Pergunte ao hóspede; não invente.` } };
+  }
+  const telefone = normalizarTelefone(informado);
+  if (!telefone) {
+    return {
+      paraOModelo: {
+        erro: "Telefone inválido. Diga ao hóspede que o telefone informado não é válido e peça de novo: número brasileiro "
+          + "com DDD (10 ou 11 dígitos) ou, se for de outro país, com + e o código do país. Não monte resumo sem isso e "
+          + "não passe para humano por esse motivo.",
+      },
+    };
   }
   const pedido = await prepararPedido(argumentos, contexto);
   if (!pedido.ok) return { paraOModelo: { erro: pedido.erro } };
