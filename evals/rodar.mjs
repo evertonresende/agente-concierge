@@ -724,13 +724,32 @@ async function enviarChat(alvo, corpoTexto, timeoutMs) {
 
 function obterRegex(padrao, ctx, sessionId, cacheRegex) {
   if (cacheRegex && cacheRegex.has(padrao)) {
-    return cacheRegex.get(padrao);
+    return { ok: true, re: cacheRegex.get(padrao) };
   }
   const expr = substituirTexto(padrao, ctx, sessionId, true);
-  return new RegExp(expr, 'i');
+  try {
+    return { ok: true, re: new RegExp(expr, 'i') };
+  } catch {
+    return { ok: false };
+  }
 }
 
-function avaliarRespostaTurno(resp, espera, ctx, sessionId, rotuloTurno, cacheRegex) {
+function erroRegexEmExecucao(rotuloTurno, padrao, mascararErros) {
+  if (mascararErros) {
+    return `${rotuloTurno}: regex inválida em execução`;
+  }
+  return `${rotuloTurno}: regex inválida em execução após substituição: /${padrao}/i`;
+}
+
+function avaliarRespostaTurno(
+  resp,
+  espera,
+  ctx,
+  sessionId,
+  rotuloTurno,
+  cacheRegex,
+  mascararErros = false
+) {
   const falhas = [];
   if (!resp.okRede) {
     falhas.push(`${rotuloTurno}: ${resp.erroRede}`);
@@ -801,29 +820,57 @@ function avaliarRespostaTurno(resp, espera, ctx, sessionId, rotuloTurno, cacheRe
 
   if (Array.isArray(espera.resposta_contem)) {
     for (const padrao of espera.resposta_contem) {
-      const re = obterRegex(padrao, ctx, sessionId, cacheRegex);
-      if (!re.test(reply)) {
-        falhas.push(`${rotuloTurno}: resposta não casou regex obrigatório /${padrao}/i`);
+      const resRe = obterRegex(padrao, ctx, sessionId, cacheRegex);
+      if (!resRe.ok) {
+        falhas.push(erroRegexEmExecucao(rotuloTurno, padrao, mascararErros));
+        continue;
+      }
+      if (!resRe.re.test(reply)) {
+        falhas.push(
+          mascararErros
+            ? `${rotuloTurno}: resposta não casou regex obrigatório`
+            : `${rotuloTurno}: resposta não casou regex obrigatório /${padrao}/i`
+        );
       }
     }
   }
 
   if (Array.isArray(espera.resposta_contem_algum) && espera.resposta_contem_algum.length > 0) {
-    const algumCasou = espera.resposta_contem_algum.some((padrao) =>
-      obterRegex(padrao, ctx, sessionId, cacheRegex).test(reply)
-    );
-    if (!algumCasou) {
+    let algumCasou = false;
+    let teveErroRegex = false;
+    for (const padrao of espera.resposta_contem_algum) {
+      const resRe = obterRegex(padrao, ctx, sessionId, cacheRegex);
+      if (!resRe.ok) {
+        teveErroRegex = true;
+        falhas.push(erroRegexEmExecucao(rotuloTurno, padrao, mascararErros));
+        continue;
+      }
+      if (resRe.re.test(reply)) {
+        algumCasou = true;
+      }
+    }
+    if (!algumCasou && !teveErroRegex) {
       falhas.push(
-        `${rotuloTurno}: resposta não casou nenhum dos padrões [${espera.resposta_contem_algum.join(' | ')}]`
+        mascararErros
+          ? `${rotuloTurno}: resposta não casou nenhum padrão esperado`
+          : `${rotuloTurno}: resposta não casou nenhum dos padrões [${espera.resposta_contem_algum.join(' | ')}]`
       );
     }
   }
 
   if (Array.isArray(espera.resposta_nao_contem)) {
     for (const padrao of espera.resposta_nao_contem) {
-      const re = obterRegex(padrao, ctx, sessionId, cacheRegex);
-      if (re.test(reply)) {
-        falhas.push(`${rotuloTurno}: resposta casou regex proibido /${padrao}/i`);
+      const resRe = obterRegex(padrao, ctx, sessionId, cacheRegex);
+      if (!resRe.ok) {
+        falhas.push(erroRegexEmExecucao(rotuloTurno, padrao, mascararErros));
+        continue;
+      }
+      if (resRe.re.test(reply)) {
+        falhas.push(
+          mascararErros
+            ? `${rotuloTurno}: resposta casou regex proibido`
+            : `${rotuloTurno}: resposta casou regex proibido /${padrao}/i`
+        );
       }
     }
   }
@@ -831,7 +878,15 @@ function avaliarRespostaTurno(resp, espera, ctx, sessionId, rotuloTurno, cacheRe
   return falhas;
 }
 
-function avaliarConjuntoParalelo(respostas, esperaConjunto, ctx, sessionId, rotuloTurno, cacheRegex) {
+function avaliarConjuntoParalelo(
+  respostas,
+  esperaConjunto,
+  ctx,
+  sessionId,
+  rotuloTurno,
+  cacheRegex,
+  mascararErros = false
+) {
   const falhas = [];
   if (!esperaConjunto) return falhas;
 
@@ -839,29 +894,51 @@ function avaliarConjuntoParalelo(respostas, esperaConjunto, ctx, sessionId, rotu
 
   if (Array.isArray(esperaConjunto.todos_contem)) {
     for (const padrao of esperaConjunto.todos_contem) {
-      const re = obterRegex(padrao, ctx, sessionId, cacheRegex);
-      if (!textos.every((t) => re.test(t))) {
-        falhas.push(`${rotuloTurno}: nem todas as respostas paralelas casaram /${padrao}/i`);
+      const resRe = obterRegex(padrao, ctx, sessionId, cacheRegex);
+      if (!resRe.ok) {
+        falhas.push(erroRegexEmExecucao(rotuloTurno, padrao, mascararErros));
+        continue;
+      }
+      if (!textos.every((t) => resRe.re.test(t))) {
+        falhas.push(
+          mascararErros
+            ? `${rotuloTurno}: nem todas as respostas paralelas casaram regex obrigatório`
+            : `${rotuloTurno}: nem todas as respostas paralelas casaram /${padrao}/i`
+        );
       }
     }
   }
 
   if (Array.isArray(esperaConjunto.pelo_menos_um_contem)) {
     for (const padrao of esperaConjunto.pelo_menos_um_contem) {
-      const re = obterRegex(padrao, ctx, sessionId, cacheRegex);
-      if (!textos.some((t) => re.test(t))) {
-        falhas.push(`${rotuloTurno}: nenhuma resposta paralela casou /${padrao}/i`);
+      const resRe = obterRegex(padrao, ctx, sessionId, cacheRegex);
+      if (!resRe.ok) {
+        falhas.push(erroRegexEmExecucao(rotuloTurno, padrao, mascararErros));
+        continue;
+      }
+      if (!textos.some((t) => resRe.re.test(t))) {
+        falhas.push(
+          mascararErros
+            ? `${rotuloTurno}: nenhuma resposta paralela casou regex obrigatório`
+            : `${rotuloTurno}: nenhuma resposta paralela casou /${padrao}/i`
+        );
       }
     }
   }
 
   if (Array.isArray(esperaConjunto.exatamente_um_contem)) {
     for (const padrao of esperaConjunto.exatamente_um_contem) {
-      const re = obterRegex(padrao, ctx, sessionId, cacheRegex);
-      const qtd = textos.filter((t) => re.test(t)).length;
+      const resRe = obterRegex(padrao, ctx, sessionId, cacheRegex);
+      if (!resRe.ok) {
+        falhas.push(erroRegexEmExecucao(rotuloTurno, padrao, mascararErros));
+        continue;
+      }
+      const qtd = textos.filter((t) => resRe.re.test(t)).length;
       if (qtd !== 1) {
         falhas.push(
-          `${rotuloTurno}: esperado exatamente 1 resposta casando /${padrao}/i, obtido ${qtd}`
+          mascararErros
+            ? `${rotuloTurno}: esperado exatamente 1 resposta paralela, obtido ${qtd}`
+            : `${rotuloTurno}: esperado exatamente 1 resposta casando /${padrao}/i, obtido ${qtd}`
         );
       }
     }
@@ -869,9 +946,17 @@ function avaliarConjuntoParalelo(respostas, esperaConjunto, ctx, sessionId, rotu
 
   if (Array.isArray(esperaConjunto.nenhum_contem)) {
     for (const padrao of esperaConjunto.nenhum_contem) {
-      const re = obterRegex(padrao, ctx, sessionId, cacheRegex);
-      if (textos.some((t) => re.test(t))) {
-        falhas.push(`${rotuloTurno}: alguma resposta paralela casou regex proibido /${padrao}/i`);
+      const resRe = obterRegex(padrao, ctx, sessionId, cacheRegex);
+      if (!resRe.ok) {
+        falhas.push(erroRegexEmExecucao(rotuloTurno, padrao, mascararErros));
+        continue;
+      }
+      if (textos.some((t) => resRe.re.test(t))) {
+        falhas.push(
+          mascararErros
+            ? `${rotuloTurno}: alguma resposta paralela casou regex proibido`
+            : `${rotuloTurno}: alguma resposta paralela casou regex proibido /${padrao}/i`
+        );
       }
     }
   }
@@ -970,7 +1055,8 @@ async function executarCaso({ caso, indice, args, ehDev, leadsUrlDev, runId, tel
               ctx,
               item.sid,
               item.rotulo,
-              caso._cacheRegex
+              caso._cacheRegex,
+              Boolean(args.soAgregado)
             )
           );
         }
@@ -981,7 +1067,8 @@ async function executarCaso({ caso, indice, args, ehDev, leadsUrlDev, runId, tel
             ctx,
             sessaoBase,
             `turno ${numTurno}`,
-            caso._cacheRegex
+            caso._cacheRegex,
+            Boolean(args.soAgregado)
           )
         );
       } else {
@@ -994,7 +1081,15 @@ async function executarCaso({ caso, indice, args, ehDev, leadsUrlDev, runId, tel
         usoSaida += resp.usoSaida;
         chamadasModelo += resp.chamadasModelo;
         falhas.push(
-          ...avaliarRespostaTurno(resp, turno.espera, ctx, sid, `turno ${numTurno}`, caso._cacheRegex)
+          ...avaliarRespostaTurno(
+            resp,
+            turno.espera,
+            ctx,
+            sid,
+            `turno ${numTurno}`,
+            caso._cacheRegex,
+            Boolean(args.soAgregado)
+          )
         );
 
         if (turno.espera?.leads_ate_agora !== undefined && ehDev && leadsUrlDev) {

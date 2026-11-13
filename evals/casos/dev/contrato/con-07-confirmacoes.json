@@ -31,9 +31,14 @@
         }
       ],
       "espera_conjunto": {
-        "pelo_menos_um_contem": ["registr(?:ad|ei|amos)|encaminh(?:ad|ei|amos)|envi(?:ad|ei|amos)"],
+        "pelo_menos_um_contem": [
+          "(?<!\\bn[aã]o\\s+(?:foi\\s+|est[aá]\\s+|havia\\s+sido\\s+)?)(?<!\\bser[aá]\\s+)(?<!\\bvai\\s+ser\\s+)(?:registrad[oa]s?|encaminhad[oa]s?|enviad[oa]s?)|(?<!\\bn[aã]o\\s+)\\b(?:registrei|registramos|encaminhei|encaminhamos|enviei|enviamos)\\b"
+        ],
         "exatamente_um_contem": [
-          "j[aá]\\s+(?:est[aá]|estava|foi|havia\\s+sido|se\\s+encontra)\\s+(?:registrad|enviad|encaminhad)|j[aá]\\s+(?:consta|registrad[oa]|enviad[oa]|encaminhad[oa])|duplicad|anteriormente"
+          "j[aá]\\s+(?:est[aá]|estava|foi|havia\\s+sido|tinha\\s+sido|se\\s+encontra)\\s+(?:registrad[oa]|enviad[oa]|encaminhad[oa]|confirmad[oa])|j[aá]\\s+(?:hav[ií]amos|t[ií]nhamos|havia|tinha)\\s+(?:registrad[oa]|enviad[oa]|encaminhad[oa]|confirmad[oa])|j[aá]\\s+(?:registr(?:ei|amos|ou)|envi(?:ei|amos|ou)|encaminh(?:ei|amos|ou)|confirm(?:ei|amos|ou))|j[aá]\\s+(?:consta|registrad[oa]|enviad[oa]|encaminhad[oa]|confirmad[oa])|(?:registrad[oa]|enviad[oa]|encaminhad[oa]|confirmad[oa])\\s+(?:anteriormente|antes)|duplicad"
+        ],
+        "nenhum_contem": [
+          "\\bn[aã]o\\s+(?:consegu(?:i|imos)\\s+(?:confirmar\\s+o\\s+registro|registr(?:ar)?|envi(?:ar)?|encaminh(?:ar)?)|(?:foi|est[aá])\\s+(?:registrad|confirmad)|foi\\s+(?:enviad|encaminhad)(?!\\s+(?:de\\s+novo|novamente|outra\\s+vez))|foi\\s+poss[ií]vel\\s+(?:registr|confirmar|envi(?:ar|ad[oa])(?!\\s+(?:de\\s+novo|novamente|outra\\s+vez)))|registramos\\b)|\\b(?:vamos|iremos|vou|irei|ser[aá]|vai\\s+ser)\\s+(?:registr|envi|encaminh)"
         ]
       }
     }

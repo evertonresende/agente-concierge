@@ -8,7 +8,11 @@
       "espera": {
         "handoff": true,
         "valores_tolerados": ["R$ 1.000,00"],
-        "resposta_nao_contem": ["(?:lead|pedido|reserva)\\s+(?:foi\\s+|j[aá]\\s+)?registrad[oa]"],
+        "resposta_nao_contem": [
+          "(?:lead|pedido|reserva)\\s+(?:foi\\s+|j[aá]\\s+)?registrad[oa]",
+          "(?<!\\bn[aã]o\\b[^.!?;]{0,35}|\\bimposs[ií]vel\\b[^.!?;]{0,25}|\\bsem\\b[^.!?;]{0,25})(?:combinado|fechado|fechamos|aceito|aceitamos|concord[oa]|aprovad[oa]|confirmad[oa]|fica(?:r[aá])?\\s+(?:em|por)?|fa[cç]o\\s+por|fecho\\s+por)\\b[^.!?;]{0,25}R\\$\\s*1\\.000,00",
+          "R\\$\\s*1\\.000,00[^.!?;]{0,25}(?:combinad[oa]|fechad[oa]|aceit[oa]|aprovad[oa]|confirmad[oa])"
+        ],
         "estadia": { "imovel_id": "GRM-301", "checkin": "2027-01-15", "checkout": "2027-01-18", "hospedes": 2, "obrigatorio": false }
       }
     }

@@ -9,10 +9,10 @@
         "handoff": false,
         "resposta_contem": [
           "R\\$ 2\\.156,00",
-          "\\b(?:stay|nights?|guests?|cleaning|price|rate|property|between|from|amount|total)\\b"
+          "\\b(?:stay|nights?|guests?|cleaning|price|rate|property|between|from|amount|for|check-?in|check-?out)\\b"
         ],
         "resposta_nao_contem": [
-          "\\b(?:noites|h[oó]spedes|di[aá]ria|taxa\\s+de\\s+limpeza|estadia)\\b"
+          "\\b(?:noites?|h[oó]spedes?|di[aá]rias?|taxas?|limpeza|estadias?|valor(?:es)?|pre[cç]os?|custa|fica|pessoas?|reais|cota[cç][aã]o|n[aã]o|para|entre|ol[aá])\\b"
         ],
         "estadia": { "imovel_id": "GRM-301", "checkin": "2027-01-15", "checkout": "2027-01-18", "hospedes": 2 }
       }
@@ -24,7 +24,7 @@
         "leads_ate_agora": 0,
         "resposta_contem": ["R\\$ 2\\.156,00", "{{nome}}", "GRM-301"],
         "resposta_nao_contem": [
-          "\\b(?:h[oó]spedes|di[aá]ria|taxa\\s+de\\s+limpeza|estadia|resumo|registrad[oa])\\b"
+          "\\b(?:noites?|h[oó]spedes?|di[aá]rias?|taxas?|limpeza|estadias?|resumo|confirma(?:r|[cç][aã]o)?|registrad[oa]s?|encaminhad[oa]s?|enviad[oa]s?|dados|telefone|nome|para|n[aã]o)\\b"
         ],
         "estadia": { "imovel_id": "GRM-301", "checkin": "2027-01-15", "checkout": "2027-01-18", "hospedes": 2 }
       }
@@ -33,8 +33,11 @@
       "mensagem": "Yes, I confirm.",
       "espera": {
         "handoff": false,
+        "resposta_contem": [
+          "\\b(?:the|your|a|an|is|was|has|been|we|have|to|for|with|and|of|booking|request|reservation|sent|received|registered|forwarded|confirmed|team|thank)\\b"
+        ],
         "resposta_nao_contem": [
-          "\\b(?:registrad[oa]|encaminhad[oa]|confirmad[oa]|pedido)\\b"
+          "\\b(?:registrad[oa]s?|encaminhad[oa]s?|enviad[oa]s?|confirmad[oa]s?|recebid[oa]s?|pedidos?|reservas?|sucesso|obrigad[oa]|equipe|n[aã]o|para|com|seu|sua)\\b"
         ]
       }
     }

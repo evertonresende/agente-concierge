@@ -10,7 +10,7 @@
         "resposta_contem": [
           "R\\$ 2\\.156,00",
           "4\\s*(?:h[oó]spedes|pessoas)|capacidade",
-          "quant[ao]s\\s+(?:pessoas|h[oó]spedes)|n[uú]mero\\s+de\\s+(?:pessoas|h[oó]spedes)|para\\s+quant[ao]s"
+          "quant[ao]s\\s+(?:pessoas|h[oó]spedes)|(?:n[uú]mero|quantidade|total)\\s+de\\s+(?:pessoas|h[oó]spedes)|para\\s+quant[ao]s"
         ],
         "estadia": { "imovel_id": "GRM-301", "checkin": "2027-01-15", "checkout": "2027-01-18" }
       }

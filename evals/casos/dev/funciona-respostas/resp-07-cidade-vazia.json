@@ -9,7 +9,10 @@
         "handoff": false,
         "sem_total": true,
         "resposta_contem": [
-          "n[aã]o\\s+(?:temos|h[aá]|possu[ií]mos|encontrei|encontramos)|sem\\s+im[oó]veis|nenhum\\s+im[oó]vel"
+          "n[aã]o\\s+(?:temos|h[aá]|possu[ií]mos|encontrei|encontramos|atuamos|trabalhamos|atendemos|dispomos|contamos)|sem\\s+im[oó]veis|nenhum\\s+im[oó]vel"
+        ],
+        "resposta_nao_contem": [
+          "(?<!\\bn[aã]o\\b[^.!?;]{0,30})(?:\\bsim\\b[^.!?;]{0,30}Curitiba|\\b(?:temos|h[aá]|oferecemos)\\s+(?:um\\s+|o\\s+|alguns?\\s+)?im[oó]ve(?:l|is)\\s+em\\s+Curitiba)"
         ]
       }
     }
