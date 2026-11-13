@@ -152,6 +152,23 @@ describe("falhas do webhook na conversa", () => {
     expect(s.recebidos).toHaveLength(3);
   });
 
+  it("P14: 500 persistente em duas rodadas da mesma reserva bloqueia a reserva na sessão; outra reserva segue normal", async () => {
+    const s = sessao(["500", "500", "500", "500", "ok"]);
+    await s.resumo(2);
+    expect((await s.sim(3)).handoff).toBe(true);
+    await s.resumo(4);
+    expect((await s.sim(5)).handoff).toBe(true);
+    expect(s.recebidos).toHaveLength(4); // duas rodadas, cada uma com a nova tentativa do 5xx
+    const bloqueada = await s.resumo(6);
+    expect(bloqueada.handoff).toBe(true);
+    expect(bloqueada.respostaFinal).toMatch(/Não consegui registrar/);
+    await s.sim(7);
+    expect(s.recebidos).toHaveLength(4);
+    await s.resumo(8, { ...DADOS, imovel_id: "RIO-402", checkin: "20/01/2027", checkout: "22/01/2027", hospedes: 1 });
+    expect((await s.sim(9)).respostaFinal).toMatch(/registrado/);
+    expect(s.guardados).toMatchObject([{ imovel_id: "RIO-402" }]);
+  });
+
   it("atraso (resposta não chega): sem nova tentativa, não diz registrado, handoff true, e a reserva não é reenviada (CA-19)", async () => {
     const s = sessao(["atraso", "ok"]);
     await s.resumo(2);
