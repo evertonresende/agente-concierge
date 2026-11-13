@@ -50,14 +50,14 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 | B1 | agente-concierge | Webhook falso (Worker próprio), construído e testado local; deploy em `dev` pela coordenadora | pré-voo | alta | 1 | subagente em worktree · DeepSeek | concluída | `t3/webhook-falso-leads` |
 | B2 | agente-concierge | Harness HTTP e casos dev por bloco | — | alta | 2,5 | thread T3 · Gemini 4 Hydrogen | passo 2 na main; resíduos da segunda verificação em commit de seguimento | `frente-b2` |
 | C | agente-concierge | Conjunto reservado (fora do repo) | — | alta | 2 | thread T3, fica viva · GPT-6 Astra | rodando (60 casos; relendo por classes de defeito) | `frente-c` (sem commits; casos fora do repo) |
-| D | agente-concierge | Simulador de hóspede hostil | B2 (formato de caso) | média | 2,5 | thread T3 · Gemini 4 Hydrogen | correções entregues (19 itens); conferência pela rodada ao vivo, depois do merge da B2 | `frente-d` |
+| D | agente-concierge | Simulador de hóspede hostil | B2 (formato de caso) | média | 2,5 | thread T3 · Gemini 4 Hydrogen | na `main` (6c090d0); falta a rodada ao vivo contra `dev` e a B2 mover os 12 casos fixos | `frente-d` |
 | M1 | agente-concierge | Revisão curta do Marco 1 | A | alta | 0,5 | subagentes Opus 5.5 + conselho | concluída (`docs/revisoes/m1.md`; achados com dono) | — |
 | I | agente-concierge | Escolha do modelo por eval | A, B2 | alta | 1 | subagente em worktree · Opus 5.5 | pendente | — |
-| E | agente-concierge | Datas | Marco 1, L1, L1a, L1b, L2 | alta | 1,5 | subagente em worktree · Gemini 4 Hydrogen | rodando | `frente-e` |
+| E | agente-concierge | Datas | Marco 1, L1, L1a, L1b, L2 | alta | 1,5 | subagente em worktree · Gemini 4 Hydrogen | entregue (e8c2669, db7d272); seguimento curto da P5 e da P7 antes do merge | `t3/datas-relativas-sao-paulo` |
 | F | agente-concierge | Lead robusto | Marco 1, L6, L7, L9, L10, L11, L15 (textos fixos), L20 | alta | 2,5 | thread T3 · Fable 5.2 | rodando | `frente-f` |
 | G | agente-concierge | Robustez e handoff | Marco 1, L3, L4, L5, L5a, L12, L13a, L15, L16, L16a, L19, L21 | alta | 2,5 | thread T3 · Fable 5.2 | rodando | `frente-g` |
 | H | agente-concierge | Concorrência endurecida e falha interna | Marco 1, L17, L17a, L18 | alta | 1 | subagente em worktree · Gemini 4 Hydrogen | rodando | `t3/` (subagente) |
-| J | agente-concierge | Página de chat em dois passos: design (canvas) e implementação | passo 1: nada; passo 2: Marco 1 e aprovação do Éverton | baixa | 0,7 + 1 | thread T3 · Fable 5.2 | passo 1 concluído (canvas aprovado pelo Éverton, com dois ajustes); passo 2 rodando | `frente-j` |
+| J | agente-concierge | Página de chat em dois passos: design (canvas) e implementação | passo 1: nada; passo 2: Marco 1 e aprovação do Éverton | baixa | 0,7 + 1 | thread T3 · Fable 5.2 | passo 1 concluído (canvas aprovado pelo Éverton, com dois ajustes); passo 2 entregue (b8991ce) | `frente-j` |
 | M2 | agente-concierge | Revisão de código, segurança e segunda opinião | leva 2 integrada | alta | 1,5 | subagentes Opus 5.5 + conselho | pendente | — |
 | L | agente-concierge | Custo por conversa e monitor diário | leva 2 integrada | média | 1 | subagente em worktree · Gemini 4 Hydrogen | pendente | — |
 | K | agente-concierge | Produção com o envio real desligado | M2 | alta | 1,5 | thread T3 · Opus 5.5 | pendente | — |
@@ -175,6 +175,16 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
 - 13/11 18h01 · regra provisória P4 (o "sim" só vale logo depois de resumo ou pedido de
   confirmação gerados por código), levantada pela frente F
 - 13/11 18h01 · relatório da medida de base em `evals/relatorios/2026-11-13-dev-base-marco1.json`
+- 13/11 18h20 · F · passo 1 (o "sim" lido por código, P4 na versão dura) e detector de idioma
+  entregues · f55029c, b05590e · exceção de uma linha em `test/loop.test.ts` autorizada
+- 13/11 18h30 · D · na `main` depois de ensaio de merge, 130 testes, tipos, teste próprio 12 de 12
+  e gate · merge 6c090d0 · falta a rodada ao vivo
+- 13/11 18h35 · E · entregue (e8c2669, db7d272); conferida pela coordenação com tabela própria
+  de datas em três fusos, sem diferença; duas lacunas levantadas viraram P5 e P6, e a conferência
+  achou a P7; seguimento curto pedido antes do merge
+- 13/11 18h40 · J · passo 2 entregue (b8991ce); o contorno de foco por dentro do campo virou P8.
+  Aviso dela para todas: `npm run dev -- --port N` falha (dois `--port`); o comando é
+  `npx wrangler dev --env dev --port N`
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -220,7 +230,7 @@ mexer na configuração.
 | `src/nucleo/telefone.ts`, `src/nucleo/idioma.ts` (detector único de idioma: `idiomaDoHospede(textos): "pt" \| "en"`; G importa) | — | F | — |
 | `src/pagina.ts` | A (mínima) | J (passo 2) | — |
 | `docs/desenhos/pagina-canvas.html` | J (passo 1) | — | — |
-| `test/**` | A | E: `test/nucleo/datas.test.ts`; F: `test/lead.test.ts`; G: `test/loop.test.ts`, `test/catalogo.test.ts`; H: `test/sessao.test.ts`, `test/chat.test.ts`; I: `test/modelo.test.ts`. Teste novo vai em arquivo novo da frente (`test/<tema>-<letra da frente>.test.ts`). `test/nucleo/preco.test.ts` e `dinheiro.test.ts`: ninguém | — |
+| `test/**` | A | E: `test/nucleo/datas.test.ts`; F: `test/lead.test.ts`; G: `test/loop.test.ts`, `test/catalogo.test.ts` (exceção: a F troca uma linha de `test/loop.test.ts`, a contagem de POSTs do teste do `500`, que passa de 1 para 2 com a nova tentativa da L11); H: `test/sessao.test.ts`, `test/chat.test.ts`; I: `test/modelo.test.ts`. Teste novo vai em arquivo novo da frente (`test/<tema>-<letra da frente>.test.ts`). `test/nucleo/preco.test.ts` e `dinheiro.test.ts`: ninguém | — |
 | `falso/**` | B1 | — | — |
 | `evals/rodar.mjs`, `evals/teste-do-runner.mjs`, `evals/lib/**`, `evals/casos/dev/**`, `evals/README.md` | B2 | B2 recebe casos novos de D e de C | — |
 | `evals/simulador/**` (casos fixos para o conjunto dev saem em `evals/simulador/para-dev/<bloco>/`; quem move é B2) | D | D | — |
