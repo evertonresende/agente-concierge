@@ -104,6 +104,22 @@ describe("falhas do webhook na conversa", () => {
     expect(s.guardados).toMatchObject([{ telefone: "(11) 97777-0000" }]);
   });
 
+  it("segundo 422 na sessão, mesmo com o dado corrigido: não pede correção de novo, handoff true", async () => {
+    const s = sessao(["422"]);
+    await s.resumo(2);
+    expect((await s.sim(3)).handoff).toBeUndefined();
+    await s.resumo(4, { ...DADOS, telefone: "(11) 97777-0000" });
+    const r = await s.sim(5);
+    expect(s.recebidos).toHaveLength(2);
+    expect(r.handoff).toBe(true);
+    expect(r.respostaFinal).toMatch(/Não consegui registrar/);
+    expect(r.respostaFinal).not.toMatch(/Pode me informar de novo/);
+    // O mesmo dado recusado de novo também passa para humano.
+    await s.resumo(6);
+    expect((await s.sim(7)).handoff).toBe(true);
+    expect(s.guardados).toEqual([]);
+  });
+
   it("atraso (resposta não chega): sem nova tentativa, não diz registrado, handoff true, e a reserva não é reenviada (CA-19)", async () => {
     const s = sessao(["atraso", "ok"]);
     await s.resumo(2);

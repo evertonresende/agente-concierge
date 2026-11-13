@@ -386,8 +386,13 @@ export async function confirmar(cofre: Cofre, turnoAtual: number, mensagem: stri
   // Com certeza não registrou: a confirmação foi gasta, mas a reserva não fica bloqueada.
   // Um novo resumo (com o dado corrigido, ou mais tarde) pode ser confirmado e enviado.
   const estado = cofre.ler();
+  // Já houve recusa nesta sessão (mesma reserva ou a de antes da correção): pedir a
+  // correção de novo vira laço; a conversa passa para humano.
+  const jaRecusado = Object.values(estado.envios).includes("nao_registrado");
   cofre.salvar({ ...estado, pendente: null, envios: { ...estado.envios, [chave]: "nao_registrado" } });
-  return resposta.campos.length > 0 ? { tipo: "campo_recusado", campos: resposta.campos } : { tipo: "nao_registrado", motivo: "resposta" };
+  return resposta.campos.length > 0 && !jaRecusado
+    ? { tipo: "campo_recusado", campos: resposta.campos }
+    : { tipo: "nao_registrado", motivo: "resposta" };
 }
 
 /** "real" quando o webhook mora no mesmo host do catálogo (contrato seção 8); senão "falso". */
