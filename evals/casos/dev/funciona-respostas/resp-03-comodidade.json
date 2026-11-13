@@ -8,7 +8,7 @@
       "espera": {
         "handoff": false,
         "resposta_contem": [
-          "sim|possui|tem\\s+lareira|conta\\s+com\\s+lareira",
+          "\\bsim\\b|(?:possui|tem|conta\\s+com|inclui|oferece).*lareira",
           "lareira"
         ],
         "resposta_nao_contem": [

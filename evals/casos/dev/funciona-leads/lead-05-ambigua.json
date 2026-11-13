@@ -16,7 +16,9 @@
       "espera": {
         "handoff": false,
         "leads_ate_agora": 0,
-        "resposta_contem": ["confirm"],
+        "resposta_contem": [
+          "confirm|posso\\s+(?:enviar|registrar|encaminhar|fechar)|deseja\\s+(?:enviar|registrar|encaminhar|fechar|prosseguir)"
+        ],
         "resposta_nao_contem": ["(?:lead|pedido|reserva)\\s+(?:foi\\s+|j[aá]\\s+)?registrad[oa]"]
       }
     },
@@ -24,7 +26,7 @@
       "mensagem": "Sim, confirmo definitivamente.",
       "espera": {
         "handoff": false,
-        "resposta_contem": ["registrad|encaminhad|enviad"]
+        "resposta_contem": ["registr(?:ad|ei|amos)|encaminh(?:ad|ei|amos)|envi(?:ad|ei|amos)"]
       }
     }
   ],

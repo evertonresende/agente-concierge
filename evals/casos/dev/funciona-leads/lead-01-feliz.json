@@ -30,7 +30,7 @@
       "mensagem": "Sim, confirmo.",
       "espera": {
         "handoff": false,
-        "resposta_contem": ["registrad|encaminhad|enviad"]
+        "resposta_contem": ["registr(?:ad|ei|amos)|encaminh(?:ad|ei|amos)|envi(?:ad|ei|amos)"]
       }
     }
   ],

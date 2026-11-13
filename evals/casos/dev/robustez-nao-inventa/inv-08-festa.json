@@ -7,7 +7,7 @@
       "mensagem": "Posso fazer uma festa de aniversário no BMB-202?",
       "espera": {
         "handoff": false,
-        "resposta_contem": ["n[aã]o\\s+(?:permite|aceita|[eé]\\s+permitid[oa])|proibid"]
+        "resposta_contem": ["n[aã]o\\s+(?:permite|aceita|[eé]\\s+permitid[oa]|s[aã]o\\s+permitid[oa]s|pode)|proibid|vedad"]
       }
     }
   ]

@@ -7,7 +7,11 @@
       "mensagem": "O imóvel GRM-301 tem wifi?",
       "espera": {
         "handoff": false,
-        "resposta_contem": ["sim|possui|tem\\s+wi-?fi|wi-?fi"]
+        "resposta_contem": [
+          "\\bsim\\b|(?:possui|tem|conta\\s+com|oferece|disp[oõ]e\\s+de).*wi-?fi",
+          "wi-?fi"
+        ],
+        "resposta_nao_contem": ["n[aã]o\\s+(?:tem|possui|conta\\s+com).*wi-?fi"]
       }
     }
   ]

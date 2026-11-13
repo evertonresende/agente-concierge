@@ -1,0 +1,23 @@
+{
+  "id": "cot-11-amanha",
+  "bloco": "funciona-cotacoes",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Quero cotar o SAO-501 entrando amanhã e saindo em {{hoje_mais_3_br}} para 1 pessoa.",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": [
+          "{{amanha_br}}|{{amanha_extenso}}",
+          "{{hoje_mais_3_br}}|{{hoje_mais_3_extenso}}"
+        ],
+        "estadia": {
+          "imovel_id": "SAO-501",
+          "checkin": "{{amanha_iso}}",
+          "checkout": "{{hoje_mais_3_iso}}",
+          "hospedes": 1
+        }
+      }
+    }
+  ]
+}

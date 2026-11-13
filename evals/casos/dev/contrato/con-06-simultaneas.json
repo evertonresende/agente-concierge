@@ -10,7 +10,7 @@
           "espera": {
             "status": 200,
             "handoff": false,
-            "resposta_contem": ["4"]
+            "resposta_contem": ["(?:4|quatro)\\s*(?:pessoas|h[oó]spedes)|capacidade.{0,20}\\b4\\b"]
           }
         },
         {
@@ -18,7 +18,7 @@
           "espera": {
             "status": 200,
             "handoff": false,
-            "resposta_contem": ["n[aã]o"]
+            "resposta_contem": ["n[aã]o\\s+(?:aceita|permite)|proibid"]
           }
         }
       ]

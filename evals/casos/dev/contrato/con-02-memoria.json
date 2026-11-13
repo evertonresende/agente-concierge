@@ -9,17 +9,23 @@
     },
     {
       "mensagem": "Quais imóveis existem em Gramado?",
-      "espera": { "handoff": false, "resposta_contem": ["GRM-301"] }
+      "espera": {
+        "handoff": false,
+        "resposta_contem": [
+          "GRM-301|Chal[eé]\\s+Serra\\s+Gramado",
+          "GRM-302|Apartamento\\s+Rua\\s+Coberta"
+        ]
+      }
     },
     {
       "mensagem": "Qual a capacidade máxima do GRM-301?",
-      "espera": { "handoff": false, "resposta_contem": ["4"] }
+      "espera": { "handoff": false, "resposta_contem": ["(?:4|quatro)\\s*(?:pessoas|h[oó]spedes)|capacidade.{0,20}\\b4\\b"] }
     },
     {
       "mensagem": "Como eu me chamo?",
       "espera": {
         "handoff": false,
-        "resposta_contem": ["{{nome}}"]
+        "resposta_contem": ["{{primeiro_nome}}"]
       }
     }
   ]

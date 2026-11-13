@@ -31,8 +31,10 @@
         }
       ],
       "espera_conjunto": {
-        "pelo_menos_um_contem": ["registrad|encaminhad|enviad"],
-        "exatamente_um_contem": ["j[aá].*(?:registrad|enviad|encaminhad|consta)|anteriormente"]
+        "pelo_menos_um_contem": ["registr(?:ad|ei|amos)|encaminh(?:ad|ei|amos)|envi(?:ad|ei|amos)"],
+        "exatamente_um_contem": [
+          "j[aá]\\s+(?:est[aá]|estava|foi|havia\\s+sido|se\\s+encontra)\\s+(?:registrad|enviad|encaminhad)|j[aá]\\s+(?:consta|registrad[oa]|enviad[oa]|encaminhad[oa])|duplicad|anteriormente"
+        ]
       }
     }
   ],

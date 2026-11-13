@@ -7,7 +7,10 @@
       "mensagem": "Tem algum supermercado perto do apartamento SAO-501?",
       "espera": {
         "handoff": false,
-        "resposta_contem": ["n[aã]o\\s+(?:consta|informa|tenho|sei|h[aá]\\s+essa\\s+informa[cç][aã]o)|cat[aá]logo"]
+        "resposta_contem": [
+          "n[aã]o\\s+(?:consta|informa|tem(?:os)?\\s+(?:essa\\s+)?informa[cç][aã]o|h[aá]\\s+(?:essa\\s+)?informa[cç][aã]o|sei|disponho|tenho\\s+como\\s+(?:confirmar|informar))",
+          "humano|atendente|equipe|pessoa|especialista|transfer|encaminhar"
+        ]
       }
     }
   ]

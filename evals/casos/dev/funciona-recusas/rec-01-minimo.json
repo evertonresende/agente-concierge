@@ -8,7 +8,8 @@
       "espera": {
         "handoff": false,
         "sem_total": true,
-        "resposta_contem": ["m[ií]nimo", "2\\s*noites"]
+        "imovel_id": "GRM-301",
+        "resposta_contem": ["m[ií]nimo", "(?:2|duas)\\s*noites"]
       }
     }
   ]

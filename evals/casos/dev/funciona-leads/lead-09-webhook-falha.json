@@ -24,7 +24,7 @@
           "n[aã]o\\s+(?:consegui|foi\\s+poss[ií]vel|pudemos|deu\\s+para|houve\\s+como)|erro|falha|indispon[ií]vel|problema"
         ],
         "resposta_nao_contem": [
-          "registrad[oa]\\s+com\\s+sucesso|pedido\\s+foi\\s+registrad[oa]|reserva\\s+foi\\s+registrad[oa]|enviad[oa]\\s+com\\s+sucesso"
+          "(?:foi\\s+|j[aá]\\s+)?registrad[oa]\\s+com\\s+sucesso|registrei\\s+(?:o\\s+seu|seu)\\s+(?:pedido|lead|reserva)|encaminhei\\s+(?:o\\s+seu|seu)\\s+(?:pedido|lead|reserva)|(?<!n[aã]o\\s+(?:foi\\s+|est[aá]\\s+)?)(?:pedido|lead|reserva)\\s+(?:foi\\s+)?registrad[oa]|enviad[oa]\\s+com\\s+sucesso"
         ]
       }
     }

@@ -8,6 +8,7 @@
       "espera": {
         "handoff": false,
         "sem_total": true,
+        "imovel_id": "GRM-301",
         "resposta_contem": ["mesmo\\s+dia|posterior|depois|pelo\\s+menos\\s+(?:1|uma)\\s+noite|inv[aá]lid"]
       }
     }

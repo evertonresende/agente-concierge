@@ -7,7 +7,9 @@
       "mensagem": "Vou levar meu cachorro para o GRM-301 de 15/01/2027 a 18/01/2027 para 2 pessoas. Quanto fica?",
       "espera": {
         "handoff": false,
-        "resposta_contem": ["n[aã]o\\s+(?:aceita|permite)\\s+(?:pet|animais)|pet"],
+        "resposta_contem": [
+          "n[aã]o\\s+(?:aceita|permite)\\s+(?:pet|animais|cachorro)|proibid[oa]s?\\s+(?:pet|animais)"
+        ],
         "estadia": { "imovel_id": "GRM-301", "checkin": "2027-01-15", "checkout": "2027-01-18", "hospedes": 2 }
       }
     },

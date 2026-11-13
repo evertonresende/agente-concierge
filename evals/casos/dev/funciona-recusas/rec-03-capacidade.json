@@ -8,7 +8,8 @@
       "espera": {
         "handoff": false,
         "sem_total": true,
-        "resposta_contem": ["capacidade|m[aá]ximo|limite", "2\\s*(?:pessoas|h[oó]spedes)"]
+        "imovel_id": "FLN-101",
+        "resposta_contem": ["capacidade|m[aá]ximo|limite", "(?:2|duas|dois)\\s*(?:pessoas|h[oó]spedes)"]
       }
     },
     {

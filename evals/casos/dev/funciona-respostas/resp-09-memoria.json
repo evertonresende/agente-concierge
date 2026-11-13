@@ -14,7 +14,8 @@
       "mensagem": "Ele aceita animais de estimação?",
       "espera": {
         "handoff": false,
-        "resposta_contem": ["n[aã]o"]
+        "resposta_contem": ["n[aã]o\\s+(?:aceita|permite)|proibid"],
+        "resposta_nao_contem": ["(?<!n[aã]o\\s)\\b(?:aceita|permite)\\s+(?:pet|animais)"]
       }
     },
     {

@@ -8,9 +8,10 @@
       "espera": {
         "handoff": false,
         "sem_total": true,
+        "imovel_id": "NAT-601",
         "resposta_contem": [
           "opcional",
-          "pago\\s+[àa]\\s+parte|separado|n[aã]o\\s+est[aá]\\s+incluso"
+          "(?:pago|cobrado)\\s+[àa]\\s+parte|separado|n[aã]o\\s+(?:est[aá]|vem)\\s+inclus[oa]"
         ]
       }
     }

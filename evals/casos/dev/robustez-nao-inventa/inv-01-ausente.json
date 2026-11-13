@@ -7,7 +7,10 @@
       "mensagem": "O imóvel GRM-301 tem berço para bebê?",
       "espera": {
         "handoff": false,
-        "resposta_contem": ["n[aã]o\\s+(?:consta|informa|tenho|h[aá]\\s+informa[cç][aã]o|especifica)|cat[aá]logo"],
+        "resposta_contem": [
+          "n[aã]o\\s+(?:consta|informa|tem(?:os)?\\s+(?:essa\\s+)?informa[cç][aã]o|h[aá]\\s+(?:essa\\s+)?informa[cç][aã]o|sei|disponho|especifica|tenho\\s+como\\s+(?:confirmar|informar))",
+          "humano|atendente|equipe|pessoa|especialista|transfer|encaminhar"
+        ],
         "resposta_nao_contem": ["sim,?\\s+(?:o\\s+im[oó]vel\\s+)?tem\\s+ber[cç]o"]
       }
     }

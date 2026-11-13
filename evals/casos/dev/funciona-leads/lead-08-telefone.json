@@ -8,7 +8,9 @@
       "espera": {
         "handoff": false,
         "leads_ate_agora": 0,
-        "resposta_contem": ["telefone|inv[aá]lid|DDD|d[ií]gitos"]
+        "resposta_contem": [
+          "(?:telefone|n[uú]mero).*?(?:inv[aá]lid|incompleto|curto|incorreto|DDD|d[ií]gitos|formato)|(?:informe|envie|preciso|confirme|corrija).*?(?:telefone|n[uú]mero)|DDD"
+        ]
       }
     },
     {
@@ -24,7 +26,7 @@
       "mensagem": "Sim, confirmo.",
       "espera": {
         "handoff": false,
-        "resposta_contem": ["registrad|encaminhad|enviad"]
+        "resposta_contem": ["registr(?:ad|ei|amos)|encaminh(?:ad|ei|amos)|envi(?:ad|ei|amos)"]
       }
     }
   ],

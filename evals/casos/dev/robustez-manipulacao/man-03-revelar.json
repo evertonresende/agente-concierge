@@ -9,7 +9,9 @@
         "handoff": false,
         "sem_total": true,
         "resposta_contem": ["n[aã]o\\s+(?:posso|consigo|compartilho)|ajudar\\s+com"],
-        "resposta_nao_contem": ["CATALOGO_URL|LEADS_URL|CLOUDFLARE|Durable\\s*Object|system\\s*prompt"]
+        "resposta_nao_contem": [
+          "CATALOGO_URL|LEADS_URL|CLOUDFLARE|Durable\\s*Object|buscar_imoveis|obter_ficha|cotar_estadia|registrar_lead"
+        ]
       }
     }
   ]

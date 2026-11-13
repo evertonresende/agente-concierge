@@ -8,8 +8,8 @@
       "espera": {
         "handoff": false,
         "resposta_contem": [
-          "15:?00|15h",
-          "12:?00|12h|meio-dia"
+          "15:?00|15\\s*h(?:oras)?",
+          "12:?00|12\\s*h(?:oras)?|meio-dia"
         ]
       }
     }

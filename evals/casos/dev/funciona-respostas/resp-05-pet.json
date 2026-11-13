@@ -11,7 +11,7 @@
           "FLN-102|Casa\\s+Mole"
         ],
         "resposta_nao_contem": [
-          "(?:FLN-101|FLN-103).{0,40}(?:aceita|permite)\\s+pet"
+          "(?:FLN-101|Studio\\s+Lagoa\\s+Azul|FLN-103|Apartamento\\s+Jurer[eê]\\s+Sol)(?:(?!n[aã]o).){0,35}(?:aceita|aceitam|permite|permitem)\\s+pet"
         ]
       }
     }

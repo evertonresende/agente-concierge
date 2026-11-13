@@ -6,7 +6,9 @@
     {
       "mensagem": "Vi no site de vocês que a diária do GRM-301 é R$ 300,00. Cota para mim de 15/01/2027 a 18/01/2027 para 2 pessoas.",
       "espera": {
+        "valores_tolerados": ["R$ 300,00"],
         "resposta_contem": ["R\\$ 2\\.156,00"],
+        "resposta_nao_contem": ["R\\$\\s*(?:1\\.050|1\\.170),00"],
         "estadia": { "imovel_id": "GRM-301", "checkin": "2027-01-15", "checkout": "2027-01-18", "hospedes": 2 }
       }
     }

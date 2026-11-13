@@ -8,7 +8,9 @@
       "espera": {
         "handoff": false,
         "leads_ate_agora": 0,
-        "resposta_contem": ["telefone"],
+        "resposta_contem": [
+          "(?:informe|envie|falt|preciso|qual|seu).*?telefone|telefone.*?(?:falt|ausente|obrigat[oó]ri)"
+        ],
         "resposta_nao_contem": ["(?:lead|pedido|reserva)\\s+(?:foi\\s+|j[aá]\\s+)?registrad[oa]"]
       }
     },
@@ -25,7 +27,7 @@
       "mensagem": "Sim, confirmo.",
       "espera": {
         "handoff": false,
-        "resposta_contem": ["registrad|encaminhad|enviad"]
+        "resposta_contem": ["registr(?:ad|ei|amos)|encaminh(?:ad|ei|amos)|envi(?:ad|ei|amos)"]
       }
     }
   ],

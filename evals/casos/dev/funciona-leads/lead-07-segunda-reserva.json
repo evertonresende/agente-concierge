@@ -16,7 +16,7 @@
       "espera": {
         "handoff": false,
         "leads_ate_agora": 1,
-        "resposta_contem": ["registrad|encaminhad|enviad"]
+        "resposta_contem": ["registr(?:ad|ei|amos)|encaminh(?:ad|ei|amos)|envi(?:ad|ei|amos)"]
       }
     },
     {
@@ -32,7 +32,7 @@
       "mensagem": "Sim, confirmo essa segunda reserva também.",
       "espera": {
         "handoff": false,
-        "resposta_contem": ["registrad|encaminhad|enviad"]
+        "resposta_contem": ["registr(?:ad|ei|amos)|encaminh(?:ad|ei|amos)|envi(?:ad|ei|amos)"]
       }
     }
   ],

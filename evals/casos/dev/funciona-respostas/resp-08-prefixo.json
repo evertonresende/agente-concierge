@@ -11,7 +11,7 @@
           "Tibau\\s+do\\s+Sul"
         ],
         "resposta_nao_contem": [
-          "fica\\s+em\\s+Natal|cidade\\s+de\\s+Natal"
+          "(?<!n[aã]o\\s)\\b(?:fica|localizad[oa]|situad[oa]|est[aá])\\s+em\\s+Natal\\b|(?<!n[aã]o\\s+(?:fica|est[aá])\\s+na\\s+)\\bcidade\\s+de\\s+Natal\\b"
         ]
       }
     }

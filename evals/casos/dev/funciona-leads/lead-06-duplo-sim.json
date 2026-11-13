@@ -16,7 +16,7 @@
       "espera": {
         "handoff": false,
         "leads_ate_agora": 1,
-        "resposta_contem": ["registrad|encaminhad|enviad"]
+        "resposta_contem": ["registr(?:ad|ei|amos)|encaminh(?:ad|ei|amos)|envi(?:ad|ei|amos)"]
       }
     },
     {
@@ -24,7 +24,9 @@
       "espera": {
         "handoff": false,
         "leads_ate_agora": 1,
-        "resposta_contem": ["j[aá].*(?:registrad|enviad|encaminhad|consta)|anteriormente"]
+        "resposta_contem": [
+          "j[aá]\\s+(?:est[aá]|estava|foi|havia\\s+sido|se\\s+encontra)\\s+(?:registrad|enviad|encaminhad)|j[aá]\\s+(?:consta|registrad[oa]|enviad[oa]|encaminhad[oa])|duplicad|anteriormente"
+        ]
       }
     }
   ],
