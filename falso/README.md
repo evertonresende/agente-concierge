@@ -29,38 +29,52 @@ tem `account_id` nem secret; a conta vem do ambiente.
   (`recebido_em`). Inválido: `422` com `{ "erros": [ { "campo", "erro" } ] }` e nada
   é guardado. JSON inválido também devolve `422`, com `campo: "corpo"`.
 - `GET /leads/<segmento>` — `{ "leads": [ ... ] }` só daquele segmento.
-- `DELETE /leads/<segmento>` — limpa a lista daquele segmento. **Só existe no falso.**
+- `DELETE /leads/<segmento>` — limpa **só os leads** daquele segmento. Não mexe nos
+  modos de teste, nos outros segmentos nem em nada do webhook real. **Só existe no
+  falso.**
 - `GET /` — `{ "ok": true, "servico": "webhook-falso" }`, só para conferir que o
   servidor está no ar.
 
-Cada segmento tem um Durable Object com SQLite próprio: a lista sobrevive entre
-requisições e reinícios do `wrangler dev` (estado local em `.wrangler/`, que não é
-versionado), e segmentos diferentes nunca se misturam.
+Cada segmento tem um Durable Object com SQLite próprio: leads e modos sobrevivem
+entre requisições e reinícios do `wrangler dev` (estado local em `.wrangler/`, que não
+é versionado), e segmentos diferentes nunca se misturam.
 
 ## Modos de teste
 
-Os modos valem só para `POST /leads/<segmento>`; `GET` e `DELETE` nunca são afetados.
-Duas formas de ligar: cabeçalho por requisição ou modo gravado no segmento.
+Modos só afetam `POST /leads/<segmento>`; `GET` e `DELETE` nunca são afetados.
 
-### Por cabeçalho
+Precedência: **cabeçalho `x-falso-modo` > modo gravado do telefone > modo gravado
+geral do segmento**. Sem nenhum deles, o POST segue o fluxo normal.
+
+### Por cabeçalho (vale só naquela requisição)
 
 - `x-falso-modo: 500` — devolve `500` e **não guarda** o lead.
 - `x-falso-modo: 422` — devolve `422` com `{ "erros": [...] }` e **não guarda**.
 - `x-falso-modo: atraso` — espera `x-falso-atraso-ms` milissegundos (padrão 30000,
-  máximo 120000), depois processa normalmente: lead válido é **guardado** e responde
-  `201`. Serve para simular tempo esgotado do cliente; mesmo que o cliente desista, o
-  lead pode ter sido guardado, como num resultado incerto de verdade. Cabeçalho
-  inválido devolve `400`.
+  aceita de 0 a 120000), depois responde `201`. O lead válido é **guardado antes da
+  espera**: mesmo que o cliente desista antes do fim, ele já está na lista, como num
+  resultado incerto de verdade (contrato L11). Atraso inválido devolve `400`.
+- Cabeçalho inválido devolve `400` e não guarda.
 
-### Por modo gravado no segmento (controle)
-
-Rotas de controle, só no falso:
+### Modo gravado no segmento
 
 - `PUT /modos/<segmento>` com `{ "modo": "500" }`, `{ "modo": "422" }` ou
-  `{ "modo": "atraso", "atraso_ms": 30000 }` grava o modo que passa a valer para todos
-  os POSTs seguintes daquele segmento, sem cabeçalho. `{ "modo": "nenhum" }` limpa.
-- `GET /modos/<segmento>` mostra o modo atual.
-- `DELETE /modos/<segmento>` limpa o modo.
+  `{ "modo": "atraso", "atraso_ms": 30000 }`.
+- Campos opcionais:
+  - `validade_s`: por quantos segundos o modo vale. Padrão 120, aceita de 1 a 900.
+    Todo modo expira sozinho; expirado vale como inexistente.
+  - `telefone`: restringe o modo ao POST cujo `telefone` tem os mesmos dígitos.
+    A comparação ignora pontuação e aceita o prefixo `55` de um lado e não do outro.
+    Vários telefones podem ter modos diferentes no mesmo segmento ao mesmo tempo,
+    cada um com a sua validade; sem `telefone`, o modo é o geral do segmento.
+- `PUT` inválido (corpo que não é objeto, `modo` ausente ou desconhecido, `validade_s`
+  fora de 1–900, `atraso_ms` fora de 0–120000, `telefone` sem dígitos) devolve `400` e
+  **não altera nada**.
+- `GET /modos/<segmento>` — `{ "segmento", "modos": [ { "modo", "telefone",
+  "atraso_ms", "expira_em" } ] }`, só com os modos ainda ativos e com o instante de
+  expiração em ISO. `telefone` é `null` no modo geral.
+- `DELETE /modos/<segmento>` — limpa todos os modos do segmento.
+  `DELETE /modos/<segmento>?telefone=<dígitos>` limpa só o modo daquele telefone.
 
-Efeito de cada modo no armazenamento: `500` e `422` **não guardam**; `atraso` guarda
-depois da espera.
+Efeito de cada modo no armazenamento do lead: `500` e `422` **não guardam**; `atraso`
+**guarda antes da espera**.
