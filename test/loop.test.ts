@@ -231,6 +231,49 @@ describe("loop de ferramentas", () => {
     expect(mundo.leads).toEqual([]);
   });
 
+  for (const [caso, argumentos] of [
+    ["data inexistente", { ...ESTADIA, checkout: "31/02/2027" }],
+    ["imóvel que não existe", { ...ESTADIA, imovel_id: "XXX-999" }],
+  ] as const) {
+    it(`cotação com ${caso} depois do resumo derruba a confirmação pendente`, async () => {
+      const { turno, mundo, estado } = montar();
+      await turno(2, "quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
+      await turno(3, "sim, mas muda", roteiro(pedeFerramentas(chamar("cotar", argumentos)), diz("Pode conferir o dado?")).modelo);
+      expect(estado().pendente).toBeNull();
+      await turno(4, "sim", roteiro(pedeFerramentas(chamar("confirmar_reserva")), diz("Preciso de um novo resumo.")).modelo);
+      expect(mundo.leads).toEqual([]);
+    });
+  }
+
+  for (const ferramenta of ["cotar", "montar_resumo"] as const) {
+    it(`catálogo fora do ar em ${ferramenta} com dado novo depois do resumo derruba a confirmação pendente`, async () => {
+      const opcoes = { catalogoForaDoAr: false };
+      const { turno, mundo, estado } = montar(opcoes);
+      await turno(2, "quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
+      opcoes.catalogoForaDoAr = true;
+      const falha = await turno(3, "sim, mas muda a saída para 19/01/2027", roteiro(pedeFerramentas(chamar(ferramenta, { ...DADOS, checkout: "19/01/2027" }))).modelo);
+      expect(falha.contingencia).toBe(true);
+      expect(estado().pendente).toBeNull();
+      opcoes.catalogoForaDoAr = false;
+      await turno(4, "sim", roteiro(pedeFerramentas(chamar("confirmar_reserva")), diz("Preciso de um novo resumo.")).modelo);
+      expect(mundo.leads).toEqual([]);
+    });
+  }
+
+  it("pedir de novo uma reserva já registrada derruba o resumo em aberto de outra reserva", async () => {
+    const { turno, mundo, estado } = montar();
+    const OUTRA = { ...DADOS, checkout: "19/01/2027" };
+    await turno(2, "quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
+    await turno(3, "sim", roteiro(pedeFerramentas(chamar("confirmar_reserva"))).modelo);
+    await turno(4, "quero outra, até dia 19", roteiro(pedeFerramentas(chamar("montar_resumo", OUTRA))).modelo);
+    expect(estado().pendente).toMatchObject({ reserva: { checkout: "2027-01-19" } });
+    const repetida = await turno(5, "na verdade quero a primeira mesmo", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
+    expect(repetida.reply).toContain("já está registrado");
+    expect(estado().pendente).toBeNull();
+    await turno(6, "sim", roteiro(pedeFerramentas(chamar("confirmar_reserva")), diz("Não há pedido aguardando confirmação.")).modelo);
+    expect(mundo.leads).toHaveLength(1);
+  });
+
   it("pedido de novo resumo recusado derruba o resumo anterior", async () => {
     const { turno, mundo, estado } = montar();
     await turno(2, "quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);

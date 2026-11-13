@@ -51,8 +51,14 @@ export function resumir(contexto: Contexto, pedido: Extract<Pedido, { ok: true }
   };
   const pendente: Pendente = { reserva, totalCentavos: pedido.cotacao.totalCentavos, turno: contexto.turno };
   const anterior = contexto.cofre.ler().envios[chaveDaReserva(reserva)];
-  if (anterior === "registrado") return jaRegistrado(pendente);
-  if (anterior) return { paraOModelo: { nao_registrado: true }, respostaFinal: INCERTO, handoff: true };
+  if (anterior) {
+    // O hóspede pediu outra reserva (que já teve envio): o resumo que estava em aberto,
+    // de uma reserva diferente, deixa de valer (L10).
+    invalidarPendente(contexto.cofre);
+    return anterior === "registrado"
+      ? jaRegistrado(pendente)
+      : { paraOModelo: { nao_registrado: true }, respostaFinal: INCERTO, handoff: true };
+  }
 
   apresentarResumo(contexto.cofre, reserva, pendente.totalCentavos, contexto.turno);
   return {
@@ -77,9 +83,13 @@ export const montarResumo = definir(
   },
   ["imovel_id", "checkin", "checkout", "hospedes", "nome", "telefone"],
   async (argumentos, contexto) => {
-    const resultado = await tentarResumir(argumentos, contexto);
-    // Pedido de resumo que não virou resumo (dado faltando, estadia recusada): o resumo
-    // anterior também não vale mais, porque o hóspede já não quer aquela reserva (L10).
+    // Pedido de resumo que não virou resumo (dado faltando, estadia recusada, catálogo
+    // fora do ar): o resumo anterior também não vale mais, porque o hóspede já não quer
+    // aquela reserva (L10).
+    const resultado = await tentarResumir(argumentos, contexto).catch((erro: unknown) => {
+      invalidarPendente(contexto.cofre);
+      throw erro;
+    });
     if (resultado.respostaFinal === undefined) invalidarPendente(contexto.cofre);
     return resultado;
   },

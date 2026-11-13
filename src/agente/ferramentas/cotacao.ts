@@ -20,8 +20,17 @@ export const cotarEstadia = definir(
   async (argumentos, contexto) => {
     // Resumo aguardando o sim: o que esta cotação não disser (hóspedes) vale o do resumo.
     const aberto = pendenteAberto(contexto.cofre.ler())?.reserva ?? null;
-    const pedido = await prepararPedido(argumentos, contexto, aberto?.hospedes);
-    if (!pedido.ok) return { paraOModelo: { erro: pedido.erro } };
+    // Com resumo em aberto, uma cotação que não dá para ler (data inexistente, imóvel
+    // não encontrado, catálogo fora do ar) também derruba a confirmação pendente: o
+    // hóspede tentou mudar a estadia, e o sim seguinte não pode enviar a antiga (L10).
+    const pedido = await prepararPedido(argumentos, contexto, aberto?.hospedes).catch((erro: unknown) => {
+      invalidarPendente(contexto.cofre);
+      throw erro;
+    });
+    if (!pedido.ok) {
+      invalidarPendente(contexto.cofre);
+      return { paraOModelo: { erro: pedido.erro } };
+    }
 
     // O hóspede pediu outra estadia depois do resumo: a confirmação pendente deixa de
     // valer (contrato L10). Se a estadia nova é válida, o novo resumo sai daqui mesmo,
