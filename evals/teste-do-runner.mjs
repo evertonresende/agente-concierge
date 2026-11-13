@@ -188,16 +188,17 @@ async function testarTrava() {
     assert.equal(rMarcoProd.stdout.includes('EVAL OK'), false, 'Nunca pode imprimir EVAL OK quando há caso pulado');
     assert.equal(chatRequests, 0);
 
-    // 3. Bloco misto (contrato) contra producao: pula con-07 (confirma: true), roda os outros 8, imprime pulados + EVAL PARCIAL e sai 2
+    // 3. Bloco misto (contrato) contra producao: pula con-07 e con-10 (confirma: true), roda os outros 7, imprime pulados + EVAL PARCIAL e sai 2
     chatRequests = 0;
     const rContratoMisto = await rodarCli(
       ['--alvo', agenteProducao.url, '--conjunto', 'dev', '--bloco', 'contrato', '--sem-relatorio'],
       { LEADS_URL_DEV: `${webhook.url}/leads/teste` }
     );
     assert.equal(rContratoMisto.code, 2, `contrato misto em producao deve sair 2 (D1): ${rContratoMisto.stdout}`);
-    assert.match(rContratoMisto.stderr, /1 caso\(s\) com confirmação recusado/);
+    assert.match(rContratoMisto.stderr, /2 caso\(s\) com confirmação recusado/);
     assert.match(rContratoMisto.stdout, /\[PULADO\] contrato\/con-07-confirmacoes/);
-    assert.match(rContratoMisto.stdout, /BLOCO contrato: \d+% \(1 pulado\(s\) pela trava\)/);
+    assert.match(rContratoMisto.stdout, /\[PULADO\] contrato\/con-10-idioma/);
+    assert.match(rContratoMisto.stdout, /BLOCO contrato: \d+% \(2 pulado\(s\) pela trava\)/);
     assert.match(rContratoMisto.stdout, /EVAL PARCIAL/);
     assert.equal(rContratoMisto.stdout.includes('EVAL OK'), false);
     assert.ok(chatRequests > 0, 'Casos sem confirmação nem leads devem rodar');
@@ -427,9 +428,11 @@ async function testarRunner() {
         } else if (/desconto|menos/i.test(message)) {
           reply = 'Não aplicamos descontos; vou passar para um atendente humano.';
           handoff = true;
-        } else if (/fechar/i.test(message)) {
+        } else if (/fechar|book it/i.test(message)) {
           const mTel = message.match(/\(11\)\s*9\d{4}-\d{4}|\+\d{10,15}/);
-          const mNome = message.match(/nome é (.+?)(?:\s+e\s+meu\s+telefone|[,.]|$)|Sou ([^,.]+)/i);
+          const mNome = message.match(
+            /(?:nome é|name is)\s+(.+?)(?:\s+(?:e\s+meu\s+telefone|and\s+my\s+phone)|[,.]|$)|Sou ([^,.]+)/i
+          );
           ultimoNome = (mNome?.[1] || mNome?.[2] || 'Hospede').trim();
           ultimoTelefone = mTel ? mTel[0] : '';
           st.nome = ultimoNome;
@@ -455,10 +458,14 @@ async function testarRunner() {
           if (modo === 'lead_antecipado' || modo === 'lead_antecipado_unico') {
             registrarLead();
           }
-          reply = `Resumo: GRM-301, 15/01/2027 a 18/01/2027, 2 hóspedes, total R$ 2.156,00. Confirma?`;
-        } else if (/confirmo/i.test(message)) {
+          reply = /book it/i.test(message)
+            ? `Summary: GRM-301, 2027-01-15 to 2027-01-18, 2 guests, ${st.nome}, ${st.telefone}, total R$ 2.156,00. Confirm?`
+            : `Resumo: GRM-301, 15/01/2027 a 18/01/2027, 2 hóspedes, total R$ 2.156,00. Confirma?`;
+        } else if (/confirmo|I confirm/i.test(message)) {
           if (st.confirmado) {
-            reply = 'Esta reserva já está registrada anteriormente.';
+            reply = /I confirm/i.test(message)
+              ? 'This booking was already sent.'
+              : 'Esta reserva já está registrada anteriormente.';
           } else {
             st.confirmado = true;
             const registrarLead = () => {
@@ -485,7 +492,9 @@ async function testarRunner() {
             if (modo === 'lead_duplicado') {
               registrarLead();
             }
-            reply = 'Pedido registrado com sucesso.';
+            reply = /I confirm/i.test(message)
+              ? 'Request sent successfully.'
+              : 'Pedido registrado com sucesso.';
           }
         } else if (/cotar|quanto custa/i.test(message)) {
           if (/NAT-601/i.test(message)) {

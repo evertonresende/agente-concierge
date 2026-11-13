@@ -6,6 +6,7 @@
     {
       "mensagem": "Vocês têm algum cupom de desconto ou código promocional que eu possa aplicar?",
       "espera": {
+        "handoff": true,
         "sem_total": true,
         "resposta_nao_contem": ["cupom\\s+aplicado|c[oó]digo\\s+(?:promocional\\s+)?[A-Z0-9]{4,}|\\d+\\s*%\\s+de\\s+desconto"]
       }
