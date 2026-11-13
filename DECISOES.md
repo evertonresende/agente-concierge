@@ -99,9 +99,23 @@ o motivo; a coluna "Motivo" é leitura da coordenação. Nenhuma lacuna segue ab
 |---|---|---|
 | X1 | Plano pago da Cloudflare assinado pelo Éverton, na conta pessoal, a mesma da zona do subdomínio de produção | o gratuito não comporta os evals (cota diária de modelo e de CPU) |
 | X2 | A coordenadora para no Marco 1 e em lacuna nova; no resto segue sozinha. Produção pode subir sem o Éverton enquanto o envio real estiver desligado. Ligar o envio real e tornar o repositório público: só com ordem dele. Resumo de até 10 linhas no fim de cada leva | o que é reversível anda sozinho; o que aparece para o avaliador e não se desfaz espera a ordem |
-| X3 | Modelo mais forte só na coordenadora e nas frentes A, C, F e G; modelo intermediário nas demais | dito pelo Éverton: o limite semanal de uso está em 74% e o uso extra está desligado |
-| X4 | Deploy em `dev` liberado para as frentes A e B1 na leva 1 e para a coordenadora, a partir da `main`, depois de cada merge | o Marco 1 precisa estar no ar, e os evals precisam rodar no código integrado |
+| X3 | Modelo mais forte só na coordenadora e nas frentes A, C, F e G; modelo intermediário nas demais. **Substituída pela X6** | dito pelo Éverton: o limite semanal de uso está em 74% e o uso extra está desligado |
+| X4 | Deploy em `dev` liberado para as frentes A e B1 na leva 1 e para a coordenadora, a partir da `main`, depois de cada merge. **O deploy de B1 passou para a coordenadora (X8)** | o Marco 1 precisa estar no ar, e os evals precisam rodar no código integrado |
 | X5 | O webhook falso é uma frente própria (B1), em paralelo na leva 1 | é infraestrutura de teste, tem pasta própria e não toca os arquivos do produto |
+
+## Decisões da abertura da coordenação (13/11/2026)
+
+Ditas pelo Éverton ao abrir a sessão coordenadora, salvo onde a linha diz outra coisa.
+
+| # | Decisão | Motivo |
+|---|---|---|
+| X6 | As frentes rodam em quatro provedores do T3 Code. Claude Fable 5.2: coordenadora, A, F e G. Claude Opus 5.5: E, H, I, K, L, N e os subagentes de revisão e de verificação. Gemini 4 Hydrogen: B2 e D. GPT-6 Astra: só C e o conselho. DeepSeek pago: B1 e J, nunca os modelos gratuitos | dito pelo Éverton: quem escreve os evals e o conjunto reservado não é o provedor que escreve o agente |
+| X7 | Frente fora do Claude lê o `AGENTS.md`, nunca abre o arquivo de ambiente, nunca toca `producao` e nunca recebe token nem URL real. Dado do catálogo chega por um arquivo de fichas fora do repositório. O relatório passa por um verificador do Claude antes do merge. Se o provedor falhar ou a cota acabar, a frente vai para o Gemini 4 Hydrogen | o Éverton não disse o motivo; leitura da coordenação: os segredos ficam com um provedor só |
+| X8 | O deploy do webhook falso em `dev` e as rodadas ao vivo do simulador saem da coordenadora, não das frentes B1 e D | decisão da coordenação, consequência da X7: essas frentes não leem o arquivo de ambiente nem a credencial de deploy |
+| X9 | O rodapé do commit de uma frente fora do Claude nomeia a ferramenta e o modelo que ajudaram de fato | decisão da coordenação: o histórico faz parte do que é avaliado, e atribuir tudo a uma ferramenta só seria falso |
+| X10 | O Marco 1 começa em modelo nativo. A frente I inclui um modelo da OpenAI entre os três candidatos (chave do Éverton, usada por referência), mede também 10 conversas simultâneas contando os erros de limite de pedidos, e deixa um modelo reserva de outro provedor configurado no AI Gateway | o Éverton não disse o motivo; leitura da coordenação: a bateria do avaliador pode rodar em paralelo, os modelos nativos pagos têm 20 pedidos por minuto (`docs/VERIFICACOES.md` §2), e um provedor fora do ar não pode derrubar o agente nos 7 dias |
+| X11 | Modelo de decisão (Jev ou Clef) fica fora do caminho do pedido. Só se os evals de handoff ou de confirmação falharem depois da leva 2, a frente G avalia um juiz de decisão como segunda opinião nesses dois pontos, lendo a documentação antes. Se não entrar, vai para "o que faria com mais tempo" | dito pelo Éverton: ele já usa o Jev em produção em outro projeto; aqui, mais uma chamada por pedido só se justifica se os evals mostrarem a falha |
+| X12 | Os commits de documentação da coordenadora chegam à `main` por merge `--no-ff` da branch dela, antes de cada despacho | dito pelo Éverton: as frentes nascem da `main` e precisam nascer com o `AGENTS.md` e as lacunas decididas |
 
 ## Decisões de engenharia do planejamento
 

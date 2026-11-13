@@ -46,22 +46,22 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 
 | Sessão | Repo | Escopo resumido | Depende de | Prioridade | Horas | Roda como | Status | Worktree/Thread |
 |---|---|---|---|---|---|---|---|---|
-| A | agente-concierge | Esqueleto vertical até o Marco 1 | pré-voo | alta | 3,5 | thread T3 | pendente | — |
-| B1 | agente-concierge | Webhook falso (Worker próprio) em `dev` | pré-voo | alta | 1 | subagente em worktree | pendente | — |
-| B2 | agente-concierge | Harness HTTP e casos dev por bloco | — | alta | 2,5 | thread T3 | pendente | — |
-| C | agente-concierge | Conjunto reservado (fora do repo) | — | alta | 2 | thread T3, fica viva | pendente | — |
-| D | agente-concierge | Simulador de hóspede hostil | B2 (formato de caso) | média | 2,5 | thread T3 | pendente | — |
-| M1 | agente-concierge | Revisão curta do Marco 1 | A | alta | 0,5 | subagentes + conselho | pendente | — |
-| I | agente-concierge | Escolha do modelo por eval | A, B2 | alta | 1 | subagente em worktree | pendente | — |
-| E | agente-concierge | Datas | Marco 1, L1, L2 | alta | 1,5 | subagente em worktree | pendente | — |
-| F | agente-concierge | Lead robusto | Marco 1, L6, L7, L9, L10, L11, L20 | alta | 2,5 | thread T3 | pendente | — |
-| G | agente-concierge | Robustez e handoff | Marco 1, L3, L4, L5, L12, L15, L16, L19, L21 | alta | 2,5 | thread T3 | pendente | — |
-| H | agente-concierge | Concorrência endurecida e falha interna | Marco 1, L17, L18 | alta | 1 | subagente em worktree | pendente | — |
-| J | agente-concierge | Página de chat | Marco 1 | baixa | 1 | subagente em worktree | pendente | — |
-| M2 | agente-concierge | Revisão de código, segurança e segunda opinião | leva 2 integrada | alta | 1,5 | subagentes + conselho | pendente | — |
-| L | agente-concierge | Custo por conversa e monitor diário | leva 2 integrada | média | 1 | subagente em worktree | pendente | — |
-| K | agente-concierge | Produção com o envio real desligado | M2 | alta | 1,5 | thread T3 | pendente | — |
-| N | agente-concierge | Entregáveis de processo | K | alta | 2 | thread T3 | pendente | — |
+| A | agente-concierge | Esqueleto vertical até o Marco 1 | pré-voo | alta | 3,5 | thread T3 · Fable 5.2 | pendente | — |
+| B1 | agente-concierge | Webhook falso (Worker próprio), construído e testado local; deploy em `dev` pela coordenadora | pré-voo | alta | 1 | subagente em worktree · DeepSeek | pendente | — |
+| B2 | agente-concierge | Harness HTTP e casos dev por bloco | — | alta | 2,5 | thread T3 · Gemini 4 Hydrogen | pendente | — |
+| C | agente-concierge | Conjunto reservado (fora do repo) | — | alta | 2 | thread T3, fica viva · GPT-6 Astra | pendente | — |
+| D | agente-concierge | Simulador de hóspede hostil | B2 (formato de caso) | média | 2,5 | thread T3 · Gemini 4 Hydrogen | pendente | — |
+| M1 | agente-concierge | Revisão curta do Marco 1 | A | alta | 0,5 | subagentes Opus 5.5 + conselho | pendente | — |
+| I | agente-concierge | Escolha do modelo por eval | A, B2 | alta | 1 | subagente em worktree · Opus 5.5 | pendente | — |
+| E | agente-concierge | Datas | Marco 1, L1, L1a, L1b, L2 | alta | 1,5 | subagente em worktree · Opus 5.5 | pendente | — |
+| F | agente-concierge | Lead robusto | Marco 1, L6, L7, L9, L10, L11, L20 | alta | 2,5 | thread T3 · Fable 5.2 | pendente | — |
+| G | agente-concierge | Robustez e handoff | Marco 1, L3, L4, L5, L12, L15, L16, L19, L21 | alta | 2,5 | thread T3 · Fable 5.2 | pendente | — |
+| H | agente-concierge | Concorrência endurecida e falha interna | Marco 1, L17, L17a, L18 | alta | 1 | subagente em worktree · Opus 5.5 | pendente | — |
+| J | agente-concierge | Página de chat | Marco 1 | baixa | 1 | subagente em worktree · DeepSeek | pendente | — |
+| M2 | agente-concierge | Revisão de código, segurança e segunda opinião | leva 2 integrada | alta | 1,5 | subagentes Opus 5.5 + conselho | pendente | — |
+| L | agente-concierge | Custo por conversa e monitor diário | leva 2 integrada | média | 1 | subagente em worktree · Opus 5.5 | pendente | — |
+| K | agente-concierge | Produção com o envio real desligado | M2 | alta | 1,5 | thread T3 · Opus 5.5 | pendente | — |
+| N | agente-concierge | Entregáveis de processo | K | alta | 2 | thread T3 · Opus 5.5 | pendente | — |
 | — | — | Correções entre leva 2 e 3 | evals | alta | 1,5 | frente dona do arquivo | — | — |
 
 Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `bloqueada` ·
@@ -74,12 +74,13 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
 
 | # | O quê | Quem | Por quê |
 |---|---|---|---|
-| 1 | Plano pago da Cloudflare, na conta pessoal (a mesma da zona do subdomínio de produção) | Éverton, assinando em 13/11 | o gratuito dá 10 ms de CPU por requisição e ~85 chamadas de modelo por dia; os evals estouram isso (`docs/VERIFICACOES.md` §3). A coordenadora confere antes dos evals em volume |
-| 2 | `AGENTE_URL_PRODUCAO` (o subdomínio do L23) no arquivo de ambiente | Éverton | o hostname não fica em arquivo versionado; sem ele a frente K não sai |
-| 3 | `CLOUDFLARE_ACCOUNT_ID` no arquivo de ambiente, derivado da zona do domínio do e-mail do autor (é a conta pessoal do Éverton), e a credencial de deploy por referência | coordenadora, antes de despachar A e B1 | o token cobre mais de uma conta; sem a conta o primeiro deploy de `dev` não sai |
-| 4 | Olhar no painel se o Bot Fight Mode da zona está ligado e dizer à coordenadora | Éverton | o token não lê essa configuração; ligado, ele bloqueia cliente automatizado no domínio inteiro e a decisão L23 (mexer só no hostname) não se sustenta sozinha |
-| 5 | Criar no painel a regra que desliga a checagem de integridade de navegador só para o hostname de produção, ou dar ao token permissão de regras de configuração | Éverton | o token provavelmente não cria essa regra; sem ela a frente K para de madrugada e produção não sobe sem ele |
+| 1 | Plano pago da Cloudflare, na conta pessoal (a mesma da zona do subdomínio de produção) | Éverton: **assinado em 13/11** | o gratuito dá 10 ms de CPU por requisição e ~85 chamadas de modelo por dia; os evals estouram isso (`docs/VERIFICACOES.md` §3). A coordenadora confere antes dos evals em volume |
+| 2 | `AGENTE_URL_PRODUCAO` (o subdomínio do L23) no arquivo de ambiente | Éverton: **ainda falta** (conferido em 13/11, 19h; trava só a frente K) | o hostname não fica em arquivo versionado; sem ele a frente K não sai |
+| 3 | `CLOUDFLARE_ACCOUNT_ID` no arquivo de ambiente, derivado da zona do domínio do e-mail do autor (é a conta pessoal do Éverton), e a credencial de deploy por referência | coordenadora: **feito em 13/11** (uma zona encontrada; o identificador e a chave da OpenAI também entraram nos termos extras do gate de sigilo) | o token cobre mais de uma conta; sem a conta o primeiro deploy de `dev` não sai |
+| 4 | Olhar no painel se o Bot Fight Mode da zona está ligado e dizer à coordenadora | Éverton: **sem resposta ainda** (trava só a frente K) | o token não lê essa configuração; ligado, ele bloqueia cliente automatizado no domínio inteiro e a decisão L23 (mexer só no hostname) não se sustenta sozinha |
+| 5 | Criar no painel a regra que desliga a checagem de integridade de navegador só para o hostname de produção, ou dar ao token permissão de regras de configuração | Éverton: **sem resposta ainda** (trava só a frente K) | o token provavelmente não cria essa regra; sem ela a frente K para de madrugada e produção não sobe sem ele |
 | 6 | Lacunas decididas no contrato (seção 10) | feito em 13/11; a L1a, a L1b e a L17a foram decididas na abertura da coordenação (valem os padrões que eram provisórios); nenhuma aberta | frente não implementa lacuna aberta |
+| 7 | Fichas do catálogo fora do repositório, sem URL nem token, para as frentes fora do Claude | coordenadora: **feito em 13/11** (`~/.local/share/agente-concierge/catalogo/fichas.json`) | essas frentes não recebem a URL do catálogo |
 
 ## Dono de arquivo (confere antes de cada leva)
 
@@ -89,10 +90,10 @@ mexer na configuração.
 
 | Caminho | Leva 1 | Leva 2 | Leva 3 |
 |---|---|---|---|
-| `package.json`, lockfile, `tsconfig.json`, `wrangler.jsonc`, config do vitest | A | — (pedido de dependência vai à coordenadora) | L (só `triggers`, se usar) |
+| `package.json`, lockfile, `tsconfig.json`, `wrangler.jsonc`, config do vitest | A | I, só no portão e só o que o modelo e o AI Gateway exigirem; depois, — (pedido de dependência vai à coordenadora) | L (só `triggers`, se usar) |
 | `src/index.ts` (rotas `/chat`, `/`, `/saude`) | A | H | — |
 | `src/sessao.ts` (Durable Object: fila, estado, histórico) | A | H | — |
-| `src/modelo.ts` (adaptador do modelo) | A | I (portão) | — |
+| `src/modelo.ts` (adaptador do modelo), `test/modelo*` | A | I (portão) | — |
 | `src/catalogo.ts` (cliente do catálogo) | A | G | — |
 | `src/agente/loop.ts`, `src/agente/prompt.ts` | A | G | — |
 | `src/agente/ferramentas/catalogo.ts`, `handoff.ts`, `index.ts` | A | G | — |
@@ -104,14 +105,15 @@ mexer na configuração.
 | `src/pagina.ts` | A (mínima) | J | — |
 | `test/**` | A | cada frente, só os testes dos seus arquivos | — |
 | `falso/**` | B1 | — | — |
-| `evals/rodar.mjs`, `evals/lib/**`, `evals/casos/dev/**`, `evals/README.md` | B2 | B2 recebe casos novos de D e de C | — |
-| `evals/simulador/**` | D | D | — |
+| `evals/rodar.mjs`, `evals/teste-do-runner.mjs`, `evals/lib/**`, `evals/casos/dev/**`, `evals/README.md` | B2 | B2 recebe casos novos de D e de C | — |
+| `evals/simulador/**` (casos fixos para o conjunto dev saem em `evals/simulador/para-dev/<bloco>/`; quem move é B2) | D | D | — |
 | `evals/relatorios/**` | coordenadora (frente gera, não commita) | coordenadora | coordenadora |
 | `~/.config/agente-concierge/reservado/**` (fora do repo) | C | C | entra no repo na entrega (N) |
 | `.github/workflows/**`, `scripts/custo*.mjs` | — | — | L |
 | `scripts/validar-producao.sh` | — | — | K |
-| `README.md`, `DECISOES.md`, `docs/desenhos/**`, `docs/sessoes/**` | — | — | N |
-| `docs/exploracoes/**`, `docs/prompts/**`, `CLAUDE.md` | coordenadora | coordenadora | coordenadora |
+| `README.md`, `DECISOES.md` (texto final; decisões novas a coordenadora registra a qualquer hora), `docs/desenhos/**`, `docs/sessoes/**`, `docs/setup/**` | — | — | N |
+| `docs/revisoes/modelos.md` | — | I (portão) | — |
+| `docs/exploracoes/**`, `docs/prompts/**`, `docs/revisoes/m1.md`, `docs/revisoes/m2.md`, `docs/conselho/**`, `docs/CONTRATO.md`, `docs/EVALS.md`, `CLAUDE.md`, `AGENTS.md` | coordenadora | coordenadora | coordenadora |
 
 As frentes de eval (B1, B2, C, D) **não tocam** `package.json` da raiz, lockfile,
 config de teste nem `wrangler.jsonc`. O harness é Node 24 sem dependências; o webhook
@@ -184,10 +186,41 @@ falso tem a própria pasta com a própria configuração.
 | Frentes rodam como | subagente em worktree (frente pequena) ou thread nova do T3 (frente longa), conforme o mapa |
 | Autonomia da coordenadora | segue sozinha, e para em: Marco 1 verde, lacuna nova ou critério impossível, hora de ligar o envio real, hora de tornar o repositório público |
 | Resumo | até 10 linhas para o Éverton no fim de cada leva |
-| Modelos | o mais forte disponível só na coordenadora e nas frentes A, C, F e G; modelo intermediário em B1, B2, D, I, E, H, J, L, K, N e nos subagentes de revisão e de verificação |
-| Deploy em `dev` | liberado para A e B1 na leva 1 e para a coordenadora, a partir da `main`, depois de cada merge |
+| Modelos | divididos por provedor: tabela "Modelos por provedor", abaixo (decisão do Éverton na abertura da coordenação; substitui a divisão anterior entre modelo mais forte e intermediário) |
+| Deploy em `dev` | liberado para A na leva 1 e para a coordenadora: o webhook falso depois do merge de B1 e o agente, a partir da `main`, depois de cada merge |
 | Deploy em `producao` | pode sair sem o Éverton, depois de M2, com `ENVIO_LEADS=desligado` (L24) |
 | Ligar o envio real e tornar o repositório público | só com ordem explícita do Éverton |
+
+**Modelos por provedor.** Quem escreve os evals e o conjunto reservado não é o provedor
+que escreve o agente.
+
+| Provedor e modelo no T3 Code | Quem roda |
+|---|---|
+| Claude Fable 5.2 (`claudeAgent`, `claude-fable-5-2`) | coordenadora, A, F e G |
+| Claude Opus 5.5 (`claudeAgent`, `claude-opus-5-5`) | E, H, I, K, L, N e os subagentes de revisão e de verificação |
+| Gemini 4 Hydrogen (`antigravity`, `gemini-4-hydrogen`) | B2 e D |
+| GPT-6 Astra (`codex`, `gpt-6-astra`) | C e o conselho; nada além disso (uso limitado) |
+| DeepSeek pago (`opencode`, `deepseek/deepseek-flash`) | B1 e J; nunca os modelos gratuitos do OpenCode |
+
+**Frente fora do Claude (B1, B2, C, D e J).**
+
+1. Lê o `AGENTS.md` da raiz, que traz as regras do `CLAUDE.md` (esses agentes não leem
+   o `CLAUDE.md`).
+2. Nunca abre nem carrega `~/.config/agente-concierge/env`, nunca toca `producao` e
+   nunca recebe o token nem a URL real. O gate de sigilo lê esse arquivo por dentro e
+   mostra só `arquivo:linha`; a frente roda o script como está.
+3. Dados do catálogo para casos e testes: `~/.local/share/agente-concierge/catalogo/fichas.json`
+   (10 cidades e 15 fichas lidas por GET em 13/11/2026, sem URL nem token).
+4. Consequência: B1 constrói e testa só local, e o deploy do webhook falso em `dev` com a
+   gravação de `LEADS_URL_DEV` passa para a coordenadora. D constrói contra um agente de
+   mentira local, e as rodadas ao vivo contra `dev` são rodadas pela coordenadora. Todo
+   CHECK que usa variável do arquivo de ambiente é rodado pela coordenadora.
+5. O relatório é conferido por um subagente verificador do Claude antes do merge, como o
+   de qualquer frente.
+6. Provedor falhou ou a cota acabou: a frente passa para o Gemini 4 Hydrogen, com registro
+   no log e aviso no resumo da leva.
+7. O rodapé do commit nomeia a ferramenta e o modelo que ajudaram de fato, no lugar de
+   "Claude Code". Autor e committer continuam os do repositório.
 
 **Orçamento de uso.** O limite semanal de uso do Éverton estava em 74% em 13/11, com o
 uso extra desligado. Por isso os modelos acima, e por isso: no máximo 5 frentes vivas,
@@ -317,11 +350,18 @@ formato de cada item são desconhecidos (contrato §5).
 - [ ] Modos de teste por cabeçalho ou token especial: forçar 500, forçar atraso,
       forçar 422. `DELETE` existe só no falso e limpa uma lista; no ambiente `dev`
       só a coordenadora usa, sem rodada em curso. O harness não depende dele.
-- [ ] Deploy e gravação de `LEADS_URL_DEV` no arquivo de ambiente.
+- [ ] Deploy e gravação de `LEADS_URL_DEV` no arquivo de ambiente: **pela coordenadora**,
+      depois do merge (a frente roda fora do Claude e não lê o arquivo de ambiente nem
+      a credencial de deploy). A frente entrega a configuração pronta para
+      `npx wrangler deploy` dentro de `falso/`, sem secret e sem identificador de conta
+      no arquivo, e com a flag `global_fetch_strictly_public`.
 
 ### Critérios de aceite
 1. POST válido devolve 201 e aparece no GET; POST sem campo devolve 422 e não aparece.
-   CHECK: `node falso/teste.mjs "$LEADS_URL_DEV"` (com o arquivo de ambiente carregado)
+   CHECK (frente): `node falso/teste.mjs http://127.0.0.1:<porta>/leads/<segmento>`, com
+   o servidor local de `falso/` no ar
+   CHECK (coordenadora, depois do deploy): `node falso/teste.mjs "$LEADS_URL_DEV"`, com o
+   arquivo de ambiente carregado
    ESPERA: `FALSO OK`
 2. Nada em `falso/` referencia a URL real.
    CHECK: `scripts/verificar-sigilo.sh`
@@ -384,10 +424,17 @@ Código de produto. `package.json` da raiz. Casos do conjunto reservado.
 
 ## Sessão D — Simulador de hóspede hostil
 
+A frente roda fora do Claude: constrói e testa contra um agente de mentira local. As
+rodadas ao vivo contra `dev` (critério 1) são rodadas pela coordenadora. O hóspede é
+feito por uma CLI local de outro provedor, chamada como subprocesso, com o modelo
+escolhido por opção de linha de comando; nunca o GPT (uso limitado) e nunca os modelos
+gratuitos do OpenCode.
+
 ### Tasks
 - [ ] `evals/simulador/`: um modelo de outro provedor faz o hóspede, por persona
       (`docs/EVALS.md`), contra `dev` apenas; juízes determinísticos do harness.
-- [ ] Cada falha vira um caso fixo, entregue a B2 para `evals/casos/dev/`.
+- [ ] Cada falha vira um caso fixo em `evals/simulador/para-dev/<bloco>/`, que B2 move
+      para `evals/casos/dev/`.
 - [ ] Pelo menos 10 casos de ataque fixos existem mesmo que o simulador seja cortado.
 
 ### Critérios de aceite
@@ -414,19 +461,38 @@ Candidatos e ressalvas em `docs/VERIFICACOES.md` §2. Modelos nativos que exigem
 pago têm 20 requisições por minuto; modelos de terceiros passam pelo AI Gateway e
 exigem chave.
 
+Acréscimo do Éverton (13/11, `DECISOES.md` X10): um dos três candidatos é um modelo da
+OpenAI. A chave está em `OPENAI_API_KEY`, no arquivo de ambiente: use por referência,
+nunca imprima, nunca em arquivo versionado. Como ela chega ao modelo (chave guardada no
+AI Gateway ou secret do Worker de `dev`) é escolha desta frente, lendo a documentação
+antes; a chave nunca vai para `producao` por esta frente.
+
 ### Tasks
-- [ ] Rodar o conjunto dev (nunca o reservado) com 3 candidatos, mesmo código.
+- [ ] Rodar o conjunto dev (nunca o reservado) com 3 candidatos, mesmo código. Um deles
+      é da OpenAI; os outros saem de `docs/VERIFICACOES.md` §2.
 - [ ] Medir por candidato: acerto por bloco, violações de regra, latência p95 e
       máxima, custo por conversa.
+- [ ] Medir por candidato 10 conversas simultâneas (sessões diferentes, sem
+      confirmação), contando os erros de limite de pedidos (429 e equivalentes) e as
+      respostas de contingência.
 - [ ] Escolher por confiabilidade de chamada de ferramenta primeiro; registrar em
       `docs/revisoes/modelos.md` e fixar `MODELO`.
+- [ ] Deixar um modelo reserva de **outro provedor** configurado no AI Gateway, que
+      assume quando o principal falha, e provar a troca com o principal forçado a
+      falhar.
 
 ### Critérios de aceite
 1. Tabela comparativa com os números medidos.
-   MANUAL: `docs/revisoes/modelos.md` com uma linha por candidato e a escolha
+   MANUAL: `docs/revisoes/modelos.md` com uma linha por candidato (um da OpenAI), a
+   coluna de erros de limite nas 10 conversas simultâneas e a escolha
 2. O escolhido passa o Marco 1.
    CHECK: critério de integração 1
    ESPERA: `BLOCO marco1: 100%`
+3. O modelo reserva responde quando o principal falha.
+   CHECK: `npm test -- modelo`
+   ESPERA: teste `reserva assume quando o principal falha` passando
+   MANUAL: `docs/revisoes/modelos.md` diz qual é o reserva, de qual provedor, e como a
+   troca foi provada em `dev`
 
 ## Sessão E — Datas
 
@@ -472,6 +538,14 @@ fora de escopo, verificação pós-resposta de que todo total citado saiu do có
    ESPERA: zero falhas
 2. CHECK: `node evals/rodar.mjs --alvo "$ALVO_LOCAL" --conjunto dev --bloco robustez-manipulacao --bloco robustez-handoff --bloco robustez-nao-inventa`
    ESPERA: os três blocos em 100%
+
+### Condicional: juiz de decisão (`DECISOES.md` X11)
+Só se, depois da leva 2 integrada, os evals de handoff (`robustez-handoff`) ou de
+confirmação (`funciona-leads`) seguirem falhando: esta frente avalia um modelo de decisão
+(Jev ou Clef) como segunda opinião nesses dois pontos, fora do caminho normal do pedido,
+lendo a documentação antes de escrever qualquer coisa. Quem abre essa tarefa é a
+coordenadora, com os números na mão. Se não entrar, a frente N registra em "o que faria
+com mais tempo".
 
 ## Sessão H — Concorrência endurecida e falha interna
 
@@ -565,7 +639,11 @@ configuração da zona. Tornar o repositório público.
 
 - [ ] `README.md`: como rodar, como testar, custo por conversa medido, limites.
 - [ ] `DECISOES.md` final: o que foi escolhido, o que ficou de fora, o que faria com
-      mais tempo.
+      mais tempo (inclui o juiz de decisão da X11, se não tiver entrado).
+- [ ] `docs/setup/`: cópia das skills, das regras e dos subagentes do ambiente global do
+      Éverton que **rodaram de fato** nesta entrega (a lista está no log deste backlog),
+      sem IP, nome de máquina nem dado de cliente. O enunciado pede para ver esse setup.
+      O gate de sigilo precisa passar com as cópias em stage.
 - [ ] Desenhos finais em `docs/desenhos/`, exports de sessão em `docs/sessoes/` (com
       dados pessoais e segredos removidos), roteiro do vídeo, reservado copiado para
       `evals/casos/reservado/`.
