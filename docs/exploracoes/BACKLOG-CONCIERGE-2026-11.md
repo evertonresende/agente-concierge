@@ -79,7 +79,7 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
 | 3 | `CLOUDFLARE_ACCOUNT_ID` no arquivo de ambiente, derivado da zona do domínio do e-mail do autor (é a conta pessoal do Éverton), e a credencial de deploy por referência | coordenadora, antes de despachar A e B1 | o token cobre mais de uma conta; sem a conta o primeiro deploy de `dev` não sai |
 | 4 | Olhar no painel se o Bot Fight Mode da zona está ligado e dizer à coordenadora | Éverton | o token não lê essa configuração; ligado, ele bloqueia cliente automatizado no domínio inteiro e a decisão L23 (mexer só no hostname) não se sustenta sozinha |
 | 5 | Criar no painel a regra que desliga a checagem de integridade de navegador só para o hostname de produção, ou dar ao token permissão de regras de configuração | Éverton | o token provavelmente não cria essa regra; sem ela a frente K para de madrugada e produção não sobe sem ele |
-| 6 | Lacunas decididas no contrato (seção 10) | feito em 13/11; seguem abertas a L1a, a L1b e a L17a (as duas últimas com padrão provisório) | frente não implementa lacuna aberta |
+| 6 | Lacunas decididas no contrato (seção 10) | feito em 13/11; a L1a, a L1b e a L17a foram decididas na abertura da coordenação (valem os padrões que eram provisórios); nenhuma aberta | frente não implementa lacuna aberta |
 
 ## Dono de arquivo (confere antes de cada leva)
 
@@ -433,7 +433,9 @@ exigem chave.
 Implementa em `src/nucleo/datas.ts` e `ferramentas/cotacao.ts` as regras L1 e L2 do
 contrato e a decisão fechada: data sem ano é a próxima ocorrência, e a resposta repete
 a data completa com dia da semana. Com entrada e saída determinadas, a cotação sai na
-mesma resposta. A L1a ("fim de semana" sem datas) está aberta: não mapeie a expressão.
+mesma resposta. L1a: "fim de semana" sem datas não é mapeado; o agente pede entrada e
+saída. L1b: dia da semana sem data ("sexta que vem") é a próxima ocorrência daquele dia,
+com a data exata declarada na resposta.
 
 ### Critérios de aceite
 1. Tabela de datas (sem ano, virada de ano, 29/02, relativa, passada) resolvida em

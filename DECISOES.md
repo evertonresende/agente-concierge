@@ -81,13 +81,17 @@ planejamento, e o motivo é o da recomendação.
 | L23 | Produção em subdomínio próprio, com a checagem de integridade de navegador desligada só para esse hostname; conferir o Bot Fight Mode da zona; testar com clientes Python | o endereço padrão da plataforma bloqueia, antes do Worker e sem log, clientes como o padrão do Python | recomendação aceita; o Éverton acrescentou o escopo da regra e as conferências. Não foi ao conselho |
 | L24 | `producao` nasce com o envio real desligado; ligar é só com ordem do Éverton, e a validação de entrega reprova se estiver desligado | torna impossível um lead real por engano antes da entrega | recomendação aceita. Não foi ao conselho |
 
-### Ainda aberta
+### Decididas na abertura da coordenação
 
-| ID | Pergunta | Enquanto isso |
+Estas três ficaram abertas na rodada acima, duas delas com padrão provisório. Em
+13/11/2026, ao abrir a coordenação, o Éverton ficou com os três padrões. Ele não disse
+o motivo; a coluna "Motivo" é leitura da coordenação. Nenhuma lacuna segue aberta.
+
+| ID | Decisão | Motivo (inferido) |
 |---|---|---|
-| L1a | "Fim de semana" sem datas é sexta a domingo ou sábado a domingo? | o código não mapeia a expressão e o agente pede entrada e saída |
-| L1b | Dia da semana sem data ("sexta que vem") vale como a próxima ocorrência? | padrão provisório: sim, com a data exata declarada na resposta |
-| L17a | Campo presente que não é texto, e `session_id` vazio | padrão provisório: campo que não é texto devolve 400; `session_id` vazio devolve 200 |
+| L1a | "Fim de semana" sem datas: o código não mapeia a expressão e o agente pede entrada e saída | o enunciado não dá a convenção (sexta a domingo ou sábado a domingo); perguntar custa um turno e não cota a estadia errada |
+| L1b | Dia da semana sem data ("sexta que vem"): próxima ocorrência daquele dia, com a data exata declarada na resposta | mesmo critério da data sem ano (decisão 9); a data declarada deixa o hóspede corrigir |
+| L17a | Campo presente que não é texto devolve 400; `session_id` vazio devolve 200, como uma sessão qualquer | número ou objeto no lugar de texto é corpo malformado; texto vazio ainda é texto, e a L17 manda responder 200 a todo corpo bem formado |
 
 ## Decisões de execução (13/11/2026)
 
