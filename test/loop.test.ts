@@ -46,6 +46,13 @@ describe("loop de ferramentas", () => {
     expect(saida.reply).toContain("As datas são 15/01/2027 a 18/01/2027.");
   });
 
+  it("linha com rótulo e valor errado sai inteira, sem deixar o rótulo solto", async () => {
+    const { turno } = montar();
+    const { modelo } = roteiro(pedeFerramentas(chamar("cotar", ESTADIA)), diz("Entrada: sexta-feira, 15/01/2027.\nTotal: R$ 2.000,00\nPosso ajudar em mais algo?"));
+    const saida = await turno(1, "quanto fica?", modelo);
+    expect(saida.reply).toBe("Entrada: sexta-feira, 15/01/2027.\nPosso ajudar em mais algo?\n\nTotal da estadia: R$ 2.156,00");
+  });
+
   it("total esquecido pelo modelo é acrescentado pelo código", async () => {
     const { turno } = montar();
     const saida = await turno(1, "quanto fica?", roteiro(pedeFerramentas(chamar("cotar", ESTADIA)), diz("Segue a cotação.")).modelo);

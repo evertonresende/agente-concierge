@@ -96,7 +96,7 @@ export function corrigirValores(texto: string, permitidos: Set<string>): string 
     if (digitos.endsWith("00")) porDigitos.set(digitos.slice(0, -2), valor);
   }
   // Frases e os separadores entre elas, para devolver o texto com a mesma forma.
-  const partes = texto.split(/((?<=[.!?:;])[ \t]+|\n)/);
+  const partes = texto.split(/((?<=[.!?])[ \t]+|\n)/);
   let saida = "";
   for (let i = 0; i < partes.length; i += 2) {
     let inventado = false;
