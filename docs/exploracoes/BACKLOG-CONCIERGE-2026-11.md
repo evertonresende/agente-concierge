@@ -53,13 +53,13 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 | D | agente-concierge | Simulador de hóspede hostil | B2 (formato de caso) | média | 2,5 | thread T3 · Gemini 4 Hydrogen | rodando (entregou; trocando o juiz de preço pelo da B2) | `frente-d` |
 | M1 | agente-concierge | Revisão curta do Marco 1 | A | alta | 0,5 | subagentes Opus 5.5 + conselho | pendente | — |
 | I | agente-concierge | Escolha do modelo por eval | A, B2 | alta | 1 | subagente em worktree · Opus 5.5 | pendente | — |
-| E | agente-concierge | Datas | Marco 1, L1, L1a, L1b, L2 | alta | 1,5 | subagente em worktree · Opus 5.5 | pendente | — |
-| F | agente-concierge | Lead robusto | Marco 1, L6, L7, L9, L10, L11, L20 | alta | 2,5 | thread T3 · Fable 5.2 | pendente | — |
-| G | agente-concierge | Robustez e handoff | Marco 1, L3, L4, L5, L12, L15, L16, L19, L21 | alta | 2,5 | thread T3 · Fable 5.2 | pendente | — |
-| H | agente-concierge | Concorrência endurecida e falha interna | Marco 1, L17, L17a, L18 | alta | 1 | subagente em worktree · Opus 5.5 | pendente | — |
-| J | agente-concierge | Página de chat em dois passos: design (canvas) e implementação | passo 1: nada; passo 2: Marco 1 e aprovação do Éverton | baixa | 0,7 + 1 | thread T3 · Fable 5.2 | rodando (passo 1) | `frente-j` |
+| E | agente-concierge | Datas | Marco 1, L1, L1a, L1b, L2 | alta | 1,5 | subagente em worktree · Gemini 4 Hydrogen | pendente | — |
+| F | agente-concierge | Lead robusto | Marco 1, L6, L7, L9, L10, L11, L15 (textos fixos), L20 | alta | 2,5 | thread T3 · Fable 5.2 | pendente | — |
+| G | agente-concierge | Robustez e handoff | Marco 1, L3, L4, L5, L5a, L12, L13a, L15, L16, L16a, L19, L21 | alta | 2,5 | thread T3 · Fable 5.2 | pendente | — |
+| H | agente-concierge | Concorrência endurecida e falha interna | Marco 1, L17, L17a, L18 | alta | 1 | subagente em worktree · Gemini 4 Hydrogen | pendente | — |
+| J | agente-concierge | Página de chat em dois passos: design (canvas) e implementação | passo 1: nada; passo 2: Marco 1 e aprovação do Éverton | baixa | 0,7 + 1 | thread T3 · Fable 5.2 | passo 1 concluído (canvas aprovado pelo Éverton, com dois ajustes); passo 2 espera o Marco 1 | `frente-j` |
 | M2 | agente-concierge | Revisão de código, segurança e segunda opinião | leva 2 integrada | alta | 1,5 | subagentes Opus 5.5 + conselho | pendente | — |
-| L | agente-concierge | Custo por conversa e monitor diário | leva 2 integrada | média | 1 | subagente em worktree · Opus 5.5 | pendente | — |
+| L | agente-concierge | Custo por conversa e monitor diário | leva 2 integrada | média | 1 | subagente em worktree · Gemini 4 Hydrogen | pendente | — |
 | K | agente-concierge | Produção com o envio real desligado | M2 | alta | 1,5 | thread T3 · Opus 5.5 | pendente | — |
 | N | agente-concierge | Entregáveis de processo | K | alta | 2 | thread T3 · Opus 5.5 | pendente | — |
 | — | — | Correções entre leva 2 e 3 | evals | alta | 1,5 | frente dona do arquivo | — | — |
@@ -113,6 +113,18 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   implementa comportamento novo
 - 13/11 16h47 · C · avisada das classes de defeito de expectativa, sem ver caso nenhum
 
+- 13/11 17h13 · J · passo 1 concluído: canvas aprovado pelo Éverton na thread da frente
+  (mensagem dele conferida), com dois ajustes para a implementação · 2fbc375
+- 13/11 17h13 · A · entregue (12 commits até aca6c7a). Coordenadora reproduziu os quatro
+  CHECK e 109 testes; `/saude` em `dev` correto; bloco `marco1` a 100% e `EVAL OK` com o
+  runner corrigido da B2 (provisório: agente publicado a partir da branch); 1 lead de 7
+  campos conferido por GET. Verificador (Opus) lendo o diff antes do merge
+- 13/11 17h13 · M1 · conselho consultado às cegas (Gemini e GPT); respostas inteiras em
+  `docs/conselho/` · 1098d2e
+- 13/11 17h13 · **decisões do Éverton**: L5a, L13a e L16a (as três lacunas de `handoff`), L15
+  com textos fixos em português e inglês, L10 com o último resumo mostrado; E, H e L
+  passam para o Gemini 4 Hydrogen (X14). Bot Fight Mode segue sem resposta
+
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
   (frente J, passo 1).
@@ -128,8 +140,8 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
 | 1 | Plano pago da Cloudflare, na conta pessoal (a mesma da zona do subdomínio de produção) | Éverton: **assinado em 13/11** | o gratuito dá 10 ms de CPU por requisição e ~85 chamadas de modelo por dia; os evals estouram isso (`docs/VERIFICACOES.md` §3). A coordenadora confere antes dos evals em volume |
 | 2 | `AGENTE_URL_PRODUCAO` (o subdomínio do L23) no arquivo de ambiente | Éverton: **feito em 13/11** (presença conferida, valor não lido) | o hostname não fica em arquivo versionado; sem ele a frente K não sai |
 | 3 | `CLOUDFLARE_ACCOUNT_ID` no arquivo de ambiente, derivado da zona do domínio do e-mail do autor (é a conta pessoal do Éverton), e a credencial de deploy por referência | coordenadora: **feito em 13/11** (uma zona encontrada; o identificador e a chave da OpenAI também entraram nos termos extras do gate de sigilo) | o token cobre mais de uma conta; sem a conta o primeiro deploy de `dev` não sai |
-| 4 | Olhar no painel se o Bot Fight Mode da zona está ligado e dizer à coordenadora | Éverton: **resposta ambígua, perguntado de novo** (trava só a frente K) | o token não lê essa configuração; ligado, ele bloqueia cliente automatizado no domínio inteiro e a decisão L23 (mexer só no hostname) não se sustenta sozinha |
-| 5 | Criar no painel a regra que desliga a checagem de integridade de navegador só para o hostname de produção, ou dar ao token permissão de regras de configuração | Éverton: **criada, segundo ele** (a frente K confere lendo as regras da zona) | o token provavelmente não cria essa regra; sem ela a frente K para de madrugada e produção não sobe sem ele |
+| 4 | Olhar no painel se o Bot Fight Mode da zona está ligado e dizer à coordenadora | Éverton: **sem resposta** (o campo voltou em branco três vezes); a frente K descobre pelo teste com os quatro clientes | o token não lê essa configuração; ligado, ele bloqueia cliente automatizado no domínio inteiro e a decisão L23 (mexer só no hostname) não se sustenta sozinha |
+| 5 | Criar no painel a regra que desliga a checagem de integridade de navegador só para o hostname de produção, ou dar ao token permissão de regras de configuração | Éverton: **criada** (dito por ele em 13/11; a frente K confere lendo as regras da zona) | o token provavelmente não cria essa regra; sem ela a frente K para de madrugada e produção não sobe sem ele |
 | 6 | Lacunas decididas no contrato (seção 10) | feito em 13/11; a L1a, a L1b e a L17a foram decididas na abertura da coordenação (valem os padrões que eram provisórios); nenhuma aberta | frente não implementa lacuna aberta |
 | 7 | Fichas do catálogo fora do repositório, sem URL nem token, para as frentes fora do Claude | coordenadora: **feito em 13/11** (`~/.local/share/agente-concierge/catalogo/fichas.json`) | essas frentes não recebem a URL do catálogo |
 
@@ -249,12 +261,12 @@ que escreve o agente.
 | Provedor e modelo no T3 Code | Quem roda |
 |---|---|
 | Claude Fable 5.2 (`claudeAgent`, `claude-fable-5-2`) | coordenadora, A, F, G e J |
-| Claude Opus 5.5 (`claudeAgent`, `claude-opus-5-5`) | E, H, I, K, L, N e os subagentes de revisão e de verificação |
-| Gemini 4 Hydrogen (`antigravity`, `gemini-4-hydrogen`) | B2 e D |
+| Claude Opus 5.5 (`claudeAgent`, `claude-opus-5-5`) | I, K, N e os subagentes de revisão e de verificação |
+| Gemini 4 Hydrogen (`antigravity`, `gemini-4-hydrogen`) | B2, D e, desde a leva 2, E, H e L (`DECISOES.md` X14: o limite semanal do Claude chegou a 79%) |
 | GPT-6 Astra (`codex`, `gpt-6-astra`) | C e o conselho; nada além disso (uso limitado) |
 | DeepSeek pago (`opencode`, `deepseek/deepseek-flash`) | B1; nunca os modelos gratuitos do OpenCode |
 
-**Frente fora do Claude (B1, B2, C e D).**
+**Frente fora do Claude (B1, B2, C, D, E, H e L).**
 
 1. Lê o `AGENTS.md` da raiz, que traz as regras do `CLAUDE.md` (esses agentes não leem
    o `CLAUDE.md`).
@@ -263,7 +275,10 @@ que escreve o agente.
    mostra só `arquivo:linha`; a frente roda o script como está.
 3. Dados do catálogo para casos e testes: `~/.local/share/agente-concierge/catalogo/fichas.json`
    (10 cidades e 15 fichas lidas por GET em 13/11/2026, sem URL nem token).
-4. Consequência: B1 constrói e testa só local, e o deploy do webhook falso em `dev` com a
+4. Consequência para E e H: desenvolvem com `npm test` (testes com modelo e catálogo de
+   mentira). O CHECK contra `$ALVO_LOCAL` é rodado pela coordenadora na worktree da
+   frente, porque o servidor local precisa do arquivo de ambiente e da credencial do
+   modelo. Para as demais: B1 constrói e testa só local, e o deploy do webhook falso em `dev` com a
    gravação de `LEADS_URL_DEV` passa para a coordenadora. D constrói contra um agente de
    mentira local, e as rodadas ao vivo contra `dev` são rodadas pela coordenadora. Todo
    CHECK que usa variável do arquivo de ambiente é rodado pela coordenadora.
@@ -569,6 +584,13 @@ Implementa L6, L7, L9, L10, L11 e L20 em `src/lead.ts`, `ferramentas/lead.ts` e
 `src/nucleo/telefone.ts`: validação e formato do telefone, segunda reserva, repetição,
 mudança depois do resumo, falhas do webhook, estado `enviando` persistido antes do POST.
 
+Acréscimos decididos durante a leva 1 (contrato, seção 10): L15, o resumo, o resultado da
+confirmação e o aviso de falha são textos fixos gerados por código, em português e em
+inglês, escolhidos pelo idioma do hóspede, e o modelo nunca reescreve o resumo (se o
+tempo apertar, fica só o português e a coordenadora registra); L10, vale sempre o último
+resumo mostrado. Os achados da revisão do Marco 1 que são desta frente estão em
+`docs/revisoes/m1.md`.
+
 ### Critérios de aceite
 1. Matriz de estados do lead, incluindo webhook em 422, 500 e atraso (modos do falso).
    CHECK: `npm test -- lead telefone`
@@ -582,6 +604,12 @@ Implementa L3, L4, L5, L12, L15, L16, L19 e L21 em `prompt.ts`, `loop.ts`,
 `ferramentas/handoff.ts`, `ferramentas/catalogo.ts` e `catalogo.ts`: matriz de handoff,
 "não sei" sem invenção, texto do catálogo como dado (delimitado e nunca obedecido),
 fora de escopo, verificação pós-resposta de que todo total citado saiu do código.
+
+Acréscimos decididos durante a leva 1 (contrato, seção 10): L5a (cupom ou promoção:
+`handoff: true`), L16a (manipulação que pede desconto: `handoff: true`; só ignorar regras
+ou trocar de papel: `false`) e L13a (pedido para contar menos hóspedes: recusa e explica
+na primeira vez, `handoff: true` se insistir). Os achados da revisão do Marco 1 que são
+desta frente estão em `docs/revisoes/m1.md`.
 
 ### Critérios de aceite
 1. Catálogo falso de teste com instrução embutida na descrição não muda preço nem
