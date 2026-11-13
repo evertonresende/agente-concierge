@@ -1,0 +1,33 @@
+{
+  "id": "lead-09-webhook-falha",
+  "bloco": "funciona-leads",
+  "confirma": true,
+  "webhook_modo": {
+    "modo": "500",
+    "validade_s": 120
+  },
+  "turnos": [
+    {
+      "mensagem": "Quero fechar o GRM-301 de 15/01/2027 a 18/01/2027 para 2 pessoas. Sou {{nome}}, telefone {{telefone}}.",
+      "espera": {
+        "handoff": false,
+        "leads_ate_agora": 0,
+        "resposta_contem": ["R\\$ 2\\.156,00"],
+        "estadia": { "imovel_id": "GRM-301", "checkin": "2027-01-15", "checkout": "2027-01-18", "hospedes": 2 }
+      }
+    },
+    {
+      "mensagem": "Sim, confirmo.",
+      "espera": {
+        "handoff": true,
+        "resposta_contem": [
+          "n[aã]o\\s+(?:consegui|foi\\s+poss[ií]vel|pudemos|deu\\s+para|houve\\s+como)|erro|falha|indispon[ií]vel|problema"
+        ],
+        "resposta_nao_contem": [
+          "registrad[oa]\\s+com\\s+sucesso|pedido\\s+foi\\s+registrad[oa]|reserva\\s+foi\\s+registrad[oa]|enviad[oa]\\s+com\\s+sucesso"
+        ]
+      }
+    }
+  ],
+  "leads_esperados": []
+}
