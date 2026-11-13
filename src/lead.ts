@@ -9,9 +9,10 @@
 //   5. quem reconhece o sim é o código, lendo a mensagem do hóspede (L9): o modelo só
 //      pede a confirmação, e ela vale no turno seguinte a um resumo ou a um pedido de
 //      confirmação que saíram do código.
-import type { DataISO } from "./nucleo/datas";
+import { type DataISO, diasEntre, interpretarData } from "./nucleo/datas";
 import { centavosParaReais, formatarReais } from "./nucleo/dinheiro";
 import type { Cotacao } from "./nucleo/preco";
+import { normalizarTelefone } from "./nucleo/telefone";
 
 export interface Reserva {
   imovel_id: string;
@@ -126,41 +127,83 @@ const FRACA = /^(?:(?:ok|okay|ta bom|ta|beleza|blz|bom|legal|show|joia|fine|alri
 const AFIRMA = "s+i+m+|s|ss|si|yes|yep|yeah|yup|isso(?: mesmo)?|exato|exatamente|corret[oa]|certo|certinho|perfeito|claro|com certeza"
   + "|positivo|fechado|combinado|(?:esta |ta )?tudo (?:certo|correto)|esta (?:certo|correto)|correct|thats? (?:s )?(?:right|correct)"
   + "|sure|absolutely|definitely|(?:it )?(?:looks|sounds) good|all good|go ahead|proceed|please do";
-// 2. "Confirmo", que pode dizer o que confirma: o resumo, a reserva, os dados, e o imóvel
-//    ou o total do próprio resumo (trocados antes por `oimovel` e `ototal`).
+// 2. "Confirmo", que pode dizer o que confirma: o resumo, a reserva, os dados.
 const CONFIRMA = "(?:(?:eu )?confirm(?:o|ado|ada|ar)|i confirm|confirm(?:ed)?)"
   + "(?: (?:o |esse |este |the |this |that |my )?(?:resumo|pedido|summary|request|booking|reservation)"
   + "| (?:a |essa |esta )?(?:segunda |nova |outra )?reserva| (?:the |this |that )?second (?:booking|reservation|request)"
   + "| (?:os |esses |the )?(?:dados|details)| tudo| it| everything"
-  + "| com (?:as |os )?(?:novas |novos )?(?:datas|dados)| with the new (?:dates|details)"
-  + "| (?:o |a |the )?(?:imovel |reserva d[oe] |property )?oimovel"
-  + "| (?:por |pelo |no |os |o |for |at |the )?(?:valor de |total de |total of )?ototal){0,2}"
+  + "| com (?:as |os )?(?:novas |novos )?(?:datas|dados)| with the new (?:dates|details))?"
   + "(?: de novo| novamente| again)?";
 // 3. "Pode", sozinho ou com o verbo de enviar. O objeto só pode ser o pedido.
 const PODE = "(?:pode(?: sim)?(?: (?:fechar|enviar|mandar|confirmar|registrar|reservar|prosseguir|seguir))?|send it|book it)"
   + "(?: (?:o|esse|este) pedido| (?:a|essa|esta) reserva| the (?:request|booking))?";
+// 4. Dados do próprio resumo repetidos pelo hóspede. Só chegam aqui como marca os que o
+//    código conferiu e são iguais aos do resumo (ver `marcarDadosIguais`).
+const MARCA = "oimovel|ototal|asdatas|oshospedes|asnoites|onome|otelefone";
+const LIGA = "de|do|da|no|na|em|para|pra|pro|com|por|pelo|e|o|a|os|as|sou|of|for|at|in|with|on|and|the"
+  + "|imovel|property|valor|total|nome|telefone|name|phone|datas|dates";
+const DADOS = `(?: (?:(?:${LIGA}) ){0,3}(?:${MARCA}))*`;
 const CORTESIA = "por favor|pfv|obrigad[oa]|obg|valeu|please|thanks|thank you|tambem|definitivamente|agora|ja|mesmo|entao|too|also|now|ok|okay";
-const FRASE = `(?:${AFIRMA}|${CONFIRMA}|${PODE})`;
-const SIM = new RegExp(`^(?:(?:ok|okay|entao|bom|ah) )*${FRASE}(?: (?:${FRASE}|${CORTESIA}))*$`);
+const AFIRMA_OU_CONFIRMA = `(?:${AFIRMA}|${CONFIRMA})`;
+const FRASE = `(?:${AFIRMA_OU_CONFIRMA}|${PODE})${DADOS}`;
+const INICIO = "(?:(?:ok|okay|entao|bom|ah) )*";
+const SIM = new RegExp(`^${INICIO}${FRASE}(?: (?:${FRASE}|${CORTESIA}))*$`);
+const COMECA_AFIRMANDO = new RegExp(`^${INICIO}${AFIRMA_OU_CONFIRMA}(?: |$)`);
+// Frase com "?" que é só um pedido educado de envio ("pode fechar a reserva, por favor?").
+const PEDIDO_DE_ENVIO = new RegExp(`^(?:${AFIRMA_OU_CONFIRMA}${DADOS} )*${PODE}${DADOS}(?: (?:${CORTESIA}))*$`);
 
 function semAcento(texto: string): string {
   return texto.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 }
 
+const semPontuacao = (texto: string) => texto.replace(/[^a-z0-9]+/g, " ").trim();
+const DATA = "(\\d{1,2}/\\d{1,2}(?:/\\d{2,4})?|\\d{4}-\\d{2}-\\d{2})";
+const PAR_DE_DATAS = new RegExp(
+  `(?:\\b(?:de|do dia|dia|from|entre|between)\\s+)?${DATA}\\s*(?:ate o dia|ao dia|ate|ao|a|to|until|through|and|e|-)\\s*(?:o dia\\s+|dia\\s+)?${DATA}`,
+  "g",
+);
+
+/**
+ * Troca por marcas os dados que o hóspede repete na mensagem e que o código conferiu
+ * serem iguais aos do resumo: imóvel, total, par de datas, hóspedes, noites, nome e
+ * telefone. Dado diferente, ou que não dá para comparar com certeza (data sozinha, sem
+ * ano ou por extenso; número sem unidade), fica como está, e a gramática do sim não
+ * aceita o que sobrou. Repetir o resumo confirma; mudar um dado, não (L9, L10).
+ */
+function marcarDadosIguais(texto: string, pendente: Pendente): string {
+  const r = pendente.reserva;
+  const nome = semAcento(r.nome).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return texto
+    .replaceAll(semAcento(r.imovel_id), " oimovel ")
+    .replaceAll(semAcento(formatarReais(pendente.totalCentavos)), " ototal ")
+    .replace(PAR_DE_DATAS, (trecho, entrada: string, saida: string) =>
+      (interpretarData(entrada) === r.checkin && interpretarData(saida) === r.checkout ? " asdatas " : trecho))
+    .replace(new RegExp(`(?<![a-z0-9])${nome}(?![a-z0-9])`, "g"), " onome ")
+    .replace(/\+?\d[\d\s().-]{6,}\d/g, (trecho) => (normalizarTelefone(trecho) === normalizarTelefone(r.telefone) ? " otelefone " : trecho))
+    .replace(/(\d+)\s*(?:hospedes?|pessoas?|adultos?|guests?|people|persons?)\b/g, (trecho, n: string) =>
+      (Number(n) === r.hospedes ? " oshospedes " : trecho))
+    .replace(/(\d+)\s*(?:noites?|nights?|diarias?)\b/g, (trecho, n: string) =>
+      (Number(n) === diasEntre(r.checkin, r.checkout) ? " asnoites " : trecho));
+}
+
 /**
  * Lê a mensagem do hóspede diante do resumo pendente. Recusa por padrão: só é "sim" a
- * mensagem feita inteira de frases de afirmação conhecidas. Dígito, palavra ou combinação
- * fora da gramática, pergunta, hesitação ou condição: não é sim. O id do imóvel e o total
- * do próprio resumo podem ser repetidos ("confirmo o GRM-301"); os de outro, não. Lead
- * enviado não se desfaz, então na dúvida a resposta é "não confirmou".
+ * mensagem feita inteira de frases de afirmação conhecidas, que podem repetir dados
+ * iguais aos do resumo. Dado diferente, dígito que sobrou, palavra ou combinação fora da
+ * gramática, pergunta, hesitação ou condição: não é sim. Lead enviado não se desfaz,
+ * então na dúvida a resposta é "não confirmou".
  */
 export function lerConfirmacao(mensagem: string, pendente: Pendente): Leitura {
-  const texto = semAcento(mensagem)
-    .replaceAll(semAcento(pendente.reserva.imovel_id), " oimovel ")
-    .replaceAll(semAcento(formatarReais(pendente.totalCentavos)), " ototal ");
+  const texto = marcarDadosIguais(semAcento(mensagem), pendente);
   if (PRECO.test(texto)) return "condicao_de_preco";
-  if (texto.includes("?")) return /\d/.test(texto) ? "outra" : "pergunta";
-  const limpo = texto.replace(/[^a-z0-9]+/g, " ").trim();
+  const limpo = semPontuacao(texto);
+  if (texto.includes("?")) {
+    // "Sim, confirmo! Pode fechar a reserva, por favor?" é um sim com pedido educado;
+    // qualquer outra pergunta ("sim, e tem wifi?", "pode fechar?", "sim?") não confirma.
+    const perguntas = (texto.match(/[^.!?]*\?/g) ?? []).map(semPontuacao);
+    const pedidoEducado = COMECA_AFIRMANDO.test(limpo) && perguntas.every((p) => PEDIDO_DE_ENVIO.test(p));
+    if (!pedidoEducado) return /\d/.test(texto) ? "outra" : "pergunta";
+  }
   if (HESITA.test(limpo) || FRACA.test(limpo)) return "hesitacao";
   return SIM.test(limpo) ? "sim" : "outra";
 }

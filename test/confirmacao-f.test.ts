@@ -149,6 +149,7 @@ describe("leitura da mensagem diante do resumo pendente", () => {
     ["Ah, antes de confirmar, qual é o bairro desse imóvel mesmo?", "pergunta"],
     ["sim?", "pergunta"],
     ["pode fechar?", "pergunta"],
+    ["confirmado?", "pergunta"],
     ["posso mudar para 3 pessoas?", "outra"],
     ["sim, mas somos 3", "outra"],
     ["sim, mas muda a saída para 19/01/2027", "outra"],
@@ -189,6 +190,56 @@ describe("leitura da mensagem diante do resumo pendente", () => {
   for (const [mensagem, esperado] of naoSao) {
     it(`não é sim (${esperado}): "${mensagem}"`, () => expect(lerConfirmacao(mensagem, GRM301)).toBe(esperado));
   }
+
+  describe("dados repetidos na confirmação (L9, L10): iguais aos do resumo confirmam, diferentes não", () => {
+    const sao501: Pendente = {
+      reserva: { imovel_id: "SAO-501", checkin: "2027-01-15", checkout: "2027-01-17", hospedes: 3, nome: "Ana Lima", telefone: "(11) 98888-0000" },
+      totalCentavos: 72000,
+      turno: 2,
+    };
+    for (const mensagem of [
+      "Sim, confirmo! Pode fechar a reserva do SAO-501 de 15/01/2027 a 17/01/2027 agora mesmo, por favor?",
+      "Sim, confirmo essa reserva de 15/01/2027 a 17/01/2027 para 3 hóspedes no imóvel SAO-501.",
+      "Sim, para 3 pessoas",
+      "Sim, confirmo: 2 noites, 3 pessoas, R$ 720,00",
+      "Confirmo a reserva de 2027-01-15 a 2027-01-17",
+      "Sim, confirmo, sou Ana Lima, telefone 11 98888-0000",
+      "Sim, confirmo o telefone +55 (11) 98888-0000",
+      "Sim. Pode fechar?",
+      "Yes, I confirm the booking for 3 guests from 15/01/2027 to 17/01/2027",
+    ]) {
+      it(`confirma: "${mensagem}"`, () => expect(lerConfirmacao(mensagem, sao501)).toBe("sim"));
+    }
+
+    const naoConfirmam: [string, string][] = [
+      ["Sim, mas de 18 a 20", "outra"],
+      ["Sim, para 2 pessoas", "outra"],
+      ["Sim, confirmo de 15/01/2027 a 18/01/2027", "outra"],
+      ["Sim, confirmo de 16/01/2027 a 17/01/2027", "outra"],
+      ["Sim, confirmo de 17/01/2027 a 15/01/2027", "outra"],
+      // Não dá para comparar com certeza: data sozinha, sem ano, por extenso; número sem unidade ou por extenso.
+      ["Sim, confirmo a entrada em 15/01/2027", "outra"],
+      ["Sim, confirmo de 15/01 a 17/01", "outra"],
+      ["Sim, de 15 a 17 de janeiro", "outra"],
+      ["Sim, somos 3", "outra"],
+      ["Sim, para três pessoas", "outra"],
+      ["Sim, 3 pessoas e 1 bebê", "outra"],
+      ["Sim, confirmo 3 noites", "outra"],
+      ["Sim, confirmo o GRM-301 de 15/01/2027 a 17/01/2027", "outra"],
+      ["Sim, confirmo, sou Ana Maria Lima", "outra"],
+      ["Sim, confirmo o telefone (21) 97777-0000", "outra"],
+      ["Sim, confirmo de 15/01/2027 a 17/01/2027, mas para 2 pessoas", "outra"],
+      ["Sim, confirmo, e tem wifi?", "pergunta"],
+      ["Sim, confirmo! Tem wifi?", "pergunta"],
+      ["Pode fechar a reserva do SAO-501 de 15/01/2027 a 17/01/2027?", "pergunta"],
+      ["Sim, confirmo de 15/01/2027 a 17/01/2027. Dá para entrar mais cedo?", "pergunta"],
+      ["Sim, confirmo! Pode fechar a reserva do SAO-501 de 15/01/2027 a 18/01/2027, por favor?", "outra"],
+      ["Sim, confirmo por R$ 700,00", "condicao_de_preco"],
+    ];
+    for (const [mensagem, esperado] of naoConfirmam) {
+      it(`não confirma (${esperado}): "${mensagem}"`, () => expect(lerConfirmacao(mensagem, sao501)).toBe(esperado));
+    }
+  });
 
   it("o id do imóvel só é aceito se for o do resumo pendente", () => {
     expect(lerConfirmacao("Sim, confirmo o GRM-302.", pendente("GRM-302"))).toBe("sim");
