@@ -108,6 +108,21 @@ export function pedidoDeConfirmacaoPendente(cofre: Cofre, turno: number, idioma:
   return textoDoPedidoDeConfirmacao(pendente, idioma);
 }
 
+/**
+ * Sim repetido logo depois do registro (ou de outro aviso de "já registrado"), sem resumo
+ * em aberto: devolve a reserva registrada e anota o turno, para o código responder com o
+ * texto fixo sem chamar o modelo e sem POST (L7, L15). Só no turno seguinte: com outra
+ * conversa no meio, o sim pode ser resposta a outra coisa e fica com o modelo.
+ */
+export function simAposRegistro(cofre: Cofre, turno: number, mensagem: string): Pendente | undefined {
+  const estado = cofre.ler();
+  const { pendente } = estado;
+  if (!pendente || estado.envios[chaveDaReserva(pendente.reserva)] !== "registrado") return undefined;
+  if (turno !== pendente.turno + 1 || lerConfirmacao(mensagem, pendente) !== "sim") return undefined;
+  cofre.salvar({ ...estado, pendente: { ...pendente, turno } });
+  return pendente;
+}
+
 /** O que a mensagem do hóspede é, diante do resumo que espera confirmação. */
 export type Leitura =
   | "sim" // sim inequívoco e nada além dele

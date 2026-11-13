@@ -1,8 +1,10 @@
 // Achados da revisão de código sobre a leitura do sim e o fim do lead (frente F).
 import { describe, expect, it } from "vitest";
+import { confirmarReserva, montarResumo, respostaASimAposRegistro } from "../src/agente/ferramentas/lead";
 import {
   type Cofre, ESTADO_INICIAL, type EstadoLead, lerConfirmacao, type Pendente, pedidoDeConfirmacaoPendente, pendenteAberto,
 } from "../src/lead";
+import { criarContexto, criarMundo } from "./apoio";
 
 const GRM301: Pendente = {
   reserva: { imovel_id: "GRM-301", checkin: "2027-01-15", checkout: "2027-01-18", hospedes: 2, nome: "Ana Lima", telefone: "(11) 98888-0000" },
@@ -89,5 +91,47 @@ describe("pedido de confirmação com a mensagem do turno: mudança de dado derr
     const { cofre, estado } = cofreCom({ ...GRM301, turno: 3 });
     expect(pedidoDeConfirmacaoPendente(cofre, 3, "pt", "muda para 16/01/2027 a 18/01/2027")).toBeUndefined();
     expect(estado().pendente).not.toBeNull();
+  });
+});
+
+describe("sim repetido depois do registro: texto fixo de código, zero POST (L7, L15)", () => {
+  const DADOS = { imovel_id: "GRM-301", checkin: "15/01/2027", checkout: "18/01/2027", hospedes: 2, nome: "Ana Lima", telefone: "(11) 98888-0000" };
+  async function registrada() {
+    const mundo = criarMundo();
+    let estado: EstadoLead = ESTADO_INICIAL;
+    const cofre: Cofre = { ler: () => estado, salvar: (e) => { estado = e; } };
+    const ctx = (turno: number, mensagem: string) => criarContexto(mundo, cofre, turno, mensagem);
+    await montarResumo.executar(DADOS, ctx(2, "quero fechar"));
+    expect((await confirmarReserva.executar({}, ctx(3, "Sim, confirmo."))).respostaFinal).toMatch(/registrado/);
+    return { mundo, ctx, posts: () => mundo.leads.length };
+  }
+
+  it("sim logo depois do registro: aviso fixo, e de novo no turno seguinte; nenhum POST a mais", async () => {
+    const s = await registrada();
+    for (const turno of [4, 5]) {
+      expect(respostaASimAposRegistro(s.ctx(turno, "Sim, confirmo de novo!")))
+        .toBe("Esse pedido (GRM-301, de sexta-feira, 15/01/2027 a segunda-feira, 18/01/2027) já está registrado com o nosso time comercial. Não enviei de novo.");
+    }
+    expect(s.posts()).toBe(1);
+  });
+
+  it("em inglês", async () => {
+    const s = await registrada();
+    expect(respostaASimAposRegistro(s.ctx(4, "Yes, I confirm again"))).toMatch(/^This request \(GRM-301, .*\) is already registered .*I did not send it again\.$/);
+  });
+
+  it("fica com o modelo: outra mensagem, sim com conversa no meio, ou nada registrado", async () => {
+    const s = await registrada();
+    expect(respostaASimAposRegistro(s.ctx(4, "tem wifi?"))).toBeUndefined();
+    expect(respostaASimAposRegistro(s.ctx(6, "sim"))).toBeUndefined();
+    const vazio = criarMundo();
+    const cofre: Cofre = { ler: () => ESTADO_INICIAL, salvar: () => {} };
+    expect(respostaASimAposRegistro(criarContexto(vazio, cofre, 1, "sim"))).toBeUndefined();
+  });
+
+  it("resumo de outra reserva em aberto: o sim é dela, não do registro", async () => {
+    const s = await registrada();
+    await montarResumo.executar({ ...DADOS, imovel_id: "RIO-402", checkin: "20/01/2027", checkout: "22/01/2027", hospedes: 1 }, s.ctx(4, "e o RIO-402"));
+    expect(respostaASimAposRegistro(s.ctx(5, "sim"))).toBeUndefined();
   });
 });

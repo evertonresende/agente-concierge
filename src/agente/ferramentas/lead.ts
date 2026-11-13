@@ -1,7 +1,7 @@
 import { regrasDaFicha } from "../../catalogo";
 import {
   apresentarResumo, type CampoDoHospede, chaveDaReserva, confirmar, invalidarPendente, type Leitura, type Pendente, type Reserva,
-  reservaFechada,
+  reservaFechada, simAposRegistro,
 } from "../../lead";
 import { type DataISO, diasEntre, formatarDataComDia, indiceDiaDaSemana } from "../../nucleo/datas";
 import { formatarReais } from "../../nucleo/dinheiro";
@@ -137,6 +137,16 @@ function jaRegistrado(pendente: Pendente, idioma: Idioma): Resultado {
     paraOModelo: { ja_registrado: true },
     respostaFinal: TEXTOS[idioma].jaRegistrado(r.imovel_id, dataComDia(r.checkin, idioma), dataComDia(r.checkout, idioma)),
   };
+}
+
+/**
+ * Para o começo do turno, antes do modelo: o hóspede repetiu o sim logo depois do registro.
+ * Devolve o aviso fixo de "já registrado, não enviei de novo" (L15); nada é enviado.
+ * `undefined` = o turno segue normal.
+ */
+export function respostaASimAposRegistro(contexto: Contexto): string | undefined {
+  const pendente = simAposRegistro(contexto.cofre, contexto.turno, contexto.mensagem);
+  return pendente ? jaRegistrado(pendente, idiomaDe(contexto)).respostaFinal : undefined;
 }
 
 /**
