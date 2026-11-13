@@ -39,6 +39,9 @@ TypeScript na Cloudflare, um Durable Object por sessão, loop de ferramentas pr�
   do repositório; não mudar).
 - Um commit por mudança lógica, push a cada commit.
 - **Nunca squash, amend ou rebase.** Merge de frente é sempre `--no-ff`.
+- Push só de branches e tags. **Nunca `git push --mirror`** nem push de outras refs: a
+  ferramenta de orquestração cria refs locais de checkpoint com outra identidade, e
+  elas não podem chegar ao remoto.
 - Antes de cada commit (com tudo em stage) e de cada push:
   `scripts/verificar-sigilo.sh` precisa terminar com `SIGILO OK`.
 
@@ -55,7 +58,9 @@ TypeScript na Cloudflare, um Durable Object por sessão, loop de ferramentas pr�
   worktree e só nos arquivos da sua linha na tabela de donos do backlog.
 - Lacuna do enunciado é decisão do Éverton. Frente que encontra lacuna aberta para e
   avisa.
-- Deploy de `producao` só com ordem explícita do Éverton.
+- Deploy de `producao` pode sair com o envio real de leads desligado
+  (`ENVIO_LEADS=desligado`). Ligar o envio real e tornar o repositório público: só com
+  ordem explícita do Éverton.
 
 ## Comandos previstos
 
@@ -70,7 +75,7 @@ TypeScript na Cloudflare, um Durable Object por sessão, loop de ferramentas pr�
 | Simulador hostil (só `dev`) | `node evals/simulador/rodar.mjs --alvo "$AGENTE_URL_DEV"` |
 | Deploy de `dev` | `npm run deploy:dev` |
 | Validar `producao` sem enviar lead | `scripts/validar-producao.sh` |
-| Deploy de `producao` (só com ordem do Éverton) | `npm run deploy:producao` |
+| Deploy de `producao` (envio real desligado até a ordem do Éverton) | `npm run deploy:producao` |
 
 Os comandos de `npm`, `evals/` e `scripts/validar-producao.sh` passam a existir
 conforme as frentes do backlog forem entregues.
