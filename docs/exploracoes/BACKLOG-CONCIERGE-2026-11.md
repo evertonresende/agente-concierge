@@ -403,6 +403,11 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   de Worker; 98 casos com `--paralelo 2` e rajada de 10 conversas, em nível baixo e depois médio,
   reserva GLM-5.3 Flash, um servidor na porta 8797. Teto de carga subiu de 6 para 7 `workerd`
   só até as rodadas com pausa terminarem (por volta das 20h50). `MODELO` segue sem fixar
+- 13/11 20h10 · B2 · af3934c mesclado na `main` (249ef34): `con-07`, `lead-06` e `man-07` aceitam as
+  duas redações válidas do agente. Conferido: ensaio limpo, 583 testes, gates de evals verdes,
+  `contrato` em 100% contra `dev`. `funciona-leads` segue em 86% em `dev`: `lead-05` e `lead-06`
+  dependem das ligações da G. `lead-12`: o turno 4 passa a ser um sim limpo (um "sim" com dado
+  junto não envia, pela regra endurecida da F) e o caso fica em `para-dev/` até a F entrar
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
