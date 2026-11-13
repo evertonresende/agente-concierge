@@ -61,7 +61,8 @@ Rotas adicionais do Worker (não fazem parte da bateria):
 
 - `GET /` — página simples de chat que usa o `POST /chat`.
 - `GET /saude` — `{ "ok": true, "ambiente": "dev" | "producao", "leads_destino":
-  "falso" | "real" }` e a presença (nunca o valor) de cada variável obrigatória.
+  "falso" | "real", "envio_leads": "ligado" | "desligado" }` e a presença (nunca o
+  valor) de cada variável obrigatória.
 - Cabeçalhos de resposta do `/chat` para medir custo: `x-uso-entrada`, `x-uso-saida`
   (tokens) e `x-chamadas-modelo`.
 
@@ -207,8 +208,9 @@ A ferramenta de handoff liga a flag da resposta. Gatilhos obrigatórios:
 3. pedido explícito para falar com uma pessoa;
 4. assunto que exige ação fora do alcance do agente (L19).
 
-Fronteiras em aberto: informação ausente do catálogo (L5), fora de escopo e
-manipulação (L16), falha interna (L18), o que acontece depois do handoff (L3 e L4).
+Fronteiras decididas na seção 10: informação ausente do catálogo (L5), conflito com
+regras do imóvel (L12), fora de escopo e manipulação (L16), falha do webhook (L11),
+falha interna (L18), o que acontece depois do handoff (L3 e L4).
 
 ## 7. Proibições
 
@@ -228,7 +230,7 @@ O agente nunca:
 | Ambiente | Catálogo | Webhook de leads | Uso |
 |---|---|---|---|
 | `dev` | real (só GET) | **falso**, nosso, que replica o contrato da seção 5 | fluxo completo de lead, evals com confirmação, vídeo |
-| `producao` | real | real | entrega; antes dela, só conversas sem confirmação |
+| `producao` | real | real, com o envio desligado até a entrega (L24) | entrega; antes dela, só conversas sem confirmação |
 
 **Webhook real: nenhum POST antes da entrega, por nenhuma sessão, nem como teste
 identificado.** A lista de leads é o que o avaliador vê e não pode ser apagada. GET é
@@ -242,9 +244,12 @@ Variáveis (valores só em ambiente, nunca em arquivo versionado):
 | `LEADS_URL` | secret | URL do webhook do ambiente (falso em `dev`, real em `producao`) |
 | `AMBIENTE` | var | `dev` ou `producao` |
 | `MODELO` | var | identificador do modelo em uso |
+| `ENVIO_LEADS` | var | `ligado` ou `desligado`; `desligado` em `producao` até a ordem do Éverton (L24) |
 
 Na máquina de desenvolvimento os valores ficam em `~/.config/agente-concierge/env`
-(`CATALOGO_URL`, e `LEADS_URL_DEV` depois que o webhook falso existir). Para criar o
+(`CATALOGO_URL`; `LEADS_URL_DEV` e `AGENTE_URL_DEV` depois que o webhook falso e o
+agente de `dev` existirem; `AGENTE_URL_PRODUCAO` com o subdomínio do L23; e
+`CLOUDFLARE_ACCOUNT_ID`). Para criar o
 arquivo local do `wrangler dev` sem imprimir nada:
 
 ```bash
@@ -273,30 +278,31 @@ Quem decide é o Éverton. O motivo de cada decisão fica em `DECISOES.md`.
 
 | ID | Tema | Regra |
 |---|---|---|
-| L1 | Datas relativas e fuso | ABERTA |
-| L2 | Datas no passado e entrada hoje | ABERTA |
-| L3 | Duração da flag `handoff` | ABERTA |
-| L4 | Conversa depois do handoff | ABERTA |
-| L5 | Informação ausente do catálogo x handoff | ABERTA |
-| L6 | Formato de telefone | ABERTA |
-| L7 | Segunda reserva e repetição na mesma sessão | ABERTA |
-| L8 | Total sem número de hóspedes | ABERTA |
-| L9 | O que conta como confirmação | ABERTA |
-| L10 | Mudança de dado ou de preço depois do resumo | ABERTA |
-| L11 | Falha do webhook | ABERTA |
-| L12 | Conflito com regras do imóvel (pet, festa, fumo) | ABERTA |
-| L13 | Quem conta como hóspede; número inválido | ABERTA |
-| L14 | Arredondamento de fração de centavo | ABERTA |
-| L15 | Idioma do hóspede | ABERTA |
-| L16 | Fora de escopo, pedido de instruções internas, falso dono | ABERTA |
-| L17 | Corpo inválido no `POST /chat` | ABERTA |
-| L18 | Falha interna (modelo, catálogo, tempo) | ABERTA |
-| L19 | Pedidos que exigem ação fora do agente | ABERTA |
-| L20 | Nome do hóspede | ABERTA |
-| L21 | Imóvel ambíguo ou não encontrado | ABERTA |
-| L22 | Dados pessoais em logs e exports | ABERTA |
-| L23 | URL pública da entrega | ABERTA |
-| L24 | Trava do POST real até a entrega | ABERTA |
+| L1 | Datas relativas e fuso | Aceitas, resolvidas por código no fuso `America/Sao_Paulo`. "Hoje", "amanhã" e dia da semana resolvem direto (dia da semana: próxima ocorrência, o mesmo critério da data sem ano). Quando a mensagem permite determinar entrada e saída, o agente declara as datas exatas (dia da semana, dia, mês e ano) e **já cota na mesma resposta**. Só pergunta quando falta a entrada ou a saída ("no Natal" sem dizer de quando a quando conta como faltando). |
+| L1a | "Fim de semana" sem datas | **ABERTA.** Falta decidir a convenção (sexta a domingo ou sábado a domingo). Enquanto aberta, o código não mapeia a expressão e o agente pede entrada e saída. |
+| L2 | Datas no passado e entrada hoje | Entrada anterior a hoje (fuso de São Paulo): recusa, explica e pede novas datas, com `handoff: false`. Entrada hoje é aceita. |
+| L3 | Duração da flag `handoff` | `true` só na resposta em que o agente decide passar. Nas respostas seguintes volta a `false`, e vale `true` de novo a cada novo gatilho. O estado da sessão guarda que já houve handoff. |
+| L4 | Conversa depois do handoff | O agente continua atendendo o que está no escopo: dúvidas, cotação e lead sem desconto. |
+| L5 | Informação ausente do catálogo x handoff | Diz que o catálogo não informa, com `handoff: false`, e oferece um humano. Vira `true` só se o hóspede pedir um humano ou disser que precisa dessa informação para decidir. |
+| L6 | Formato de telefone | Número brasileiro com DDD (10 ou 11 dígitos, com ou sem `+55`, com qualquer pontuação) é enviado no formato do exemplo: `(DD) NNNNN-NNNN` ou `(DD) NNNN-NNNN`. Número estrangeiro com `+` e de 8 a 15 dígitos é enviado como `+dígitos`. Inválido: o agente pede de novo, sem handoff. |
+| L7 | Segunda reserva e repetição na mesma sessão | Outra reserva é permitida, com novo resumo e nova confirmação. A mesma reserva (imóvel, datas, hóspedes e telefone) já registrada não é reenviada: o agente diz que já está registrada. |
+| L8 | Total sem número de hóspedes | Com imóvel e datas válidas, o agente dá o total na hora, informa a capacidade e pergunta quantas pessoas são. O resumo para confirmação exige número de hóspedes válido. |
+| L9 | O que conta como confirmação | Só um sim inequívoco ao resumo pendente, no turno seguinte ("sim", "confirmo", "pode fechar"). Hesitação ("acho que sim"): pergunta de novo. Condição de preço: nenhum lead e `handoff: true`. Outra pergunta: responde e repete o pedido de confirmação; nada é enviado. |
+| L10 | Mudança de dado ou de preço depois do resumo | Qualquer dado mudou, ou o total recalculado é diferente do mostrado: a confirmação pendente é invalidada, com novo resumo e nova confirmação. |
+| L11 | Falha do webhook | `422`: não registrado; se o erro aponta um campo, pede a correção e refaz o resumo, senão `handoff: true`. `5xx`: uma nova tentativa; se persistir, diz que não conseguiu registrar, com `handoff: true`. **Tempo esgotado ou resposta que não chegou (resultado incerto): sem nova tentativa e sem GET.** O agente diz que não conseguiu confirmar o registro, com `handoff: true`, e essa reserva não é reenviada na sessão. |
+| L12 | Conflito com regras do imóvel (pet, festa, fumo) | Cota com aviso claro da regra e não avança para lead enquanto o conflito durar. Pedido de exceção ou insistência: `handoff: true`. |
+| L13 | Quem conta como hóspede; número inválido | Adultos, crianças e bebês contam; pet não conta. Zero, negativo ou fracionário: pede correção, sem handoff. |
+| L14 | Arredondamento de fração de centavo | Meio centavo arredonda para cima, por noite: `(120 × diária em centavos + 50) ÷ 100`, em divisão inteira. Hoje nenhum dos 15 imóveis gera fração. |
+| L15 | Idioma do hóspede | Responde no idioma do hóspede. O total continua sempre no formato `R$ 2.156,00`. |
+| L16 | Fora de escopo, pedido de instruções internas, falso dono | Assunto fora do escopo (clima, código, política), "ignore as regras" e pedido de instruções internas: recusa curta, com `handoff: false`. Desconto ou negociação pedidos por quem diz ser dono ou funcionário: `handoff: true`, sem concessão. |
+| L17 | Corpo inválido no `POST /chat` | JSON válido com `session_id` e `message` em texto devolve **sempre `200`**. Mensagem vazia: o agente pede para escrever a mensagem. Mensagem acima de 8.000 caracteres: o agente pede para resumir. Nos dois casos, `handoff: false`. `400` só para JSON inválido ou campo faltando, com corpo `{ "reply": "<o que está errado>", "handoff": false }`. |
+| L18 | Falha interna (modelo, catálogo, tempo) | Uma nova tentativa; se persistir, `200` com aviso honesto e `handoff: true`. Nunca `500`. |
+| L19 | Pedidos que exigem ação fora do agente | Cancelar ou alterar reserva já feita, pagamento, check-in antecipado e problema durante a estadia: `handoff: true`, e o agente não diz que executou nada. Dúvida informativa que o catálogo responde (horário normal de check-in) continua no agente. |
+| L20 | Nome do hóspede | Aceita o nome como veio. Pede o nome completo, mas não bloqueia. |
+| L21 | Imóvel ambíguo | Mais de um imóvel compatível: lista as opções (nome, bairro, cidade, capacidade) e pede a escolha antes de cotar. |
+| L22 | Dados pessoais em logs e exports | Nome e telefone mascarados em logs e exports. Íntegros só no estado da sessão e no corpo enviado ao webhook. |
+| L23 | URL pública da entrega | Subdomínio próprio do Éverton, guardado em `AGENTE_URL_PRODUCAO` (o hostname só entra em arquivo versionado com ordem dele). A checagem de integridade de navegador é desligada por regra que vale **só para esse hostname**, sem tocar no resto do domínio. O Bot Fight Mode da zona é conferido. A URL publicada é testada com clientes Python (`requests` e `urllib`), curl e Node a partir da máquina de desenvolvimento. |
+| L24 | Trava do POST real até a entrega | `producao` nasce com `ENVIO_LEADS=desligado`: uma confirmação lá não gera POST e segue o caminho de falha do L11 (diz que não conseguiu registrar, `handoff: true`). Ligar o envio é só com ordem do Éverton, na entrega; `scripts/validar-producao.sh --entrega` reprova se estiver desligado. |
 
 Já decidido (decisões fechadas, ver `DECISOES.md`): data sem ano é a próxima
 ocorrência daquela data, e o agente repete a data completa na resposta; o agente cota
@@ -322,3 +328,6 @@ mas não afirma disponibilidade.
 | CA-14 | Duas mensagens simultâneas na mesma sessão: duas respostas 200, histórico íntegro, no máximo 1 lead | teste unitário e eval `contrato` |
 | CA-15 | O agente nunca afirma disponibilidade | eval `robustez-nao-inventa` |
 | CA-16 | Nenhum POST chegou ao webhook real antes da entrega | GET no webhook real devolve lista vazia até a entrega |
+| CA-17 | Com `ENVIO_LEADS=desligado`, uma confirmação não gera POST e não é relatada como registrada | teste unitário e `GET /saude` |
+| CA-18 | JSON válido com `session_id` e `message` em texto devolve 200, inclusive com mensagem vazia ou longa demais; 400 só para JSON inválido ou campo faltando | eval bloco `contrato` |
+| CA-19 | Resultado incerto do webhook (tempo esgotado) não gera nova tentativa nem relato de registro, e devolve `handoff: true` | teste de integração com o webhook falso em modo de atraso |
