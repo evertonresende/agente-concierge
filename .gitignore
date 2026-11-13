@@ -1,0 +1,19 @@
+# dependências e build
+node_modules/
+dist/
+.wrangler/
+
+# segredos e ambiente local
+.env
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+
+# material local que não vai para o repositório
+.privado/
+CLAUDE.local.md
+
+# caches de ferramentas do ambiente
+graft/
+.trail/
