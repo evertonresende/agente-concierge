@@ -141,6 +141,8 @@ export const PAGINA = String.raw`<!doctype html>
   }
   .campo::placeholder { color: var(--suave); opacity: 1; }
   .campo:focus-visible { position: relative; z-index: 1; }
+  /* O campo encosta no botão Enviar: o contorno de foco fica por dentro, como nos exemplos. */
+  .envio-linha .campo:focus-visible { outline-offset: -4px; }
 
   /* ---------- Casca ---------- */
   .pagina {
@@ -174,7 +176,8 @@ export const PAGINA = String.raw`<!doctype html>
   .topo .rotulo { margin-top: var(--e2); }
 
   /* ---------- Exemplos ---------- */
-  .exemplos { grid-area: exemplos; border-right: 1px solid var(--grade); }
+  /* Em tela larga e baixa (celular deitado) os exemplos rolam, para não cobrir o rodapé. */
+  .exemplos { grid-area: exemplos; border-right: 1px solid var(--grade); overflow-y: auto; }
   .exemplos h2 { padding: 0 var(--margem) var(--e3); }
   .exemplo {
     display: block;
@@ -274,6 +277,7 @@ export const PAGINA = String.raw`<!doctype html>
   .rodape-trilho { grid-area: rodape; border-right: 1px solid var(--grade); }
   .rodape-rolagem { display: none; }
   .nq { white-space: nowrap; }
+  .so-leitor { position: absolute; width: 1px; height: 1px; margin: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
   /* ---------- Celular ---------- */
   @media (max-width: 820px) {
@@ -316,7 +320,7 @@ export const PAGINA = String.raw`<!doctype html>
       padding: var(--e6) var(--margem) var(--e4);
       font-size: var(--t-rotulo);
     }
-    .rodape-rolagem a { padding-block: var(--e2); }
+    .rodape-rolagem a { padding-block: var(--e3); line-height: var(--e6); }
   }
 
   /* ---------- Ponteiro em cima: só onde existe mouse ---------- */
@@ -373,10 +377,10 @@ export const PAGINA = String.raw`<!doctype html>
         <p class="rotulo">Escreva abaixo ou escolha um exemplo</p>
       </div>
       <div id="registro" role="log" aria-live="polite"></div>
-      <footer class="rodape rodape-rolagem">
+      <div class="rodape rodape-rolagem">
         <span>Agente de demonstração, dados fictícios.</span>
         <a href="https://github.com/evertonresende/agente-concierge">github.com/evertonresende/<wbr><span class="nq">agente-concierge</span></a>
-      </footer>
+      </div>
     </div>
 
     <form class="envio" id="envio">
@@ -385,7 +389,8 @@ export const PAGINA = String.raw`<!doctype html>
         <textarea class="campo" id="mensagem" rows="1" placeholder="Escreva sua pergunta" enterkeyhint="send" aria-describedby="dica"></textarea>
         <button class="botao" id="enviar" type="submit">Enviar</button>
       </div>
-      <p class="dica" id="dica" role="status" data-so-teclado>Enter envia · Shift + Enter quebra a linha</p>
+      <p class="dica" id="dica" data-so-teclado>Enter envia · Shift + Enter quebra a linha</p>
+      <span class="so-leitor" id="estado" role="status"></span>
     </form>
   </main>
 
@@ -400,6 +405,7 @@ export const PAGINA = String.raw`<!doctype html>
   var lerResposta = ${lerResposta.toString()};
 
   var DICA = 'Enter envia · Shift + Enter quebra a linha';
+  var ESPERA = 'Aguardando a resposta. Pode levar até um minuto.';
   var ESPERA_MS = 70000; // o contrato promete resposta em até 60 s
   var ESPACO_QUE_NAO_QUEBRA = String.fromCharCode(160); // o total não se separa do "R$" na quebra de linha
   var raiz = document.documentElement;
@@ -409,6 +415,7 @@ export const PAGINA = String.raw`<!doctype html>
   var campo = document.getElementById('mensagem');
   var botao = document.getElementById('enviar');
   var dica = document.getElementById('dica');
+  var estado = document.getElementById('estado');
   var exemplos = document.querySelectorAll('[data-exemplo]');
   var temMouse = matchMedia('(pointer: fine)').matches;
   var ocupado = false;
@@ -445,7 +452,8 @@ export const PAGINA = String.raw`<!doctype html>
     botao.textContent = sim ? 'Enviando' : 'Enviar';
     exemplos.forEach(function (b) { b.disabled = sim; });
     conversa.setAttribute('aria-busy', String(sim));
-    dica.textContent = sim ? 'Aguardando a resposta. Pode levar até um minuto.' : DICA;
+    dica.textContent = sim ? ESPERA : DICA;
+    estado.textContent = sim ? ESPERA : ''; // o leitor de tela ouve a espera, não a dica de teclado
     if (sim) dica.removeAttribute('data-so-teclado'); else dica.setAttribute('data-so-teclado', '');
   }
 
@@ -485,6 +493,7 @@ export const PAGINA = String.raw`<!doctype html>
       if (!lida) throw new Error('resposta fora do contrato');
       var seguir = acompanhando();
       espera.remove();
+      ocupar(false); // antes da resposta entrar: o anúncio e a rolagem contam com a área já livre
       var resposta = turno('agente', 'Concierge', lida.reply.replace(/R\$ (?=\d)/g, 'R$' + ESPACO_QUE_NAO_QUEBRA));
       if (lida.handoff) {
         var aviso = turno('sistema', 'Encaminhada',
@@ -493,16 +502,15 @@ export const PAGINA = String.raw`<!doctype html>
       }
       // Resposta mais alta que a área aparece a partir do começo dela; a que cabe, inteira.
       if (seguir) conversa.scrollTop = Math.min(resposta.offsetTop, fimDe(registro.lastElementChild));
-      ocupar(false);
     }).catch(function () {
       espera.remove();
+      ocupar(false);
       fala.lastChild.appendChild(el('span', 'nota', 'Sem resposta'));
       var erro = turno('sistema', '', 'A resposta não chegou ou veio incompleta. Você pode tentar de novo.', 'erro');
       erro.firstChild.appendChild(el('span', 'selo', 'Erro'));
       var denovo = erro.lastChild.appendChild(el('button', 'botao contorno', 'Tentar de novo'));
       denovo.type = 'button';
       denovo.addEventListener('click', function () { enviar(texto, fala); });
-      ocupar(false);
       conversa.scrollTop = fimDe(erro);
       denovo.focus();
     }).then(function () {
