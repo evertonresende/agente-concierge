@@ -177,6 +177,9 @@ const COMECA_AFIRMANDO = new RegExp(`^${INICIO}${AFIRMA_OU_CONFIRMA}(?: |$)`);
 const PEDIDO_DE_ENVIO = new RegExp(`^(?:${AFIRMA_OU_CONFIRMA}${DADOS} )*${PODE}${DADOS}(?: (?:${CORTESIA}))*$`);
 
 const MAXIMO_DO_SIM = 120;
+// Mensagem maior que isto não é confirmação nem resposta neutra a um resumo, e não é lida:
+// marcar os dados e passar pelos regex custaria CPU à toa (8.000 dígitos: ~330 ms).
+const MAXIMO_DA_MENSAGEM = 300;
 
 function semAcento(texto: string): string {
   return texto.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -224,6 +227,7 @@ const MUDANCA = new RegExp("\\b(?:mud|alter|troc|corrig|substitu|em vez|ao inves
  * comparar), ou há pedido de mudança. Na dúvida, muda: o resumo cai e é refeito (L10).
  */
 export function mudaDadoDoResumo(mensagem: string, pendente: Pendente): boolean {
+  if (mensagem.length > MAXIMO_DA_MENSAGEM) return true;
   const texto = marcarDadosIguais(semAcento(mensagem), pendente);
   return /\d/.test(texto) || MUDANCA.test(texto);
 }
@@ -236,6 +240,7 @@ export function mudaDadoDoResumo(mensagem: string, pendente: Pendente): boolean 
  * então na dúvida a resposta é "não confirmou".
  */
 export function lerConfirmacao(mensagem: string, pendente: Pendente): Leitura {
+  if (mensagem.length > MAXIMO_DA_MENSAGEM) return "outra";
   // Ponto de interrogação de largura cheia (？) e árabe (؟) também fazem pergunta.
   const texto = marcarDadosIguais(semAcento(mensagem).replace(/[？؟]/g, "?"), pendente);
   if (PRECO.test(texto)) return "condicao_de_preco";

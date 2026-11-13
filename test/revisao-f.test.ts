@@ -15,8 +15,8 @@ const GRM301: Pendente = {
 describe("mensagem longa e repetitiva não trava a leitura do sim", () => {
   // Sem o corte por tamanho, cada repetição dobrava o tempo do regex (250 caracteres: dezenas de segundos).
   for (const base of ["pode sim ", "isso mesmo ", "pode confirmar "]) {
-    it(`"${base.trim()}" repetido até 300 caracteres não é sim e responde na hora`, () => {
-      const mensagem = `${base.repeat(Math.ceil(300 / base.length))}x`;
+    it(`"${base.trim()}" repetido até 250 caracteres não é sim e responde na hora`, () => {
+      const mensagem = `${base.repeat(Math.floor(250 / base.length))}x`;
       expect(lerConfirmacao(mensagem, GRM301)).toBe("outra");
       expect(lerConfirmacao(`${mensagem}?`, GRM301)).toBe("pergunta");
     }, 1000);
@@ -133,5 +133,20 @@ describe("sim repetido depois do registro: texto fixo de código, zero POST (L7,
     const s = await registrada();
     await montarResumo.executar({ ...DADOS, imovel_id: "RIO-402", checkin: "20/01/2027", checkout: "22/01/2027", hospedes: 1 }, s.ctx(4, "e o RIO-402"));
     expect(respostaASimAposRegistro(s.ctx(5, "sim"))).toBeUndefined();
+  });
+});
+
+describe("mensagem acima de 300 caracteres não é lida como confirmação (A6)", () => {
+  it("8.000 dígitos: não é sim e derruba o resumo no rearme", () => {
+    const enorme = "1".repeat(8000);
+    expect(lerConfirmacao(enorme, GRM301)).toBe("outra");
+    let estado: EstadoLead = { ...ESTADO_INICIAL, pendente: GRM301 };
+    const cofre: Cofre = { ler: () => estado, salvar: (e) => { estado = e; } };
+    expect(pedidoDeConfirmacaoPendente(cofre, 3, "pt", enorme)).toBeUndefined();
+    expect(estado.pendente).toBeNull();
+  });
+
+  it("sim repetido até passar de 300 caracteres não envia", () => {
+    expect(lerConfirmacao("sim, confirmo. ".repeat(21), GRM301)).toBe("outra");
   });
 });
