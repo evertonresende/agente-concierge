@@ -46,17 +46,17 @@ describe("adaptador do modelo", () => {
     await expect(criarModelo(ai, undefined, {})([], [])).rejects.toThrow("MODELO");
   });
 
-  it("modelo nativo usa max_tokens; de terceiros, max_completion_tokens (a OpenAI recusa max_tokens)", () => {
+  it("modelo nativo usa max_tokens; de terceiros, max_completion_tokens", () => {
     expect(parametros("@cf/openai/gpt-oss-120b")).toMatchObject({ max_tokens: 1500 });
     expect(parametros("@cf/openai/gpt-oss-120b")).not.toHaveProperty("max_completion_tokens");
-    expect(parametros("openai/gpt-5.4-mini")).toMatchObject({ max_completion_tokens: 1500 });
-    expect(parametros("openai/gpt-5.4-mini")).not.toHaveProperty("max_tokens");
+    expect(parametros("autor/modelo-x")).toMatchObject({ max_completion_tokens: 1500 });
+    expect(parametros("autor/modelo-x")).not.toHaveProperty("max_tokens");
   });
 
   it("passa pelo AI Gateway configurado", async () => {
     const pedidos: unknown[][] = [];
     const ai = { run: async (...args: unknown[]) => { pedidos.push(args); return { choices: [{ message: { content: "oi" } }] }; } } as unknown as Ai;
-    await criarModelo(ai, "openai/gpt-5.4-mini", { gateway: "gw-teste" })([{ role: "user", content: "oi" }], []);
+    await criarModelo(ai, "@cf/autor/modelo-x", { gateway: "gw-teste" })([{ role: "user", content: "oi" }], []);
     expect(pedidos[0]![2]).toEqual({ gateway: { id: "gw-teste" } });
   });
 });
@@ -109,7 +109,7 @@ describe("modelo reserva", () => {
       },
     } as unknown as Ai;
     await criarModelo(ai, "@cf/openai/gpt-oss-120b")([{ role: "user", content: "oi" }], []);
-    expect(chamados.map((c) => c[0])).toEqual(["@cf/openai/gpt-oss-120b", "openai/gpt-5.4-mini"]);
+    expect(chamados.map((c) => c[0])).toEqual(["@cf/openai/gpt-oss-120b", "@cf/deepseek-ai/deepseek-v4.1-flash-1017"]);
     expect(chamados[1]![2]).toEqual({ gateway: { id: "concierge-dev" } });
   });
 });

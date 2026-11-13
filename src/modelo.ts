@@ -76,7 +76,7 @@ export function normalizarResposta(bruto: unknown): RespostaDoModelo {
 export interface OpcoesDoModelo {
   /** AI Gateway por onde passam todas as chamadas (obrigatório para modelo de terceiros). */
   gateway?: string;
-  /** Modelo de outro provedor que responde quando o principal falha. */
+  /** Modelo de outro fornecedor que responde quando o principal falha. */
   reserva?: string;
   /** Quanto o principal pode demorar antes de o reserva assumir. */
   tempoDoPrincipalMs?: number;
@@ -91,7 +91,7 @@ const AJUSTES: Record<string, Record<string, unknown>> = {
   "@cf/deepseek-ai/deepseek-v4.1-flash-1017": { reasoning_effort: "low" },
 };
 
-/** Parâmetros do pedido. Modelo de terceiros segue a API do provedor: a OpenAI recusa `max_tokens`. */
+/** Parâmetros do pedido. Modelo de terceiros (fora do `@cf/`) recebe `max_completion_tokens`, o campo das APIs de chat atuais. */
 export function parametros(modelo: string): Record<string, unknown> {
   const limite = modelo.startsWith("@cf/") ? { max_tokens: MAX_TOKENS } : { max_completion_tokens: MAX_TOKENS };
   return { ...limite, temperature: 0.2, ...AJUSTES[modelo] };

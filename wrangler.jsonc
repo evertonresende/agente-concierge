@@ -17,8 +17,8 @@
       "vars": {
         "AMBIENTE": "dev",
         "MODELO": "@cf/openai/gpt-oss-120b",
-        // Reserva de outro provedor (OpenAI, chave guardada como BYOK no gateway de dev).
-        "MODELO_RESERVA": "openai/gpt-5.4-mini",
+        // Reserva de outro fornecedor que o principal, também no Workers AI (sem chave de terceiro).
+        "MODELO_RESERVA": "@cf/deepseek-ai/deepseek-v4.1-flash-1017",
         "AI_GATEWAY": "concierge-dev",
         "ENVIO_LEADS": "ligado"
       },
