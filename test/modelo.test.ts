@@ -52,6 +52,7 @@ describe("adaptador do modelo", () => {
     expect(parametros("autor/modelo-x")).toMatchObject({ max_completion_tokens: 1500 });
     expect(parametros("autor/modelo-x")).not.toHaveProperty("max_tokens");
     expect(parametros("@cf/zai-org/glm-5.3")).toMatchObject({ reasoning_effort: "low" });
+    expect(parametros("@cf/zai-org/glm-5.3-flash")).toMatchObject({ reasoning_effort: "low" });
   });
 
   it("passa pelo AI Gateway configurado", async () => {
