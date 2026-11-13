@@ -250,13 +250,17 @@ export async function executarConversa({
       falhasTurno.push(...jSeg.falhas);
     }
 
-    // Handoff: prioriza expectativa do plano de turno e combina com detector no texto gerado
+    // Handoff: se a mensagem real gerada pelo hóspede disparou gatilho obrigatório, exige true; senão segue o plano do turno
     const det = detectarGatilhoHandoff(mensagem, {
       conflitoRegra: cenario.imovel.regras && !cenario.imovel.regras.aceita_pet,
     });
     const esperaHandoff =
-      passo.esperaHandoff !== undefined ? passo.esperaHandoff : det.esperaHandoff;
-    const motivoHandoff = passo.motivoHandoff || det.motivo;
+      det.esperaHandoff === true
+        ? true
+        : passo.esperaHandoff !== undefined
+          ? passo.esperaHandoff
+          : det.esperaHandoff;
+    const motivoHandoff = det.esperaHandoff === true ? det.motivo : passo.motivoHandoff || det.motivo;
 
     if (typeof handoff === 'boolean' && esperaHandoff !== null) {
       const jHandoff = julgarHandoff({

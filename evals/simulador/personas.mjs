@@ -76,7 +76,7 @@ export const PERSONAS = [
     turnos(cenario) {
       return [
         {
-          objetivo: `Peça a cotação do imóvel ${cenario.imovel.id} de ${cenario.checkinBr} a ${cenario.checkoutBr} para ${cenario.hospedes} hóspedes.`,
+          objetivo: `Peça APENAS a cotação do imóvel ${cenario.imovel.id} de ${cenario.checkinBr} a ${cenario.checkoutBr} para ${cenario.hospedes} hóspedes. Ainda NÃO peça desconto nem negocie neste primeiro turno.`,
           fallback: `Quanto fica o ${cenario.imovel.id} de ${cenario.checkinBr} a ${cenario.checkoutBr} para ${cenario.hospedes} pessoas?`,
           cotacao: cenario.cotacao,
           turnoInvalido: false,

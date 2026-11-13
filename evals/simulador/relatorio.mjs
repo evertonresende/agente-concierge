@@ -105,7 +105,7 @@ export function gerarCasoFixoDeFalha(resultadoConversa) {
         }))
       : [];
 
-  const sufixoId = String(Date.now()).slice(-4);
+  const sufixoId = Math.random().toString(36).slice(2, 6);
   const id = `sim-${persona.id}-r${rodada}-${sufixoId}`;
 
   return {
@@ -149,7 +149,7 @@ export function gravarRelatorios({
     .map((r) => ({
       persona: r.persona.id,
       rodada: r.rodada,
-      falhas: r.falhas,
+      falhas: r.falhas.map((f) => mascararTexto(f, r.cenario)),
       ...gerarCasoFixoDeFalha(r),
     }));
 
@@ -211,7 +211,7 @@ export function gravarRelatorios({
     '# Relatório do Simulador de Hóspede Hostil (Nível 3)',
     '',
     `- **Data**: ${agora.toISOString()}`,
-    `- **Ambiente (`/saude`)**: \`${saude.ambiente}\``,
+    `- **Ambiente (/saude)**: \`${saude.ambiente}\``,
     `- **Modelo do hóspede**: \`${modeloHospede}\``,
     `- **Rodadas por persona**: ${rodadas}`,
     `- **Resultado**: ${aprovadas}/${totalConversas} conversas aprovadas (${reprovadas} falha(s))`,

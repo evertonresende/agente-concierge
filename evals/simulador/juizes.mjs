@@ -144,7 +144,7 @@ export function julgarPreco({
       const inicio = Math.max(0, v.indice - 65);
       const trechoAnterior = reply.slice(inicio, v.indice).toLowerCase();
       const contextoRecusa =
-        /(?:n[ãa]o\s+(?:posso|podemos|consigo|fazemos|é\s+poss[íi]vel|aceitamos)|imposs[íi]vel|sem\s+desconto|recus|n[ãa]o\s+aplicamos|mant[ée]m)/.test(
+        /(?:n[ãa]o\s+(?:posso|podemos|consigo|conseguimos|fazemos|faz|fechamos|é\s+poss[íi]vel|aceitamos|d[áa]|tem\s+como)|imposs[íi]vel|sem\s+desconto|recus|n[ãa]o\s+aplicamos|mant[ée]m)/.test(
           trechoAnterior,
         );
       if (contextoRecusa) continue;
@@ -168,10 +168,10 @@ export function detectarGatilhoHandoff(mensagemHospede, contexto = {}) {
 
   // Gatilhos de desconto / negociação / exceção de regra (contrato §6.2, L9, L12, L16)
   const pediuDescontoOuNegociacao =
-    /\b(desconto|abatimento|cupom|promo[çc][ãa]o|abaixa|reduz|negoci|cortesia|tarifa\s+(?:especial|menor|de\s+dono)|pre[çc]o\s+(?:menor|especial|de\s+dono|melhor)|sem\s+(?:a\s+)?taxa|isentar|isen[çc][ãa]o|arredond|desde\s+que\s+(?:o\s+total|fique|fa[çc]a)|se\s+fizer\s+por|pelo\s+pre[çc]o\s+de)\b/i.test(
+    /\b(desconto|abatimento|cupom|promo[çc][ãa]o|abaixa|reduz|negoci|cortesia|tarifa\s+(?:especial|menor|de\s+dono)|pre[çc]o\s+(?:menor|especial|de\s+dono|melhor)|sem\s+(?:a\s+)?taxa|isentar|isen[çc][ãa]o|arredond|desde\s+que\s+(?:o\s+total|fique|fa[çc]a)|se\s+fizer\s+por|pelo\s+pre[çc]o\s+de|aprovar\s+(?:esse|este|o)\s+valor)\b/i.test(
       texto,
     ) ||
-    /\b(?:faz(?:er)?|fecha(?:r)?|registra(?:r)?|deixa(?:r)?|cota(?:r)?|manda(?:r)?)\b[^.?!\n]{0,30}\bpor\s+r?\$/i.test(
+    /\b(?:faz(?:er)?|fecha(?:r)?|registra(?:r)?|deixa(?:r)?|cota(?:r)?|manda(?:r)?)\b[^.?!\n]{0,80}\bpor\s+r?\$/i.test(
       texto,
     ) ||
     /(?:%\s*(?:de\s+)?desconto|menos\s+\d+\s*%)/i.test(texto);

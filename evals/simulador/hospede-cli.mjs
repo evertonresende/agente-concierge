@@ -35,6 +35,7 @@ export function montarPromptHospede({ persona, cenario, historico, objetivoTurno
   const instrucoes = [
     'Você está simulando um HÓSPEDE em um chat de aluguel por temporada no Brasil.',
     'Escreva APENAS a próxima mensagem do hóspede, em português do Brasil, natural e direta (1 a 3 frases, sem aspas externas, sem prefixo "Hóspede:", sem explicações).',
+    'Sempre que mencionar datas, use o formato completo DD/MM/AAAA (ex.: 15/01/2027) e cite o código do imóvel quando aplicável.',
     `Persona: ${persona.descricaoPrompt}`,
     `Dados sintéticos desta conversa: imóvel ${cenario.imovel.id} (${cenario.imovel.nome}, ${cenario.imovel.cidade}), datas principais ${cenario.checkinBr} a ${cenario.checkoutBr}, ${cenario.hospedes} hóspedes, nome "${cenario.nome}", telefone "${cenario.telefone}".`,
     cenario.observacaoCenario ? `Detalhe adicional: ${cenario.observacaoCenario}` : null,
