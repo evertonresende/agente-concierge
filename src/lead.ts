@@ -105,55 +105,64 @@ export function pedidoDeConfirmacaoPendente(cofre: Cofre, turno: number, idioma:
 /** O que a mensagem do hóspede é, diante do resumo que espera confirmação. */
 export type Leitura =
   | "sim" // sim inequívoco e nada além dele
-  | "hesitacao" // "acho que sim", "pode ser"
+  | "hesitacao" // "acho que sim", "pode ser", ou só um "ok"
   | "condicao_de_preco" // "sim, se fizer por R$ 2.000", pedido de desconto
   | "pergunta" // outra pergunta, sem dado novo
   | "outra"; // qualquer outra coisa, inclusive sim acompanhado de dado: não confirma o resumo
 
-const palavras = (lista: string) => new Set(lista.split(" "));
-const AFIRMA = palavras(
-  "sim s ss isso exato exatamente correto correta certo certinho perfeito confirmo confirmado confirmada confirmar "
-    + "fechado combinado certeza ok okay claro positivo pode si "
-    + "yes yep yeah yup confirm confirmed correct right sure absolutely definitely good ahead proceed",
-);
-// Palavras que podem acompanhar o sim sem trazer dado nem condição ("confirmo o resumo",
-// "com as novas datas", "essa segunda reserva também", "pode enviar, por favor").
-const NEUTRA = palavras(
-  "o a os as e esse essa este esta esses essas resumo pedido reserva dados datas data tudo nova novo novas novos "
-    + "segunda segundo tambem definitivamente de com agora ja mesmo entao por favor pfv obrigado obrigada obg valeu "
-    + "fechar enviar mandar registrar reservar prosseguir seguir ta estao "
-    + "i it is that thats this the all looks sounds go please thanks thank you do send booking reservation request "
-    + "summary details dates new second too also again now with and",
-);
 const PRECO = new RegExp(
   "r\\$|\\$\\s*\\d|\\d\\s*%|\\breais\\b|\\bdescont|\\bcupo(m|ns)\\b|\\bpromoc|\\babat|\\bbarat|\\bdiscount|\\bcheaper|\\bcoupon"
     + "|\\b(por|for)\\s+\\d[\\d.,]{2,}"
     + "|\\b(se|desde que|contanto que|caso|if|unless|provided|as long as)\\b.*\\b(valor|preco|total|price|\\d{3,})",
 );
 const HESITA = /\b(acho|achando|talvez|pode ser|nao sei|sei la|quase|provavel|provavelmente|depende|vou pensar|vou ver|pensando|maybe|i think|i guess|probably|perhaps|not sure|might|kind of|sort of)\b/;
+// Só um "ok": o hóspede pode estar apenas acusando o recebimento. Vale como hesitação.
+const FRACA = /^(?:(?:ok|okay|ta bom|ta|beleza|blz|bom|legal|show|joia|fine|alright|good|great|k)(?: |$))+$/;
+
+// O sim é uma gramática fechada de frases, não uma lista de palavras soltas: palavras
+// que valem numa frase ("pode enviar", "confirmo o resumo") não podem ser recombinadas em
+// outro pedido ("pode enviar o resumo de novo"). Tudo já sem acento e sem pontuação.
+// 1. Afirmações completas por si.
+const AFIRMA = "s+i+m+|s|ss|si|yes|yep|yeah|yup|isso(?: mesmo)?|exato|exatamente|corret[oa]|certo|certinho|perfeito|claro|com certeza"
+  + "|positivo|fechado|combinado|(?:esta |ta )?tudo (?:certo|correto)|esta (?:certo|correto)|correct|thats? (?:s )?(?:right|correct)"
+  + "|sure|absolutely|definitely|(?:it )?(?:looks|sounds) good|all good|go ahead|proceed|please do";
+// 2. "Confirmo", que pode dizer o que confirma: o resumo, a reserva, os dados, e o imóvel
+//    ou o total do próprio resumo (trocados antes por `oimovel` e `ototal`).
+const CONFIRMA = "(?:(?:eu )?confirm(?:o|ado|ada|ar)|i confirm|confirm(?:ed)?)"
+  + "(?: (?:o |esse |este |the |this |that |my )?(?:resumo|pedido|summary|request|booking|reservation)"
+  + "| (?:a |essa |esta )?(?:segunda |nova |outra )?reserva| (?:the |this |that )?second (?:booking|reservation|request)"
+  + "| (?:os |esses |the )?(?:dados|details)| tudo| it| everything"
+  + "| com (?:as |os )?(?:novas |novos )?(?:datas|dados)| with the new (?:dates|details)"
+  + "| (?:o |a |the )?(?:imovel |reserva d[oe] |property )?oimovel"
+  + "| (?:por |pelo |no |os |o |for |at |the )?(?:valor de |total de |total of )?ototal){0,2}"
+  + "(?: de novo| novamente| again)?";
+// 3. "Pode", sozinho ou com o verbo de enviar. O objeto só pode ser o pedido.
+const PODE = "(?:pode(?: sim)?(?: (?:fechar|enviar|mandar|confirmar|registrar|reservar|prosseguir|seguir))?|send it|book it)"
+  + "(?: (?:o|esse|este) pedido| (?:a|essa|esta) reserva| the (?:request|booking))?";
+const CORTESIA = "por favor|pfv|obrigad[oa]|obg|valeu|please|thanks|thank you|tambem|definitivamente|agora|ja|mesmo|entao|too|also|now|ok|okay";
+const FRASE = `(?:${AFIRMA}|${CONFIRMA}|${PODE})`;
+const SIM = new RegExp(`^(?:(?:ok|okay|entao|bom|ah) )*${FRASE}(?: (?:${FRASE}|${CORTESIA}))*$`);
 
 function semAcento(texto: string): string {
-  return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  return texto.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 }
 
 /**
  * Lê a mensagem do hóspede diante do resumo pendente. Recusa por padrão: só é "sim" a
- * mensagem feita de afirmação e de palavras neutras conhecidas. Dígito, palavra fora das
- * listas, pergunta, hesitação ou condição: não é sim. O id do imóvel e o total do próprio
- * resumo podem ser repetidos ("confirmo o GRM-301"); os de outro, não. Lead enviado não
- * se desfaz, então na dúvida a resposta é "não confirmou".
+ * mensagem feita inteira de frases de afirmação conhecidas. Dígito, palavra ou combinação
+ * fora da gramática, pergunta, hesitação ou condição: não é sim. O id do imóvel e o total
+ * do próprio resumo podem ser repetidos ("confirmo o GRM-301"); os de outro, não. Lead
+ * enviado não se desfaz, então na dúvida a resposta é "não confirmou".
  */
 export function lerConfirmacao(mensagem: string, pendente: Pendente): Leitura {
   const texto = semAcento(mensagem)
-    .replaceAll(semAcento(pendente.reserva.imovel_id), " ")
-    .replaceAll(semAcento(formatarReais(pendente.totalCentavos)), " ");
+    .replaceAll(semAcento(pendente.reserva.imovel_id), " oimovel ")
+    .replaceAll(semAcento(formatarReais(pendente.totalCentavos)), " ototal ");
   if (PRECO.test(texto)) return "condicao_de_preco";
   if (texto.includes("?")) return /\d/.test(texto) ? "outra" : "pergunta";
   const limpo = texto.replace(/[^a-z0-9]+/g, " ").trim();
-  if (HESITA.test(limpo)) return "hesitacao";
-  const termos = limpo.split(" ");
-  const sim = (t: string) => AFIRMA.has(t) || /^s+i+m+$/.test(t);
-  return termos.some(sim) && termos.every((t) => sim(t) || NEUTRA.has(t)) ? "sim" : "outra";
+  if (HESITA.test(limpo) || FRACA.test(limpo)) return "hesitacao";
+  return SIM.test(limpo) ? "sim" : "outra";
 }
 
 /** Corpo do POST: os 7 campos do contrato, com o total convertido de centavos na fronteira. */

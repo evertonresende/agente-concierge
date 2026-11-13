@@ -117,11 +117,13 @@ describe("leitura da mensagem diante do resumo pendente", () => {
   const GRM301 = pendente("GRM-301");
 
   for (const mensagem of [
-    "sim", "Sim!", "siiim", "s", "confirmo", "Confirmado.", "pode fechar", "Pode enviar, por favor", "ok", "isso mesmo",
-    "está tudo certo, pode enviar", "Sim, confirmo.", "Sim, confirmo o resumo.", "Sim, confirmo com as novas datas.",
+    "sim", "Sim!", "siiim", "s", "confirmo", "Confirmado.", "pode fechar", "Pode enviar, por favor", "pode mandar", "isso mesmo",
+    "tudo certo", "está tudo certo, pode enviar", "Sim, confirmo.", "Sim, confirmo o resumo.", "Sim, confirmo com as novas datas.",
     "Sim, confirmo definitivamente.", "Sim, confirmo de novo!", "Sim, confirmo essa segunda reserva também.",
-    "Sim, pode fechar.", "Sim, confirmo o GRM-301.", "sim, confirmo os R$ 2.156,00", "com certeza",
-    "Yes, I confirm.", "yes", "Yes, please go ahead", "that's correct", "sí",
+    "Sim, pode fechar.", "Sim sim, pode confirmar a reserva", "Confirmo tudo", "certo, confirmo", "perfeito, pode fechar",
+    "Sim, confirmo o GRM-301.", "sim, confirmo os R$ 2.156,00", "Sim, confirmo o GRM-301 por R$ 2.156,00", "com certeza",
+    "ok, pode enviar", "Ok, confirmo",
+    "Yes, I confirm.", "yes", "Yes, please go ahead", "yes, confirm the booking", "that's correct", "sí",
   ]) {
     it(`é sim: "${mensagem}"`, () => expect(lerConfirmacao(mensagem, GRM301)).toBe("sim"));
   }
@@ -132,6 +134,12 @@ describe("leitura da mensagem diante do resumo pendente", () => {
     ["pode ser", "hesitacao"],
     ["não sei ainda", "hesitacao"],
     ["I think so", "hesitacao"],
+    ["not sure", "hesitacao"],
+    // Só um "ok" pode ser apenas "recebi": o código pergunta de novo.
+    ["ok", "hesitacao"],
+    ["Ok!", "hesitacao"],
+    ["beleza", "hesitacao"],
+    ["tá bom", "hesitacao"],
     ["sim, se fizer por R$ 2.000", "condicao_de_preco"],
     ["fecho por 2000", "condicao_de_preco"],
     ["sim, com 10% de desconto", "condicao_de_preco"],
@@ -152,6 +160,27 @@ describe("leitura da mensagem diante do resumo pendente", () => {
     ["sim não", "outra"],
     ["ainda não, espera", "outra"],
     ["quero novas datas", "outra"],
+    // Palavras que valem numa frase de confirmação não valem recombinadas em outro pedido.
+    ["pode mandar o resumo de novo", "outra"],
+    ["pode enviar os dados de novo", "outra"],
+    ["sim, manda o resumo de novo", "outra"],
+    ["yes please send the summary again", "outra"],
+    ["send it to my email", "outra"],
+    ["novas datas", "outra"],
+    ["confirmo novas datas", "outra"],
+    ["sim, novas datas", "outra"],
+    ["sim com outra data", "outra"],
+    ["pode fechar com outra data", "outra"],
+    ["pode mudar as datas", "outra"],
+    ["confirmo outro telefone", "outra"],
+    ["sim, segunda", "outra"],
+    ["confirmo a reserva de segunda", "outra"],
+    ["pode reservar a segunda", "outra"],
+    ["certo, e o wifi", "outra"],
+    ["pode me dizer o horário", "outra"],
+    ["sim, depois confirmo", "outra"],
+    ["I confirm nothing", "outra"],
+    ["sim, confirmo por R$ 2.000,00", "condicao_de_preco"],
     ["Obrigado, por enquanto não vou fechar ainda.", "outra"],
     ["", "outra"],
     ["👍", "outra"],

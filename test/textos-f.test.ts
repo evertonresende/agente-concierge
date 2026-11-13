@@ -129,7 +129,9 @@ describe("escolha do idioma", () => {
     ];
     const s = sessao();
     expect((await s.resumo(2, "Ana Lima, +14155550123", DADOS, historico)).respostaFinal).toMatch(/^Summary of your booking request:/);
-    expect((await s.confirma(3, "ok", historico)).respostaFinal).toMatch(/^All set!/);
+    // "ok" sozinho não confirma: o pedido é repetido, em inglês; o "s" seguinte confirma, em inglês.
+    expect((await s.confirma(3, "ok", historico)).respostaFinal).toMatch(/^I have not sent anything yet\. Is everything correct\?/);
+    expect((await s.confirma(4, "s", historico)).respostaFinal).toMatch(/^All set!/);
     // Sem histórico no contexto, a mesma mensagem cai no português.
     expect((await sessao().resumo(2, "Ana Lima, +14155550123")).respostaFinal).toMatch(/^Resumo do seu pedido de reserva:/);
   });
