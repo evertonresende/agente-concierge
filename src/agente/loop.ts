@@ -286,13 +286,19 @@ function alertasDoTurno(mensagem: string): string[] {
   return alertas;
 }
 
+// Palavra que não termina frase: artigo, preposição, conjunção. Resposta que acaba nela
+// foi cortada pelo limite de tokens.
+const PALAVRA_DE_LIGACAO = String.raw`(?:se|e|ou|mas|que|de|do|da|dos|das|em|no|na|nos|nas|para|pra|por|com|o|a|os|as|um|uma|ao|à|if|and|or|but|the|a|an|to|of|for|with|in|on|at)`;
+const PONTA_SOLTA = new RegExp(String.raw`(?<=\p{L}{2}[.!?])[ \t]+(?:[^\s.!?:,;()]+[ \t]+){0,2}${PALAVRA_DE_LIGACAO}$`, "iu");
+
 /**
  * Resposta cortada pelo limite de tokens do modelo termina no meio de uma frase ("... outro
- * imóvel. Se"): até três palavras soltas depois de uma frase completa saem.
+ * imóvel. Se"): até três palavras soltas depois de uma frase completa saem, só quando a
+ * última é de ligação. "Ok. Até logo" sem ponto final é resposta inteira e fica.
  */
 export function semPontaSolta(texto: string): string {
   // A frase anterior termina em palavra (não em "2." de lista numerada).
-  return texto.replace(/(?<=\p{L}{2}[.!?])[ \t]+[^\s.!?:,;()]+(?:[ \t]+[^\s.!?:,;()]+){0,2}$/u, "");
+  return texto.replace(PONTA_SOLTA, "");
 }
 
 /** Garante na resposta todo total calculado no turno, no texto que saiu do código. */

@@ -450,7 +450,10 @@ describe("robustez: conferência depois da resposta (CA-05)", () => {
     const { turno } = conversa();
     const saida = await turno("somos 6", roteiro(diz("O grupo passa da capacidade. Escolha outro imóvel. Se")).modelo);
     expect(saida.reply).toBe("O grupo passa da capacidade. Escolha outro imóvel.");
-    for (const inteira of ["Fica em R$ 2.156,00", "Entrada: sexta-feira.\nTotal: R$ 2.156,00", "- BMB-202 – Casa Mariscal – 10 pessoas", "Posso ajudar em algo mais?", "Opções:\n1. GRM-301\n2. GRM-302"]) {
+    for (const cortada of ["Escolha outro imóvel. Posso ver para", "Escolha outro imóvel. Please choose the", "Escolha outro imóvel. E"]) {
+      expect(semPontaSolta(cortada)).toBe("Escolha outro imóvel.");
+    }
+    for (const inteira of ["Ok, combinado. Até logo", "Obrigado pelo contato. Boa viagem", "Thanks. Have a nice trip", "Fica em R$ 2.156,00", "Entrada: sexta-feira.\nTotal: R$ 2.156,00", "- BMB-202 – Casa Mariscal – 10 pessoas", "Posso ajudar em algo mais?", "Opções:\n1. GRM-301\n2. GRM-302"]) {
       expect(semPontaSolta(inteira)).toBe(inteira);
     }
   });
