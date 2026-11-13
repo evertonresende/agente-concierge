@@ -87,6 +87,7 @@ Cada caso fica em `evals/casos/dev/<bloco>/<id>.json` (ou `<RESERVADO_DIR>/<bloc
 - `confirma` (boolean, opcional, padrão `false`): `true` se o caso confirma reserva / gera lead. Casos com `confirma: true` ou `leads_esperados` não vazio são recusados fora de `ambiente: "dev"`.
 - `turnos` (array, obrigatório): sequência de turnos da conversa.
 - `leads_esperados` (array, opcional): lista exata de leads esperados no webhook falso ao fim da conversa para o telefone gerado no caso (`[]` exige zero leads). Campos conferidos: `imovel_id`, `checkin`, `checkout`, `hospedes`, `valor_total`, além de presença de `nome` e formato válido de `telefone` (L6; ou `formato_telefone: "estrangeiro"` para `+dígitos`).
+- `webhook_modo` (objeto, opcional, só em `dev`): ativa um modo de falha no webhook falso escopado exclusivamente para o `telefone` desta conversa (`PUT /modos/<segmento>` antes do turno alvo e `DELETE /modos/<segmento>?telefone=<dígitos>` sempre no `finally`, inclusive em erro). Campos: `{ "modo": "500" | "422" | "atraso", "validade_s"?: 60, "atraso_ms"?: 30000, "antes_do_turno"?: N }`. Também pode ser declarado diretamente dentro de um turno específico.
 
 ### Placeholders por execução
 

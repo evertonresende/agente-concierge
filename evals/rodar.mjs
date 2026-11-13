@@ -370,6 +370,57 @@ async function buscarLeadsPorTelefones(leadsUrl, conjuntoDigitos) {
   return dados.leads.filter((lead) => conjuntoDigitos.has(normalizarDigitos(lead?.telefone)));
 }
 
+function derivarUrlModos(leadsUrl) {
+  if (!leadsUrl || !leadsUrl.includes('/leads/')) {
+    throw new Error('LEADS_URL_DEV inválida para derivar rota /modos/');
+  }
+  return leadsUrl.replace('/leads/', '/modos/');
+}
+
+async function ligarModoWebhook(leadsUrl, telefoneDigitos, cfg) {
+  if (!telefoneDigitos) {
+    throw new Error('Telefone obrigatório para ligar modo do webhook');
+  }
+  const modosUrl = derivarUrlModos(leadsUrl);
+  const corpo = {
+    modo: cfg.modo,
+    telefone: telefoneDigitos,
+    validade_s: cfg.validade_s ?? 60,
+  };
+  if (cfg.atraso_ms !== undefined) {
+    corpo.atraso_ms = cfg.atraso_ms;
+  }
+
+  let res;
+  try {
+    res = await fetch(modosUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(corpo),
+      signal: AbortSignal.timeout(10_000),
+    });
+  } catch {
+    throw new Error('Falha de rede ao ligar modo do webhook falso');
+  }
+  if (!res.ok) {
+    throw new Error(`Webhook falso devolveu HTTP ${res.status} ao ligar modo`);
+  }
+}
+
+async function desligarModoWebhook(leadsUrl, telefoneDigitos) {
+  if (!telefoneDigitos || !leadsUrl) return;
+  const modosUrl = derivarUrlModos(leadsUrl);
+  const url = `${modosUrl}?telefone=${encodeURIComponent(telefoneDigitos)}`;
+  try {
+    await fetch(url, {
+      method: 'DELETE',
+      signal: AbortSignal.timeout(10_000),
+    });
+  } catch {
+    // Melhor esforço na limpeza; validade_s garante expiração
+  }
+}
+
 function verificarLeadsEsperados(recebidos, esperados, ctx) {
   const erros = [];
   let violacaoLead = false;
@@ -669,78 +720,106 @@ async function executarCaso({ caso, indice, args, ehDev, leadsUrlDev, runId, tel
     });
   };
 
-  for (let i = 0; i < caso.turnos.length; i++) {
-    const turno = caso.turnos[i];
-    const numTurno = i + 1;
+  let modoLigado = false;
+  const modoCaso =
+    caso.webhook_modo && typeof caso.webhook_modo === 'object' ? caso.webhook_modo : null;
+  const turnoAlvoCaso =
+    modoCaso && Number.isInteger(modoCaso.antes_do_turno)
+      ? modoCaso.antes_do_turno
+      : caso.turnos.length;
 
-    if (Array.isArray(turno.paralelo)) {
-      const reqs = turno.paralelo.map((sub, j) => {
-        const sid = obterSessionId(sub.sessao || 'principal');
-        const corpo = prepararCorpo(sub, sid);
-        return enviarChat(args.alvo, corpo, args.timeoutMs).then((resp) => ({
-          resp,
-          sub,
-          sid,
-          rotulo: `turno ${numTurno}.${j + 1}`,
-        }));
-      });
+  try {
+    for (let i = 0; i < caso.turnos.length; i++) {
+      const turno = caso.turnos[i];
+      const numTurno = i + 1;
 
-      const resultados = await Promise.all(reqs);
-      for (const item of resultados) {
-        latenciasMs.push(item.resp.latenciaMs);
-        usoEntrada += item.resp.usoEntrada;
-        usoSaida += item.resp.usoSaida;
-        chamadasModelo += item.resp.chamadasModelo;
-        falhas.push(
-          ...avaliarRespostaTurno(item.resp, item.sub.espera, ctx, item.sid, item.rotulo)
-        );
-      }
-      falhas.push(
-        ...avaliarConjuntoParalelo(
-          resultados.map((r) => r.resp),
-          turno.espera_conjunto,
-          ctx,
-          sessaoBase,
-          `turno ${numTurno}`
-        )
-      );
-    } else {
-      const sid = obterSessionId(turno.sessao || 'principal');
-      const corpo = prepararCorpo(turno, sid);
-      const resp = await enviarChat(args.alvo, corpo, args.timeoutMs);
+      const cfgModo =
+        (turno.webhook_modo && typeof turno.webhook_modo === 'object' ? turno.webhook_modo : null) ||
+        (modoCaso && numTurno === turnoAlvoCaso ? modoCaso : null);
 
-      latenciasMs.push(resp.latenciaMs);
-      usoEntrada += resp.usoEntrada;
-      usoSaida += resp.usoSaida;
-      chamadasModelo += resp.chamadasModelo;
-      falhas.push(...avaliarRespostaTurno(resp, turno.espera, ctx, sid, `turno ${numTurno}`));
-
-      if (turno.espera?.leads_ate_agora !== undefined && ehDev && leadsUrlDev) {
+      if (cfgModo && ehDev && leadsUrlDev) {
         try {
-          const leadsAgora = await buscarLeadsPorTelefones(leadsUrlDev, conjuntoDigitos);
-          if (leadsAgora.length !== turno.espera.leads_ate_agora) {
-            falhas.push(
-              `turno ${numTurno}: leads_ate_agora=${leadsAgora.length}, esperado=${turno.espera.leads_ate_agora}`
-            );
-            if (leadsAgora.length > turno.espera.leads_ate_agora) {
-              violacaoLead = true;
-            }
-          }
+          await ligarModoWebhook(leadsUrlDev, ctx.telefoneDigitos, cfgModo);
+          modoLigado = true;
         } catch (err) {
           falhas.push(`turno ${numTurno}: ${err.message}`);
+          break;
+        }
+      }
+
+      if (Array.isArray(turno.paralelo)) {
+        const reqs = turno.paralelo.map((sub, j) => {
+          const sid = obterSessionId(sub.sessao || 'principal');
+          const corpo = prepararCorpo(sub, sid);
+          return enviarChat(args.alvo, corpo, args.timeoutMs).then((resp) => ({
+            resp,
+            sub,
+            sid,
+            rotulo: `turno ${numTurno}.${j + 1}`,
+          }));
+        });
+
+        const resultados = await Promise.all(reqs);
+        for (const item of resultados) {
+          latenciasMs.push(item.resp.latenciaMs);
+          usoEntrada += item.resp.usoEntrada;
+          usoSaida += item.resp.usoSaida;
+          chamadasModelo += item.resp.chamadasModelo;
+          falhas.push(
+            ...avaliarRespostaTurno(item.resp, item.sub.espera, ctx, item.sid, item.rotulo)
+          );
+        }
+        falhas.push(
+          ...avaliarConjuntoParalelo(
+            resultados.map((r) => r.resp),
+            turno.espera_conjunto,
+            ctx,
+            sessaoBase,
+            `turno ${numTurno}`
+          )
+        );
+      } else {
+        const sid = obterSessionId(turno.sessao || 'principal');
+        const corpo = prepararCorpo(turno, sid);
+        const resp = await enviarChat(args.alvo, corpo, args.timeoutMs);
+
+        latenciasMs.push(resp.latenciaMs);
+        usoEntrada += resp.usoEntrada;
+        usoSaida += resp.usoSaida;
+        chamadasModelo += resp.chamadasModelo;
+        falhas.push(...avaliarRespostaTurno(resp, turno.espera, ctx, sid, `turno ${numTurno}`));
+
+        if (turno.espera?.leads_ate_agora !== undefined && ehDev && leadsUrlDev) {
+          try {
+            const leadsAgora = await buscarLeadsPorTelefones(leadsUrlDev, conjuntoDigitos);
+            if (leadsAgora.length !== turno.espera.leads_ate_agora) {
+              falhas.push(
+                `turno ${numTurno}: leads_ate_agora=${leadsAgora.length}, esperado=${turno.espera.leads_ate_agora}`
+              );
+              if (leadsAgora.length > turno.espera.leads_ate_agora) {
+                violacaoLead = true;
+              }
+            }
+          } catch (err) {
+            falhas.push(`turno ${numTurno}: ${err.message}`);
+          }
         }
       }
     }
-  }
 
-  if (Array.isArray(caso.leads_esperados) && ehDev && leadsUrlDev) {
-    try {
-      const recebidos = await buscarLeadsPorTelefones(leadsUrlDev, conjuntoDigitos);
-      const check = verificarLeadsEsperados(recebidos, caso.leads_esperados, ctx);
-      falhas.push(...check.erros);
-      if (check.violacaoLead) violacaoLead = true;
-    } catch (err) {
-      falhas.push(err.message);
+    if (Array.isArray(caso.leads_esperados) && ehDev && leadsUrlDev) {
+      try {
+        const recebidos = await buscarLeadsPorTelefones(leadsUrlDev, conjuntoDigitos);
+        const check = verificarLeadsEsperados(recebidos, caso.leads_esperados, ctx);
+        falhas.push(...check.erros);
+        if (check.violacaoLead) violacaoLead = true;
+      } catch (err) {
+        falhas.push(err.message);
+      }
+    }
+  } finally {
+    if (modoLigado && ehDev && leadsUrlDev) {
+      await desligarModoWebhook(leadsUrlDev, ctx.telefoneDigitos);
     }
   }
 
@@ -811,8 +890,13 @@ async function main() {
     todosCasos.push(...lista);
   }
 
+  const temWebhookModo = (caso) =>
+    Boolean(caso.webhook_modo) ||
+    (Array.isArray(caso.turnos) && caso.turnos.some((t) => Boolean(t.webhook_modo)));
+
   const requerDev = (caso) =>
     caso.confirma === true ||
+    temWebhookModo(caso) ||
     (Array.isArray(caso.leads_esperados) && caso.leads_esperados.length > 0);
 
   const casosElegiveis = [];
@@ -856,6 +940,7 @@ async function main() {
     casosElegiveis.some(
       (c) =>
         c.confirma === true ||
+        temWebhookModo(c) ||
         (Array.isArray(c.leads_esperados) && c.leads_esperados.length > 0)
     );
   const leadsUrlDev = process.env.LEADS_URL_DEV?.trim() || '';

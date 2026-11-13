@@ -477,6 +477,87 @@ async function testarRunner() {
     assert.notEqual(rResFail.code, 0, '80% no reservado deve reprovar');
     assert.match(rResFail.stdout, /RESERVADO REPROVADO/);
 
+    // 8. Modo de falha por telefone no webhook (/modos/<segmento>): liga antes do turno e desliga sempre (inclusive em erro)
+    const modosLog = [];
+    const modosAtivos = new Map();
+    const webhookComModos = await iniciarServidorMock(async (req, res) => {
+      const u = new URL(req.url, 'http://127.0.0.1');
+      if (req.method === 'GET' && u.pathname === '/leads/teste') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ leads: [] }));
+        return;
+      }
+      if (req.method === 'PUT' && u.pathname === '/modos/teste') {
+        const body = JSON.parse(await lerCorpo(req));
+        modosLog.push({ op: 'PUT', body });
+        if (body.telefone) {
+          modosAtivos.set(body.telefone, body);
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true }));
+        return;
+      }
+      if (req.method === 'DELETE' && u.pathname === '/modos/teste') {
+        const tel = u.searchParams.get('telefone');
+        modosLog.push({ op: 'DELETE', telefone: tel });
+        if (tel) modosAtivos.delete(tel);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true }));
+        return;
+      }
+      res.writeHead(404);
+      res.end();
+    });
+
+    const tmpDevModoDir = fs.mkdtempSync(path.join(os.tmpdir(), 'dev-modo-'));
+    try {
+      const casoModoOk = {
+        id: 'modo-500-ok',
+        bloco: 'funciona-cotacoes',
+        confirma: true,
+        webhook_modo: { modo: '500', validade_s: 60 },
+        turnos: [
+          {
+            mensagem: 'Quero cotar o GRM-301 de 15/01/2027 a 18/01/2027 para 2 pessoas.',
+            espera: { handoff: false, resposta_contem: ['R\\$ 2\\.156,00'] },
+          },
+          {
+            mensagem: 'Sim, confirmo.',
+            espera: { handoff: false },
+          },
+        ],
+        leads_esperados: [],
+      };
+      // Usa RESERVADO_DIR só para testar carregamento isolado com webhook_modo + falha no turno para checar DELETE
+      const blocoTmp = path.join(tmpDevModoDir, 'funciona-cotacoes');
+      fs.mkdirSync(blocoTmp, { recursive: true });
+      fs.writeFileSync(path.join(blocoTmp, 'modo-ok.json'), JSON.stringify(casoModoOk));
+
+      await rodarCli(
+        ['--alvo', agente.url, '--conjunto', 'reservado', '--sem-relatorio'],
+        { LEADS_URL_DEV: `${webhookComModos.url}/leads/teste`, RESERVADO_DIR: tmpDevModoDir }
+      );
+      assert.equal(modosLog.filter((x) => x.op === 'PUT').length, 1);
+      assert.equal(modosLog.filter((x) => x.op === 'DELETE').length, 1);
+      assert.ok(modosLog[0].body.telefone, 'PUT /modos deve sempre enviar telefone');
+      assert.equal(modosLog[1].telefone, modosLog[0].body.telefone, 'DELETE deve desligar o mesmo telefone');
+      assert.equal(modosAtivos.size, 0, 'Nenhum modo pode ficar ativo após o fim do caso');
+
+      // Caso com erro no turno ainda precisa desligar o modo no finally
+      modo = 'resposta_errada';
+      const rModoErro = await rodarCli(
+        ['--alvo', agente.url, '--conjunto', 'reservado', '--sem-relatorio'],
+        { LEADS_URL_DEV: `${webhookComModos.url}/leads/teste`, RESERVADO_DIR: tmpDevModoDir }
+      );
+      assert.notEqual(rModoErro.code, 0);
+      assert.equal(modosLog.filter((x) => x.op === 'PUT').length, 2);
+      assert.equal(modosLog.filter((x) => x.op === 'DELETE').length, 2);
+      assert.equal(modosAtivos.size, 0, 'DELETE deve rodar mesmo quando o turno falha');
+    } finally {
+      fs.rmSync(tmpDevModoDir, { recursive: true, force: true });
+      await webhookComModos.fechar();
+    }
+
     console.log('RUNNER OK');
   } finally {
     fs.rmSync(tmpRel, { force: true });
