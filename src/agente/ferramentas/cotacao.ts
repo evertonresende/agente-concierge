@@ -73,6 +73,9 @@ export const cotarEstadia = definir(
       };
     }
     const total = formatarReais(cotacao.totalCentavos);
+    const faltaHospedes = hospedes === undefined
+      ? ` Informe também que a capacidade do imóvel é de ${ficha.capacidade} ${ficha.capacidade === 1 ? "pessoa" : "pessoas"} e pergunte quantas pessoas vão se hospedar.`
+      : "";
     return {
       total,
       paraOModelo: {
@@ -83,7 +86,7 @@ export const cotarEstadia = definir(
         taxa_de_limpeza: formatarReais(cotacao.taxaLimpezaCentavos),
         total,
         hospedes: hospedes ?? "não informado: informe a capacidade e pergunte quantas pessoas são",
-        instrucao: `Declare na resposta as duas datas exatas com dia da semana, dia, mês e ano (entrada ${estadia.entrada} e saída ${estadia.saida}), para o hóspede poder corrigir, e informe o total exatamente como está em \`total\`. O valor é uma cotação: não afirme que as datas estão disponíveis.`,
+        instrucao: `Declare na resposta as duas datas exatas com dia da semana, dia, mês e ano (entrada ${estadia.entrada} e saída ${estadia.saida}), para o hóspede poder corrigir, e informe o total exatamente como está em \`total\`.${faltaHospedes} O valor é uma cotação: não afirme que as datas estão disponíveis.`,
       },
     };
   },

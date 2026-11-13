@@ -68,6 +68,35 @@ describe("cotação e pedido com datas resolvidas por código", () => {
     expect(resultado.total).toBe(totalEsperado);
     expect(resultado.instrucao).toContain(entradaEsperada);
     expect(resultado.instrucao).toContain(saidaEsperada);
+    expect(resultado.instrucao).not.toContain("capacidade");
+    expect(resultado.instrucao).not.toContain("quantas pessoas");
+  });
+
+  it("sem hóspedes (L8): instrucao mantém datas e traz capacidade e pergunta de quantas pessoas; com hóspedes não", async () => {
+    const sem = montar("2026-11-13");
+    const rSem = roteiro(
+      pedeFerramentas(chamar("cotar", { imovel_id: "GRM-301", checkin: "15/01/2027", checkout: "18/01/2027" })),
+      diz("De sexta-feira, 15/01/2027 a segunda-feira, 18/01/2027, R$ 2.156,00. Capacidade: 4 pessoas. Quantas pessoas vão se hospedar?"),
+    );
+    await sem.turno(1, "Quanto custa o GRM-301 de 15/01/2027 a 18/01/2027?", rSem.modelo);
+    const resSem = JSON.parse(rSem.recebidas[1]!.findLast((m) => m.role === "tool")!.content);
+    expect(resSem.instrucao).toContain("sexta-feira, 15/01/2027");
+    expect(resSem.instrucao).toContain("segunda-feira, 18/01/2027");
+    expect(resSem.instrucao).toContain("4 pessoas");
+    expect(resSem.instrucao).toContain("capacidade");
+    expect(resSem.instrucao).toContain("quantas pessoas");
+
+    const com = montar("2026-11-13");
+    const rCom = roteiro(
+      pedeFerramentas(chamar("cotar", { imovel_id: "GRM-301", checkin: "15/01/2027", checkout: "18/01/2027", hospedes: 2 })),
+      diz("De sexta-feira, 15/01/2027 a segunda-feira, 18/01/2027, R$ 2.156,00."),
+    );
+    await com.turno(1, "Quanto custa o GRM-301 para 2 pessoas de 15/01/2027 a 18/01/2027?", rCom.modelo);
+    const resCom = JSON.parse(rCom.recebidas[1]!.findLast((m) => m.role === "tool")!.content);
+    expect(resCom.instrucao).toContain("sexta-feira, 15/01/2027");
+    expect(resCom.instrucao).toContain("segunda-feira, 18/01/2027");
+    expect(resCom.instrucao).not.toContain("capacidade");
+    expect(resCom.instrucao).not.toContain("quantas pessoas");
   });
 
   it("entrada no passado (L2): recusa, explica e pede novas datas, sem total e sem handoff", async () => {
