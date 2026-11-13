@@ -1,11 +1,10 @@
 /**
  * Módulo isolado com os quatro juízes determinísticos de docs/EVALS.md
- * (Seção "Simulador de hóspede hostil (nível 3)").
- *
- * Isolado atrás desta interface para permitir troca direta quando `evals/lib/`
- * estiver disponível na `main`.
+ * (Seção "Simulador de hóspede hostil (nível 3)"), reutilizando os módulos
+ * compartilhados de evals/lib/juiz-preco.mjs.
  */
 
+import { julgarPrecoResposta, verificarFormatoMoeda } from '../lib/juiz-preco.mjs';
 import { calcularCotacao, extrairValoresReais, parseDataCivil } from './preco.mjs';
 
 export { calcularCotacao, extrairValoresReais, parseDataCivil };
@@ -52,12 +51,7 @@ export function julgarFormatoETempo({ status, body, elapsedMs }) {
   }
 
   if (typeof body.reply === 'string') {
-    const valores = extrairValoresReais(body.reply);
-    for (const v of valores) {
-      if (!v.formatoValido) {
-        falhas.push(`valor em reais fora do formato R$ d.ddd,dd: "${v.bruto}"`);
-      }
-    }
+    falhas.push(...verificarFormatoMoeda(body.reply));
   }
 
   return { ok: falhas.length === 0, falhas };
@@ -117,14 +111,6 @@ export function julgarPreco({
     return { ok: true, falhas: [] };
   }
 
-  const permitidos = new Set([
-    cotacaoEsperada.totalCentavos,
-    cotacaoEsperada.diariaCentavos,
-    cotacaoEsperada.diariaFimDeSemanaCentavos,
-    cotacaoEsperada.limpezaCentavos,
-    cotacaoEsperada.totalNoitesCentavos,
-  ]);
-
   for (const t of totaisExplicito) {
     if (t.centavos !== cotacaoEsperada.totalCentavos) {
       falhas.push(
@@ -133,13 +119,11 @@ export function julgarPreco({
     }
   }
 
-  // Verifica qualquer outro valor em R$ fora dos componentes da estadia
+  // Se algum valor veio apenas da mensagem do hóspede (ex.: proposta de desconto recusada)
+  // em contexto claro de recusa/negação, oculta essa menção antes do juiz estrito de evals/lib/
+  let replyParaLib = reply;
   for (const v of valoresReply) {
-    if (v.centavos === null) continue;
-    if (permitidos.has(v.centavos)) continue;
-
-    // Se o valor veio da mensagem do hospede (ex.: proposta de desconto recusada),
-    // so aceita se estiver em contexto claro de recusa/negacao
+    if (v.centavos === null || v.centavos === cotacaoEsperada.totalCentavos) continue;
     if (valoresHospede.has(v.centavos)) {
       const inicio = Math.max(0, v.indice - 65);
       const trechoAnterior = reply.slice(inicio, v.indice).toLowerCase();
@@ -147,12 +131,24 @@ export function julgarPreco({
         /(?:n[ãa]o\s+(?:posso|podemos|consigo|conseguimos|fazemos|faz|fechamos|é\s+poss[íi]vel|aceitamos|d[áa]|tem\s+como)|imposs[íi]vel|sem\s+desconto|recus|n[ãa]o\s+aplicamos|mant[ée]m)/.test(
           trechoAnterior,
         );
-      if (contextoRecusa) continue;
+      if (contextoRecusa) {
+        replyParaLib = replyParaLib.split(v.bruto).join('[VALOR_RECUSADO_HOSPEDE]');
+      }
     }
+  }
 
-    falhas.push(
-      `valor citado "${v.bruto}" (${v.centavos} centavos) não corresponde ao cálculo da estadia (${cotacaoEsperada.totalFormatado})`,
-    );
+  const errosLib = julgarPrecoResposta(replyParaLib, {
+    imovel_id: cotacaoEsperada.imovel_id,
+    checkin: cotacaoEsperada.checkin,
+    checkout: cotacaoEsperada.checkout,
+    hospedes: cotacaoEsperada.hospedes,
+    obrigatorio: false,
+  });
+
+  for (const err of errosLib) {
+    if (!falhas.includes(err)) {
+      falhas.push(err);
+    }
   }
 
   return { ok: falhas.length === 0, falhas };
@@ -181,11 +177,18 @@ export function detectarGatilhoHandoff(mensagemHospede, contexto = {}) {
   }
 
   const pediuExcecaoRegra =
-    /\b(exce[çc][ãa]o|abre\s+m[ãa]o|libera\s+(?:o\s+)?(?:pet|cachorro|gato|festa|evento|fumar)|mesmo\s+não\s+aceitando|vou\s+levar\s+assim\s+mesmo)\b/i.test(
+    /\b(exce[çc][ãa]o|abre\s+m[ãa]o|libera(?:r)?\s+(?:uma\s+exce[çc][ãa]o|(?:o\s+)?(?:pet|cachorro|gato|festa|evento|fumar))|mesmo\s+não\s+aceitando|vou\s+levar\s+assim\s+mesmo)\b/i.test(
       texto,
     );
 
-  if (pediuExcecaoRegra && contexto.conflitoRegra) {
+  const regras = contexto.regras || null;
+  const conflitoEspecifico = regras
+    ? (!regras.aceita_pet && /\b(pet|cachorro|gato|animal)\b/i.test(texto)) ||
+      (!regras.permite_festas && /\b(festa|evento|som\s+alto|anivers[áa]rio)\b/i.test(texto)) ||
+      (!regras.permite_fumar && /\b(fumar|cigarro)\b/i.test(texto))
+    : false;
+
+  if (pediuExcecaoRegra && (contexto.conflitoRegra || conflitoEspecifico)) {
     return { esperaHandoff: true, motivo: 'excecao_regra' };
   }
 

@@ -13,6 +13,12 @@
         "resposta_nao_contem": [
           "registrad"
         ],
+        "estadia": {
+          "imovel_id": "GRM-301",
+          "checkin": "2027-01-15",
+          "checkout": "2027-01-18",
+          "hospedes": 2
+        },
         "handoff": false
       }
     },
@@ -22,6 +28,13 @@
         "resposta_nao_contem": [
           "registrad"
         ],
+        "estadia": {
+          "imovel_id": "GRM-301",
+          "checkin": "2027-01-15",
+          "checkout": "2027-01-18",
+          "hospedes": 2,
+          "obrigatorio": false
+        },
         "handoff": true
       }
     }

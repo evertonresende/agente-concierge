@@ -9,6 +9,13 @@
         "resposta_contem": [
           "R\\$ 973,16"
         ],
+        "estadia": {
+          "imovel_id": "NAT-601",
+          "checkin": "2027-01-15",
+          "checkout": "2027-01-17",
+          "hospedes": 2
+        },
+        "leads_ate_agora": 0,
         "handoff": false
       }
     },
@@ -23,6 +30,13 @@
         "resposta_nao_contem": [
           "registrad"
         ],
+        "estadia": {
+          "imovel_id": "NAT-601",
+          "checkin": "2027-01-15",
+          "checkout": "2027-01-17",
+          "hospedes": 2
+        },
+        "leads_ate_agora": 0,
         "handoff": false
       }
     },
@@ -32,6 +46,14 @@
         "resposta_nao_contem": [
           "registrad"
         ],
+        "estadia": {
+          "imovel_id": "NAT-601",
+          "checkin": "2027-01-15",
+          "checkout": "2027-01-17",
+          "hospedes": 2,
+          "obrigatorio": false
+        },
+        "leads_ate_agora": 0,
         "handoff": true
       }
     }

@@ -36,8 +36,15 @@ export async function iniciarWebhookFalsoLocal(porta = 0) {
   const leads = [];
   const server = http.createServer(async (req, res) => {
     const url = new URL(req.url || '/', 'http://127.0.0.1');
+    if (req.method === 'GET' && url.pathname === '/') {
+      return responderJson(res, 200, { ok: true, servico: 'webhook-falso' });
+    }
     if (req.method === 'GET' && url.pathname.startsWith('/leads')) {
       return responderJson(res, 200, { leads: [...leads] });
+    }
+    if (req.method === 'DELETE' && url.pathname.startsWith('/leads')) {
+      leads.length = 0;
+      return responderJson(res, 200, { ok: true, removidos: true });
     }
     if (req.method === 'POST' && url.pathname.startsWith('/leads')) {
       try {
@@ -51,16 +58,17 @@ export async function iniciarWebhookFalsoLocal(porta = 0) {
           'hospedes',
           'valor_total',
         ];
-        const erros = obrigatorios.filter(
-          (c) => corpo[c] === undefined || corpo[c] === null || corpo[c] === '',
-        );
+        const erros = obrigatorios
+          .filter((c) => corpo[c] === undefined || corpo[c] === null || corpo[c] === '')
+          .map((campo) => ({ campo, erro: 'campo obrigatório ausente' }));
         if (erros.length > 0) {
           return responderJson(res, 422, { erros });
         }
-        leads.push({ ...corpo, recebido_em: new Date().toISOString() });
-        return responderJson(res, 201, { ok: true });
+        const salvo = { ...corpo, recebido_em: new Date().toISOString() };
+        leads.push(salvo);
+        return responderJson(res, 201, salvo);
       } catch {
-        return responderJson(res, 400, { erro: 'json invalido' });
+        return responderJson(res, 422, { erros: [{ campo: 'corpo', erro: 'JSON inválido' }] });
       }
     }
     return responderJson(res, 404, { erro: 'nao encontrado' });
@@ -115,8 +123,13 @@ function formatarTelefoneBr(raw) {
 }
 
 function extrairNome(texto) {
-  const m = texto.match(/(?:sou|meu\s+nome\s+[ée]|nome[:\s]+)\s*([A-ZÀ-Ú][a-zà-ú]+(?:\s+[A-ZÀ-Ú][a-zà-ú]+)+)/i);
-  return m ? m[1].trim() : null;
+  const m = texto.match(
+    /(?:sou|meu\s+nome\s+[ée]|nome[:\s]+)\s*([A-ZÀ-Ú][a-zà-ú]+(?:\s+(?:da|de|do|dos|das|[A-ZÀ-Ú][a-zà-ú]+)){1,3})/i,
+  );
+  if (!m) return null;
+  return m[1]
+    .replace(/\s+(?:e\s+(?:meu\s+)?telefone|telefone|fone|celular|whatsapp).*$/i, '')
+    .trim();
 }
 
 export async function iniciarAgenteFalsoLocal({
@@ -183,6 +196,7 @@ export async function iniciarAgenteFalsoLocal({
 
     // Detecta gatilhos de handoff / manipulacao
     const det = detectarGatilhoHandoff(message, {
+      regras: estado.imovel?.regras,
       conflitoRegra: estado.imovel && !estado.imovel.regras?.aceita_pet,
     });
 
@@ -266,16 +280,16 @@ export async function iniciarAgenteFalsoLocal({
           };
         }
 
+        const chave = `${cotacao.imovel_id}|${cotacao.checkin}|${cotacao.checkout}|${cotacao.hospedes}|${estado.telefone}`;
+        if (classif === 'inequivoca' && estado.reservasRegistradas.has(chave) && modo !== 'lead_duplicado') {
+          return {
+            reply: `Seu pedido de reserva no ${cotacao.imovel_id} já foi registrado anteriormente (${cotacao.totalFormatado}).`,
+            handoff: false,
+          };
+        }
+
         // Confirmacao inequivoca de um resumo pendente
         if (estado.resumoPendente && classif === 'inequivoca') {
-          const chave = `${cotacao.imovel_id}|${cotacao.checkin}|${cotacao.checkout}|${cotacao.hospedes}|${estado.telefone}`;
-          if (estado.reservasRegistradas.has(chave) && modo !== 'lead_duplicado') {
-            return {
-              reply: `Seu pedido de reserva no ${cotacao.imovel_id} já foi registrado anteriormente (${cotacao.totalFormatado}).`,
-              handoff: false,
-            };
-          }
-
           if (leadsUrl) {
             const respLead = await fetch(leadsUrl, {
               method: 'POST',
@@ -310,8 +324,14 @@ export async function iniciarAgenteFalsoLocal({
           };
         }
 
+        const mencionouPet = /\b(pet|cachorro|gato|animal)\b/i.test(message);
+        const notaPet =
+          mencionouPet && estado.imovel.regras && !estado.imovel.regras.aceita_pet
+            ? ' Observação: este imóvel não aceita pet.'
+            : '';
+
         return {
-          reply: `Para o imóvel ${cotacao.imovel_id} de ${cotacao.checkinBr} a ${cotacao.checkoutBr} (${cotacao.noites} noites), o total fica em ${cotacao.totalFormatado}. Lembrete: esta cotação não garante disponibilidade das datas.`,
+          reply: `Para o imóvel ${cotacao.imovel_id} de ${cotacao.checkinBr} a ${cotacao.checkoutBr} (${cotacao.noites} noites), o total fica em ${cotacao.totalFormatado}. Lembrete: esta cotação não garante disponibilidade das datas.${notaPet}`,
           handoff: false,
         };
       }

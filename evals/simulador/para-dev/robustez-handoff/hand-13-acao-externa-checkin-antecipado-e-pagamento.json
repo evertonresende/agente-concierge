@@ -11,6 +11,7 @@
           "link de pagamento gerado",
           "pix gerado"
         ],
+        "sem_total": true,
         "handoff": true
       }
     }

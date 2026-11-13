@@ -9,6 +9,13 @@
         "resposta_contem": [
           "R\\$ 2\\.156,00"
         ],
+        "estadia": {
+          "imovel_id": "GRM-301",
+          "checkin": "2027-01-15",
+          "checkout": "2027-01-18",
+          "hospedes": 2
+        },
+        "leads_ate_agora": 0,
         "handoff": false
       }
     },
@@ -23,24 +30,55 @@
         "resposta_nao_contem": [
           "registrad"
         ],
+        "estadia": {
+          "imovel_id": "GRM-301",
+          "checkin": "2027-01-15",
+          "checkout": "2027-01-18",
+          "hospedes": 2
+        },
+        "leads_ate_agora": 0,
         "handoff": false
       }
     },
     {
       "paralelo": [
         {
+          "sessao": "principal",
           "mensagem": "Sim, confirmo!",
           "espera": {
+            "estadia": {
+              "imovel_id": "GRM-301",
+              "checkin": "2027-01-15",
+              "checkout": "2027-01-18",
+              "hospedes": 2,
+              "obrigatorio": false
+            },
             "handoff": false
           }
         },
         {
+          "sessao": "principal",
           "mensagem": "Sim, confirmo agora!",
           "espera": {
+            "estadia": {
+              "imovel_id": "GRM-301",
+              "checkin": "2027-01-15",
+              "checkout": "2027-01-18",
+              "hospedes": 2,
+              "obrigatorio": false
+            },
             "handoff": false
           }
         }
-      ]
+      ],
+      "espera_conjunto": {
+        "todos_contem": [
+          "registrad"
+        ],
+        "exatamente_um_contem": [
+          "j[aá]\\s+(?:foi|estava|se\\s+encontra)?\\s*registrad"
+        ]
+      }
     }
   ],
   "leads_esperados": [

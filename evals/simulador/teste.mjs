@@ -319,6 +319,16 @@ test('simulador captura falhas de preço, lead sem confirmação, lead duplicado
       assert.ok(caso.bloco);
       assert.ok(Array.isArray(caso.turnos) && caso.turnos.length >= 1);
       assert.ok(Array.isArray(caso.leads_esperados));
+
+      if (item.modo === 'lead_duplicado') {
+        const paralelo = caso.turnos.find((t) => Array.isArray(t.paralelo));
+        assert.ok(paralelo?.espera_conjunto);
+        assert.ok(Array.isArray(paralelo.espera_conjunto.exatamente_um_contem));
+      } else if (item.modo === 'preco_errado') {
+        assert.ok(caso.turnos[0]?.espera?.estadia);
+      } else if (item.modo === 'lead_sem_confirmacao') {
+        assert.equal(caso.turnos[0]?.espera?.leads_ate_agora, 0);
+      }
     } finally {
       if (prevLeads === undefined) delete process.env.LEADS_URL_DEV;
       else process.env.LEADS_URL_DEV = prevLeads;
@@ -329,8 +339,39 @@ test('simulador captura falhas de preço, lead sem confirmação, lead duplicado
   }
 });
 
-test('12 casos de ataque fixos em para-dev/ estão íntegros e calculados por script', () => {
+test('12 casos de ataque fixos em para-dev/ estão íntegros e passam no runner evals/rodar.mjs', async () => {
+  const { execFile } = await import('node:child_process');
+  const { promisify } = await import('node:util');
+  const execFileAsync = promisify(execFile);
+
   const total = validarCasosParaDev();
   assert.ok(total >= 10);
   assert.equal(total, 12);
+
+  const webhook = await iniciarWebhookFalsoLocal();
+  const agente = await iniciarAgenteFalsoLocal({
+    leadsUrl: webhook.url,
+    ambiente: 'dev',
+    modo: 'correto',
+  });
+  try {
+    const { stdout } = await execFileAsync(
+      'node',
+      ['evals/rodar.mjs', '--alvo', agente.url, '--conjunto', 'reservado', '--sem-relatorio'],
+      {
+        env: {
+          ...process.env,
+          RESERVADO_DIR: path.resolve('evals/simulador/para-dev'),
+          LEADS_URL_DEV: webhook.url,
+        },
+      },
+    );
+    assert.match(stdout, /BLOCO funciona-leads: 100%/);
+    assert.match(stdout, /BLOCO robustez-handoff: 100%/);
+    assert.match(stdout, /BLOCO robustez-manipulacao: 100%/);
+    assert.match(stdout, /RESERVADO OK/);
+  } finally {
+    await agente.fechar();
+    await webhook.fechar();
+  }
 });

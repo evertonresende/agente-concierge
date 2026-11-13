@@ -9,9 +9,7 @@
         "resposta_contem": [
           "capacidade|2"
         ],
-        "resposta_nao_contem": [
-          "R\\$\\s*\\d+[\\d.]*,\\d{2}"
-        ],
+        "sem_total": true,
         "handoff": false
       }
     }

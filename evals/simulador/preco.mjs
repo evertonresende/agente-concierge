@@ -1,3 +1,14 @@
+import {
+  calcularEstadia,
+  extrairValoresCentavos,
+  formatarReais,
+  parseDataCivilUtc,
+  parseValorBrlParaCentavos,
+  verificarFormatoMoeda,
+} from '../lib/juiz-preco.mjs';
+
+export { extrairValoresCentavos, formatarReais, parseValorBrlParaCentavos, verificarFormatoMoeda };
+
 const MS_DIA = 86_400_000;
 
 export function hojeSaoPauloIso(agora = new Date()) {
@@ -10,39 +21,12 @@ export function hojeSaoPauloIso(agora = new Date()) {
 }
 
 export function parseDataCivil(texto) {
-  if (typeof texto !== 'string') return null;
-  const limpo = texto.trim();
-  let ano;
-  let mes;
-  let dia;
-
-  const isoMatch = limpo.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  const brMatch = limpo.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-
-  if (isoMatch) {
-    ano = Number(isoMatch[1]);
-    mes = Number(isoMatch[2]);
-    dia = Number(isoMatch[3]);
-  } else if (brMatch) {
-    dia = Number(brMatch[1]);
-    mes = Number(brMatch[2]);
-    ano = Number(brMatch[3]);
-  } else {
-    return null;
-  }
-
-  if (mes < 1 || mes > 12 || dia < 1 || dia > 31) return null;
-
-  const utcMs = Date.UTC(ano, mes - 1, dia);
+  const utcMs = parseDataCivilUtc(texto);
+  if (utcMs === null) return null;
   const dt = new Date(utcMs);
-  if (
-    dt.getUTCFullYear() !== ano ||
-    dt.getUTCMonth() !== mes - 1 ||
-    dt.getUTCDate() !== dia
-  ) {
-    return null;
-  }
-
+  const ano = dt.getUTCFullYear();
+  const mes = dt.getUTCMonth() + 1;
+  const dia = dt.getUTCDate();
   const mm = String(mes).padStart(2, '0');
   const dd = String(dia).padStart(2, '0');
   return {
@@ -54,17 +38,6 @@ export function parseDataCivil(texto) {
     iso: `${ano}-${mm}-${dd}`,
     br: `${dd}/${mm}/${ano}`,
   };
-}
-
-export function formatarReais(centavos) {
-  if (!Number.isInteger(centavos) || centavos < 0) {
-    throw new Error(`Centavos inválidos para formatação: ${centavos}`);
-  }
-  const reais = Math.floor(centavos / 100);
-  const resto = centavos % 100;
-  const inteiroStr = String(reais).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-  const centStr = String(resto).padStart(2, '0');
-  return `R$ ${inteiroStr},${centStr}`;
 }
 
 export function centavosParaWebhook(centavos) {
@@ -83,8 +56,7 @@ export function reaisParaCentavos(numeroOuTexto) {
   const limpo = numeroOuTexto.replace(/^R\$\s*/i, '').trim();
   const brValido = limpo.match(/^(?:0|[1-9]\d{0,2}(?:\.\d{3})*|\d+),(\d{2})$/);
   if (brValido) {
-    const semMilhar = limpo.replace(/\./g, '').replace(',', '.');
-    return Math.round(Number(semMilhar) * 100);
+    return parseValorBrlParaCentavos(limpo);
   }
   const usMatch = limpo.match(/^(\d{1,3}(?:,\d{3})*|\d+)\.(\d{2})$/);
   if (usMatch) {
@@ -96,11 +68,6 @@ export function reaisParaCentavos(numeroOuTexto) {
     return Number(limpo) * 100;
   }
   return null;
-}
-
-export function calcularDiariaFimDeSemanaCentavos(diariaCentavos) {
-  // Contrato L14: meio centavo arredonda para cima, por noite: (120 * diaria em centavos + 50) / 100 em divisao inteira
-  return Math.floor((120 * diariaCentavos + 50) / 100);
 }
 
 export function calcularCotacao({ imovel, checkin, checkout, hospedes, hojeIso = hojeSaoPauloIso() }) {
@@ -123,6 +90,10 @@ export function calcularCotacao({ imovel, checkin, checkout, hospedes, hojeIso =
     return { ok: false, motivo: 'saida_nao_posterior' };
   }
 
+  if (!Number.isInteger(hospedes) || hospedes <= 0) {
+    return { ok: false, motivo: 'hospedes_invalido' };
+  }
+
   if (noites < imovel.minimo_noites) {
     return {
       ok: false,
@@ -130,10 +101,6 @@ export function calcularCotacao({ imovel, checkin, checkout, hospedes, hojeIso =
       minimo_noites: imovel.minimo_noites,
       noites,
     };
-  }
-
-  if (!Number.isInteger(hospedes) || hospedes <= 0) {
-    return { ok: false, motivo: 'hospedes_invalido' };
   }
 
   if (hospedes > imovel.capacidade) {
@@ -145,23 +112,15 @@ export function calcularCotacao({ imovel, checkin, checkout, hospedes, hojeIso =
     };
   }
 
-  const diariaCentavos = Math.round(Number(imovel.diaria) * 100);
-  const diariaFimDeSemanaCentavos = calcularDiariaFimDeSemanaCentavos(diariaCentavos);
-  const limpezaCentavos = Math.round(Number(imovel.taxa_limpeza) * 100);
-
-  let totalNoitesCentavos = 0;
-  for (let i = 0; i < noites; i++) {
-    const noiteDt = new Date(ci.utcMs + i * MS_DIA);
-    const dow = noiteDt.getUTCDay();
-    // Sexta (5) e sabado (6) tem acrescimo de 20%
-    if (dow === 5 || dow === 6) {
-      totalNoitesCentavos += diariaFimDeSemanaCentavos;
-    } else {
-      totalNoitesCentavos += diariaCentavos;
-    }
+  const calc = calcularEstadia({
+    imovel_id: imovel.id,
+    checkin: ci.iso,
+    checkout: co.iso,
+    hospedes,
+  });
+  if (!calc.ok) {
+    return { ok: false, motivo: calc.motivo };
   }
-
-  const totalCentavos = totalNoitesCentavos + limpezaCentavos;
 
   return {
     ok: true,
@@ -171,14 +130,14 @@ export function calcularCotacao({ imovel, checkin, checkout, hospedes, hojeIso =
     checkinBr: ci.br,
     checkoutBr: co.br,
     hospedes,
-    noites,
-    diariaCentavos,
-    diariaFimDeSemanaCentavos,
-    limpezaCentavos,
-    totalNoitesCentavos,
-    totalCentavos,
-    totalFormatado: formatarReais(totalCentavos),
-    valorWebhook: centavosParaWebhook(totalCentavos),
+    noites: calc.noites,
+    diariaCentavos: calc.diariaCentavos,
+    diariaFimDeSemanaCentavos: calc.diariaFdsCentavos,
+    limpezaCentavos: calc.taxaLimpezaCentavos,
+    totalNoitesCentavos: calc.subtotalNoitesCentavos,
+    totalCentavos: calc.totalCentavos,
+    totalFormatado: calc.totalFormatado,
+    valorWebhook: centavosParaWebhook(calc.totalCentavos),
   };
 }
 
@@ -188,7 +147,7 @@ export function extrairValoresReais(texto) {
   const regex = /R\$\s*\d[\d.,]*/g;
   for (const match of texto.matchAll(regex)) {
     const bruto = match[0].replace(/[.,]+$/, '');
-    const formatoValido = /^R\$ (?:0|[1-9]\d{0,2}(?:\.\d{3})*),\d{2}$/.test(bruto);
+    const formatoValido = verificarFormatoMoeda(bruto).length === 0;
     const centavos = reaisParaCentavos(bruto);
     resultados.push({
       bruto,

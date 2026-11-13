@@ -1,5 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { calcularPercentil, gravarRelatorio, mascararDadosPessoais } from '../lib/relatorio.mjs';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const RAIZ_REPO = path.resolve(__dirname, '../..');
 
 export function mascararTexto(texto, cenario) {
   if (typeof texto !== 'string') return '';
@@ -12,13 +17,13 @@ export function mascararTexto(texto, cenario) {
     const escapedNome = cenario.nome.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     out = out.replace(new RegExp(escapedNome, 'gi'), '[NOME]');
   }
-  if (cenario?.telefone) {
-    const escapedTel = cenario.telefone.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    out = out.replace(new RegExp(escapedTel, 'g'), '(XX) XXXXX-XXXX');
-  }
-  if (cenario?.telefoneDigitos) {
-    out = out.replace(new RegExp(cenario.telefoneDigitos, 'g'), 'XXXXXXXXXXX');
-  }
+
+  out = mascararDadosPessoais(out, [
+    cenario?.nome ? { valor: cenario.nome, rotulo: '[NOME]' } : null,
+    cenario?.telefone ? { valor: cenario.telefone, rotulo: '(XX) XXXXX-XXXX' } : null,
+    cenario?.telefoneDigitos ? { valor: cenario.telefoneDigitos, rotulo: 'XXXXXXXXXXX' } : null,
+  ]);
+
   // Mascara telefones brasileiros residuais no texto
   out = out.replace(/(?:\+?55\s?)?\(?\d{2}\)?\s?\d{4,5}-?\d{4}/g, '(XX) XXXXX-XXXX');
   return out;
@@ -47,7 +52,8 @@ function regexLiteralSeguro(texto) {
 
 /**
  * Reduz uma conversa que falhou aos turnos necessários até o ponto da falha,
- * já no formato exato de caso fixo de docs/EVALS.md (pronto para gravar em evals/casos/dev/).
+ * já no formato final de evals/README.md (com estadia, leads_ate_agora, sem_total,
+ * sessao e espera_conjunto em turnos paralelos).
  */
 export function gerarCasoFixoDeFalha(resultadoConversa) {
   const { persona, cenario, rodada, turnosExecutados } = resultadoConversa;
@@ -58,21 +64,42 @@ export function gerarCasoFixoDeFalha(resultadoConversa) {
 
   const turnosCaso = turnosReduzidos.map((t) => {
     if (t.paralelo && Array.isArray(t.mensagens)) {
-      return {
+      const turnoParalelo = {
         paralelo: t.mensagens.map((m, idx) => {
           const resp = t.respostas?.[idx] || {};
           const espera = {};
           if (typeof t.esperaHandoff === 'boolean') espera.handoff = t.esperaHandoff;
           if (!t.permiteLead) espera.resposta_nao_contem = ['registrad'];
           if (resp.reply && t.cotacao?.ok && idx === 0 && !t.turnoInvalido) {
-            espera.resposta_contem = [regexLiteralSeguro(t.cotacao.totalFormatado)];
+            espera.estadia = {
+              imovel_id: t.cotacao.imovel_id,
+              checkin: t.cotacao.checkin,
+              checkout: t.cotacao.checkout,
+              hospedes: t.cotacao.hospedes,
+              obrigatorio: false,
+            };
           }
-          return {
+          const sub = {
             mensagem: substituirPlaceholdersCaso(m, cenario),
             espera,
           };
+          if (t.sessao) sub.sessao = t.sessao;
+          return sub;
         }),
       };
+
+      if (t.permiteLead) {
+        turnoParalelo.espera_conjunto = {
+          todos_contem: ['registrad'],
+          exatamente_um_contem: ['j[aá]\\s+(?:foi|estava|se\\s+encontra)?\\s*registrad'],
+        };
+      } else {
+        turnoParalelo.espera_conjunto = {
+          nenhum_contem: ['registrad'],
+        };
+      }
+
+      return turnoParalelo;
     }
 
     const espera = {};
@@ -80,18 +107,33 @@ export function gerarCasoFixoDeFalha(resultadoConversa) {
       espera.handoff = t.esperaHandoff;
     }
     if (t.turnoInvalido) {
-      espera.resposta_nao_contem = ['R\\$\\s*\\d+[\\d.]*,\\d{2}'];
-    } else if (t.cotacao?.ok && t.falhas.some((f) => f.includes('total') || f.includes('valor'))) {
-      espera.resposta_contem = [regexLiteralSeguro(t.cotacao.totalFormatado)];
+      espera.sem_total = true;
+    } else if (t.cotacao?.ok) {
+      const falhouPreco = t.falhas.some((f) => /total|valor|pre[çc]o|c[áa]lculo/i.test(f));
+      espera.estadia = {
+        imovel_id: t.cotacao.imovel_id,
+        checkin: t.cotacao.checkin,
+        checkout: t.cotacao.checkout,
+        hospedes: t.cotacao.hospedes,
+        obrigatorio: falhouPreco,
+      };
+      if (falhouPreco) {
+        espera.resposta_contem = [regexLiteralSeguro(t.cotacao.totalFormatado)];
+      }
     }
     if (!t.permiteLead) {
-      espera.resposta_nao_contem = [...(espera.resposta_nao_contem || []), 'registrad'];
+      espera.resposta_nao_contem = ['registrad'];
+      if (persona.bloco === 'funciona-leads') {
+        espera.leads_ate_agora = 0;
+      }
     }
 
-    return {
+    const turno = {
       mensagem: substituirPlaceholdersCaso(t.mensagem, cenario),
       espera,
     };
+    if (t.sessao) turno.sessao = t.sessao;
+    return turno;
   });
 
   const leadsEsperados =
@@ -138,7 +180,9 @@ export function gravarRelatorios({
   const reprovadas = totalConversas - aprovadas;
 
   const todasLatencias = resultados.flatMap((r) => r.latenciasMs);
-  const latenciaMaximaMs = todasLatencias.length > 0 ? Math.max(...todasLatencias) : 0;
+  const latenciaP50Ms = calcularPercentil(todasLatencias, 50);
+  const latenciaP95Ms = calcularPercentil(todasLatencias, 95);
+  const latenciaMaximaMs = todasLatencias.length > 0 ? Math.round(Math.max(...todasLatencias)) : 0;
   const latenciaMediaMs =
     todasLatencias.length > 0
       ? Math.round(todasLatencias.reduce((a, b) => a + b, 0) / todasLatencias.length)
@@ -175,8 +219,16 @@ export function gravarRelatorios({
       total_conversas: totalConversas,
       aprovadas,
       reprovadas,
+      latencia_p50_ms: latenciaP50Ms,
+      latencia_p95_ms: latenciaP95Ms,
       latencia_media_ms: latenciaMediaMs,
       latencia_maxima_ms: latenciaMaximaMs,
+    },
+    latencia_ms: {
+      p50: latenciaP50Ms,
+      p95: latenciaP95Ms,
+      media: latenciaMediaMs,
+      max: latenciaMaximaMs,
     },
     conversas: resultados.map((r) => ({
       persona: r.persona.id,
@@ -204,8 +256,8 @@ export function gravarRelatorios({
     casos_falha: casosFalha,
   };
 
-  const jsonPath = path.join(relatorioDir, `simulador-${carimbo}.json`);
-  fs.writeFileSync(jsonPath, `${JSON.stringify(dadosJson, null, 2)}\n`, 'utf8');
+  const destinoJson = path.join(relatorioDir, `simulador-${carimbo}.json`);
+  const jsonPath = gravarRelatorio(dadosJson, destinoJson, RAIZ_REPO);
 
   const linhasMd = [
     '# Relatório do Simulador de Hóspede Hostil (Nível 3)',
@@ -215,7 +267,7 @@ export function gravarRelatorios({
     `- **Modelo do hóspede**: \`${modeloHospede}\``,
     `- **Rodadas por persona**: ${rodadas}`,
     `- **Resultado**: ${aprovadas}/${totalConversas} conversas aprovadas (${reprovadas} falha(s))`,
-    `- **Latência média / máxima**: ${latenciaMediaMs} ms / ${latenciaMaximaMs} ms`,
+    `- **Latência (p50 / p95 / média / máxima)**: ${latenciaP50Ms} ms / ${latenciaP95Ms} ms / ${latenciaMediaMs} ms / ${latenciaMaximaMs} ms`,
     '',
     '## Resumo por conversa',
     '',

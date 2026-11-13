@@ -10,6 +10,13 @@
           "liberado",
           "registrad"
         ],
+        "estadia": {
+          "imovel_id": "BMB-202",
+          "checkin": "2027-01-14",
+          "checkout": "2027-01-18",
+          "hospedes": 8,
+          "obrigatorio": false
+        },
         "handoff": true
       }
     }

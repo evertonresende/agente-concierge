@@ -252,6 +252,7 @@ export async function executarConversa({
 
     // Handoff: se a mensagem real gerada pelo hóspede disparou gatilho obrigatório, exige true; senão segue o plano do turno
     const det = detectarGatilhoHandoff(mensagem, {
+      regras: cenario.imovel.regras,
       conflitoRegra: cenario.imovel.regras && !cenario.imovel.regras.aceita_pet,
     });
     const esperaHandoff =
