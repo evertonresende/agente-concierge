@@ -4,7 +4,7 @@ import { DurableObject } from "cloudflare:workers";
 import { CONTINGENCIA, rodarTurno } from "./agente/loop";
 import { criarCatalogo } from "./catalogo";
 import type { Env } from "./env";
-import { type Cofre, destinoDosLeads, destinoPermitido, ESTADO_INICIAL, type EstadoLead, postarLead } from "./lead";
+import { type Cofre, destinoDosLeads, destinoPermitido, ESTADO_INICIAL, type EstadoLead, type Pendente, postarLead } from "./lead";
 import { criarModelo, type Mensagem, type Modelo } from "./modelo";
 import { dataCivilEmSaoPaulo } from "./nucleo/datas";
 
@@ -20,13 +20,27 @@ export interface Dependencias {
   buscar: typeof fetch;
   /** Relógio (ms desde a época) de onde sai o "hoje" das ferramentas. Sem ele, vale `Date.now`. */
   agora?: () => number;
+  /** Limites de tempo para testes; em produção valem os padrões do contrato. */
+  orcamentoMs?: number;
+  tetoMs?: number;
 }
 
-/** Orçamento do trabalho externo, contado da chegada do pedido; sobra tempo para a contingência (contrato seção 2). */
+/** Orçamento do trabalho externo de cada turno (contrato seção 2). */
 const ORCAMENTO_MS = 45_000;
+/** Teto total desde a chegada ao Worker, abaixo do teto do Worker para devolver contingência limpa. */
+const TETO_SESSAO_MS = 53_000;
+const SEM_USO = { entrada: 0, saida: 0, chamadas: 0 };
 // ponytail: o modelo recebe só as últimas mensagens; conversa mais longa que isso
 // esquece o começo. Trocar por resumo do histórico se as conversas reais passarem disso.
 const JANELA_DO_HISTORICO = 80;
+
+function respostaVaziaDoCatalogo(entrada: RequestInfo | URL): Response {
+  const texto = typeof entrada === "string" ? entrada : entrada instanceof URL ? entrada.href : entrada.url;
+  const caminho = texto.split("?")[0] ?? "";
+  if (caminho.endsWith("/cidades")) return Response.json({ cidades: [] });
+  if (caminho.endsWith("/imoveis")) return Response.json({ imoveis: [], total: 0 });
+  return Response.json({ erro: "imovel nao encontrado" }, { status: 404 });
+}
 
 export class Sessao extends DurableObject<Env> {
   /** Trocado pelos testes; em produção sai do ambiente na primeira mensagem. */
@@ -48,9 +62,10 @@ export class Sessao extends DurableObject<Env> {
    * por isso uma mensagem que falha não trava as seguintes.
    */
   conversar(mensagem: string, chegada: number = Date.now()): Promise<RespostaDoChat> {
-    const vez = this.fila.then(() => this.processar(mensagem, chegada)).catch((): RespostaDoChat => {
+    const entradaNaFila = Date.now();
+    const vez = this.fila.then(() => this.processar(mensagem, chegada, entradaNaFila)).catch((): RespostaDoChat => {
       console.log(JSON.stringify({ evento: "falha_no_turno", sessao: this.ctx.id.toString().slice(0, 12) }));
-      return { reply: CONTINGENCIA, handoff: true, uso: { entrada: 0, saida: 0, chamadas: 0 } };
+      return { reply: CONTINGENCIA, handoff: true, uso: SEM_USO };
     });
     this.fila = vez;
     return vez;
@@ -75,31 +90,79 @@ export class Sessao extends DurableObject<Env> {
     return inicio < 0 ? [] : linhas.slice(inicio);
   }
 
-  private async processar(mensagem: string, chegada: number): Promise<RespostaDoChat> {
+  private async processar(mensagem: string, chegada: number, entradaNaFila: number): Promise<RespostaDoChat> {
     const deps = this.dependencias ??= { modelo: criarModelo(this.env.AI, this.env.MODELO), buscar: fetch };
+    const orcamentoMs = deps.orcamentoMs ?? ORCAMENTO_MS;
+    const tetoMs = deps.tetoMs ?? TETO_SESSAO_MS;
+    const inicio = Date.now();
+    const esperaNaFila = Math.max(0, inicio - entradaNaFila);
+    const prazo = Math.min(chegada + orcamentoMs + esperaNaFila, chegada + tetoMs);
+
+    if (inicio >= prazo) {
+      console.log(JSON.stringify({ evento: "prazo_esgotado_na_fila", sessao: this.ctx.id.toString().slice(0, 12) }));
+      return { reply: CONTINGENCIA, handoff: true, uso: SEM_USO };
+    }
+
+    const modeloReal = deps.modelo;
     const turno = this.ler("turno", 0) + 1;
     this.gravar("turno", turno);
-    // O cofre só aceita gravação durante o turno. Uma ferramenta que o loop abandonou
-    // por tempo e termina depois não muda o estado do lead pelas costas do hóspede: sem
-    // conseguir gravar o marcador, ela também não chega a fazer o POST.
+
+    // `envios` (marcador "enviando" etc.) é gravado na hora antes do POST para sobreviver a
+    // reinício do objeto; `pendente` só é gravado junto com o histórico na transação do fim
+    // do turno, para um resumo não entregue nunca ficar confirmável.
+    const estadoInicial = this.ler<EstadoLead>("lead", ESTADO_INICIAL);
+    const pendentePersistido = estadoInicial.pendente;
+    let pendenteEmCurso: Pendente | null = pendentePersistido;
     let turnoAberto = true;
+
     const cofre: Cofre = {
-      ler: () => this.ler<EstadoLead>("lead", ESTADO_INICIAL),
+      ler: () => {
+        const atual = this.ler<EstadoLead>("lead", ESTADO_INICIAL);
+        return { pendente: pendenteEmCurso, envios: atual.envios };
+      },
       salvar: (estado) => {
-        if (!turnoAberto) throw new Error("turno encerrado");
-        this.gravar("lead", estado);
+        if (!turnoAberto) return;
+        pendenteEmCurso = estado.pendente;
+        const atual = this.ler<EstadoLead>("lead", ESTADO_INICIAL);
+        if (JSON.stringify(estado.envios) !== JSON.stringify(atual.envios)) {
+          this.gravar("lead", { pendente: atual.pendente, envios: estado.envios });
+        }
       },
     };
+
+    const modeloSeguro: Modelo = async (mensagens, ferramentas) => {
+      try {
+        return await modeloReal(mensagens, ferramentas);
+      } catch (erro) {
+        if (!turnoAberto) return { texto: "", chamadas: [], uso: { entrada: 0, saida: 0 } };
+        throw erro;
+      }
+    };
+
+    const buscarCatalogo: typeof fetch = async (entrada, init) => {
+      try {
+        const resposta = await deps.buscar(entrada, init);
+        if (!turnoAberto) {
+          await resposta.body?.cancel();
+          return respostaVaziaDoCatalogo(entrada);
+        }
+        return resposta;
+      } catch (erro) {
+        if (!turnoAberto) return respostaVaziaDoCatalogo(entrada);
+        throw erro;
+      }
+    };
+
     const destino = destinoDosLeads(this.env.LEADS_URL, this.env.CATALOGO_URL);
 
     const saida = await rodarTurno({
       mensagem,
       historico: this.historico(),
       houveHandoff: this.ler("handoff", false),
-      modelo: deps.modelo,
-      prazo: chegada + ORCAMENTO_MS,
+      modelo: modeloSeguro,
+      prazo,
       contexto: {
-        catalogo: criarCatalogo(this.env.CATALOGO_URL, deps.buscar),
+        catalogo: criarCatalogo(this.env.CATALOGO_URL, buscarCatalogo),
         cofre,
         turno,
         mensagem,
@@ -107,19 +170,29 @@ export class Sessao extends DurableObject<Env> {
         envio: {
           ligado: this.env.ENVIO_LEADS === "ligado",
           destinoPermitido: destinoPermitido(this.env.AMBIENTE, destino),
-          postar: (corpo) => postarLead(deps.buscar, this.env.LEADS_URL ?? "", corpo),
+          postar: (corpo) => {
+            if (!turnoAberto) return Promise.reject(new Error("turno encerrado"));
+            return postarLead(deps.buscar, this.env.LEADS_URL ?? "", corpo);
+          },
         },
       },
     });
 
     turnoAberto = false;
+    const pendenteFinal = saida.contingencia
+      ? (pendenteEmCurso === pendentePersistido ? pendentePersistido : null)
+      : pendenteEmCurso;
 
-    // Tudo ou nada: o histórico nunca fica com pedido de ferramenta sem o resultado.
+    // Tudo ou nada: o histórico e o resumo pendente do turno valem juntos ou não valem.
     this.ctx.storage.transactionSync(() => {
       for (const nova of saida.novas) {
         this.ctx.storage.sql.exec("INSERT INTO historico (mensagem) VALUES (?)", JSON.stringify(nova));
       }
       if (saida.handoff) this.gravar("handoff", true);
+      const atual = this.ler<EstadoLead>("lead", ESTADO_INICIAL);
+      if (JSON.stringify(pendenteFinal) !== JSON.stringify(atual.pendente)) {
+        this.gravar("lead", { ...atual, pendente: pendenteFinal });
+      }
     });
 
     // Um log por turno, sem texto de mensagem nem dado pessoal (contrato L22).
