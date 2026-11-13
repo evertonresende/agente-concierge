@@ -66,12 +66,12 @@ describe("textos fixos em inglês (L15)", () => {
     const s = sessao();
     await s.resumo(2, QUER_FECHAR);
     const hesitou = await s.confirma(3, "I think so, maybe");
-    expect(hesitou.respostaFinal).toBe("I have not sent anything yet. Is everything correct? To confirm, reply \"yes\" and I will send your request to our sales team.");
+    expect(hesitou.respostaFinal).toBe("I have not sent this request yet. Is everything correct? To confirm, reply \"yes\" and I will send your request to our sales team.");
     const preco = await s.confirma(4, "Yes, if you give me a discount");
     expect(preco.handoff).toBe(true);
     expect(preco.respostaFinal).toMatch(/I cannot change prices or negotiate/);
     const foraDeHora = await s.confirma(6, "Yes, I confirm.");
-    expect(foraDeHora.respostaFinal).toMatch(/^I have not sent anything yet\. To avoid any mistake, please check the request once more\.\n\nSummary of your booking request:/);
+    expect(foraDeHora.respostaFinal).toMatch(/^I have not sent this request yet\. To avoid any mistake, please check the request once more\.\n\nSummary of your booking request:/);
     expect(s.mundo.leads).toEqual([]);
     for (const r of [hesitou, preco, foraDeHora]) expect(r.respostaFinal).not.toMatch(PORTUGUES);
   });
@@ -130,7 +130,7 @@ describe("escolha do idioma", () => {
     const s = sessao();
     expect((await s.resumo(2, "Ana Lima, +14155550123", DADOS, historico)).respostaFinal).toMatch(/^Summary of your booking request:/);
     // "ok" sozinho não confirma: o pedido é repetido, em inglês; o "s" seguinte confirma, em inglês.
-    expect((await s.confirma(3, "ok", historico)).respostaFinal).toMatch(/^I have not sent anything yet\. Is everything correct\?/);
+    expect((await s.confirma(3, "ok", historico)).respostaFinal).toMatch(/^I have not sent this request yet\. Is everything correct\?/);
     expect((await s.confirma(4, "s", historico)).respostaFinal).toMatch(/^All set!/);
     // Sem histórico no contexto, a mesma mensagem cai no português.
     expect((await sessao().resumo(2, "Ana Lima, +14155550123")).respostaFinal).toMatch(/^Resumo do seu pedido de reserva:/);

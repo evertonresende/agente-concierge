@@ -19,6 +19,17 @@ function sessao() {
 }
 
 describe("segunda reserva e repetição (L7)", () => {
+  it("hesitação na segunda reserva não diz que nada foi enviado: a primeira já foi", async () => {
+    const s = sessao();
+    await s.resumo(2);
+    await s.sim(3, "Sim, confirmo.");
+    await s.resumo(4, { ...DADOS, imovel_id: "RIO-402", checkin: "20/01/2027", checkout: "22/01/2027", hospedes: 1 });
+    const r = await s.sim(5, "acho que sim");
+    expect(r.respostaFinal).toMatch(/^Ainda não enviei este pedido\./);
+    expect(r.respostaFinal).not.toMatch(/nada|nenhum/);
+    expect(s.mundo.leads).toHaveLength(1);
+  });
+
   it("outra reserva na mesma sessão: novo resumo, nova confirmação, 2 leads", async () => {
     const s = sessao();
     await s.resumo(2);

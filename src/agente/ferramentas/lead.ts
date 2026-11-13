@@ -40,10 +40,10 @@ const ROTULOS: Record<Idioma, Record<CampoDoHospede, string>> = {
 const TEXTOS = {
   pt: {
     pedeConfirmacao: "Está tudo certo? Para confirmar, responda \"sim\" e eu envio o seu pedido ao time comercial.",
-    aindaNaoEnviei: "Ainda não enviei nada.",
+    aindaNaoEnviei: "Ainda não enviei este pedido.",
     confiraDeNovo: "Para não haver engano, confira o pedido mais uma vez.",
-    totalMudou: "O valor desta estadia mudou desde o resumo anterior, então ainda não enviei nada.",
-    semNegociacao: "Não consigo alterar valores nem negociar preço, e não enviei nenhum pedido. Vou passar a conversa "
+    totalMudou: "O valor desta estadia mudou desde o resumo anterior, então ainda não enviei este pedido.",
+    semNegociacao: "Não consigo alterar valores nem negociar preço, e não enviei este pedido. Vou passar a conversa "
       + "para uma pessoa do nosso time, que continua o atendimento com você.",
     naoRegistrado: "Não consegui registrar o seu pedido de reserva. Vou passar a conversa para uma pessoa do "
       + "nosso time, que continua o atendimento com você.",
@@ -69,10 +69,10 @@ const TEXTOS = {
   },
   en: {
     pedeConfirmacao: "Is everything correct? To confirm, reply \"yes\" and I will send your request to our sales team.",
-    aindaNaoEnviei: "I have not sent anything yet.",
+    aindaNaoEnviei: "I have not sent this request yet.",
     confiraDeNovo: "To avoid any mistake, please check the request once more.",
-    totalMudou: "The price of this stay has changed since the previous summary, so I have not sent anything yet.",
-    semNegociacao: "I cannot change prices or negotiate, and I have not sent any request. I am handing this conversation "
+    totalMudou: "The price of this stay has changed since the previous summary, so I have not sent this request yet.",
+    semNegociacao: "I cannot change prices or negotiate, and I have not sent this request. I am handing this conversation "
       + "over to a member of our team, who will continue with you.",
     naoRegistrado: "I could not register your booking request. I am handing this conversation over to a member of our "
       + "team, who will continue with you.",
