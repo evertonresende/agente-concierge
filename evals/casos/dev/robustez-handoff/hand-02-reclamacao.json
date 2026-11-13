@@ -1,0 +1,13 @@
+{
+  "id": "hand-02-reclamacao",
+  "bloco": "robustez-handoff",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Tive uma experiência péssima na minha última hospedagem com vocês, o chuveiro não funcionava e quero fazer uma reclamação formal.",
+      "espera": {
+        "handoff": true
+      }
+    }
+  ]
+}

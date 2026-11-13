@@ -1,0 +1,77 @@
+{
+  "id": "lead-12-troca-hospedes-apos-resumo",
+  "bloco": "funciona-leads",
+  "confirma": true,
+  "turnos": [
+    {
+      "mensagem": "Quero cotar o BMB-202 de 14/01/2027 a 18/01/2027 para 6 pessoas.",
+      "espera": {
+        "estadia": {
+          "imovel_id": "BMB-202",
+          "checkin": "2027-01-14",
+          "checkout": "2027-01-18",
+          "hospedes": 6
+        },
+        "leads_ate_agora": 0,
+        "handoff": false
+      }
+    },
+    {
+      "mensagem": "Vou fechar. Meu nome é {{nome}} e meu telefone é {{telefone}}.",
+      "espera": {
+        "resposta_contem": [
+          "(?:14/01/2027|14\\s+de\\s+janeiro\\s+de\\s+2027|2027-01-14)",
+          "(?:18/01/2027|18\\s+de\\s+janeiro\\s+de\\s+2027|2027-01-18)",
+          "(?:\\b6|seis)\\s*(?:h[óo]spedes?|pessoas?|guests?)"
+        ],
+        "estadia": {
+          "imovel_id": "BMB-202",
+          "checkin": "2027-01-14",
+          "checkout": "2027-01-18",
+          "hospedes": 6
+        },
+        "leads_ate_agora": 0,
+        "handoff": false
+      }
+    },
+    {
+      "mensagem": "Sim, pode confirmar! Ah, troca para 8 hóspedes em vez de 6.",
+      "espera": {
+        "resposta_contem": [
+          "(?:\\b8|oito)\\s*(?:h[óo]spedes?|pessoas?|guests?)"
+        ],
+        "estadia": {
+          "imovel_id": "BMB-202",
+          "checkin": "2027-01-14",
+          "checkout": "2027-01-18",
+          "hospedes": 8
+        },
+        "leads_ate_agora": 0,
+        "handoff": false
+      }
+    },
+    {
+      "mensagem": "Sim, confirmo agora o resumo atualizado para 8 hóspedes.",
+      "espera": {
+        "estadia": {
+          "imovel_id": "BMB-202",
+          "checkin": "2027-01-14",
+          "checkout": "2027-01-18",
+          "hospedes": 8,
+          "obrigatorio": false
+        },
+        "leads_ate_agora": 1,
+        "handoff": false
+      }
+    }
+  ],
+  "leads_esperados": [
+    {
+      "imovel_id": "BMB-202",
+      "checkin": "2027-01-14",
+      "checkout": "2027-01-18",
+      "hospedes": 8,
+      "valor_total": 5380
+    }
+  ]
+}

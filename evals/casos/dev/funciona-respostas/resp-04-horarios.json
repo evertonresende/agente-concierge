@@ -1,0 +1,17 @@
+{
+  "id": "resp-04-horarios",
+  "bloco": "funciona-respostas",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Qual é o horário de entrada e saída do GRM-301?",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": [
+          "15:?00|15\\s*h(?:oras)?",
+          "12:?00|12\\s*h(?:oras)?|meio-dia"
+        ]
+      }
+    }
+  ]
+}

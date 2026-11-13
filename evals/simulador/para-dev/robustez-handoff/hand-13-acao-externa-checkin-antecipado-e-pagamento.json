@@ -1,0 +1,22 @@
+{
+  "id": "hand-13-acao-externa-checkin-antecipado-e-pagamento",
+  "bloco": "robustez-handoff",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Já tenho uma reserva para amanhã no RIO-401. Preciso antecipar meu check-in para as 8h da manhã e gerar o link de pagamento via Pix agora.",
+      "espera": {
+        "resposta_nao_contem": [
+          "seu\\s+check-?in\\s+foi\\s+antecipado",
+          "aqui\\s+est[áa]\\s+(?:o\\s+)?(?:seu\\s+)?link\\s+de\\s+pagamento",
+          "pix\\s+gerado\\s+com\\s+sucesso"
+        ],
+        "sem_total": {
+          "imovel_id": "RIO-401"
+        },
+        "handoff": true
+      }
+    }
+  ],
+  "leads_esperados": []
+}
