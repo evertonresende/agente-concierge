@@ -23,15 +23,18 @@ describe("mensagem longa e repetitiva não trava a leitura do sim", () => {
   }
 
   it("sim longo de verdade, abaixo do corte, continua valendo", () => {
+    expect(lerConfirmacao("Sim, confirmo, está tudo certo. Pode fechar a reserva, por favor, obrigado!", GRM301)).toBe("sim");
+    // Com valores, mesmo iguais aos do resumo, repete o pedido (P13).
     expect(lerConfirmacao("Sim, confirmo o GRM-301 de 15/01/2027 a 18/01/2027 para 2 pessoas. Pode fechar a reserva, por favor, obrigado!", GRM301))
-      .toBe("sim");
+      .toBe("hesitacao");
   });
 });
 
-describe("segunda, nova ou outra reserva não confirmam (sem demonstrativo; com ele, são sinal de mudança)", () => {
-  it("é sim: \"I confirm this second booking\"", () => expect(lerConfirmacao("I confirm this second booking", GRM301)).toBe("sim"));
-  for (const mensagem of ["Sim, confirmo essa segunda reserva também.", "confirmo esta nova reserva", "confirmo essa outra reserva",
-    "confirmo a outra reserva", "confirmo a nova reserva", "confirmo a segunda reserva", "confirmo outra reserva", "I confirm the second booking"]) {
+describe("segunda, nova ou outra reserva: com demonstrativo e resumo antigo repetem o pedido (P13); sem demonstrativo não são sim", () => {
+  for (const mensagem of ["Sim, confirmo essa segunda reserva também.", "confirmo esta nova reserva", "confirmo essa outra reserva", "I confirm this second booking"]) {
+    it(`repete o pedido: "${mensagem}"`, () => expect(lerConfirmacao(mensagem, GRM301)).toBe("hesitacao"));
+  }
+  for (const mensagem of ["confirmo a outra reserva", "confirmo a nova reserva", "confirmo a segunda reserva", "confirmo outra reserva", "I confirm the second booking"]) {
     it(`não é sim: "${mensagem}"`, () => expect(lerConfirmacao(mensagem, GRM301)).toBe("outra"));
   }
 });
@@ -208,10 +211,11 @@ describe("rearme negado por padrão: mensagem com sinal de mudança derruba o re
   }
 
   // A5: "confirmo com as novas datas" logo depois do primeiro resumo.
-  it("\"confirmo com as novas datas\" não envia", async () => {
+  it("\"confirmo com as novas datas\" logo depois do primeiro resumo não envia: repete o pedido com o resumo (A5, P13)", async () => {
     const s = await comResumo();
-    await s.confirma(3, "confirmo com as novas datas");
-    await s.confirma(4, "Sim, confirmo.");
+    const r = await s.confirma(3, "confirmo com as novas datas");
+    expect(r.respostaFinal).toContain("- Total: R$ 2.156,00");
+    expect(s.estado().pendente).not.toBeNull();
     expect(s.mundo.leads).toEqual([]);
   });
 
@@ -267,4 +271,74 @@ describe("P11: \"s\" e \"ok\" sozinhos repetem o pedido; \"isso\", \"exato\" e \
   for (const mensagem of ["isso", "exato", "pode", "Isso!", "Exato."]) {
     it(`sim: "${mensagem}"`, () => expect(lerConfirmacao(mensagem, GRM301)).toBe("sim"));
   }
+});
+
+describe("P13: sim com palavra de referência ou de novidade, sem dado novo", () => {
+  const DADOS = { imovel_id: "GRM-301", checkin: "15/01/2027", checkout: "18/01/2027", hospedes: 2, nome: "Ana Lima", telefone: "(11) 98888-0000" };
+  function sessao() {
+    const mundo = criarMundo();
+    let estado: EstadoLead = ESTADO_INICIAL;
+    const cofre: Cofre = { ler: () => estado, salvar: (e) => { estado = e; } };
+    const ctx = (turno: number, mensagem: string) => criarContexto(mundo, cofre, turno, mensagem);
+    return {
+      mundo,
+      estado: () => estado,
+      resumo: (turno: number, dados: Record<string, unknown> = DADOS) => montarResumo.executar(dados, ctx(turno, "quero fechar")),
+      confirma: (turno: number, mensagem: string) => confirmarReserva.executar({}, ctx(turno, mensagem)),
+    };
+  }
+
+  // Item 1: palavra que só aponta para o resumo mostrado.
+  for (const mensagem of ["Sim, pode enviar esse pedido", "Confirmo esse resumo", "Sim, confirmo essa reserva", "Sim, com esses dados",
+    "pode enviar esse pedido", "confirmo esse resumo"]) {
+    it(`confirma: "${mensagem}"`, async () => {
+      const s = sessao();
+      await s.resumo(2);
+      expect((await s.confirma(3, mensagem)).respostaFinal).toMatch(/registrado/);
+      expect(s.mundo.leads).toHaveLength(1);
+    });
+  }
+
+  it("lead-04: datas trocadas no turno 2, \"Sim, confirmo com as novas datas.\" no 3 envia as datas novas", async () => {
+    const s = sessao();
+    await s.resumo(1);
+    await s.resumo(2, { ...DADOS, checkout: "17/01/2027" });
+    expect((await s.confirma(3, "Sim, confirmo com as novas datas.")).respostaFinal).toMatch(/registrado/);
+    expect(s.mundo.leads).toMatchObject([{ checkout: "2027-01-17" }]);
+  });
+
+  it("lead-07: segunda reserva pedida no turno 3, \"Sim, confirmo essa segunda reserva também.\" no 4 envia", async () => {
+    const s = sessao();
+    await s.resumo(1);
+    await s.confirma(2, "Sim, confirmo.");
+    await s.resumo(3, { ...DADOS, imovel_id: "RIO-402", checkin: "20/01/2027", checkout: "22/01/2027", hospedes: 1 });
+    expect((await s.confirma(4, "Sim, confirmo essa segunda reserva também.")).respostaFinal).toMatch(/registrado/);
+    expect(s.mundo.leads).toHaveLength(2);
+  });
+
+  it("palavra de novidade com resumo antigo (repetido, não criado no turno anterior): repete o pedido, zero POST", async () => {
+    const s = sessao();
+    await s.resumo(1);
+    await s.resumo(2, { ...DADOS, checkout: "17/01/2027" });
+    await s.confirma(3, "acho que sim"); // repete o pedido: o resumo não é mais novo
+    const r = await s.confirma(4, "Sim, confirmo com as novas datas.");
+    expect(r.respostaFinal).toContain("- Total:");
+    expect(s.estado().pendente).not.toBeNull();
+    expect(s.mundo.leads).toEqual([]);
+  });
+
+  for (const mensagem of ["Sim, confirmo, telefone (11) 98888-0000", "Sim, confirmo de 15/01/2027 a 18/01/2027", "Sim, confirmo para 2 pessoas"]) {
+    it(`sim com valor igual ao do resumo repete o pedido com o resumo, zero POST: "${mensagem}"`, async () => {
+      const s = sessao();
+      await s.resumo(2);
+      const r = await s.confirma(3, mensagem);
+      expect(r.respostaFinal).toContain("- Total: R$ 2.156,00");
+      expect(s.estado().pendente).not.toBeNull();
+      expect(s.mundo.leads).toEqual([]);
+    });
+  }
+
+  it("\"segunda\" como data continua sendo data: derruba", () => {
+    for (const mensagem of ["sim, na segunda", "sim, entrada segunda-feira", "sim, segunda que vem"]) expect(lerConfirmacao(mensagem, GRM301, 3)).toBe("outra");
+  });
 });

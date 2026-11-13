@@ -121,7 +121,7 @@ describe("leitura da mensagem diante do resumo pendente", () => {
     "tudo certo", "está tudo certo, pode enviar", "Sim, confirmo.", "Sim, confirmo o resumo.",
     "Sim, confirmo definitivamente.", "Sim, confirmo de novo!",
     "Sim, pode fechar.", "Sim sim, pode confirmar a reserva", "Confirmo tudo", "certo, confirmo", "perfeito, pode fechar",
-    "Sim, confirmo o GRM-301.", "sim, confirmo os R$ 2.156,00", "Sim, confirmo o GRM-301 por R$ 2.156,00", "com certeza",
+    "com certeza",
     "ok, pode enviar", "Ok, confirmo",
     "Yes, I confirm.", "yes", "Yes, please go ahead", "yes, confirm the booking", "that's correct", "sí",
   ]) {
@@ -191,7 +191,12 @@ describe("leitura da mensagem diante do resumo pendente", () => {
     it(`não é sim (${esperado}): "${mensagem}"`, () => expect(lerConfirmacao(mensagem, GRM301)).toBe(esperado));
   }
 
-  describe("dados repetidos na confirmação (L9, L10): iguais aos do resumo confirmam, diferentes não", () => {
+  // P13: sim com valor junto, mesmo igual ao do resumo, repete o pedido com o resumo.
+  for (const mensagem of ["Sim, confirmo o GRM-301.", "sim, confirmo os R$ 2.156,00", "Sim, confirmo o GRM-301 por R$ 2.156,00"]) {
+    it(`repete o pedido: "${mensagem}"`, () => expect(lerConfirmacao(mensagem, GRM301)).toBe("hesitacao"));
+  }
+
+  describe("dados repetidos na confirmação (L9, L10, P13): iguais aos do resumo repetem o pedido, diferentes derrubam", () => {
     const sao501: Pendente = {
       reserva: { imovel_id: "SAO-501", checkin: "2027-01-15", checkout: "2027-01-17", hospedes: 3, nome: "Ana Lima", telefone: "(11) 98888-0000" },
       totalCentavos: 72000,
@@ -203,16 +208,15 @@ describe("leitura da mensagem diante do resumo pendente", () => {
       "Sim, para 3 pessoas",
       "Sim, confirmo: 2 noites, 3 pessoas, R$ 720,00",
       "Confirmo a reserva de 2027-01-15 a 2027-01-17",
-      "Sim. Pode fechar?",
       "Yes, I confirm the booking for 3 guests from 15/01/2027 to 17/01/2027",
+      "Sim, confirmo, sou Ana Lima, telefone 11 98888-0000",
+      "Sim, confirmo o telefone +55 (11) 98888-0000",
     ]) {
-      it(`confirma: "${mensagem}"`, () => expect(lerConfirmacao(mensagem, sao501)).toBe("sim"));
+      it(`repete o pedido: "${mensagem}"`, () => expect(lerConfirmacao(mensagem, sao501)).toBe("hesitacao"));
     }
+    it("sem valor nenhum, confirma: \"Sim. Pode fechar?\"", () => expect(lerConfirmacao("Sim. Pode fechar?", sao501)).toBe("sim"));
 
     const naoConfirmam: [string, string][] = [
-      // "Telefone" é sinal de mudança (rearme negado por padrão): mesmo o número igual não confirma.
-      ["Sim, confirmo, sou Ana Lima, telefone 11 98888-0000", "outra"],
-      ["Sim, confirmo o telefone +55 (11) 98888-0000", "outra"],
       ["Sim, mas de 18 a 20", "outra"],
       ["Sim, para 2 pessoas", "outra"],
       ["Sim, confirmo de 15/01/2027 a 18/01/2027", "outra"],
@@ -243,7 +247,7 @@ describe("leitura da mensagem diante do resumo pendente", () => {
   });
 
   it("o id do imóvel só é aceito se for o do resumo pendente", () => {
-    expect(lerConfirmacao("Sim, confirmo o GRM-302.", pendente("GRM-302"))).toBe("sim");
+    expect(lerConfirmacao("Sim, confirmo o GRM-302.", pendente("GRM-302"))).toBe("hesitacao");
     expect(lerConfirmacao("Sim, confirmo o GRM-301.", pendente("GRM-302"))).toBe("outra");
   });
 });

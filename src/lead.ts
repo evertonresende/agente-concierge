@@ -44,12 +44,18 @@ export interface Pendente {
   turno: number;
   /** Nome do imóvel no catálogo, para mostrar o resumo de novo sem reler a ficha. */
   nomeDoImovel?: string;
+  /** Turno em que o resumo foi criado ou teve um dado alterado (não muda quando só é repetido). */
+  criadoEm?: number;
+  /** Quantos resumos a sessão já tinha mostrado, contando este (1 = o primeiro). */
+  ordem?: number;
 }
 
 export interface EstadoLead {
   pendente: Pendente | null;
   /** Marcador de idempotência por reserva (ver `chaveDaReserva`). */
   envios: Record<string, SituacaoEnvio>;
+  /** Resumos mostrados na sessão, para saber se um resumo substituiu outro (P13). */
+  resumosMostrados?: number;
 }
 
 export const ESTADO_INICIAL: EstadoLead = { pendente: null, envios: {} };
@@ -67,7 +73,9 @@ export function chaveDaReserva(r: Reserva): string {
 
 /** Registra que o resumo foi mostrado neste turno. Substitui qualquer resumo anterior (L10). */
 export function apresentarResumo(cofre: Cofre, reserva: Reserva, totalCentavos: number, turno: number, nomeDoImovel?: string): void {
-  cofre.salvar({ ...cofre.ler(), pendente: { reserva, totalCentavos, turno, nomeDoImovel } });
+  const estado = cofre.ler();
+  const ordem = (estado.resumosMostrados ?? 0) + 1;
+  cofre.salvar({ ...estado, resumosMostrados: ordem, pendente: { reserva, totalCentavos, turno, nomeDoImovel, criadoEm: turno, ordem } });
 }
 
 /** O resumo que ainda espera o sim do hóspede: existe e a reserva dele ainda pode ser enviada. */
@@ -186,7 +194,7 @@ export function simAposRegistro(cofre: Cofre, turno: number, mensagem: string): 
   const estado = cofre.ler();
   const { pendente } = estado;
   if (!pendente || estado.envios[chaveDaReserva(pendente.reserva)] !== "registrado") return undefined;
-  if (turno !== pendente.turno + 1 || lerConfirmacao(mensagem, pendente) !== "sim") return undefined;
+  if (turno !== pendente.turno + 1 || lerConfirmacao(mensagem, pendente, turno) !== "sim") return undefined;
   cofre.salvar({ ...estado, pendente: { ...pendente, turno } });
   return pendente;
 }
@@ -235,7 +243,9 @@ const MARCA = "oimovel|ototal|asdatas|oshospedes|asnoites|onome|otelefone";
 const LIGA = "de|do|da|no|na|em|para|pra|pro|com|por|pelo|e|o|a|os|as|sou|of|for|at|in|with|on|and|the"
   + "|imovel|property|valor|total|nome|telefone|name|phone|datas|dates";
 const DADOS = `(?: (?:(?:${LIGA}) ){0,3}(?:${MARCA}))*`;
-const CORTESIA = "por favor|pfv|obrigad[oa]|obg|valeu|please|thanks|thank you|tambem|definitivamente|agora|ja|mesmo|entao|too|also|now|ok|okay";
+const CORTESIA = "por favor|pfv|obrigad[oa]|obg|valeu|please|thanks|thank you|tambem|definitivamente|agora|ja|mesmo|entao|too|also|now|ok|okay"
+  // Referência ao resumo mostrado, que não muda nada (P13).
+  + "|com (?:esses|estes|os) dados|with (?:these|those|the) details";
 const AFIRMA_OU_CONFIRMA = `(?:${AFIRMA}|${CONFIRMA})`;
 const FRASE = `(?:${AFIRMA_OU_CONFIRMA}|${PODE})${DADOS}`;
 const INICIO = "(?:(?:ok|okay|entao|bom|ah) )*";
@@ -299,7 +309,9 @@ const SINAIS_DE_MUDANCA = [
   "um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|onze|doze|treze|catorze|quatorze|quinze|dezesseis|dezessete"
     + "|dezoito|dezenove|vinte|casal|dupla|trio|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|couple|pair",
   // Dia da semana, mês, hoje e amanhã.
-  "segunda|terca|quarta|quinta|sexta|sabado|domingo|feriado|fim de semana|monday|tuesday|wednesday|thursday|friday|saturday"
+  // "Segunda" seguida de substantivo de pedido é ordinal ("segunda reserva"), não data (P13).
+  "segunda(?!\\s+(?:reserva|estadia|hospedagem|opcao|pedido|cotacao|resumo|vez)(?![a-z0-9]))"
+    + "|terca|quarta|quinta|sexta|sabado|domingo|feriado|fim de semana|monday|tuesday|wednesday|thursday|friday|saturday"
     + "|sunday|weekend|holiday",
   "janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|january|february|march|april"
     + "|may|june|july|august|september|october|november|december",
@@ -308,9 +320,9 @@ const SINAIS_DE_MUDANCA = [
   "esposa|esposo|marido|mulher|namorad[oa]s?|filh[oa]s?|criancas?|bebes?|pessoas?|hospedes?|adultos?|amig[oa]s?|mae|pai"
     + "|familia|irmaos?|irmas?|wife|husband|kids?|child|children|baby|babies|person|people|guests?|adults?|friends?|son"
     + "|daughter|partner|family",
-  // Imóvel ou troca. "De novo" é "outra vez", não dado novo.
-  "apartamento|apto|casa|chale|studio|estudio|cobertura|outr[oa]s?|nova|novas|novos|(?<!de )novo|esses?|aquel[ea]s?"
-    + "|apartment|house|cabin|chalet|other|another|new",
+  // Imóvel ou troca. "Esse" e "essa" só apontam para o resumo (P13); "outro" e "novo" são
+  // palavras de novidade (ver NOVIDADE).
+  "apartamento|apto|casa|chale|studio|estudio|cobertura|aquel[ea]s?|apartment|house|cabin|chalet",
   // Nome ou telefone.
   "meu nome|o nome|nome e|me chamo|telefone|celular|whats\\w*|zap|fone|contato|e-?mail|my name|name is|phone|mobile|cell"
     + "|contact",
@@ -325,6 +337,15 @@ function temSinalDeMudanca(textoMarcado: string): boolean {
   return /\d/.test(textoMarcado) || SINAL_DE_MUDANCA.test(textoMarcado);
 }
 
+// Palavra de novidade: só confirma se o resumo é novo, do turno imediatamente anterior (P13).
+// "De novo" é "outra vez". "Segunda" que sobrou da leitura de data é ordinal.
+const NOVIDADE = /(?<![a-z0-9])(?:nova|novas|novos|(?<!de )novo|outr[oa]s?|segunda|tambem|another|other|new|second|too|also)(?![a-z0-9])/;
+
+// Dado igual ao do resumo, com o rótulo que o precede ("o telefone", "nome", "para"): vira
+// um valor só. Sim com valor junto, mesmo igual, repete o pedido com o resumo (P13).
+const VALOR_DO_RESUMO = new RegExp(`(?<![a-z0-9])(?:(?:${LIGA})[^a-z0-9]+){0,3}(?:${MARCA})(?![a-z0-9])`, "g");
+const comValoresDoResumo = (textoMarcado: string) => textoMarcado.replace(VALOR_DO_RESUMO, " ovalor ");
+
 /**
  * A mensagem pode mudar algum dado do resumo pendente? Sobrou dígito depois de marcar os
  * dados iguais aos do resumo (data, imóvel, telefone ou número diferente, ou que não dá
@@ -332,8 +353,9 @@ function temSinalDeMudanca(textoMarcado: string): boolean {
  */
 export function mudaDadoDoResumo(mensagem: string, pendente: Pendente): boolean {
   if (mensagem.length > MAXIMO_DA_MENSAGEM) return true;
+  // Fora de um sim, palavra de novidade ("quero outra reserva") também derruba o resumo.
   const texto = marcarDadosIguais(semAcento(mensagem), pendente);
-  return temSinalDeMudanca(texto);
+  return temSinalDeMudanca(texto) || NOVIDADE.test(texto);
 }
 
 /**
@@ -343,17 +365,18 @@ export function mudaDadoDoResumo(mensagem: string, pendente: Pendente): boolean 
  * gramática, pergunta, hesitação ou condição: não é sim. Lead enviado não se desfaz,
  * então na dúvida a resposta é "não confirmou".
  */
-export function lerConfirmacao(mensagem: string, pendente: Pendente): Leitura {
+export function lerConfirmacao(mensagem: string, pendente: Pendente, turno?: number): Leitura {
   if (mensagem.length > MAXIMO_DA_MENSAGEM) return "outra";
   // Ponto de interrogação de largura cheia (？) e árabe (؟) também fazem pergunta.
   const bruto = mensagem.replace(/[？؟]/g, "?");
   const texto = marcarDadosIguais(semAcento(bruto), pendente);
   if (PRECO.test(texto)) return "condicao_de_preco";
   const limpo = semPontuacao(texto);
+  const comValores = comValoresDoResumo(texto);
   // A gramática do sim tem frases que se sobrepõem ("pode sim" = "pode" + "sim"), e o
   // tempo do regex dobra a cada repetição. Nenhum sim de verdade passa deste tamanho.
   // Sinal de mudança, inclusive junto de hesitação, pergunta ou sim: não confirma, e o resumo cai (L10).
-  if (temSinalDeMudanca(texto)) return "outra";
+  if (temSinalDeMudanca(comValores)) return "outra";
   if (limpo.length > MAXIMO_DO_SIM) return texto.includes("?") ? "pergunta" : "outra";
   if (texto.includes("?")) {
     // "Sim, confirmo! Pode fechar a reserva, por favor?" é um sim com pedido educado;
@@ -365,7 +388,14 @@ export function lerConfirmacao(mensagem: string, pendente: Pendente): Leitura {
   if (HESITA.test(limpo) || FRACA.test(limpo)) return "hesitacao";
   if (!SIM.test(limpo)) return "outra";
   // Sim com caractere fora da lista permitida (emoji, ❓, ‽, o ";" grego): não é sim limpo, repete o pedido.
-  return SO_CARACTERES_COMUNS.test(bruto) ? "sim" : "hesitacao";
+  if (!SO_CARACTERES_COMUNS.test(bruto)) return "hesitacao";
+  // Sim com valor junto, mesmo igual ao do resumo: repete o pedido com o resumo (P13).
+  if (comValores.includes("ovalor")) return "hesitacao";
+  // Palavra de novidade só confirma o resumo criado ou alterado no turno anterior, e que
+  // substituiu outro (P13): "com as novas datas" logo depois do primeiro resumo não é novidade
+  // nenhuma, e repete o pedido (A5).
+  const resumoNovo = turno !== undefined && pendente.criadoEm === turno - 1 && (pendente.ordem ?? 1) > 1;
+  return NOVIDADE.test(texto) && !resumoNovo ? "hesitacao" : "sim";
 }
 
 /** Corpo do POST: os 7 campos do contrato, com o total convertido de centavos na fronteira. */
@@ -477,7 +507,7 @@ export async function confirmar(cofre: Cofre, turnoAtual: number, mensagem: stri
   if (reservaFechada(anterior)) return jaMarcada(cofre, anterior!, pendente, turnoAtual);
   if (turnoAtual <= pendente.turno) return { tipo: "mesmo_turno" };
 
-  const leitura = lerConfirmacao(mensagem, pendente);
+  const leitura = lerConfirmacao(mensagem, pendente, turnoAtual);
   if (leitura === "outra") {
     // Pode ser troca de dado em texto livre: o resumo antigo deixa de valer (L10).
     invalidarPendente(cofre);
@@ -509,7 +539,7 @@ export async function confirmar(cofre: Cofre, turnoAtual: number, mensagem: stri
     return { tipo: "recusada", explicacao: cotacao ? cotacao.explicacao : "O imóvel não está mais no catálogo." };
   }
   if (cotacao.totalCentavos !== pendente.totalCentavos) {
-    const novo = { ...pendente, totalCentavos: cotacao.totalCentavos, turno: turnoAtual };
+    const novo = { ...pendente, totalCentavos: cotacao.totalCentavos, turno: turnoAtual, criadoEm: turnoAtual, ordem: (pendente.ordem ?? 1) + 1 };
     cofre.salvar({ ...cofre.ler(), pendente: novo });
     return { tipo: "total_mudou", pendente: novo };
   }
