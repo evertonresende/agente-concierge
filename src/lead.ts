@@ -9,7 +9,7 @@
 //   5. quem reconhece o sim é o código, lendo a mensagem do hóspede (L9): o modelo só
 //      pede a confirmação, e ela vale no turno seguinte a um resumo ou a um pedido de
 //      confirmação que saíram do código.
-import { type DataISO, diasEntre, interpretarData } from "./nucleo/datas";
+import { type DataISO, diasEntre, formatarDataComDia, indiceDiaDaSemana, interpretarData } from "./nucleo/datas";
 import { centavosParaReais, formatarReais } from "./nucleo/dinheiro";
 import type { Cotacao } from "./nucleo/preco";
 import { normalizarTelefone } from "./nucleo/telefone";
@@ -27,9 +27,10 @@ export interface Reserva {
  * Marcador de uma reserva: "enviando" (gravado antes do POST), "registrado" (201),
  * "nao_registrado" (o webhook respondeu outra coisa: com certeza não entrou) e "incerto"
  * (tempo esgotado ou sem resposta: pode ter entrado). Só "nao_registrado" permite tentar
- * de novo; "enviando" que sobrou de um reinício vale como incerto.
+ * de novo; "enviando" que sobrou de um reinício vale como incerto. "recusado" = o webhook
+ * recusou a mesma reserva duas vezes: ela não é enviada de novo na sessão.
  */
-export type SituacaoEnvio = "enviando" | "registrado" | "nao_registrado" | "incerto";
+export type SituacaoEnvio = "enviando" | "registrado" | "nao_registrado" | "incerto" | "recusado";
 
 /** A reserva já teve um envio que entrou ou pode ter entrado: não ganha outro POST na sessão (L7, L11). */
 export function reservaFechada(situacao: SituacaoEnvio | undefined): boolean {
@@ -43,12 +44,18 @@ export interface Pendente {
   turno: number;
   /** Nome do imóvel no catálogo, para mostrar o resumo de novo sem reler a ficha. */
   nomeDoImovel?: string;
+  /** Turno em que o resumo foi criado ou teve um dado alterado (não muda quando só é repetido). */
+  criadoEm?: number;
+  /** Quantos resumos a sessão já tinha mostrado, contando este (1 = o primeiro). */
+  ordem?: number;
 }
 
 export interface EstadoLead {
   pendente: Pendente | null;
   /** Marcador de idempotência por reserva (ver `chaveDaReserva`). */
   envios: Record<string, SituacaoEnvio>;
+  /** Resumos mostrados na sessão, para saber se um resumo substituiu outro (P13). */
+  resumosMostrados?: number;
 }
 
 export const ESTADO_INICIAL: EstadoLead = { pendente: null, envios: {} };
@@ -66,7 +73,9 @@ export function chaveDaReserva(r: Reserva): string {
 
 /** Registra que o resumo foi mostrado neste turno. Substitui qualquer resumo anterior (L10). */
 export function apresentarResumo(cofre: Cofre, reserva: Reserva, totalCentavos: number, turno: number, nomeDoImovel?: string): void {
-  cofre.salvar({ ...cofre.ler(), pendente: { reserva, totalCentavos, turno, nomeDoImovel } });
+  const estado = cofre.ler();
+  const ordem = (estado.resumosMostrados ?? 0) + 1;
+  cofre.salvar({ ...estado, resumosMostrados: ordem, pendente: { reserva, totalCentavos, turno, nomeDoImovel, criadoEm: turno, ordem } });
 }
 
 /** O resumo que ainda espera o sim do hóspede: existe e a reserva dele ainda pode ser enviada. */
@@ -81,12 +90,79 @@ export function invalidarPendente(cofre: Cofre): void {
   if (pendenteAberto(estado)) cofre.salvar({ ...estado, pendente: null });
 }
 
-/** Pedido de confirmação, texto fixo de código nos dois idiomas (L15). */
-export function textoDoPedidoDeConfirmacao(pendente: Pendente, idioma: "pt" | "en"): string {
-  const id = pendente.reserva.imovel_id;
-  return idioma === "en"
-    ? `Your booking request for ${id} is still waiting for your confirmation. May I send it to our sales team? To confirm, reply "yes".`
-    : `O seu pedido de reserva do ${id} ainda aguarda a sua confirmação. Posso enviar ao time comercial? Para confirmar, responda "sim".`;
+// Textos fixos de código do resumo, em português e em inglês (L15). Todo pedido de
+// confirmação gerado por código traz o resumo inteiro: o sim seguinte vale sempre para um
+// resumo mostrado no turno imediatamente anterior (L10). Outro idioma recebe português.
+export type IdiomaDoResumo = "pt" | "en";
+const DIAS_EM_INGLES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const MESES_EM_INGLES = [
+  "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December",
+];
+
+/** "2027-01-15" -> "sexta-feira, 15/01/2027" ou "Friday, January 15, 2027". */
+export function dataComDia(data: DataISO, idioma: IdiomaDoResumo): string {
+  if (idioma === "pt") return formatarDataComDia(data);
+  const [ano, mes, dia] = data.split("-").map(Number);
+  return `${DIAS_EM_INGLES[indiceDiaDaSemana(data)]}, ${MESES_EM_INGLES[mes! - 1]} ${dia}, ${ano}`;
+}
+
+interface DadosDoResumo {
+  imovel: string; entrada: string; saida: string; noites: number; hospedes: number; nome: string; soPrimeiroNome: boolean;
+  telefone: string; total: string;
+}
+
+const TEXTOS_DO_RESUMO = {
+  pt: {
+    pedeConfirmacao: "Está tudo certo? Para confirmar, responda \"sim\" e eu envio o seu pedido ao time comercial.",
+    aguarda: "O seu pedido de reserva ainda aguarda a sua confirmação.",
+    linhas: (d: DadosDoResumo) => [
+      "Resumo do seu pedido de reserva:",
+      `- Imóvel: ${d.imovel}`,
+      `- Entrada: ${d.entrada}`,
+      `- Saída: ${d.saida} (${d.noites} ${d.noites === 1 ? "noite" : "noites"})`,
+      `- Hóspedes: ${d.hospedes}`,
+      `- Nome: ${d.nome}${d.soPrimeiroNome ? " (se puder, me diga também o sobrenome)" : ""}`,
+      `- Telefone: ${d.telefone}`,
+      `- Total: ${d.total}`,
+    ],
+  },
+  en: {
+    pedeConfirmacao: "Is everything correct? To confirm, reply \"yes\" and I will send your request to our sales team.",
+    aguarda: "Your booking request is still waiting for your confirmation.",
+    linhas: (d: DadosDoResumo) => [
+      "Summary of your booking request:",
+      `- Property: ${d.imovel}`,
+      `- Check-in: ${d.entrada}`,
+      `- Check-out: ${d.saida} (${d.noites} ${d.noites === 1 ? "night" : "nights"})`,
+      `- Guests: ${d.hospedes}`,
+      `- Name: ${d.nome}${d.soPrimeiroNome ? " (if you can, please tell me your last name too)" : ""}`,
+      `- Phone: ${d.telefone}`,
+      `- Total: ${d.total}`,
+    ],
+  },
+} satisfies Record<IdiomaDoResumo, unknown>;
+
+/** Resumo mostrado ao hóspede antes da confirmação (contrato seção 5), com o pedido de confirmação no fim. */
+export function textoDoResumo(pendente: Pendente, idioma: IdiomaDoResumo = "pt"): string {
+  const r = pendente.reserva;
+  const t = TEXTOS_DO_RESUMO[idioma];
+  const linhas = t.linhas({
+    imovel: pendente.nomeDoImovel ? `${pendente.nomeDoImovel} (${r.imovel_id})` : r.imovel_id,
+    entrada: dataComDia(r.checkin, idioma),
+    saida: dataComDia(r.checkout, idioma),
+    noites: diasEntre(r.checkin, r.checkout),
+    hospedes: r.hospedes,
+    nome: r.nome,
+    soPrimeiroNome: !r.nome.includes(" "),
+    telefone: r.telefone,
+    total: formatarReais(pendente.totalCentavos),
+  });
+  return [...linhas, "", t.pedeConfirmacao].join("\n");
+}
+
+/** Pedido de confirmação repetido por código: o resumo inteiro de novo, nunca só a pergunta (L10, L15). */
+export function textoDoPedidoDeConfirmacao(pendente: Pendente, idioma: IdiomaDoResumo): string {
+  return `${TEXTOS_DO_RESUMO[idioma].aguarda}\n\n${textoDoResumo(pendente, idioma)}`;
 }
 
 /**
@@ -118,7 +194,7 @@ export function simAposRegistro(cofre: Cofre, turno: number, mensagem: string): 
   const estado = cofre.ler();
   const { pendente } = estado;
   if (!pendente || estado.envios[chaveDaReserva(pendente.reserva)] !== "registrado") return undefined;
-  if (turno !== pendente.turno + 1 || lerConfirmacao(mensagem, pendente) !== "sim") return undefined;
+  if (turno !== pendente.turno + 1 || lerConfirmacao(mensagem, pendente, turno) !== "sim") return undefined;
   cofre.salvar({ ...estado, pendente: { ...pendente, turno } });
   return pendente;
 }
@@ -137,10 +213,10 @@ const PRECO = new RegExp(
     + "|\\b(se|desde que|contanto que|caso|if|unless|provided|as long as)\\b.*\\b(valor|preco|total|price|\\d{3,})",
 );
 const HESITA = /\b(acho|achando|talvez|pode ser|nao sei|sei la|quase|provavel|provavelmente|depende|vou pensar|vou ver|pensando|maybe|i think|i guess|probably|perhaps|not sure|might|kind of|sort of)\b/;
-// Só um "ok", "perfeito" ou "certo", mesmo com um "obrigado": o hóspede pode estar apenas
-// acusando o recebimento. Vale como hesitação.
+// Só um "ok", "perfeito", "certo" ou "s", mesmo com um "obrigado": o hóspede pode estar
+// apenas acusando o recebimento, ou ter digitado sem querer. Vale como hesitação (P11).
 const FRACA = new RegExp("^(?:(?:ok|okay|ta bom|ta|beleza|blz|bom|legal|show|joia|fine|alright|good|great|k"
-  + "|certo|certinho|perfeito|claro|obrigad[oa]|obg|valeu|thanks|thank you)(?: |$))+$");
+  + "|certo|certinho|perfeito|claro|obrigad[oa]|obg|valeu|thanks|thank you|s)(?: |$))+$");
 
 // O sim é uma gramática fechada de frases, não uma lista de palavras soltas: palavras
 // que valem numa frase ("pode enviar", "confirmo o resumo") não podem ser recombinadas em
@@ -167,16 +243,28 @@ const MARCA = "oimovel|ototal|asdatas|oshospedes|asnoites|onome|otelefone";
 const LIGA = "de|do|da|no|na|em|para|pra|pro|com|por|pelo|e|o|a|os|as|sou|of|for|at|in|with|on|and|the"
   + "|imovel|property|valor|total|nome|telefone|name|phone|datas|dates";
 const DADOS = `(?: (?:(?:${LIGA}) ){0,3}(?:${MARCA}))*`;
-const CORTESIA = "por favor|pfv|obrigad[oa]|obg|valeu|please|thanks|thank you|tambem|definitivamente|agora|ja|mesmo|entao|too|also|now|ok|okay";
+const CORTESIA = "por favor|pfv|obrigad[oa]|obg|valeu|please|thanks|thank you|tambem|definitivamente|agora|ja|mesmo|entao|too|also|now|ok|okay"
+  // Referência ao resumo mostrado, que não muda nada (P13).
+  + "|com (?:esses|estes|os) dados|with (?:these|those|the) details";
 const AFIRMA_OU_CONFIRMA = `(?:${AFIRMA}|${CONFIRMA})`;
 const FRASE = `(?:${AFIRMA_OU_CONFIRMA}|${PODE})${DADOS}`;
 const INICIO = "(?:(?:ok|okay|entao|bom|ah) )*";
 const SIM = new RegExp(`^${INICIO}${FRASE}(?: (?:${FRASE}|${CORTESIA}))*$`);
 const COMECA_AFIRMANDO = new RegExp(`^${INICIO}${AFIRMA_OU_CONFIRMA}(?: |$)`);
-// Frase com "?" que é só um pedido educado de envio ("pode fechar a reserva, por favor?").
-const PEDIDO_DE_ENVIO = new RegExp(`^(?:${AFIRMA_OU_CONFIRMA}${DADOS} )*${PODE}${DADOS}(?: (?:${CORTESIA}))*$`);
+// Frase com "?" que é só um pedido educado de envio ("pode fechar a reserva, por favor?"):
+// exige o verbo de envio; "sim, pode?" é pergunta.
+const PODE_ENVIAR = "(?:pode(?: sim)? (?:fechar|enviar|mandar|confirmar|registrar)|send it)"
+  + "(?: (?:o|esse|este) pedido| (?:a|essa|esta) reserva| the (?:request|booking))?";
+const PEDIDO_DE_ENVIO = new RegExp(`^(?:${AFIRMA_OU_CONFIRMA}${DADOS} )*${PODE_ENVIAR}${DADOS}(?: (?:${CORTESIA}))*$`);
+// O que pode aparecer numa confirmação limpa: letra latina (com acento), dígito, espaço,
+// pontuação básica e os símbolos dos dados do resumo (telefone, data, valor). Emoji,
+// símbolo e pontuação de outra escrita (❓, ‽, ¿, o ";" grego) fazem a mensagem não ser um sim.
+const SO_CARACTERES_COMUNS = /^[A-Za-zÀ-ÖØ-öø-ÿ\u0300-\u036f0-9\s.,!;:?'’"()\-+/$]*$/;
 
 const MAXIMO_DO_SIM = 120;
+// Mensagem maior que isto não é confirmação nem resposta neutra a um resumo, e não é lida:
+// marcar os dados e passar pelos regex custaria CPU à toa (8.000 dígitos: ~330 ms).
+const MAXIMO_DA_MENSAGEM = 300;
 
 function semAcento(texto: string): string {
   return texto.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -213,19 +301,61 @@ function marcarDadosIguais(texto: string, pendente: Pendente): string {
 }
 
 // Pedido explícito de mudança, ou dado novo dito em palavras (nome, número de pessoas).
-const MUDANCA = new RegExp("\\b(?:mud|alter|troc|corrig|substitu|em vez|ao inves|na verdade|nov[oa]s? (?:data|dado|nome|telefone|numero|imovel)"
-  + "|outr[oa]s? (?:data|dia|nome|telefone|numero|imovel|casa|apartamento)|meu nome|me chamo|somos|seremos|mais (?:um|uma|dois|duas)"
-  + "|menos (?:um|uma)|change|instead|actually|new (?:date|detail|name|phone|number)|other (?:date|name|phone)"
-  + "|different|my name|we are|we'?re|one more|plus one)");
+// Sinais de que a mensagem pode mudar um dado do resumo. A regra é negar por padrão: a
+// mensagem só mantém o resumo pendente se não tiver nenhum destes sinais, porque lista de
+// formas de mudança perde sempre ("vamos ser três", "minha esposa também vai").
+const SINAIS_DE_MUDANCA = [
+  // Número por extenso, casal, dupla.
+  "um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|onze|doze|treze|catorze|quatorze|quinze|dezesseis|dezessete"
+    + "|dezoito|dezenove|vinte|casal|dupla|trio|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|couple|pair",
+  // Dia da semana, mês, hoje e amanhã.
+  // "Segunda" seguida de substantivo de pedido é ordinal ("segunda reserva"), não data (P13).
+  "segunda(?!\\s+(?:reserva|estadia|hospedagem|opcao|pedido|cotacao|resumo|vez)(?![a-z0-9]))"
+    + "|terca|quarta|quinta|sexta|sabado|domingo|feriado|fim de semana|monday|tuesday|wednesday|thursday|friday|saturday"
+    + "|sunday|weekend|holiday",
+  "janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|january|february|march|april"
+    + "|may|june|july|august|september|october|november|december",
+  "hoje|amanha|ontem|today|tomorrow|tonight|yesterday",
+  // Pessoa ou hóspede.
+  "esposa|esposo|marido|mulher|namorad[oa]s?|filh[oa]s?|criancas?|bebes?|pessoas?|hospedes?|adultos?|amig[oa]s?|mae|pai"
+    + "|familia|irmaos?|irmas?|wife|husband|kids?|child|children|baby|babies|person|people|guests?|adults?|friends?|son"
+    + "|daughter|partner|family",
+  // Imóvel ou troca. "Esse" e "essa" só apontam para o resumo (P13); "outro" e "novo" são
+  // palavras de novidade (ver NOVIDADE).
+  "apartamento|apto|casa|chale|studio|estudio|cobertura|aquel[ea]s?|apartment|house|cabin|chalet",
+  // Nome ou telefone.
+  "meu nome|o nome|nome e|me chamo|telefone|celular|whats\\w*|zap|fone|contato|e-?mail|my name|name is|phone|mobile|cell"
+    + "|contact",
+  // Verbo de mudança.
+  "mud\\w*|troc\\w*|alter\\w*|corrig\\w*|corrij\\w*|correca\\w*|substitu\\w*|ajust\\w*|na verdade|melhor|vai ser|vamos ser|somos|seremos"
+    + "|em vez|ao inves|chang\\w*|switch\\w*|instead|actually|rather|better|updat\\w*|we are|we'?re|make it",
+].join("|");
+const SINAL_DE_MUDANCA = new RegExp(`(?<![a-z0-9])(?:${SINAIS_DE_MUDANCA})(?![a-z0-9])`);
+
+/** Já sem acento e com os dados iguais ao resumo marcados: sobrou dígito ou sinal de mudança. */
+function temSinalDeMudanca(textoMarcado: string): boolean {
+  return /\d/.test(textoMarcado) || SINAL_DE_MUDANCA.test(textoMarcado);
+}
+
+// Palavra de novidade: só confirma se o resumo é novo, do turno imediatamente anterior (P13).
+// "De novo" é "outra vez". "Segunda" que sobrou da leitura de data é ordinal.
+const NOVIDADE = /(?<![a-z0-9])(?:nova|novas|novos|(?<!de )novo|outr[oa]s?|segunda|tambem|another|other|new|second|too|also)(?![a-z0-9])/;
+
+// Dado igual ao do resumo, com o rótulo que o precede ("o telefone", "nome", "para"): vira
+// um valor só. Sim com valor junto, mesmo igual, repete o pedido com o resumo (P13).
+const VALOR_DO_RESUMO = new RegExp(`(?<![a-z0-9])(?:(?:${LIGA})[^a-z0-9]+){0,3}(?:${MARCA})(?![a-z0-9])`, "g");
+const comValoresDoResumo = (textoMarcado: string) => textoMarcado.replace(VALOR_DO_RESUMO, " ovalor ");
 
 /**
- * A mensagem muda algum dado do resumo pendente? Sobrou dígito depois de marcar os dados
- * iguais aos do resumo (data, imóvel, telefone ou número diferente, ou que não dá para
- * comparar), ou há pedido de mudança. Na dúvida, muda: o resumo cai e é refeito (L10).
+ * A mensagem pode mudar algum dado do resumo pendente? Sobrou dígito depois de marcar os
+ * dados iguais aos do resumo (data, imóvel, telefone ou número diferente, ou que não dá
+ * para comparar), ou há sinal de mudança. Na dúvida, muda: o resumo cai e é refeito (L10).
  */
 export function mudaDadoDoResumo(mensagem: string, pendente: Pendente): boolean {
+  if (mensagem.length > MAXIMO_DA_MENSAGEM) return true;
+  // Fora de um sim, palavra de novidade ("quero outra reserva") também derruba o resumo.
   const texto = marcarDadosIguais(semAcento(mensagem), pendente);
-  return /\d/.test(texto) || MUDANCA.test(texto);
+  return temSinalDeMudanca(texto) || NOVIDADE.test(texto);
 }
 
 /**
@@ -235,14 +365,19 @@ export function mudaDadoDoResumo(mensagem: string, pendente: Pendente): boolean 
  * gramática, pergunta, hesitação ou condição: não é sim. Lead enviado não se desfaz,
  * então na dúvida a resposta é "não confirmou".
  */
-export function lerConfirmacao(mensagem: string, pendente: Pendente): Leitura {
+export function lerConfirmacao(mensagem: string, pendente: Pendente, turno?: number): Leitura {
+  if (mensagem.length > MAXIMO_DA_MENSAGEM) return "outra";
   // Ponto de interrogação de largura cheia (？) e árabe (؟) também fazem pergunta.
-  const texto = marcarDadosIguais(semAcento(mensagem).replace(/[？؟]/g, "?"), pendente);
+  const bruto = mensagem.replace(/[？؟]/g, "?");
+  const texto = marcarDadosIguais(semAcento(bruto), pendente);
   if (PRECO.test(texto)) return "condicao_de_preco";
   const limpo = semPontuacao(texto);
+  const comValores = comValoresDoResumo(texto);
   // A gramática do sim tem frases que se sobrepõem ("pode sim" = "pode" + "sim"), e o
   // tempo do regex dobra a cada repetição. Nenhum sim de verdade passa deste tamanho.
-  if (limpo.length > MAXIMO_DO_SIM) return texto.includes("?") && !/\d/.test(texto) ? "pergunta" : "outra";
+  // Sinal de mudança, inclusive junto de hesitação, pergunta ou sim: não confirma, e o resumo cai (L10).
+  if (temSinalDeMudanca(comValores)) return "outra";
+  if (limpo.length > MAXIMO_DO_SIM) return texto.includes("?") ? "pergunta" : "outra";
   if (texto.includes("?")) {
     // "Sim, confirmo! Pode fechar a reserva, por favor?" é um sim com pedido educado;
     // qualquer outra pergunta ("sim, e tem wifi?", "pode fechar?", "sim?") não confirma.
@@ -251,7 +386,16 @@ export function lerConfirmacao(mensagem: string, pendente: Pendente): Leitura {
     if (!pedidoEducado) return /\d/.test(texto) ? "outra" : "pergunta";
   }
   if (HESITA.test(limpo) || FRACA.test(limpo)) return "hesitacao";
-  return SIM.test(limpo) ? "sim" : "outra";
+  if (!SIM.test(limpo)) return "outra";
+  // Sim com caractere fora da lista permitida (emoji, ❓, ‽, o ";" grego): não é sim limpo, repete o pedido.
+  if (!SO_CARACTERES_COMUNS.test(bruto)) return "hesitacao";
+  // Sim com valor junto, mesmo igual ao do resumo: repete o pedido com o resumo (P13).
+  if (comValores.includes("ovalor")) return "hesitacao";
+  // Palavra de novidade só confirma o resumo criado ou alterado no turno anterior, e que
+  // substituiu outro (P13): "com as novas datas" logo depois do primeiro resumo não é novidade
+  // nenhuma, e repete o pedido (A5).
+  const resumoNovo = turno !== undefined && pendente.criadoEm === turno - 1 && (pendente.ordem ?? 1) > 1;
+  return NOVIDADE.test(texto) && !resumoNovo ? "hesitacao" : "sim";
 }
 
 /** Corpo do POST: os 7 campos do contrato, com o total convertido de centavos na fronteira. */
@@ -275,7 +419,8 @@ export type MotivoNaoRegistrado =
   | "catalogo" // não deu para reler a ficha
   | "resposta" // o webhook respondeu algo diferente de 201, sem apontar um dado do hóspede
   | "incerto" // tempo esgotado ou sem resposta: pode ter chegado ou não (L11)
-  | "ja_tentado"; // esta reserva já teve um envio de resultado incerto
+  | "ja_tentado" // esta reserva já teve um envio de resultado incerto
+  | "ja_recusado"; // o webhook já recusou esta reserva duas vezes
 
 /** Campos do lead que o hóspede informa e pode corrigir. `valor_total` sai do código. */
 export const CAMPOS_DO_HOSPEDE = ["nome", "telefone", "imovel_id", "checkin", "checkout", "hospedes"] as const;
@@ -333,6 +478,7 @@ function marcar(cofre: Cofre, chave: string, situacao: SituacaoEnvio): void {
 
 /** Confirmação de uma reserva que já teve envio: nada é enviado de novo (L7, L11). */
 function jaMarcada(cofre: Cofre, situacao: SituacaoEnvio, pendente: Pendente, turnoAtual: number): ResultadoConfirmacao {
+  if (situacao === "recusado") return { tipo: "nao_registrado", motivo: "ja_recusado" };
   if (situacao !== "registrado") return { tipo: "nao_registrado", motivo: "ja_tentado" };
   // No resumo já registrado, `turno` guarda o turno do registro ou do último aviso de "já registrado".
   const repetido = turnoAtual <= pendente.turno + 1;
@@ -361,7 +507,7 @@ export async function confirmar(cofre: Cofre, turnoAtual: number, mensagem: stri
   if (reservaFechada(anterior)) return jaMarcada(cofre, anterior!, pendente, turnoAtual);
   if (turnoAtual <= pendente.turno) return { tipo: "mesmo_turno" };
 
-  const leitura = lerConfirmacao(mensagem, pendente);
+  const leitura = lerConfirmacao(mensagem, pendente, turnoAtual);
   if (leitura === "outra") {
     // Pode ser troca de dado em texto livre: o resumo antigo deixa de valer (L10).
     invalidarPendente(cofre);
@@ -393,7 +539,7 @@ export async function confirmar(cofre: Cofre, turnoAtual: number, mensagem: stri
     return { tipo: "recusada", explicacao: cotacao ? cotacao.explicacao : "O imóvel não está mais no catálogo." };
   }
   if (cotacao.totalCentavos !== pendente.totalCentavos) {
-    const novo = { ...pendente, totalCentavos: cotacao.totalCentavos, turno: turnoAtual };
+    const novo = { ...pendente, totalCentavos: cotacao.totalCentavos, turno: turnoAtual, criadoEm: turnoAtual, ordem: (pendente.ordem ?? 1) + 1 };
     cofre.salvar({ ...cofre.ler(), pendente: novo });
     return { tipo: "total_mudou", pendente: novo };
   }
@@ -404,6 +550,9 @@ export async function confirmar(cofre: Cofre, turnoAtual: number, mensagem: stri
   const corrida = agora.envios[chave];
   if (reservaFechada(corrida)) return jaMarcada(cofre, corrida!, pendente, turnoAtual);
   if (!agora.pendente || chaveDaReserva(agora.pendente.reserva) !== chave) return { tipo: "sem_resumo" };
+  // Lido antes do marcador "enviando", que sobrescreve a recusa anterior desta reserva.
+  const recusadaAntes = corrida === "nao_registrado";
+  const recusaNaSessao = recusadaAntes || Object.values(agora.envios).some((e) => e === "nao_registrado" || e === "recusado");
   marcar(cofre, chave, "enviando");
 
   const corpo = corpoDoLead(pendente.reserva, cotacao.totalCentavos);
@@ -421,12 +570,12 @@ export async function confirmar(cofre: Cofre, turnoAtual: number, mensagem: stri
   }
   // Com certeza não registrou: a confirmação foi gasta, mas a reserva não fica bloqueada.
   // Um novo resumo (com o dado corrigido, ou mais tarde) pode ser confirmado e enviado.
-  const estado = cofre.ler();
   // Já houve recusa nesta sessão (mesma reserva ou a de antes da correção): pedir a
-  // correção de novo vira laço; a conversa passa para humano.
-  const jaRecusado = Object.values(estado.envios).includes("nao_registrado");
-  cofre.salvar({ ...estado, pendente: null, envios: { ...estado.envios, [chave]: "nao_registrado" } });
-  return resposta.campos.length > 0 && !jaRecusado
+  // correção de novo vira laço; a conversa passa para humano. Segunda recusa da mesma
+  // reserva: ela fica bloqueada na sessão.
+  const estado = cofre.ler();
+  cofre.salvar({ ...estado, pendente: null, envios: { ...estado.envios, [chave]: recusadaAntes ? "recusado" : "nao_registrado" } });
+  return resposta.campos.length > 0 && !recusaNaSessao
     ? { tipo: "campo_recusado", campos: resposta.campos }
     : { tipo: "nao_registrado", motivo: "resposta" };
 }

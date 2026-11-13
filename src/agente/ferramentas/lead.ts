@@ -1,9 +1,8 @@
 import { regrasDaFicha } from "../../catalogo";
 import {
   apresentarResumo, type CampoDoHospede, chaveDaReserva, confirmar, invalidarPendente, type Leitura, type Pendente, type Reserva,
-  reservaFechada, simAposRegistro,
+  reservaFechada, simAposRegistro, textoDoResumo, dataComDia,
 } from "../../lead";
-import { type DataISO, diasEntre, formatarDataComDia, indiceDiaDaSemana } from "../../nucleo/datas";
 import { formatarReais } from "../../nucleo/dinheiro";
 import { type Idioma, idiomaDoHospede } from "../../nucleo/idioma";
 import { cotar } from "../../nucleo/preco";
@@ -14,18 +13,6 @@ import { type Argumentos, type Contexto, definir, type Resultado, texto } from "
 // Textos fixos de código, em português e em inglês (L15): o resumo, o pedido de
 // confirmação, o resultado da confirmação e os avisos de falha. O modelo nunca os reescreve.
 // Nenhum deles diz "registrado" antes de um 201 do webhook. Outro idioma recebe português.
-const DIAS_EM_INGLES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-const MESES_EM_INGLES = [
-  "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December",
-];
-
-/** "2027-01-15" -> "sexta-feira, 15/01/2027" ou "Friday, January 15, 2027". */
-function dataComDia(data: DataISO, idioma: Idioma): string {
-  if (idioma === "pt") return formatarDataComDia(data);
-  const [ano, mes, dia] = data.split("-").map(Number);
-  return `${DIAS_EM_INGLES[indiceDiaDaSemana(data)]}, ${MESES_EM_INGLES[mes! - 1]} ${dia}, ${ano}`;
-}
-
 const ROTULOS: Record<Idioma, Record<CampoDoHospede, string>> = {
   pt: {
     nome: "o nome", telefone: "o telefone", imovel_id: "o imóvel", checkin: "a data de entrada", checkout: "a data de saída",
@@ -39,7 +26,6 @@ const ROTULOS: Record<Idioma, Record<CampoDoHospede, string>> = {
 
 const TEXTOS = {
   pt: {
-    pedeConfirmacao: "Está tudo certo? Para confirmar, responda \"sim\" e eu envio o seu pedido ao time comercial.",
     aindaNaoEnviei: "Ainda não enviei este pedido.",
     confiraDeNovo: "Para não haver engano, confira o pedido mais uma vez.",
     totalMudou: "O valor desta estadia mudou desde o resumo anterior, então ainda não enviei este pedido.",
@@ -56,19 +42,8 @@ const TEXTOS = {
       + "com o nosso time comercial. Não enviei de novo.",
     pedeCorrecao: (dados: string) => `Não consegui registrar o seu pedido: o sistema de reservas não aceitou ${dados}. `
       + "Pode me informar de novo? Com a correção eu monto um novo resumo para você confirmar.",
-    resumo: (d: DadosDoResumo) => [
-      "Resumo do seu pedido de reserva:",
-      `- Imóvel: ${d.imovel}`,
-      `- Entrada: ${d.entrada}`,
-      `- Saída: ${d.saida} (${d.noites} ${d.noites === 1 ? "noite" : "noites"})`,
-      `- Hóspedes: ${d.hospedes}`,
-      `- Nome: ${d.nome}${d.soPrimeiroNome ? " (se puder, me diga também o sobrenome)" : ""}`,
-      `- Telefone: ${d.telefone}`,
-      `- Total: ${d.total}`,
-    ],
   },
   en: {
-    pedeConfirmacao: "Is everything correct? To confirm, reply \"yes\" and I will send your request to our sales team.",
     aindaNaoEnviei: "I have not sent this request yet.",
     confiraDeNovo: "To avoid any mistake, please check the request once more.",
     totalMudou: "The price of this stay has changed since the previous summary, so I have not sent this request yet.",
@@ -85,23 +60,8 @@ const TEXTOS = {
       + "with our sales team. I did not send it again.",
     pedeCorrecao: (dados: string) => `I could not register your booking request: the booking system did not accept ${dados}. `
       + "Could you send it again? With the correction I will prepare a new summary for you to confirm.",
-    resumo: (d: DadosDoResumo) => [
-      "Summary of your booking request:",
-      `- Property: ${d.imovel}`,
-      `- Check-in: ${d.entrada}`,
-      `- Check-out: ${d.saida} (${d.noites} ${d.noites === 1 ? "night" : "nights"})`,
-      `- Guests: ${d.hospedes}`,
-      `- Name: ${d.nome}${d.soPrimeiroNome ? " (if you can, please tell me your last name too)" : ""}`,
-      `- Phone: ${d.telefone}`,
-      `- Total: ${d.total}`,
-    ],
   },
 } satisfies Record<Idioma, unknown>;
-
-interface DadosDoResumo {
-  imovel: string; entrada: string; saida: string; noites: number; hospedes: number; nome: string; soPrimeiroNome: boolean;
-  telefone: string; total: string;
-}
 
 /**
  * Idioma dos textos fixos deste turno, pelas mensagens do hóspede. `historico` é um
@@ -111,24 +71,6 @@ interface DadosDoResumo {
 function idiomaDe(contexto: Contexto): Idioma {
   const anteriores = (contexto as { historico?: { role: string; content: string }[] }).historico ?? [];
   return idiomaDoHospede([...anteriores.filter((m) => m.role === "user").map((m) => m.content), contexto.mensagem]);
-}
-
-/** Resumo mostrado ao hóspede antes da confirmação (contrato seção 5). */
-export function textoDoResumo(pendente: Pendente, idioma: Idioma = "pt"): string {
-  const r = pendente.reserva;
-  const t = TEXTOS[idioma];
-  const linhas = t.resumo({
-    imovel: pendente.nomeDoImovel ? `${pendente.nomeDoImovel} (${r.imovel_id})` : r.imovel_id,
-    entrada: dataComDia(r.checkin, idioma),
-    saida: dataComDia(r.checkout, idioma),
-    noites: diasEntre(r.checkin, r.checkout),
-    hospedes: r.hospedes,
-    nome: r.nome,
-    soPrimeiroNome: !r.nome.includes(" "),
-    telefone: r.telefone,
-    total: formatarReais(pendente.totalCentavos),
-  });
-  return [...linhas, "", t.pedeConfirmacao].join("\n");
 }
 
 function jaRegistrado(pendente: Pendente, idioma: Idioma): Resultado {
@@ -167,9 +109,9 @@ export function resumir(contexto: Contexto, pedido: Extract<Pedido, { ok: true }
     // O hóspede pediu outra reserva (que já teve envio): o resumo que estava em aberto,
     // de uma reserva diferente, deixa de valer (L10).
     invalidarPendente(contexto.cofre);
-    return anterior === "registrado"
-      ? jaRegistrado(pendente, idioma)
-      : { paraOModelo: { nao_registrado: true }, respostaFinal: TEXTOS[idioma].incerto, handoff: true };
+    if (anterior === "registrado") return jaRegistrado(pendente, idioma);
+    const texto = anterior === "recusado" ? TEXTOS[idioma].naoRegistrado : TEXTOS[idioma].incerto;
+    return { paraOModelo: { nao_registrado: true }, respostaFinal: texto, handoff: true };
   }
 
   apresentarResumo(contexto.cofre, reserva, pendente.totalCentavos, contexto.turno, pendente.nomeDoImovel);
@@ -181,11 +123,14 @@ export function resumir(contexto: Contexto, pedido: Extract<Pedido, { ok: true }
 }
 
 /** A mensagem do hóspede não é um sim inequívoco ao resumo: nada foi enviado (L9). */
-function naoConfirmou(leitura: Exclude<Leitura, "sim">, idioma: Idioma): Resultado {
+function naoConfirmou(leitura: Exclude<Leitura, "sim">, pendente: Pendente, idioma: Idioma): Resultado {
   const t = TEXTOS[idioma];
   switch (leitura) {
     case "hesitacao":
-      return { paraOModelo: { enviado: false, motivo: "o hóspede hesitou" }, respostaFinal: `${t.aindaNaoEnviei} ${t.pedeConfirmacao}` };
+      return {
+        paraOModelo: { enviado: false, motivo: "o hóspede hesitou" },
+        respostaFinal: `${t.aindaNaoEnviei}\n\n${textoDoResumo(pendente, idioma)}`,
+      };
     case "condicao_de_preco":
       return { paraOModelo: { enviado: false, motivo: "condição de preço" }, handoff: true, respostaFinal: t.semNegociacao };
     case "pergunta":
@@ -305,7 +250,7 @@ export const confirmarReserva = definir(
       case "mesmo_turno":
         return { paraOModelo: { erro: "O resumo acabou de ser mostrado. Nada foi enviado: a confirmação precisa vir na próxima mensagem do hóspede." } };
       case "nao_confirmou":
-        return naoConfirmou(resultado.leitura, idioma);
+        return naoConfirmou(resultado.leitura, resultado.pendente, idioma);
       case "reapresentado":
         return {
           paraOModelo: { enviado: false, resumo_apresentado: true, aguardando: "confirmação do hóspede na próxima mensagem" },
