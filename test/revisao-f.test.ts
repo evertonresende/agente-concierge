@@ -28,11 +28,10 @@ describe("mensagem longa e repetitiva não trava a leitura do sim", () => {
   });
 });
 
-describe("segunda, nova ou outra reserva só confirmam com demonstrativo", () => {
-  for (const mensagem of ["Sim, confirmo essa segunda reserva também.", "confirmo esta nova reserva", "confirmo essa outra reserva", "I confirm this second booking"]) {
-    it(`é sim: "${mensagem}"`, () => expect(lerConfirmacao(mensagem, GRM301)).toBe("sim"));
-  }
-  for (const mensagem of ["confirmo a outra reserva", "confirmo a nova reserva", "confirmo a segunda reserva", "confirmo outra reserva", "I confirm the second booking"]) {
+describe("segunda, nova ou outra reserva não confirmam (sem demonstrativo; com ele, são sinal de mudança)", () => {
+  it("é sim: \"I confirm this second booking\"", () => expect(lerConfirmacao("I confirm this second booking", GRM301)).toBe("sim"));
+  for (const mensagem of ["Sim, confirmo essa segunda reserva também.", "confirmo esta nova reserva", "confirmo essa outra reserva",
+    "confirmo a outra reserva", "confirmo a nova reserva", "confirmo a segunda reserva", "confirmo outra reserva", "I confirm the second booking"]) {
     it(`não é sim: "${mensagem}"`, () => expect(lerConfirmacao(mensagem, GRM301)).toBe("outra"));
   }
 });
@@ -171,5 +170,54 @@ describe("todo pedido de confirmação gerado por código traz o resumo inteiro 
     const r = await confirmarReserva.executar({}, criarContexto(mundo, cofre, 3, "acho que sim"));
     for (const linha of LINHAS.map((l) => l.replace("GRM-301", "Chalé"))) expect(r.respostaFinal).toContain(linha.startsWith("- Imóvel") ? "(GRM-301)" : linha);
     expect(mundo.leads).toEqual([]);
+  });
+});
+
+describe("rearme negado por padrão: mensagem com sinal de mudança derruba o resumo, e o sim seguinte não envia (A1, A2, A5)", () => {
+  const DADOS = { imovel_id: "GRM-301", checkin: "15/01/2027", checkout: "18/01/2027", hospedes: 2, nome: "Ana Lima", telefone: "(11) 98888-0000" };
+  async function comResumo() {
+    const mundo = criarMundo();
+    let estado: EstadoLead = ESTADO_INICIAL;
+    const cofre: Cofre = { ler: () => estado, salvar: (e) => { estado = e; } };
+    const ctx = (turno: number, mensagem: string) => criarContexto(mundo, cofre, turno, mensagem);
+    await montarResumo.executar(DADOS, ctx(2, "quero fechar"));
+    return { mundo, cofre, estado: () => estado, confirma: (turno: number, mensagem: string) => confirmarReserva.executar({}, ctx(turno, mensagem)) };
+  }
+
+  // A1: hesitação com dado novo não repete o pedido: derruba o resumo.
+  for (const mensagem of ["acho que sim, mas somos 3", "pode ser no outro apartamento", "acho que sim, com o telefone (11) 97777-0000"]) {
+    it(`hesitação com dado: "${mensagem}"`, async () => {
+      const s = await comResumo();
+      const r = await s.confirma(3, mensagem);
+      expect(r.respostaFinal).toBeUndefined();
+      expect(s.estado().pendente).toBeNull();
+      await s.confirma(4, "Sim, confirmo.");
+      expect(s.mundo.leads).toEqual([]);
+    });
+  }
+
+  // A2: rearme no fim de um turno escrito pelo modelo.
+  for (const mensagem of ["vamos ser três", "minha esposa também vai", "a saída é no domingo", "o nome é Ana Souza"]) {
+    it(`rearme com dado: "${mensagem}"`, async () => {
+      const s = await comResumo();
+      expect(pedidoDeConfirmacaoPendente(s.cofre, 3, "pt", mensagem)).toBeUndefined();
+      expect(s.estado().pendente).toBeNull();
+      await s.confirma(4, "Sim, confirmo.");
+      expect(s.mundo.leads).toEqual([]);
+    });
+  }
+
+  // A5: "confirmo com as novas datas" logo depois do primeiro resumo.
+  it("\"confirmo com as novas datas\" não envia", async () => {
+    const s = await comResumo();
+    await s.confirma(3, "confirmo com as novas datas");
+    await s.confirma(4, "Sim, confirmo.");
+    expect(s.mundo.leads).toEqual([]);
+  });
+
+  it("\"de novo\" é outra vez, não dado novo: o sim confirma", async () => {
+    const s = await comResumo();
+    await s.confirma(3, "Sim, confirmo de novo!");
+    expect(s.mundo.leads).toHaveLength(1);
   });
 });

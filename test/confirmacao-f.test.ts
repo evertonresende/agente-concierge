@@ -118,8 +118,8 @@ describe("leitura da mensagem diante do resumo pendente", () => {
 
   for (const mensagem of [
     "sim", "Sim!", "siiim", "s", "confirmo", "Confirmado.", "pode fechar", "Pode enviar, por favor", "pode mandar", "isso mesmo",
-    "tudo certo", "está tudo certo, pode enviar", "Sim, confirmo.", "Sim, confirmo o resumo.", "Sim, confirmo com as novas datas.",
-    "Sim, confirmo definitivamente.", "Sim, confirmo de novo!", "Sim, confirmo essa segunda reserva também.",
+    "tudo certo", "está tudo certo, pode enviar", "Sim, confirmo.", "Sim, confirmo o resumo.",
+    "Sim, confirmo definitivamente.", "Sim, confirmo de novo!",
     "Sim, pode fechar.", "Sim sim, pode confirmar a reserva", "Confirmo tudo", "certo, confirmo", "perfeito, pode fechar",
     "Sim, confirmo o GRM-301.", "sim, confirmo os R$ 2.156,00", "Sim, confirmo o GRM-301 por R$ 2.156,00", "com certeza",
     "ok, pode enviar", "Ok, confirmo",
@@ -203,8 +203,6 @@ describe("leitura da mensagem diante do resumo pendente", () => {
       "Sim, para 3 pessoas",
       "Sim, confirmo: 2 noites, 3 pessoas, R$ 720,00",
       "Confirmo a reserva de 2027-01-15 a 2027-01-17",
-      "Sim, confirmo, sou Ana Lima, telefone 11 98888-0000",
-      "Sim, confirmo o telefone +55 (11) 98888-0000",
       "Sim. Pode fechar?",
       "Yes, I confirm the booking for 3 guests from 15/01/2027 to 17/01/2027",
     ]) {
@@ -212,6 +210,9 @@ describe("leitura da mensagem diante do resumo pendente", () => {
     }
 
     const naoConfirmam: [string, string][] = [
+      // "Telefone" é sinal de mudança (rearme negado por padrão): mesmo o número igual não confirma.
+      ["Sim, confirmo, sou Ana Lima, telefone 11 98888-0000", "outra"],
+      ["Sim, confirmo o telefone +55 (11) 98888-0000", "outra"],
       ["Sim, mas de 18 a 20", "outra"],
       ["Sim, para 2 pessoas", "outra"],
       ["Sim, confirmo de 15/01/2027 a 18/01/2027", "outra"],

@@ -284,20 +284,49 @@ function marcarDadosIguais(texto: string, pendente: Pendente): string {
 }
 
 // Pedido explícito de mudança, ou dado novo dito em palavras (nome, número de pessoas).
-const MUDANCA = new RegExp("\\b(?:mud|alter|troc|corrig|substitu|em vez|ao inves|na verdade|nov[oa]s? (?:data|dado|nome|telefone|numero|imovel)"
-  + "|outr[oa]s? (?:data|dia|nome|telefone|numero|imovel|casa|apartamento)|meu nome|me chamo|somos|seremos|mais (?:um|uma|dois|duas)"
-  + "|menos (?:um|uma)|change|instead|actually|new (?:date|detail|name|phone|number)|other (?:date|name|phone)"
-  + "|different|my name|we are|we'?re|one more|plus one)");
+// Sinais de que a mensagem pode mudar um dado do resumo. A regra é negar por padrão: a
+// mensagem só mantém o resumo pendente se não tiver nenhum destes sinais, porque lista de
+// formas de mudança perde sempre ("vamos ser três", "minha esposa também vai").
+const SINAIS_DE_MUDANCA = [
+  // Número por extenso, casal, dupla.
+  "um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|onze|doze|treze|catorze|quatorze|quinze|dezesseis|dezessete"
+    + "|dezoito|dezenove|vinte|casal|dupla|trio|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|couple|pair",
+  // Dia da semana, mês, hoje e amanhã.
+  "segunda|terca|quarta|quinta|sexta|sabado|domingo|feriado|fim de semana|monday|tuesday|wednesday|thursday|friday|saturday"
+    + "|sunday|weekend|holiday",
+  "janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|january|february|march|april"
+    + "|may|june|july|august|september|october|november|december",
+  "hoje|amanha|ontem|today|tomorrow|tonight|yesterday",
+  // Pessoa ou hóspede.
+  "esposa|esposo|marido|mulher|namorad[oa]s?|filh[oa]s?|criancas?|bebes?|pessoas?|hospedes?|adultos?|amig[oa]s?|mae|pai"
+    + "|familia|irmaos?|irmas?|wife|husband|kids?|child|children|baby|babies|person|people|guests?|adults?|friends?|son"
+    + "|daughter|partner|family",
+  // Imóvel ou troca. "De novo" é "outra vez", não dado novo.
+  "apartamento|apto|casa|chale|studio|estudio|cobertura|outr[oa]s?|nova|novas|novos|(?<!de )novo|esses?|aquel[ea]s?"
+    + "|apartment|house|cabin|chalet|other|another|new",
+  // Nome ou telefone.
+  "meu nome|o nome|nome e|me chamo|telefone|celular|whats\\w*|zap|fone|contato|e-?mail|my name|name is|phone|mobile|cell"
+    + "|contact",
+  // Verbo de mudança.
+  "mud\\w*|troc\\w*|alter\\w*|corrig\\w*|corrij\\w*|correca\\w*|substitu\\w*|ajust\\w*|na verdade|melhor|vai ser|vamos ser|somos|seremos"
+    + "|em vez|ao inves|chang\\w*|switch\\w*|instead|actually|rather|better|updat\\w*|we are|we'?re|make it",
+].join("|");
+const SINAL_DE_MUDANCA = new RegExp(`(?<![a-z0-9])(?:${SINAIS_DE_MUDANCA})(?![a-z0-9])`);
+
+/** Já sem acento e com os dados iguais ao resumo marcados: sobrou dígito ou sinal de mudança. */
+function temSinalDeMudanca(textoMarcado: string): boolean {
+  return /\d/.test(textoMarcado) || SINAL_DE_MUDANCA.test(textoMarcado);
+}
 
 /**
- * A mensagem muda algum dado do resumo pendente? Sobrou dígito depois de marcar os dados
- * iguais aos do resumo (data, imóvel, telefone ou número diferente, ou que não dá para
- * comparar), ou há pedido de mudança. Na dúvida, muda: o resumo cai e é refeito (L10).
+ * A mensagem pode mudar algum dado do resumo pendente? Sobrou dígito depois de marcar os
+ * dados iguais aos do resumo (data, imóvel, telefone ou número diferente, ou que não dá
+ * para comparar), ou há sinal de mudança. Na dúvida, muda: o resumo cai e é refeito (L10).
  */
 export function mudaDadoDoResumo(mensagem: string, pendente: Pendente): boolean {
   if (mensagem.length > MAXIMO_DA_MENSAGEM) return true;
   const texto = marcarDadosIguais(semAcento(mensagem), pendente);
-  return /\d/.test(texto) || MUDANCA.test(texto);
+  return temSinalDeMudanca(texto);
 }
 
 /**
@@ -316,6 +345,8 @@ export function lerConfirmacao(mensagem: string, pendente: Pendente): Leitura {
   // A gramática do sim tem frases que se sobrepõem ("pode sim" = "pode" + "sim"), e o
   // tempo do regex dobra a cada repetição. Nenhum sim de verdade passa deste tamanho.
   if (limpo.length > MAXIMO_DO_SIM) return texto.includes("?") && !/\d/.test(texto) ? "pergunta" : "outra";
+  // Sinal de mudança, inclusive junto de hesitação ou de sim: não confirma, e o resumo cai (L10).
+  if (temSinalDeMudanca(texto)) return "outra";
   if (texto.includes("?")) {
     // "Sim, confirmo! Pode fechar a reserva, por favor?" é um sim com pedido educado;
     // qualquer outra pergunta ("sim, e tem wifi?", "pode fechar?", "sim?") não confirma.
