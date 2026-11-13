@@ -7,6 +7,13 @@ describe("dinheiro", () => {
     expect(reaisParaCentavos(245.5)).toBe(24550);
     expect(reaisParaCentavos(365.9)).toBe(36590);
     expect(reaisParaCentavos(0)).toBe(0);
+    // Valores que em ponto flutuante ficam logo abaixo do centavo (1.15 * 100 = 114.99999999999999).
+    expect(reaisParaCentavos(1.15)).toBe(115);
+    expect(reaisParaCentavos(4.35)).toBe(435);
+  });
+
+  it("recusa valor com mais de duas casas decimais em vez de arredondar", () => {
+    for (const valor of [1.155, 590.001, 0.005]) expect(() => reaisParaCentavos(valor)).toThrow("duas casas");
   });
 
   it("recusa valor que não é um número de reais", () => {

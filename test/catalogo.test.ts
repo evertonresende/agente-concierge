@@ -30,6 +30,11 @@ describe("cliente do catálogo", () => {
     await expect(criarCatalogo(BASE_CATALOGO, mundo.buscar).ficha("GRM-301")).rejects.toThrow(ErroDoCatalogo);
   });
 
+  it("ficha com valor de mais de duas casas decimais é recusada", async () => {
+    const mundo = criarMundo({ fichas: { "GRM-301": { ...FICHAS["GRM-301"], diaria: 590.005 } } });
+    await expect(criarCatalogo(BASE_CATALOGO, mundo.buscar).ficha("GRM-301")).rejects.toThrow(ErroDoCatalogo);
+  });
+
   it("catálogo fora do ar: uma nova tentativa, e o erro não carrega a URL", async () => {
     const mundo = criarMundo({ catalogoForaDoAr: true });
     const erro = await criarCatalogo(BASE_CATALOGO, mundo.buscar).cidades().catch((e: Error) => e);

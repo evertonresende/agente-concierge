@@ -105,6 +105,14 @@ describe("preço", () => {
     expect(cotar(GRM301, "2027-01-15", "2027-01-15", 2)).toMatchObject({ ok: false, motivo: "datas_invalidas" });
   });
 
+  it("data malformada é recusada, sem total", () => {
+    for (const [entrada, saida] of [["abc", "2027-01-18"], ["2027-01-15", ""], ["15/01/2027", "18/01/2027"]] as const) {
+      const c = cotar(GRM301, entrada, saida, 2);
+      expect(c).toMatchObject({ ok: false, motivo: "datas_invalidas" });
+      expect(c).not.toHaveProperty("totalCentavos");
+    }
+  });
+
   it("os limites exatos não recusam: noites = mínimo e hóspedes = capacidade", () => {
     expect(total(GRM301, "2027-01-15", "2027-01-17", 2)).toBe("R$ 1.566,00");
     expect(total(GRM301, "2027-01-15", "2027-01-18", 4)).toBe("R$ 2.156,00");

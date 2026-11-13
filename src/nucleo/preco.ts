@@ -41,6 +41,9 @@ function temAcrescimo(data: DataISO): boolean {
  */
 export function cotar(regras: RegrasDoImovel, checkin: DataISO, checkout: DataISO, hospedes?: number): Cotacao {
   const noites = diasEntre(checkin, checkout);
+  if (!Number.isInteger(noites)) {
+    return { ok: false, motivo: "datas_invalidas", explicacao: "A data de entrada ou a de saída não é uma data válida." };
+  }
   if (noites <= 0) {
     return {
       ok: false,

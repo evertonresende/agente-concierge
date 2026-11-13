@@ -54,7 +54,13 @@ function inteiroPositivo(v: unknown): v is number {
 }
 
 function valorEmReais(v: unknown): v is number {
-  return typeof v === "number" && Number.isFinite(v) && v >= 0;
+  if (typeof v !== "number") return false;
+  try {
+    reaisParaCentavos(v);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function validarFicha(dado: unknown): Ficha {
@@ -80,13 +86,17 @@ export function criarCatalogo(base: string | undefined, buscar: typeof fetch): C
     if (!base) throw new ErroDoCatalogo("catálogo não configurado");
     for (let tentativa = 1; ; tentativa++) {
       let status = 0;
+      const controle = new AbortController();
+      const relogio = setTimeout(() => controle.abort(), TEMPO_POR_PEDIDO_MS);
       try {
-        const resposta = await buscar(`${base}${caminho}`, { signal: AbortSignal.timeout(TEMPO_POR_PEDIDO_MS) });
+        const resposta = await buscar(`${base}${caminho}`, { signal: controle.signal });
         status = resposta.status;
         if (status === 200) return await resposta.json();
         await resposta.body?.cancel();
       } catch {
         status = 0;
+      } finally {
+        clearTimeout(relogio);
       }
       if (status === 404) return null;
       const transitorio = status === 0 || status >= 500;
