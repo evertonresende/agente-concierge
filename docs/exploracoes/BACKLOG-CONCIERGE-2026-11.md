@@ -46,7 +46,7 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 
 | Sessão | Repo | Escopo resumido | Depende de | Prioridade | Horas | Roda como | Status | Worktree/Thread |
 |---|---|---|---|---|---|---|---|---|
-| A | agente-concierge | Esqueleto vertical até o Marco 1 | pré-voo | alta | 3,5 | thread T3 · Fable 5.2 | rodando (entregue e conferida; corrigindo duas altas do M1 antes do merge) | `frente-a` |
+| A | agente-concierge | Esqueleto vertical até o Marco 1 | pré-voo | alta | 3,5 | thread T3 · Fable 5.2 | concluída | `frente-a` |
 | B1 | agente-concierge | Webhook falso (Worker próprio), construído e testado local; deploy em `dev` pela coordenadora | pré-voo | alta | 1 | subagente em worktree · DeepSeek | concluída | `t3/webhook-falso-leads` |
 | B2 | agente-concierge | Harness HTTP e casos dev por bloco | — | alta | 2,5 | thread T3 · Gemini 4 Hydrogen | rodando (passo 1 na main; passo 2 reprovado pelo verificador, em correção) | `frente-b2` |
 | C | agente-concierge | Conjunto reservado (fora do repo) | — | alta | 2 | thread T3, fica viva · GPT-6 Astra | rodando (60 casos; relendo por classes de defeito) | `frente-c` (sem commits; casos fora do repo) |
@@ -137,6 +137,16 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
 - 13/11 17h21 · C · 2 casos ajustados às regras decididas; 60 casos, 13 com confirmação
 - Donos dos arquivos que a frente A criou fora da tabela: `tipos.ts` com G, `pedido.ts`
   com F, `env.ts` com I e depois H, `test/apoio.ts` congelado
+
+- 13/11 17h31 · A · concluída. Correções do M1 conferidas (128 testes; três defeitos plantados
+  de novo pela coordenadora, os três pegos) · 61b85fd, 0a40913, 681d174, 6c7c53b,
+  28e6717, merge 45ca6ef
+- 13/11 17h31 · **MARCO 1 VERDE.** Agente publicado em `dev` pela coordenadora a partir da
+  `main` em 45ca6ef. Critério de integração 1: `BLOCO marco1: 100%` e `EVAL OK`, sem
+  caso pulado, com o runner da `main` e com o runner corrigido da B2. Critério 6:
+  `npm test` na `main`, 128 de 128, sem erro não tratado. Critério 7: `SIGILO OK`.
+  Latência do bloco: p95 de 8,1 s. Relatório em `evals/relatorios/`. Critérios 2 a 5
+  esperam o passo 2 da B2; o 8 espera a frente K
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`

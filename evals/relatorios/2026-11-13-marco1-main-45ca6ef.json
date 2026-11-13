@@ -1,0 +1,59 @@
+{
+  "gerado_em": "2026-11-13T20:30:30.935Z",
+  "conjunto": "dev",
+  "ambiente": "dev",
+  "so_agregado": false,
+  "aprovado": true,
+  "motivos_reprovacao": [],
+  "pulados_trava": 0,
+  "blocos": {
+    "marco1": {
+      "total": 2,
+      "executados": 2,
+      "aprovados": 2,
+      "pulados": 0,
+      "taxa_pct": 100
+    }
+  },
+  "agregado": {
+    "executados": 2,
+    "aprovados": 2,
+    "taxa_pct": 100
+  },
+  "latencia_ms": {
+    "p50": 4252,
+    "p95": 8060,
+    "max": 8060,
+    "media": 5297
+  },
+  "uso": {
+    "entrada_total": 12396,
+    "saida_total": 726,
+    "chamadas_modelo_total": 6,
+    "entrada_media_conversa": 6198,
+    "saida_media_conversa": 363,
+    "chamadas_media_conversa": 3
+  },
+  "conversas": [
+    {
+      "bloco": "marco1",
+      "passou": true,
+      "latencia_total_ms": 13128,
+      "uso_entrada": 8594,
+      "uso_saida": 427,
+      "chamadas_modelo": 4,
+      "id": "marco1-01-cotacao-e-lead",
+      "falhas": []
+    },
+    {
+      "bloco": "marco1",
+      "passou": true,
+      "latencia_total_ms": 8060,
+      "uso_entrada": 3802,
+      "uso_saida": 299,
+      "chamadas_modelo": 2,
+      "id": "marco1-02-desconto-handoff",
+      "falhas": []
+    }
+  ]
+}
