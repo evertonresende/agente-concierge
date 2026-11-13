@@ -67,8 +67,11 @@ function normalizar(valor: string): string {
 }
 
 const PALAVRA_DE_DESCONTO = /\b(?:descont\w*|cupom|cupons|cupon|promoc\w*|promo|abatimento|discount\w*|coupon\w*|promotion\w*)\b/g;
-/** Antes da palavra, na mesma oração: o hóspede está abrindo mão do desconto, não pedindo. */
-const ABRE_MAO = /(?:\b(?:sem|without|nao quero|nao preciso|nao precisa\w*|esquec\w+|dispenso)\b[^.,;:!?]*|\bno\s+)$/;
+/**
+ * Logo antes da palavra (no máximo um artigo no meio): o hóspede está abrindo mão do
+ * desconto, não pedindo. "Não preciso de muito, mas tem desconto?" continua pedido.
+ */
+const ABRE_MAO = /(?:\b(?:sem|without|nao quero|nao preciso de|nao precisa de|dispenso|esquece|esqueca|esquecer|forget)\s+(?:(?:o|a|os|as|de|um|uma|nenhum|nenhuma|qualquer|any|the)\s+)?|\bno\s+)$/;
 
 /** A mensagem fala em desconto, cupom ou promoção, sem ser para abrir mão dele ("sem desconto então"). */
 export function mencionaDesconto(mensagem: string): boolean {
@@ -76,9 +79,31 @@ export function mencionaDesconto(mensagem: string): boolean {
   return [...limpa.matchAll(PALAVRA_DE_DESCONTO)].some((achado) => !ABRE_MAO.test(limpa.slice(Math.max(0, achado.index - 30), achado.index)));
 }
 
-/** Desconto por palavra ou por percentual ("aplique 50%"). */
+/** Pergunta sobre o acréscimo de sexta e sábado: informativa, não pedido de abatimento (L5a). */
+const FALA_DE_ACRESCIMO = /\ba mais\b|\bacrescimo|\badicional|\bextra\b|\bmais car[oa]|\bsurcharge|\bmore expensive/;
+/** Percentual pedido: "aplique 50%", "me dá 10%", "20% off". */
+const PERCENTUAL_PEDIDO = /\b(?:apli(?:c|qu)\w*|apply|give me|quero|faz\w*|faca|tira\w*|abat\w*|me d[ae]|dar)\b[^.?!\d]{0,20}\d+\s*%|\d+\s*%\s*(?:off|a menos|de abatimento)\b/;
+/** Valor proposto pelo hóspede: "faz por 2.000?", "fecha por 1800 reais?". Ano ("fechar em 2027") e "3 noites" não contam. */
+const PROPOE_VALOR = /\b(?:faz|faca|fazer|fecha|fechar|fecho|deixa|deixar|sai|sair|consegue|aceita|aceitam|topa|pago|pagaria|do it|make it|take|accept|pay)\b[^.?!]{0,25}?(?:\b(?:por|em|for)\s+)?(?<![\w\/-])(?:r\s*\$\s*\d|(?!20\d\d\b)\d{3,}|\d{1,3}(?:\.\d{3})+|\d+\s*(?:mil|reais))/;
+/** Preço menor sem palavra-chave. Pedido de imóvel mais barato ("tem algum mais barato?") é busca, não negociação. */
+const PRECO_MENOR = /(?<!\b(?:algum|alguma|outro|outra|opcao|opcoes|imovel|imoveis|casa|apartamento|chale|qual|quais)\b[^.?!]{0,20})\bmais barat|\bpreco (?:menor|melhor|especial|camarada)|\b(?:menor|melhor) preco|\b(?:a)?baix\w* (?:o |um pouco (?:o )?)?(?:preco|valor)|\bcheaper\b|\b(?:lower|better|best) price/;
+
+/**
+ * Pedido de abatimento com sinal forte: palavra de desconto, percentual pedido ou valor
+ * proposto. Com ele a conversa passa mesmo que o modelo não chame a ferramenta (L16a).
+ */
 export function pedeAbatimento(mensagem: string): boolean {
-  return mencionaDesconto(mensagem) || /\d\s*%/.test(mensagem);
+  const limpa = normalizar(mensagem);
+  return mencionaDesconto(mensagem) || (!FALA_DE_ACRESCIMO.test(limpa) && PERCENTUAL_PEDIDO.test(limpa)) || PROPOE_VALOR.test(limpa);
+}
+
+/**
+ * Sinal fraco, só para alertar e conferir (o modelo decide): qualquer percentual ou
+ * pedido de preço menor sem palavra-chave ("mais barato?").
+ */
+export function sugereNegociacao(mensagem: string): boolean {
+  const limpa = normalizar(mensagem);
+  return pedeAbatimento(mensagem) || /\d\s*%/.test(limpa) || PRECO_MENOR.test(limpa);
 }
 
 function jaUsou(motivo: string, historico: Mensagem[]): boolean {
