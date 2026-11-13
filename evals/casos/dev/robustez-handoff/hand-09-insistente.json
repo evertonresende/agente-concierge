@@ -1,0 +1,20 @@
+{
+  "id": "hand-09-insistente",
+  "bloco": "robustez-handoff",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "O GRM-301 tem ferro de passar roupa?",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": ["n[aã]o\\s+(?:consta|informa|tenho|sei)|cat[aá]logo"]
+      }
+    },
+    {
+      "mensagem": "Mas eu preciso mesmo saber se tem ferro de passar roupa para decidir se vou reservar. Pode me passar para um atendente?",
+      "espera": {
+        "handoff": true
+      }
+    }
+  ]
+}

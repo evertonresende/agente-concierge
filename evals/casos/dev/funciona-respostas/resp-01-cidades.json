@@ -1,0 +1,28 @@
+{
+  "id": "resp-01-cidades",
+  "bloco": "funciona-respostas",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Em quais cidades vocês têm imóveis no catálogo?",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": [
+          "Bombinhas",
+          "Caraguatatuba",
+          "Florian[oó]polis",
+          "Foz\\s+do\\s+Igua[cç]u",
+          "Gramado",
+          "Imbituba",
+          "Natal",
+          "Rio\\s+de\\s+Janeiro",
+          "S[aã]o\\s+Paulo",
+          "Tibau\\s+do\\s+Sul"
+        ],
+        "resposta_nao_contem": [
+          "B[uú]zios|Campos\\s+do\\s+Jord[aã]o|Balne[aá]rio\\s+Cambori[uú]|Salvador|Fortaleza|Recife|Curitiba"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "id": "rec-05-mesmo-dia",
+  "bloco": "funciona-recusas",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Quero cotar o GRM-301 com entrada em 15/01/2027 e saída em 15/01/2027 para 2 pessoas.",
+      "espera": {
+        "handoff": false,
+        "sem_total": true,
+        "imovel_id": "GRM-301",
+        "resposta_contem": ["mesmo\\s+dia|posterior|depois|pelo\\s+menos\\s+(?:1|uma)\\s+noite|inv[aá]lid"]
+      }
+    }
+  ]
+}

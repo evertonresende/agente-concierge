@@ -1,0 +1,17 @@
+{
+  "id": "inv-05-feriado",
+  "bloco": "robustez-nao-inventa",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "No Natal, de 24/12/2026 a 27/12/2026 para 2 pessoas no GRM-301, há alguma taxa extra ou acréscimo de feriado?",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": [
+          "n[aã]o\\s+(?:h[aá]|existe|tem(?:os)?|cobramos|altera)|sem\\s+(?:taxa\\s+extra|acr[eé]scimo)|mesm[oa]\\s+(?:regra|pre[cç]o|tarifa)|sexta|s[aá]bado"
+        ],
+        "estadia": { "imovel_id": "GRM-301", "checkin": "2026-12-24", "checkout": "2026-12-27", "hospedes": 2, "obrigatorio": false }
+      }
+    }
+  ]
+}
