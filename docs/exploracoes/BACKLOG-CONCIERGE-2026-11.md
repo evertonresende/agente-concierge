@@ -52,11 +52,11 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 | C | agente-concierge | Conjunto reservado (fora do repo) | — | alta | 2 | thread T3, fica viva · GPT-6 Astra | rodando (60 casos; relendo por classes de defeito) | `frente-c` (sem commits; casos fora do repo) |
 | D | agente-concierge | Simulador de hóspede hostil | B2 (formato de caso) | média | 2,5 | thread T3 · Gemini 4 Hydrogen | na `main` (6c090d0); falta a rodada ao vivo contra `dev` e a B2 mover os 12 casos fixos | `frente-d` |
 | M1 | agente-concierge | Revisão curta do Marco 1 | A | alta | 0,5 | subagentes Opus 5.5 + conselho | concluída (`docs/revisoes/m1.md`; achados com dono) | — |
-| I | agente-concierge | Escolha do modelo por eval | A, B2 | alta | 1 | subagente em worktree · Opus 5.5 | pendente | — |
+| I | agente-concierge | Escolha do modelo por eval | A, B2 | alta | 1 | subagente em worktree · Opus 5.5 | rodando (fase 1) | `t3/` (subagente) |
 | E | agente-concierge | Datas | Marco 1, L1, L1a, L1b, L2 | alta | 1,5 | subagente em worktree · Gemini 4 Hydrogen | entregue (e8c2669, db7d272); seguimento curto da P5 e da P7 antes do merge | `t3/datas-relativas-sao-paulo` |
 | F | agente-concierge | Lead robusto | Marco 1, L6, L7, L9, L10, L11, L15 (textos fixos), L20 | alta | 2,5 | thread T3 · Fable 5.2 | rodando | `frente-f` |
 | G | agente-concierge | Robustez e handoff | Marco 1, L3, L4, L5, L5a, L12, L13a, L15, L16, L16a, L19, L21 | alta | 2,5 | thread T3 · Fable 5.2 | rodando | `frente-g` |
-| H | agente-concierge | Concorrência endurecida e falha interna | Marco 1, L17, L17a, L18 | alta | 1 | subagente em worktree · Gemini 4 Hydrogen | rodando | `t3/` (subagente) |
+| H | agente-concierge | Concorrência endurecida e falha interna | Marco 1, L17, L17a, L18 | alta | 1 | subagente em worktree · Gemini 4 Hydrogen | reprovada no CHECK 2 (Worker não sobe no runtime real); em correção | `t3/durable-session-concurrency` |
 | J | agente-concierge | Página de chat em dois passos: design (canvas) e implementação | passo 1: nada; passo 2: Marco 1 e aprovação do Éverton | baixa | 0,7 + 1 | thread T3 · Fable 5.2 | passo 1 concluído (canvas aprovado pelo Éverton, com dois ajustes); passo 2 entregue (b8991ce) | `frente-j` |
 | M2 | agente-concierge | Revisão de código, segurança e segunda opinião | leva 2 integrada | alta | 1,5 | subagentes Opus 5.5 + conselho | pendente | — |
 | L | agente-concierge | Custo por conversa e monitor diário | leva 2 integrada | média | 1 | subagente em worktree · Gemini 4 Hydrogen | pendente | — |
@@ -175,16 +175,39 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
 - 13/11 18h01 · regra provisória P4 (o "sim" só vale logo depois de resumo ou pedido de
   confirmação gerados por código), levantada pela frente F
 - 13/11 18h01 · relatório da medida de base em `evals/relatorios/2026-11-13-dev-base-marco1.json`
-- 13/11 18h20 · F · passo 1 (o "sim" lido por código, P4 na versão dura) e detector de idioma
+- 13/11 18h14 · F · passo 1 (o "sim" lido por código, P4 na versão dura) e detector de idioma
   entregues · f55029c, b05590e · exceção de uma linha em `test/loop.test.ts` autorizada
-- 13/11 18h30 · D · na `main` depois de ensaio de merge, 130 testes, tipos, teste próprio 12 de 12
+- 13/11 18h16 · D · na `main` depois de ensaio de merge, 130 testes, tipos, teste próprio 12 de 12
   e gate · merge 6c090d0 · falta a rodada ao vivo
-- 13/11 18h35 · E · entregue (e8c2669, db7d272); conferida pela coordenação com tabela própria
+- 13/11 18h18 · E · entregue (e8c2669, db7d272); conferida pela coordenação com tabela própria
   de datas em três fusos, sem diferença; duas lacunas levantadas viraram P5 e P6, e a conferência
   achou a P7; seguimento curto pedido antes do merge
-- 13/11 18h40 · J · passo 2 entregue (b8991ce); o contorno de foco por dentro do campo virou P8.
+- 13/11 18h19 · J · passo 2 entregue (b8991ce); o contorno de foco por dentro do campo virou P8.
   Aviso dela para todas: `npm run dev -- --port N` falha (dois `--port`); o comando é
   `npx wrangler dev --env dev --port N`
+- 13/11 18h20 · F (passo 1 e idioma) e J (passo 2) na `main` · merges 56cc12c e 75fdeb8 ·
+  `dev` publicado da 75fdeb8, `BLOCO marco1: 100%`, `EVAL OK`
+- 13/11 18h21 · I · despachada (subagente em worktree, Opus 5.5), em duas fases: mede agora e
+  repete a comparação depois que a G entrar na `main`, porque a G reescreve o prompt e o loop
+- 13/11 18h22 · D · rodada ao vivo do simulador contra `dev` iniciada pela coordenação
+- 13/11 18h24 · B2 · seguimento 60d87d9 conferido (`RUNNER OK`, `TRAVA OK`, `CASOS OK`); entra
+  na `main` junto com os 12 casos da D e a correção do `con-07` (regex não aceitava "já
+  registramos")
+- 13/11 18h26 · H · REPROVADA no CHECK 2: com a branch mesclada, o Worker não sobe no runtime
+  real (constante exportada no módulo de entrada; os 142 testes passam porque o vitest não roda
+  esse runtime). Devolvida com correção, teste de regressão e prova pelo `/saude`. Verificador
+  independente (Opus, recorte de 30 chamadas) lendo a entrega: é a rodada única dela
+- 13/11 18h27 · F · passos 2 a 4 publicados na `frente-f` (363 testes; `funciona-leads` 91%
+  local, o caso que falta depende da ligação da G); relatório final depois da revisão dela
+- 13/11 18h32 · Éverton: limite semanal do Claude em 84%. Vale o combinado: recorte menor, uma
+  rodada de verificador por frente, e frente do Claude que parar por cota vai para o Gemini 4
+  Hydrogen (X7). A trava de confirmação (F) e a ligação dela no loop (G) são verificadas numa
+  rodada só, depois do merge da G. **Se a coordenadora parar por cota: retomar daqui.** Pendente
+  de merge, nesta ordem: B2 (60d87d9 + fila), E (seguimento da P5 e P7, depois CHECK 2 local do
+  bloco `funciona-cotacoes`), F (ensaio de merge + bloco `funciona-leads` local), H (depois da
+  correção e do veredito), G, I (fase 2). Scripts da coordenação fora do repositório:
+  `conferir.sh` (ensaio de merge, suíte, tipos, gate), `local-eval.sh` (servidor local do
+  estado mesclado + runner), `levar-para-main.sh` (merge `--no-ff`, gate, push)
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
