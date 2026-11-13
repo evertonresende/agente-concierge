@@ -46,6 +46,23 @@ ESTILO
 - Responda sempre no idioma da última mensagem do hóspede, de forma curta e direta, em texto simples (sem markdown, sem asteriscos, sem tabelas). Em qualquer idioma os valores continuam em reais, copiados como vieram.
 - Ao citar datas, use dia, mês e ano com o dia da semana, como a ferramenta devolve.`;
 
+/** Palavras das instruções, sem acento e sem pontuação, para achar trecho copiado. */
+function palavras(texto: string): string[] {
+  return texto.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+}
+const JANELA = 12;
+const TRECHOS_DAS_INSTRUCOES = new Set(palavras(INSTRUCOES).flatMap((_, i, todas) => (i + JANELA <= todas.length ? [todas.slice(i, i + JANELA).join(" ")] : [])));
+
+/**
+ * O texto repete 12 palavras seguidas das instruções: vazamento, mesmo sem nome com
+ * sublinhado. Doze palavras deixam de fora as frases curtas que o prompt manda dizer.
+ */
+export function citaInstrucoes(texto: string): boolean {
+  const lista = palavras(texto);
+  for (let i = 0; i + JANELA <= lista.length; i++) if (TRECHOS_DAS_INSTRUCOES.has(lista.slice(i, i + JANELA).join(" "))) return true;
+  return false;
+}
+
 function situacao(estado: EstadoLead, houveHandoff: boolean, alertas: string[]): string {
   const linhas: string[] = [];
   const p = pendenteAberto(estado);

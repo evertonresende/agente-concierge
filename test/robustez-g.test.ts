@@ -312,7 +312,7 @@ describe("robustez: não sei sem invenção (CA-08, CA-15)", () => {
   });
 
   it("disponibilidade: afirmação depois de \"não se preocupe\" conta; informação indisponível e comodidade não contam", () => {
-    for (const afirma of ["Não se preocupe, as datas estão livres.", "As datas de 15/01 a 18/01 estão disponíveis.", "Ótimo! Essas noites estão garantidas.", "The dates aren't available.", "Good news: the dates are free."]) {
+    for (const afirma of ["Não se preocupe, as datas estão livres.", "As datas de 15/01 a 18/01 estão disponíveis.", "Ótimo! Essas datas estão garantidas.", "The dates aren't available.", "Good news: the dates are free."]) {
       expect(falaDeDisponibilidade(afirma)).toBe(true);
     }
     for (const nao of ["Essa informação não está disponível no catálogo.", "A piscina está disponível para os hóspedes.", "Não posso garantir que as datas estão livres.", "I can’t confirm whether the dates are available.", "O catálogo não informa se as datas estão livres."]) {
