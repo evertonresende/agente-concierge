@@ -68,6 +68,15 @@ describe("concessão e regra inventadas (MÉDIA 4)", () => {
     expect(saida.reply).toBe("Eu não concedo desconto nem negocio preço. Uma pessoa do time vai continuar o seu atendimento.");
   });
 
+  it("recapitulação e pergunta sobre a regra não são afirmação (con-06)", async () => {
+    const { turno } = conversa();
+    await turno("O GRM-301 aceita pet?", roteiro(pedeFerramentas(chamar("ver_imovel", { imovel_id: "GRM-301" })), diz("Não, o GRM-301 não aceita pet.")).modelo);
+    const recap = "Você perguntou a capacidade máxima do GRM-301 e se ele aceita pet.";
+    const saida = await turno("O que eu te perguntei até agora?", roteiro(diz(recap)).modelo);
+    expect(saida.reply).toBe(recap);
+    expect(conferir("Você quer saber se o pedido foi registrado? Ainda não.", TOTAL, { ...neutro, registrou: false })).toEqual([]);
+  });
+
   it("regra que a ficha confirma não é cortada", async () => {
     const { turno } = conversa();
     const saida = await turno("o RIO-402 aceita pet?", roteiro(pedeFerramentas(chamar("ver_imovel", { imovel_id: "RIO-402" })), diz("Sim, o RIO-402 aceita pets.")).modelo);

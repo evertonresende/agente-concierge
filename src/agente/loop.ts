@@ -238,10 +238,15 @@ export function regrasLidas(mensagens: Mensagem[]): RegrasLidas {
   return lidas;
 }
 
-/** A frase afirma, sem negação antes, o que `padrao` descreve. */
+// Pergunta indireta ou recapitulação: "você perguntou se aceita pet" não afirma nada.
+const INDIRETA = /\b(?:se|whether|if|pergunt\w*|asked|ask|saber|know)\b/i;
+
+/** A frase afirma o que `padrao` descreve: sem negação nem pergunta antes, e não é pergunta. */
 function afirma(frase: string, padrao: RegExp): boolean {
   const achado = padrao.exec(frase);
-  return achado !== null && !NEGACAO.test(frase.slice(0, achado.index));
+  if (achado === null || frase.includes("?")) return false;
+  const antes = frase.slice(0, achado.index);
+  return !NEGACAO.test(antes) && !INDIRETA.test(antes);
 }
 
 /** Regra afirmada que todas as fichas lidas contradizem. */
