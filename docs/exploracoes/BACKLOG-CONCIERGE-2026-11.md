@@ -435,6 +435,17 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   da porta 8793) recebeu 173 recusas por limite em dois minutos por causa das rodadas da G. A
   rodada com pausa dele recomeça do zero agora; as do GLM-5.3 Flash e do GLM-5.3 não foram
   atingidas (limite separado por modelo)
+- 13/11 20h20 · H · segunda rodada do verificador independente (Opus): REPROVADO. O defeito crítico
+  da rodada 1 foi corrigido de verdade (um "sim" repetido pela nova tentativa do Worker não vale
+  duas vezes; resposta gravada sobrevive ao despejo do objeto; 5 mensagens simultâneas em ordem).
+  Bloqueiam: (A0, média a alta) a sessão grava o resumo, as duas tentativas perdem a resposta na
+  volta, o hóspede recebe o aviso de problema técnico e o "sim" seguinte envia lead de um resumo
+  que ele não viu; (A1, média) corpo sem limite de tamanho (30 MB lidos e interpretados); (A2,
+  média) a nova tentativa com orçamento novo continua sem teste. Menores: turno que termina
+  perto do teto e volta tarde (A3), tabela de pedidos sem poda, log do Worker sem origem e
+  classe, handoff de contingência fora do turno sem registro no estado (L3). 16 de 22 defeitos
+  plantados pegos. Devolvida com a regra: resumo cuja entrega falhou é reapresentado antes de
+  valer um "sim". Limite de corpo decidido como provisória P12. Relatório fora do repositório
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
