@@ -191,6 +191,37 @@ describe("robustez: matriz de handoff (contrato seções 6 e 10)", () => {
     expect(excecao.handoff).toBe(true);
   });
 
+  it("insistência reconhecida pela explicação da resposta anterior, mesmo sem a ferramenta no primeiro turno (L12, L13a)", async () => {
+    const { turno } = conversa();
+    const avisou = await turno("vou levar meu cachorro", roteiro(diz("Este imóvel não aceita pet.")).modelo);
+    expect(avisou.handoff).toBe(false);
+    const insistiu = await turno("mas ele é pequeno, por favor", roteiro(passar("conflito_com_regra_do_imovel"), diz("Uma pessoa do time continua com você.")).modelo);
+    expect(insistiu.handoff).toBe(true);
+    const outra = conversa();
+    await outra.turno("somos 6, conte só 4", roteiro(diz("Crianças e bebês contam como hóspedes, então o grupo passa da capacidade.")).modelo);
+    const deNovo = await outra.turno("os bebês dormem com a gente, cota para 4", roteiro(passar("contar_menos_hospedes"), diz("Uma pessoa do time continua com você.")).modelo);
+    expect(deNovo.handoff).toBe(true);
+  });
+
+  it("\"exceção ou insistência\" na primeira menção da regra não passa: é conflito (inv-08)", async () => {
+    expect(decidirHandoff("excecao_ou_insistencia_em_regra", "Posso fazer uma festa de aniversário no BMB-202?", [])).toBe(false);
+    expect(decidirHandoff("excecao_ou_insistencia_em_regra", "não dá para abrir uma exceção?", [])).toBe(true);
+    const { turno } = conversa();
+    const r = roteiro(passar("excecao_ou_insistencia_em_regra"), diz("O BMB-202 não permite festas."));
+    const festa = await turno("Posso fazer uma festa de aniversário no BMB-202?", r.modelo);
+    expect(festa.handoff).toBe(false);
+    expect(JSON.parse(ultimoResultado(r.recebidas[1]!)).instrucao).toContain("não aceita ou não permite");
+    // Resposta anterior sobre outro assunto não torna a próxima menção insistência.
+    const historico: Mensagem[] = [{ role: "assistant", content: "O GRM-301 fica em Gramado." }];
+    expect(decidirHandoff("conflito_com_regra_do_imovel", "vou levar meu cachorro", historico)).toBe(false);
+  });
+
+  it("o prompt manda chamar a ferramenta já na primeira vez do conflito e da contagem reduzida", () => {
+    const prompt = montarPrompt(ESTADO_INICIAL, false);
+    expect(prompt).toContain("Já na primeira vez chame passar_para_humano com o motivo contar_menos_hospedes");
+    expect(prompt).toContain("Já na primeira vez chame passar_para_humano com o motivo conflito_com_regra_do_imovel");
+  });
+
   it("a flag vale só na resposta em que passa, e de novo a cada novo gatilho; depois o agente segue atendendo (L3, L4)", async () => {
     const { turno } = conversa();
     const desconto = await turno("tem desconto?", roteiro(passar("desconto_ou_negociacao"), diz("Não trabalhamos com desconto. Uma pessoa do time continua com você.")).modelo);

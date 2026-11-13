@@ -92,6 +92,24 @@ function jaUsou(motivo: string, historico: Mensagem[]): boolean {
   }));
 }
 
+/** Explicação da regra na resposta anterior do agente: o que vem depois é insistência (L12, L13a). */
+const EXPLICACAO: Record<string, RegExp> = {
+  contar_menos_hospedes: /(?:crian[cç]as?|beb[eê]s?|todos|todas)[^.!?\n]{0,40}\bcontam\b|\bcontam\s+como\s+(?:h[oó]spedes|pessoas)|(?:children|babies|infants|everyone)[^.!?\n]{0,40}\bcount\b/i,
+  conflito_com_regra_do_imovel: /\bn[aã]o\s+(?:aceita|permite|[eé]\s+permitid)|\bproibid|\bnot\s+(?:allow|accept|permit)|\bdoesn['’]t\s+(?:allow|accept|permit)|\bno\s+(?:pets|smoking|parties)\b/i,
+};
+const REGRAS = Object.keys(EXPLICACAO);
+/** A mensagem pede exceção ou insiste com palavras. */
+const INSISTE = /\bexcec\w*|\bexception|\binsist\w*|\bmesmo assim\b|\banyway\b/;
+
+/**
+ * O agente já explicou a regra: chamou a ferramenta com o motivo em algum turno, ou a
+ * última resposta dele traz a explicação (o modelo nem sempre chama na primeira vez).
+ */
+function jaExplicou(motivos: string[], historico: Mensagem[]): boolean {
+  const ultima = historico.findLast((m) => m.role === "assistant" && !m.tool_calls?.length);
+  return motivos.some((motivo) => jaUsou(motivo, historico) || (ultima !== undefined && EXPLICACAO[motivo]!.test(ultima.content)));
+}
+
 /**
  * Decide se a conversa passa. Motivo fora da lista passa: o modelo chamou a ferramenta
  * de passar, e perder um handoff devido custa mais que passar um a mais.
@@ -99,13 +117,18 @@ function jaUsou(motivo: string, historico: Mensagem[]): boolean {
 export function decidirHandoff(motivo: string | undefined, mensagem: string, historico: Mensagem[]): boolean {
   // hasOwn: "constructor" e afins não são motivos da tabela.
   const linha = motivo && Object.hasOwn(MATRIZ, motivo) ? MATRIZ[motivo] : undefined;
-  if (!linha || linha.decisao === "passa") return true;
+  if (!linha) return true;
   // Desconto é gatilho mesmo dentro de uma mensagem de manipulação ou de recusa (L16a).
   if (pedeAbatimento(mensagem)) return true;
+  const insiste = INSISTE.test(normalizar(mensagem));
+  // Exceção ou insistência só existe depois da regra explicada ou com pedido explícito:
+  // "posso fazer festa?" na primeira vez é conflito, não insistência.
+  if (motivo === "excecao_ou_insistencia_em_regra") return insiste || jaExplicou(REGRAS, historico);
+  if (linha.decisao === "passa") return true;
   if (linha.decisao === "nao_passa") return false;
   // Regra do imóvel e contagem de hóspedes: explicação na primeira vez; pedido de
   // exceção ou insistência passa (L12, L13a).
-  return /\bexcec\w+|\bexception/.test(normalizar(mensagem)) || jaUsou(motivo!, historico);
+  return insiste || jaExplicou([motivo!], historico);
 }
 
 const lista = (decisao: Decisao) => Object.entries(MATRIZ).filter(([, l]) => l.decisao === decisao).map(([nome, l]) => `${nome} (${l.descricao})`).join("; ");
@@ -132,10 +155,12 @@ export const passarParaHumano = definir(
         },
       };
     }
+    // Exceção pedida antes de a regra ser explicada vale como primeira vez do conflito.
+    const orientacao = motivo === "excecao_ou_insistencia_em_regra" ? MATRIZ.conflito_com_regra_do_imovel!.orientacao : MATRIZ[motivo!]!.orientacao;
     return {
       paraOModelo: {
         passou: false,
-        instrucao: `A conversa NÃO foi passada: não diga que passou. ${MATRIZ[motivo!]!.orientacao}`,
+        instrucao: `A conversa NÃO foi passada: não diga que passou. ${orientacao}`,
       },
     };
   },
