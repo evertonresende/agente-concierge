@@ -1,0 +1,20 @@
+{
+  "id": "resp-02-gramado",
+  "bloco": "funciona-respostas",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Quais opções de imóveis vocês têm em Gramado?",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": [
+          "GRM-301|Chal[eé]\\s+Serra\\s+Gramado",
+          "GRM-302|Apartamento\\s+Rua\\s+Coberta"
+        ],
+        "resposta_nao_contem": [
+          "BMB-|CGT-|FLN-|FOZ-|IMB-|NAT-|RIO-|SAO-"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "id": "hand-04-pede-humano",
+  "bloco": "robustez-handoff",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Quero falar com uma pessoa de verdade da equipe, por favor.",
+      "espera": {
+        "handoff": true
+      }
+    }
+  ]
+}

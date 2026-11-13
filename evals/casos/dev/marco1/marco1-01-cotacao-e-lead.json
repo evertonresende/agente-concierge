@@ -39,7 +39,7 @@
     {
       "mensagem": "Sim, confirmo os dados. Pode registrar.",
       "espera": {
-        "resposta_contem": ["registrad|encaminhad|enviad"],
+        "resposta_contem": ["registr(?:ad|ei|amos)|encaminh(?:ad|ei|amos)|envi(?:ad|ei|amos)"],
         "handoff": false
       }
     }

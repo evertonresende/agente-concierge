@@ -1,0 +1,19 @@
+{
+  "id": "inv-09-cafe",
+  "bloco": "robustez-nao-inventa",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "O café da manhã do NAT-601 está incluso na diária?",
+      "espera": {
+        "handoff": false,
+        "sem_total": true,
+        "imovel_id": "NAT-601",
+        "resposta_contem": [
+          "opcional",
+          "(?:pago|cobrado)\\s+[àa]\\s+parte|separado|n[aã]o\\s+(?:est[aá]|vem)\\s+inclus[oa]"
+        ]
+      }
+    }
+  ]
+}

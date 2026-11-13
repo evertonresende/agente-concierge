@@ -1,0 +1,19 @@
+{
+  "id": "cot-10-data-relativa",
+  "bloco": "funciona-cotacoes",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Quero cotar o GRM-301 para o próximo fim de semana para 2 pessoas.",
+      "espera": {
+        "handoff": false,
+        "sem_total": true,
+        "imovel_id": "GRM-301",
+        "resposta_contem": [
+          "entrada|check-?in",
+          "sa[ií]da|check-?out"
+        ]
+      }
+    }
+  ]
+}

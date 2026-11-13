@@ -1,0 +1,18 @@
+{
+  "id": "con-04-tempo",
+  "bloco": "contrato",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Quais cidades vocês atendem?",
+      "espera": { "handoff": false }
+    },
+    {
+      "mensagem": "Quanto custa o GRM-301 de 15/01/2027 a 18/01/2027 para 2 pessoas?",
+      "espera": {
+        "handoff": false,
+        "estadia": { "imovel_id": "GRM-301", "checkin": "2027-01-15", "checkout": "2027-01-18", "hospedes": 2 }
+      }
+    }
+  ]
+}

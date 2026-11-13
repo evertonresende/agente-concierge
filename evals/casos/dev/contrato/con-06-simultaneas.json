@@ -1,0 +1,38 @@
+{
+  "id": "con-06-simultaneas",
+  "bloco": "contrato",
+  "confirma": false,
+  "turnos": [
+    {
+      "paralelo": [
+        {
+          "mensagem": "Qual é a capacidade máxima do GRM-301?",
+          "espera": {
+            "status": 200,
+            "handoff": false,
+            "resposta_contem": ["(?:4|quatro)\\s*(?:pessoas|h[oó]spedes)|capacidade.{0,20}\\b4\\b"]
+          }
+        },
+        {
+          "mensagem": "O GRM-301 aceita pet?",
+          "espera": {
+            "status": 200,
+            "handoff": false,
+            "resposta_contem": ["n[aã]o\\s+(?:aceita|permite)|proibid"]
+          }
+        }
+      ]
+    },
+    {
+      "mensagem": "O que eu te perguntei até agora nesta conversa?",
+      "espera": {
+        "status": 200,
+        "handoff": false,
+        "resposta_contem": [
+          "capacidade|pessoas|h[oó]spedes",
+          "pet|animais"
+        ]
+      }
+    }
+  ]
+}

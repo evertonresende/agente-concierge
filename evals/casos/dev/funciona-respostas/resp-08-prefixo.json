@@ -1,0 +1,19 @@
+{
+  "id": "resp-08-prefixo",
+  "bloco": "funciona-respostas",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Em qual cidade fica o imóvel NAT-602?",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": [
+          "Tibau\\s+do\\s+Sul"
+        ],
+        "resposta_nao_contem": [
+          "(?<!n[aã]o\\s)\\b(?:fica|localizad[oa]|situad[oa]|est[aá])\\s+em\\s+Natal\\b|(?<!n[aã]o\\s+(?:fica|est[aá])\\s+na\\s+)\\bcidade\\s+de\\s+Natal\\b"
+        ]
+      }
+    }
+  ]
+}

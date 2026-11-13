@@ -87,17 +87,24 @@ Cada caso fica em `evals/casos/dev/<bloco>/<id>.json` (ou `<RESERVADO_DIR>/<bloc
 - `confirma` (boolean, opcional, padrão `false`): `true` se o caso confirma reserva / gera lead. Casos com `confirma: true` ou `leads_esperados` não vazio são recusados fora de `ambiente: "dev"`.
 - `turnos` (array, obrigatório): sequência de turnos da conversa.
 - `leads_esperados` (array, opcional): lista exata de leads esperados no webhook falso ao fim da conversa para o telefone gerado no caso (`[]` exige zero leads). Campos conferidos: `imovel_id`, `checkin`, `checkout`, `hospedes`, `valor_total`, além de presença de `nome` e formato válido de `telefone` (L6; ou `formato_telefone: "estrangeiro"` para `+dígitos`).
+- `webhook_modo` (objeto, opcional, só em `dev`): ativa um modo de falha no webhook falso escopado exclusivamente para o `telefone` desta conversa (`PUT /modos/<segmento>` antes do turno alvo e `DELETE /modos/<segmento>?telefone=<dígitos>` sempre no `finally`, inclusive em erro). Campos: `{ "modo": "500" | "422" | "atraso", "validade_s"?: 60, "atraso_ms"?: 30000, "antes_do_turno"?: N }`. Também pode ser declarado diretamente dentro de um turno específico.
 
 ### Placeholders por execução
 
-Gerados de forma única a cada execução e caso, substituídos em `mensagem`, `payload`, `corpo_bruto` e nas regexes de `espera`:
+Gerados de forma única a cada execução e caso, substituídos em `mensagem`, `payload`, `corpo_bruto`, `espera.estadia`, `leads_esperados` e nas regexes de `espera`:
 
 - `{{nome}}`: nome completo sintético do hóspede.
+- `{{primeiro_nome}}`: primeiro nome sintético do hóspede.
 - `{{telefone}}`: número brasileiro válido no formato `(11) 9XXXX-XXXX`.
 - `{{telefone_digitos}}`: apenas os 11 dígitos (`119XXXXXXXX`).
 - `{{telefone_e164}}`: `+55119XXXXXXXX`.
 - `{{telefone_estrangeiro}}`: número estrangeiro único no formato `+1415XXXXXXX`.
 - `{{session_id}}`: `session_id` gerado para aquele turno.
+- Datas relativas calculadas na hora no fuso `America/Sao_Paulo` (sufixos `_iso` para `AAAA-MM-DD`, `_br` para `DD/MM/AAAA`, `_extenso` para `D de mês de AAAA`):
+  - `{{hoje_iso}}`, `{{hoje_br}}`, `{{hoje_extenso}}`
+  - `{{amanha_iso}}`, `{{amanha_br}}`, `{{amanha_extenso}}`
+  - `{{hoje_mais_<N>_iso}}`, `{{hoje_mais_<N>_br}}`, `{{hoje_mais_<N>_extenso}}` (e `hoje_menos_<N>_*`)
+  - `{{prox_<dia>_iso}}`, `{{prox_<dia>_mais_<N>_br}}`, etc., para `<dia>` em `domingo | segunda | terca | quarta | quinta | sexta | sabado` (próxima ocorrência estritamente futura, `1..7` dias à frente).
 
 ### Campos de cada turno
 
@@ -116,13 +123,28 @@ Gerados de forma única a cada execução e caso, substituídos em `mensagem`, `
 - `resposta_contem` (array de strings regex, case-insensitive): todas precisam casar.
 - `resposta_contem_algum` (array de strings regex, case-insensitive): ao menos uma precisa casar.
 - `resposta_nao_contem` (array de strings regex, case-insensitive): nenhuma pode casar.
-- `sem_total` (booleano, opcional): se `true`, falha caso a resposta cite qualquer valor em `R$`.
-- `formato_total_estrito` (booleano, padrão `true` em `200`): verifica que toda menção `R$ ...` segue `R$ d.ddd,dd`.
-- `estadia` (objeto ou array de `{ imovel_id, checkin, checkout, hospedes?, obrigatorio? }`): aciona o juiz determinístico independente em centavos inteiros (`evals/lib/juiz-preco.mjs`). Se `obrigatorio` for `true` (padrão), exige o total exato na resposta e rejeita valores fora dos componentes da estadia; se `false`, valida apenas se algum `R$` aparecer.
+- `sem_total` (booleano ou `{ "imovel_id": "..." }`, opcional): se ativo, proíbe qualquer total em `R$`. Sem `imovel_id`, proíbe qualquer `R$` (salvo `valores_tolerados`); com `imovel_id` (ou `espera.imovel_id`), tolera a diária, diária de fds e taxa de limpeza daquele imóvel, proibindo totais.
+- `formato_total_estrito` (booleano, padrão `true` em `200`): verifica que toda menção `R$ ...` segue `R$ d.ddd,dd`, inclusive em turnos sem `espera`.
+- `valores_tolerados` (array de números ou strings BRL, opcional): valores extras legítimos na resposta (ex.: valor citado pelo hóspede ao recusar total ditado ou cotação anterior ao alterar datas).
+- `estadia` (objeto ou array de `{ imovel_id, checkin, checkout, hospedes?, obrigatorio? }`): aciona o juiz determinístico independente em centavos inteiros (`evals/lib/juiz-preco.mjs`). Se `obrigatorio` for `true` (padrão), exige o total exato na resposta e aceita apenas os componentes, subtotais coerentes de noites da estadia e `valores_tolerados`; se `false`, valida apenas se algum `R$` aparecer.
 - `leads_ate_agora` (número, opcional): em `dev`, consulta `GET` no webhook falso logo após o turno e exige exatamente essa quantidade de leads para o telefone do caso.
 
 ## Trava e sigilo nos relatórios
 
-1. Antes de executar, o runner consulta `GET <alvo>/saude`. Se `ambiente` não for `"dev"`, todo caso com `confirma: true` ou `leads_esperados` não vazio é recusado pela trava.
-2. Os relatórios gravados em `evals/relatorios/` registram apenas `ambiente` (nunca a URL do alvo nem do webhook), mascaram `nome` e `telefone` (L22) e, no modo `--conjunto reservado`, omitem IDs, mensagens, respostas e falhas individuais.
-3. Limiares de aprovação: `≥ 95%` por bloco em `dev` (`EVAL OK`), `≥ 90%` agregado no `reservado` (`RESERVADO OK`), zero leads antecipados/duplicados, latência p95 `≤ 20 s` e máxima `< 60 s`.
+1. Antes de executar, o runner consulta `GET <alvo>/saude`. Todo caso com `confirma: true` (booleano estrito), `webhook_modo`, `leads_esperados` ou `leads_ate_agora` exige `ambiente: "dev"` e `LEADS_URL_DEV` definida; caso contrário, é pulado pela trava.
+2. Códigos de saída: `0` (`EVAL OK` / `RESERVADO OK`) só quando nenhum caso foi pulado e todos os limiares passaram; `2` (`EVAL PARCIAL` / `RESERVADO PARCIAL`) quando houve qualquer caso pulado pela trava/ambiente e os casos executados passaram; `1` (`EVAL REPROVADO` / `RESERVADO REPROVADO`) quando algum bloco ou critério global reprovou.
+3. Os relatórios gravados em `evals/relatorios/` registram apenas `ambiente` (nunca a URL do alvo nem do webhook), mascaram `nome` e `telefone` (L22) e, no modo `--conjunto reservado` (`--so-agregado`), omitem por completo o campo `conversas`, IDs, mensagens, respostas e falhas individuais.
+4. Limiares de aprovação: `≥ 95%` por bloco em `dev` (`EVAL OK`), `≥ 90%` agregado no `reservado` (`RESERVADO OK`), zero leads antecipados/duplicados, latência p95 `≤ 20 s` e máxima `< 60 s`.
+
+## Validade dos casos com datas fixas
+
+Casos com datas fixas no calendário devem ser atualizados caso a data de execução ultrapasse os limites abaixo (após essas datas, as estadias passam a cair no passado ou perdem o marco da conversa):
+
+| Casos | Válido até | Motivo |
+| :--- | :--- | :--- |
+| `robustez-nao-inventa/inv-05-feriado` | `25/12/2026` | Feriado fixo em `25/12/2026`–`28/12/2026` |
+| `robustez-nao-inventa/inv-02-disponibilidade` | `30/12/2026` | Check-in em `30/12/2026` |
+| `funciona-cotacoes/cot-06-virada` | `01/01/2027` | Virada de ano `31/12/2026`–`02/01/2027` |
+| `robustez-handoff/hand-03-ano-novo` | `11/01/2027` | Estadia em `10/01/2027`–`15/01/2027` |
+| `funciona-cotacoes/cot-07-festa` | `15/01/2027` | Check-in em `14/01/2027` |
+| Demais casos com `15/01/2027` (`cot-*`, `lead-*`, `rec-*`, `con-*`, etc.) | `16/01/2027` | Check-in padrão em `15/01/2027` |
