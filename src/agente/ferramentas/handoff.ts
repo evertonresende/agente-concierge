@@ -126,7 +126,8 @@ export const passarParaHumano = definir(
         paraOModelo: {
           passou: true,
           instrucao: `A conversa foi passada. Avise o hóspede que uma pessoa do time vai continuar o atendimento. ${motivo ? MATRIZ[motivo]?.orientacao ?? "" : ""} `
-            + "Não prometa desconto, condição especial nem prazo. Você continua ajudando com dúvidas, cotação e pedido sem desconto.",
+            + "Não prometa nem sugira desconto, exceção, condição especial ou prazo, e não diga que a pessoa vai analisar ou "
+            + "avaliar o pedido: diga só que ela continua o atendimento. Você continua ajudando com dúvidas, cotação e pedido sem desconto.",
         },
       };
     }

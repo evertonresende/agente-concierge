@@ -190,6 +190,17 @@ describe("robustez: matriz de handoff (contrato seções 6 e 10)", () => {
     expect(saida.novas.map((m) => m.role)).toEqual(["user", "assistant", "tool", "assistant"]);
   });
 
+  it("resposta que acena com desconto ou exceção ao passar volta para correção (sem concessão, CA-12)", async () => {
+    const { turno } = conversa();
+    const saida = await turno("tem desconto?", roteiro(
+      passar("desconto_ou_negociacao"), diz("Uma pessoa do time poderá analisar a possibilidade de desconto."), diz("Não concedo desconto. Uma pessoa do time continua com você."),
+    ).modelo);
+    expect(saida).toMatchObject({ handoff: true, reply: "Não concedo desconto. Uma pessoa do time continua com você." });
+    const neutro = { mensagem: "oi", handoff: true };
+    expect(conferir("Uma pessoa poderá avaliar uma exceção para o seu cachorro.", new Set(), neutro)).toHaveLength(1);
+    expect(conferir("Não concedo desconto nem abro exceção. Uma pessoa do time continua o atendimento.", new Set(), neutro)).toEqual([]);
+  });
+
   it("modelo que diz que vai passar sem chamar a ferramenta: correção pedida; se ele oferece em vez de passar, a flag fica desligada", async () => {
     const { turno } = conversa();
     const passou = await turno("quero falar com alguém", roteiro(diz("Vou passar a conversa para uma pessoa do time."), passar("pediu_pessoa"), diz("Pronto, uma pessoa do time continua com você.")).modelo);
