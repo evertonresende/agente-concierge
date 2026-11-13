@@ -466,6 +466,17 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   Decidido como provisórias P13 (palavra de referência confirma; palavra de novidade só com
   resumo novo; valor junto do sim nunca confirma) e P14 (mesma reserva não é reenviada depois
   de duas falhas definitivas). Devolvida para ajustar; depois, verificador independente
+- 13/11 20h32 · I · Haiku 5.5 em nível médio, mesmas condições do nível baixo (código de antes das
+  frentes G e B2 mais recentes): total 82% (81 de 98) contra 80% no baixo; contrato 77,
+  cotações 92, leads 80, recusas 81, respostas 90, marco1 100, handoff 78, manipulação 84,
+  não-inventa 70. Por turno: p50 2,0 s, p95 4,4 s, máximo 11,1 s. 265 chamadas, todas `200`;
+  nenhuma ida ao reserva, recusa por limite, recusa do modelo ou contingência. Rajada: 40
+  turnos normais, máximo 4,1 s. A diferença entre os níveis está dentro do ruído: 12 casos
+  mudaram de resultado entre uma rodada e outra. Doze casos falham nos dois níveis, quatro
+  deles já tratados por B2 e G (`con-07`, `con-10`, `lead-05`, `lead-06`). Blocos de
+  raciocínio: a API aceita o histórico sem eles e repassá-los não trouxe ganho medido (81%),
+  então a linha de `src/agente/loop.ts` não muda. A rodada do DeepSeek recomeçou do zero e
+  termina por volta das 21h35; as do GLM-5.3 Flash e do GLM-5.3, por volta das 20h50
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
