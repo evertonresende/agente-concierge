@@ -1,0 +1,36 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  // O topo não tem variáveis, bindings nem secrets: um deploy sem --env não tem
+  // catálogo nem webhook para chamar. Todo comando usa --env dev ou --env producao.
+  "name": "concierge",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-13",
+  // global_fetch_strictly_public: sem ela, um Worker recém-criado no endereço padrão
+  // pode responder 404 "error code: 1042" ao ser chamado por outro Worker da conta.
+  "compatibility_flags": ["global_fetch_strictly_public"],
+  "observability": { "enabled": true },
+  "exports": { "Sessao": { "type": "durable-object", "storage": "sqlite" } },
+  "env": {
+    "dev": {
+      "ai": { "binding": "AI" },
+      "durable_objects": { "bindings": [{ "name": "SESSAO", "class_name": "Sessao" }] },
+      "vars": {
+        "AMBIENTE": "dev",
+        "MODELO": "@cf/openai/gpt-oss-120b",
+        "ENVIO_LEADS": "ligado"
+      },
+      "secrets": { "required": ["CATALOGO_URL", "LEADS_URL"] }
+    },
+    "producao": {
+      "ai": { "binding": "AI" },
+      "durable_objects": { "bindings": [{ "name": "SESSAO", "class_name": "Sessao" }] },
+      "vars": {
+        "AMBIENTE": "producao",
+        "MODELO": "@cf/openai/gpt-oss-120b",
+        // Desligado até a ordem do Éverton (contrato L24).
+        "ENVIO_LEADS": "desligado"
+      },
+      "secrets": { "required": ["CATALOGO_URL", "LEADS_URL"] }
+    }
+  }
+}

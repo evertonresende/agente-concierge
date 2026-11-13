@@ -93,6 +93,21 @@ o motivo; a coluna "Motivo" é leitura da coordenação. Nenhuma lacuna segue ab
 | L1b | Dia da semana sem data ("sexta que vem"): próxima ocorrência daquele dia, com a data exata declarada na resposta | mesmo critério da data sem ano (decisão 9); a data declarada deixa o hóspede corrigir |
 | L17a | Campo presente que não é texto devolve 400; `session_id` vazio devolve 200, como uma sessão qualquer | número ou objeto no lugar de texto é corpo malformado; texto vazio ainda é texto, e a L17 manda responder 200 a todo corpo bem formado |
 
+### Decididas durante a leva 1
+
+Achadas pelo verificador independente dos casos de eval e pela frente A, levadas ao
+Éverton com recomendação e decididas por ele em 13/11/2026. Nas três primeiras, a seção
+6 do contrato (desconto ou negociação passa para humano) e uma regra L puxavam `handoff`
+para lados opostos.
+
+| ID | Decisão | Motivo | Origem |
+|---|---|---|---|
+| L5a | Pergunta por cupom, promoção ou desconto: `handoff: true`, sem inventar promoção | perguntar por cupom é pedir para pagar menos, e o plano de evals já previa `true` | recomendação aceita |
+| L16a | Mensagem de manipulação que também pede desconto: `handoff: true`. Só mandar ignorar regras ou trocar de papel: recusa curta, `handoff: false` | o mesmo motivo da L16: desconto é gatilho, venha de quem vier | recomendação aceita |
+| L13a | Pedido para contar menos hóspedes do que são: na primeira vez recusa por capacidade e explica que criança conta, sem handoff; se insistir, `handoff: true` | o hóspede pode não saber que criança conta; insistir depois da explicação é negociar a regra, como na L12 | recomendação aceita |
+| L15 (acréscimo) | Resumo, resultado da confirmação e aviso de falha são textos fixos gerados por código, em português ou em inglês conforme o idioma do hóspede; outro idioma recebe o português. O modelo nunca reescreve o resumo. Se o tempo apertar, fica só o português, com registro aqui | o Éverton não disse o motivo; leitura da coordenação: o resumo é o que o hóspede confirma, e texto que o modelo reescreve pode sair com dado trocado | decisão do Éverton, no lugar da proposta da coordenação de deixar o modelo redigir com conferência por código |
+| L10 (acréscimo) | Cotação de outra estadia com resumo pendente troca o resumo, mesmo que o hóspede só tenha perguntado: vale sempre o último resumo mostrado | o hóspede só confirma o que viu por último | escolha da frente A; recomendação aceita |
+
 ## Decisões de execução (13/11/2026)
 
 | # | Decisão | Motivo |
@@ -109,7 +124,7 @@ Ditas pelo Éverton ao abrir a sessão coordenadora, salvo onde a linha diz outr
 
 | # | Decisão | Motivo |
 |---|---|---|
-| X6 | As frentes rodam em quatro provedores do T3 Code. Claude Fable 5.2: coordenadora, A, F e G. Claude Opus 5.5: E, H, I, K, L, N e os subagentes de revisão e de verificação. Gemini 4 Hydrogen: B2 e D. GPT-6 Astra: só C e o conselho. DeepSeek pago: B1 e J, nunca os modelos gratuitos. **A frente J mudou de provedor (X13)** | dito pelo Éverton: quem escreve os evals e o conjunto reservado não é o provedor que escreve o agente |
+| X6 | As frentes rodam em quatro provedores do T3 Code. Claude Fable 5.2: coordenadora, A, F e G. Claude Opus 5.5: E, H, I, K, L, N e os subagentes de revisão e de verificação (**E, H e L mudaram para o Gemini, X14**). Gemini 4 Hydrogen: B2 e D. GPT-6 Astra: só C e o conselho. DeepSeek pago: B1 e J, nunca os modelos gratuitos. **A frente J mudou de provedor (X13)** | dito pelo Éverton: quem escreve os evals e o conjunto reservado não é o provedor que escreve o agente |
 | X7 | Frente fora do Claude lê o `AGENTS.md`, nunca abre o arquivo de ambiente, nunca toca `producao` e nunca recebe token nem URL real. Dado do catálogo chega por um arquivo de fichas fora do repositório. O relatório passa por um verificador do Claude antes do merge. Se o provedor falhar ou a cota acabar, a frente vai para o Gemini 4 Hydrogen | o Éverton não disse o motivo; leitura da coordenação: os segredos ficam com um provedor só |
 | X8 | O deploy do webhook falso em `dev` e as rodadas ao vivo do simulador saem da coordenadora, não das frentes B1 e D | decisão da coordenação, consequência da X7: essas frentes não leem o arquivo de ambiente nem a credencial de deploy |
 | X9 | O rodapé do commit de uma frente fora do Claude nomeia a ferramenta e o modelo que ajudaram de fato | decisão da coordenação: o histórico faz parte do que é avaliado, e atribuir tudo a uma ferramenta só seria falso |
@@ -117,6 +132,7 @@ Ditas pelo Éverton ao abrir a sessão coordenadora, salvo onde a linha diz outr
 | X11 | Modelo de decisão (Jev ou Clef) fica fora do caminho do pedido. Só se os evals de handoff ou de confirmação falharem depois da leva 2, a frente G avalia um juiz de decisão como segunda opinião nesses dois pontos, lendo a documentação antes. Se não entrar, vai para "o que faria com mais tempo" | dito pelo Éverton: ele já usa o Jev em produção em outro projeto; aqui, mais uma chamada por pedido só se justifica se os evals mostrarem a falha |
 | X12 | Os commits de documentação da coordenadora chegam à `main` por merge `--no-ff` da branch dela, antes de cada despacho | dito pelo Éverton: as frentes nascem da `main` e precisam nascer com o `AGENTS.md` e as lacunas decididas |
 | X13 | Dita durante a leva 1: a frente J (página de chat) sai do DeepSeek e roda em Claude Fable 5.2, numa thread, em dois passos. Passo 1, em paralelo à leva 1: um canvas de design em `docs/desenhos/pagina-canvas.html`, numa direção só (a do site do Éverton), que ele aprova na própria thread. Passo 2, depois do Marco 1 e da aprovação: implementar o design aprovado em `src/pagina.ts`. Tetos de 40 minutos e de 1 hora; o acabamento segue como primeiro item da linha de corte | o Éverton não disse o motivo; leitura da coordenação: a página é o que aparece na demonstração e no vídeo, e ele quer aprovar o visual antes de gastar tempo de código |
+| X14 | Dita durante a leva 1: na leva 2 e na leva 3, as frentes E, H e L passam do Claude Opus 5.5 para o Gemini 4 Hydrogen. F, G e J ficam no Claude | dito pelo Éverton: o limite semanal de uso do Claude chegou a 79% |
 
 ## Decisões de engenharia do planejamento
 
