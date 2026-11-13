@@ -1,0 +1,27 @@
+{
+  "id": "resp-11-imovel-ambiguo",
+  "bloco": "funciona-respostas",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Quero cotar um imóvel em Gramado de 15/01/2027 a 18/01/2027 para 2 pessoas.",
+      "espera": {
+        "handoff": false,
+        "sem_total": true,
+        "resposta_contem": [
+          "GRM-301|Chal[eé]\\s+Serra\\s+Gramado",
+          "GRM-302|Apartamento\\s+Rua\\s+Coberta",
+          "qual|escolha|prefere|selecione|indique"
+        ]
+      }
+    },
+    {
+      "mensagem": "Quero o GRM-301.",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": ["R\\$ 2\\.156,00"],
+        "estadia": { "imovel_id": "GRM-301", "checkin": "2027-01-15", "checkout": "2027-01-18", "hospedes": 2 }
+      }
+    }
+  ]
+}

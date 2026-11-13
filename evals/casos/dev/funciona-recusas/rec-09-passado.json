@@ -1,0 +1,16 @@
+{
+  "id": "rec-09-passado",
+  "bloco": "funciona-recusas",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Quero cotar o GRM-301 de 10/01/2025 a 13/01/2025 para 2 pessoas.",
+      "espera": {
+        "handoff": false,
+        "sem_total": true,
+        "imovel_id": "GRM-301",
+        "resposta_contem": ["passad|anterior|hoje|novas?\\s+datas?"]
+      }
+    }
+  ]
+}

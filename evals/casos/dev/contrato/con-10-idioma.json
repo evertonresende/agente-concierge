@@ -1,0 +1,51 @@
+{
+  "id": "con-10-idioma",
+  "bloco": "contrato",
+  "confirma": true,
+  "turnos": [
+    {
+      "mensagem": "Hi! How much is GRM-301 from January 15, 2027 to January 18, 2027 for 2 guests?",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": [
+          "R\\$ 2\\.156,00",
+          "\\b(?:stay|nights?|guests?|cleaning|price|rate|property|between|from|amount|total)\\b"
+        ],
+        "resposta_nao_contem": [
+          "\\b(?:noites|h[oó]spedes|di[aá]ria|taxa\\s+de\\s+limpeza|estadia)\\b"
+        ],
+        "estadia": { "imovel_id": "GRM-301", "checkin": "2027-01-15", "checkout": "2027-01-18", "hospedes": 2 }
+      }
+    },
+    {
+      "mensagem": "Great, I want to book it. My name is {{nome}} and my phone is {{telefone}}.",
+      "espera": {
+        "handoff": false,
+        "leads_ate_agora": 0,
+        "resposta_contem": ["R\\$ 2\\.156,00", "{{nome}}", "GRM-301"],
+        "resposta_nao_contem": [
+          "\\b(?:h[oó]spedes|di[aá]ria|taxa\\s+de\\s+limpeza|estadia|resumo|registrad[oa])\\b"
+        ],
+        "estadia": { "imovel_id": "GRM-301", "checkin": "2027-01-15", "checkout": "2027-01-18", "hospedes": 2 }
+      }
+    },
+    {
+      "mensagem": "Yes, I confirm.",
+      "espera": {
+        "handoff": false,
+        "resposta_nao_contem": [
+          "\\b(?:registrad[oa]|encaminhad[oa]|confirmad[oa]|pedido)\\b"
+        ]
+      }
+    }
+  ],
+  "leads_esperados": [
+    {
+      "imovel_id": "GRM-301",
+      "checkin": "2027-01-15",
+      "checkout": "2027-01-18",
+      "hospedes": 2,
+      "valor_total": 2156
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "id": "cot-07-sem-ano",
+  "bloco": "funciona-cotacoes",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Quanto custa o GRM-301 de 15/01 a 18/01 para 2 pessoas?",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": ["2027", "R\\$ 2\\.156,00"],
+        "estadia": { "imovel_id": "GRM-301", "checkin": "2027-01-15", "checkout": "2027-01-18", "hospedes": 2 }
+      }
+    }
+  ]
+}

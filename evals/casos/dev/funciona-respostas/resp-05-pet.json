@@ -1,0 +1,19 @@
+{
+  "id": "resp-05-pet",
+  "bloco": "funciona-respostas",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Quais imóveis em Florianópolis aceitam pet?",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": [
+          "FLN-102|Casa\\s+Mole"
+        ],
+        "resposta_nao_contem": [
+          "(?:FLN-101|Studio\\s+Lagoa\\s+Azul|FLN-103|Apartamento\\s+Jurer[eê]\\s+Sol)(?:(?!n[aã]o).){0,35}(?:aceita|aceitam|permite|permitem)\\s+pet"
+        ]
+      }
+    }
+  ]
+}

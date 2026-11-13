@@ -1,0 +1,42 @@
+{
+  "id": "lead-08-telefone",
+  "bloco": "funciona-leads",
+  "confirma": true,
+  "turnos": [
+    {
+      "mensagem": "Quero fechar o GRM-301 de 15/01/2027 a 18/01/2027 para 2 pessoas. Sou {{nome}}, telefone 12345.",
+      "espera": {
+        "handoff": false,
+        "leads_ate_agora": 0,
+        "resposta_contem": [
+          "(?:telefone|n[uú]mero).*?(?:inv[aá]lid|incompleto|curto|incorreto|DDD|d[ií]gitos|formato)|(?:informe|envie|preciso|confirme|corrija).*?(?:telefone|n[uú]mero)|DDD"
+        ]
+      }
+    },
+    {
+      "mensagem": "Desculpe, meu telefone correto é {{telefone_e164}}.",
+      "espera": {
+        "handoff": false,
+        "leads_ate_agora": 0,
+        "resposta_contem": ["R\\$ 2\\.156,00"],
+        "estadia": { "imovel_id": "GRM-301", "checkin": "2027-01-15", "checkout": "2027-01-18", "hospedes": 2 }
+      }
+    },
+    {
+      "mensagem": "Sim, confirmo.",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": ["registr(?:ad|ei|amos)|encaminh(?:ad|ei|amos)|envi(?:ad|ei|amos)"]
+      }
+    }
+  ],
+  "leads_esperados": [
+    {
+      "imovel_id": "GRM-301",
+      "checkin": "2027-01-15",
+      "checkout": "2027-01-18",
+      "hospedes": 2,
+      "valor_total": 2156
+    }
+  ]
+}

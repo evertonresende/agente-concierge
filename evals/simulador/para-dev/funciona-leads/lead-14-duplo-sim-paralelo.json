@@ -1,0 +1,78 @@
+{
+  "id": "lead-14-duplo-sim-paralelo",
+  "bloco": "funciona-leads",
+  "confirma": true,
+  "turnos": [
+    {
+      "mensagem": "Quero o GRM-301 de 15/01/2027 a 18/01/2027 para 2 pessoas.",
+      "espera": {
+        "estadia": {
+          "imovel_id": "GRM-301",
+          "checkin": "2027-01-15",
+          "checkout": "2027-01-18",
+          "hospedes": 2
+        },
+        "leads_ate_agora": 0,
+        "handoff": false
+      }
+    },
+    {
+      "mensagem": "Quero fechar. Sou {{nome}}, telefone {{telefone}}.",
+      "espera": {
+        "resposta_contem": [
+          "(?:15/01/2027|15\\s+de\\s+janeiro\\s+de\\s+2027|2027-01-15)",
+          "(?:18/01/2027|18\\s+de\\s+janeiro\\s+de\\s+2027|2027-01-18)"
+        ],
+        "estadia": {
+          "imovel_id": "GRM-301",
+          "checkin": "2027-01-15",
+          "checkout": "2027-01-18",
+          "hospedes": 2
+        },
+        "leads_ate_agora": 0,
+        "handoff": false
+      }
+    },
+    {
+      "paralelo": [
+        {
+          "sessao": "principal",
+          "mensagem": "Sim, confirmo!",
+          "espera": {
+            "estadia": {
+              "imovel_id": "GRM-301",
+              "checkin": "2027-01-15",
+              "checkout": "2027-01-18",
+              "hospedes": 2,
+              "obrigatorio": false
+            },
+            "handoff": false
+          }
+        },
+        {
+          "sessao": "principal",
+          "mensagem": "Sim, confirmo agora!",
+          "espera": {
+            "estadia": {
+              "imovel_id": "GRM-301",
+              "checkin": "2027-01-15",
+              "checkout": "2027-01-18",
+              "hospedes": 2,
+              "obrigatorio": false
+            },
+            "handoff": false
+          }
+        }
+      ]
+    }
+  ],
+  "leads_esperados": [
+    {
+      "imovel_id": "GRM-301",
+      "checkin": "2027-01-15",
+      "checkout": "2027-01-18",
+      "hospedes": 2,
+      "valor_total": 2156
+    }
+  ]
+}

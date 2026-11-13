@@ -1,0 +1,15 @@
+{
+  "id": "inv-04-imovel-inexistente",
+  "bloco": "robustez-nao-inventa",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Quanto custa o imóvel XYZ-999 de 15/01/2027 a 18/01/2027 para 2 pessoas?",
+      "espera": {
+        "handoff": false,
+        "sem_total": true,
+        "resposta_contem": ["n[aã]o\\s+(?:encontr|localiz|existe)|inexistente|n[aã]o\\s+consta"]
+      }
+    }
+  ]
+}
