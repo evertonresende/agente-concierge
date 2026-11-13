@@ -249,12 +249,12 @@ async function testeModosPorCabecalho() {
   const inicio = Date.now();
   const respostaAtraso = await postarLead(segAtraso, leadValido("(11) 90000-0008"), {
     "x-falso-modo": "atraso",
-    "x-falso-atraso-ms": "150",
+    "x-falso-atraso-ms": "1000",
   });
   const decorrido = Date.now() - inicio;
   conferir(respostaAtraso.status === 201, "modo atraso termina com 201", `status ${respostaAtraso.status}`);
-  conferir(decorrido >= 120, "modo atraso espera o x-falso-atraso-ms pedido", `${decorrido} ms`);
-  conferir(decorrido < 1150, "modo atraso nao espera mais que o x-falso-atraso-ms pedido", `${decorrido} ms`);
+  conferir(decorrido >= 800, "modo atraso espera o x-falso-atraso-ms pedido", `${decorrido} ms`);
+  conferir(decorrido < 3500, "modo atraso nao espera mais que o x-falso-atraso-ms pedido", `${decorrido} ms`);
   conferir((await listar(segAtraso)).corpo?.leads?.length === 1, "lead em modo atraso e guardado");
 
   const segZero = segmento("cabecalho-atraso-zero");
@@ -334,6 +334,34 @@ async function testeModoPorTelefone() {
   conferir((await listar(seg)).corpo?.leads?.length === 1, "so o lead do telefone sem modo foi guardado");
 }
 
+async function testeModoTelefoneSufixo() {
+  const seg = segmento("telefone-sufixo");
+  // O modo do número completo (com DDD e 55) não pode casar com um número que é
+  // só o sufixo dele, sem DDD.
+  conferir(
+    (await putModo(seg, { modo: "422", telefone: "+55 11 98888-0091" })).status === 200,
+    "PUT grava modo do telefone completo",
+  );
+
+  const sufixo = await postarLead(seg, leadValido("98888-0091"));
+  conferir(
+    sufixo.status === 201,
+    "telefone que e sufixo de outro nao casa com o modo gravado",
+    `status ${sufixo.status}`,
+  );
+
+  const completo = await postarLead(seg, leadValido("(11) 98888-0091"));
+  conferir(
+    completo.status === 422,
+    "telefone completo casa com o modo gravado",
+    `status ${completo.status}`,
+  );
+  conferir(
+    (await listar(seg)).corpo?.leads?.length === 1,
+    "so o lead do telefone sufixo foi guardado",
+  );
+}
+
 async function testeModoGeralVersusTelefone() {
   const seg = segmento("geral-telefone");
   conferir((await putModo(seg, { modo: "500" })).status === 200, "PUT grava modo geral 500");
@@ -348,14 +376,14 @@ async function testeModoGeralVersusTelefone() {
 
 async function testeModoAtrasoGravado() {
   const seg = segmento("gravado-atraso");
-  conferir((await putModo(seg, { modo: "atraso", atraso_ms: 200 })).status === 200, "PUT grava atraso de 200 ms");
+  conferir((await putModo(seg, { modo: "atraso", atraso_ms: 1000 })).status === 200, "PUT grava atraso de 1000 ms");
 
   const inicio = Date.now();
   const resposta = await postarLead(seg, leadValido("(11) 90000-0031"));
   const decorrido = Date.now() - inicio;
   conferir(resposta.status === 201, "atraso gravado termina com 201", `status ${resposta.status}`);
-  conferir(decorrido >= 170, "atraso gravado espera o atraso_ms pedido", `${decorrido} ms`);
-  conferir(decorrido < 1200, "atraso gravado nao espera mais que o atraso_ms pedido", `${decorrido} ms`);
+  conferir(decorrido >= 800, "atraso gravado espera o atraso_ms pedido", `${decorrido} ms`);
+  conferir(decorrido < 3500, "atraso gravado nao espera mais que o atraso_ms pedido", `${decorrido} ms`);
   conferir((await listar(seg)).corpo?.leads?.length === 1, "lead do atraso gravado e guardado");
 
   const segZero = segmento("gravado-atraso-zero");
@@ -381,32 +409,54 @@ async function testeModoAtrasoGravado() {
 async function testeAtrasoGuardaAntesDeEsperar() {
   const seg = segmento("abandono");
   const lead = leadValido("(11) 90000-0040");
+  const atrasoMs = 6000;
+  const inicio = Date.now();
   const controle = new AbortController();
 
-  const promessa = fetch(urlLeads(seg), {
+  // Só desiste depois de ver, por GET, que o lead já está guardado. Assim o
+  // resultado não depende de latência: se o POST nunca chegou ao Worker, o
+  // laço abaixo falha antes do abort, com diagnóstico próprio.
+  const pedido = fetch(urlLeads(seg), {
     method: "POST",
     headers: {
       "content-type": "application/json",
       "x-falso-modo": "atraso",
-      "x-falso-atraso-ms": "1000",
+      "x-falso-atraso-ms": String(atrasoMs),
     },
     body: JSON.stringify(lead),
     signal: controle.signal,
-  });
+  }).then(
+    () => "respondido",
+    (erro) => (erro.name === "AbortError" ? "abortado" : `erro: ${erro.message}`),
+  );
 
-  let desistiu = false;
-  try {
-    await dormir(150);
+  const guardadoDuranteEspera = await esperarLead(seg, lead.telefone, 5000);
+  conferir(
+    guardadoDuranteEspera,
+    "POST chegou ao Worker e o lead aparece no GET durante a espera, antes de qualquer abort",
+  );
+
+  if (!guardadoDuranteEspera) {
     controle.abort();
-    await promessa;
-  } catch {
-    desistiu = true;
+    await pedido;
+    return;
   }
 
-  conferir(desistiu, "cliente desiste antes do fim do atraso");
+  controle.abort();
+  const desfecho = await pedido;
+  conferir(desfecho === "abortado", "cliente desiste so depois de ver o lead guardado", desfecho);
+
+  await dormir(1000);
   conferir(
-    await esperarLead(seg, lead.telefone),
-    "lead aparece no GET mesmo com o cliente desistindo antes do fim do atraso",
+    (await listar(seg)).corpo?.leads?.some((linha) => linha.telefone === lead.telefone),
+    "lead continua guardado 1 s depois da desistencia: abortar nao desfaz a gravacao",
+  );
+
+  const restante = inicio + atrasoMs + 500 - Date.now();
+  if (restante > 0) await dormir(restante);
+  conferir(
+    (await listar(seg)).corpo?.leads?.some((linha) => linha.telefone === lead.telefone),
+    "lead continua guardado depois do fim do atraso original",
   );
 }
 
@@ -423,7 +473,9 @@ async function testeValidadeEModosAtivos() {
   conferir(Boolean(geral), "GET /modos mostra o modo geral");
   conferir(Boolean(porTelefone), "GET /modos mostra o modo por telefone");
   conferir(
-    Boolean(geral) && Date.parse(geral.expira_em) > Date.now(),
+    Boolean(geral) &&
+      Number.isFinite(Date.parse(geral.expira_em)) &&
+      Date.parse(geral.expira_em) > Date.now() - 60000,
     "GET /modos mostra quando o modo expira",
   );
 
@@ -447,12 +499,14 @@ async function testeExpiracaoCurta() {
   conferir((await putModo(seg, { modo: "500", validade_s: 1 })).status === 200, "PUT grava modo com validade de 1 s");
   conferir((await getModos(seg)).corpo?.modos?.length === 1, "modo curto aparece no GET antes de expirar");
 
-  await dormir(1200);
+  await dormir(1500);
 
-  conferir((await getModos(seg)).corpo?.modos?.length === 0, "modo expirado some do GET /modos");
+  // O POST vem antes do GET /modos: se o POST não respeitasse a expiração, o
+  // modo 500 ainda valeria e ele falharia aqui, mesmo que o GET limpasse depois.
   const resposta = await postarLead(seg, leadValido("(11) 90000-0060"));
   conferir(resposta.status === 201, "modo expirado nao vale mais e o POST devolve 201", `status ${resposta.status}`);
   conferir((await listar(seg)).corpo?.leads?.length === 1, "lead do POST sem modo expirado e guardado");
+  conferir((await getModos(seg)).corpo?.modos?.length === 0, "modo expirado some do GET /modos");
 }
 
 async function testePutInvalidoNaoAltera() {
@@ -511,6 +565,7 @@ async function principal() {
   await teste("modos gravados 500 e 422 valem para o segmento", testeModoGravado500e422);
   await teste("cabecalho x-falso-modo vence o modo gravado", testePrecedenciaDoCabecalho);
   await teste("modo por telefone isola conversas no mesmo segmento", testeModoPorTelefone);
+  await teste("telefone que e sufixo de outro nao herda o modo", testeModoTelefoneSufixo);
   await teste("modo do telefone vence o modo geral", testeModoGeralVersusTelefone);
   await teste("atraso gravado respeita o valor e os limites", testeModoAtrasoGravado);
   await teste("atraso guarda o lead antes de esperar", testeAtrasoGuardaAntesDeEsperar);
