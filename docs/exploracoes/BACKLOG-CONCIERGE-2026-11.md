@@ -47,10 +47,10 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 | Sessão | Repo | Escopo resumido | Depende de | Prioridade | Horas | Roda como | Status | Worktree/Thread |
 |---|---|---|---|---|---|---|---|---|
 | A | agente-concierge | Esqueleto vertical até o Marco 1 | pré-voo | alta | 3,5 | thread T3 · Fable 5.2 | rodando | `frente-a` |
-| B1 | agente-concierge | Webhook falso (Worker próprio), construído e testado local; deploy em `dev` pela coordenadora | pré-voo | alta | 1 | subagente em worktree · DeepSeek | concluída (correções de teste em curso) | `t3/webhook-falso-leads` |
-| B2 | agente-concierge | Harness HTTP e casos dev por bloco | — | alta | 2,5 | thread T3 · Gemini 4 Hydrogen | rodando | `frente-b2` |
-| C | agente-concierge | Conjunto reservado (fora do repo) | — | alta | 2 | thread T3, fica viva · GPT-6 Astra | rodando (56 casos escritos; espera o runner) | `frente-c` (sem commits; casos fora do repo) |
-| D | agente-concierge | Simulador de hóspede hostil | B2 (formato de caso) | média | 2,5 | thread T3 · Gemini 4 Hydrogen | rodando | `frente-d` |
+| B1 | agente-concierge | Webhook falso (Worker próprio), construído e testado local; deploy em `dev` pela coordenadora | pré-voo | alta | 1 | subagente em worktree · DeepSeek | concluída | `t3/webhook-falso-leads` |
+| B2 | agente-concierge | Harness HTTP e casos dev por bloco | — | alta | 2,5 | thread T3 · Gemini 4 Hydrogen | rodando (passo 1 na main; passo 2 reprovado pelo verificador, em correção) | `frente-b2` |
+| C | agente-concierge | Conjunto reservado (fora do repo) | — | alta | 2 | thread T3, fica viva · GPT-6 Astra | rodando (60 casos; relendo por classes de defeito) | `frente-c` (sem commits; casos fora do repo) |
+| D | agente-concierge | Simulador de hóspede hostil | B2 (formato de caso) | média | 2,5 | thread T3 · Gemini 4 Hydrogen | rodando (entregou; trocando o juiz de preço pelo da B2) | `frente-d` |
 | M1 | agente-concierge | Revisão curta do Marco 1 | A | alta | 0,5 | subagentes Opus 5.5 + conselho | pendente | — |
 | I | agente-concierge | Escolha do modelo por eval | A, B2 | alta | 1 | subagente em worktree · Opus 5.5 | pendente | — |
 | E | agente-concierge | Datas | Marco 1, L1, L1a, L1b, L2 | alta | 1,5 | subagente em worktree · Opus 5.5 | pendente | — |
@@ -95,6 +95,23 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   implementar; passo 1 despachado
 - Pré-voo: o Éverton disse que a regra do hostname foi criada; o estado do Bot Fight
   Mode (ligado ou desligado) ficou ambíguo na resposta e foi perguntado de novo
+
+- 13/11 16h47 · B1 · concluída. Terceira rodada (só o teste): contra `dev` o teste falhava em 3
+  de 5 rodadas porque desistia do POST antes de o pedido chegar; corrigido, 5 de 5 com
+  16 grupos ok. Furos menores do teste do falso ficaram aceitos · 94e0469, fee69f5,
+  6f6193e, merges e4712ef e 320eb63. Webhook falso republicado em `dev`
+- 13/11 16h47 · B2 · passo 2 **não mergeado**. Verificador do runner: REPROVADO — falso verde
+  crítico (caso pulado pela trava sai do denominador e o bloco `marco1` dá 100% e
+  `EVAL OK` sem rodar a conversa de lead) e três altos. Verificador dos casos: aprovado
+  com ressalvas — os 58 valores esperados batem com o recálculo independente, mas 20 de
+  80 casos reprovariam um agente correto e 2 de manipulação rodariam contra `producao`.
+  Tudo devolvido numa mensagem; D1 e a regex do `marco1` saem primeiro
+- 13/11 16h47 · **três lacunas novas levadas ao Éverton**, com recomendação (em cada uma, §6 do
+  contrato e uma regra L puxam `handoff` para lados opostos): pergunta por cupom ou
+  promoção; injeção que manda aplicar desconto; pedido para contar menos hóspedes.
+  Até a resposta, os casos não conferem `handoff` nesses turnos e nenhuma frente
+  implementa comportamento novo
+- 13/11 16h47 · C · avisada das classes de defeito de expectativa, sem ver caso nenhum
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
