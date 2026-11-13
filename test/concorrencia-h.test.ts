@@ -901,4 +901,124 @@ describe("concorrência endurecida e falhas (frente H)", () => {
     expect(evento).toEqual({ evento: "falha_no_chat", origem: "sessao", erro: "TypeError" });
     expect(logs.join("\n")).not.toMatch(/Ana|98888|Sou /);
   });
+
+  it("A1 (P12): corpo acima de 64 KB devolve 200 'longa demais' sem parsear nem tocar na sessão; 64 KB exato e session_id de 60 KB passam sem vazar no log", async () => {
+    let chamadasSessao = 0;
+    const nomesVistos: number[] = [];
+    const envEspiao: Env = {
+      ...ambiente,
+      SESSAO: {
+        getByName(nome: string) {
+          nomesVistos.push(nome.length);
+          return {
+            conversar: async () => {
+              chamadasSessao++;
+              return { reply: "ok sessao", handoff: false, uso: { entrada: 10, saida: 5, chamadas: 1 } };
+            },
+          };
+        },
+      } as unknown as Env["SESSAO"],
+    };
+
+    const textoLongo = "Sua mensagem ficou longa demais para eu ler de uma vez. Pode resumir em poucas linhas?";
+
+    // 1. Corpo de 30 MB em message → 200 com texto fixo, handoff false, sem tocar na sessão.
+    const corpo30MB = JSON.stringify({ session_id: "s-30m", message: "y".repeat(30_000_000) });
+    const resp30MB = await worker.fetch(new Request("https://agente.teste/chat", { method: "POST", body: corpo30MB }), envEspiao);
+    expect(resp30MB.status).toBe(200);
+    expect(await resp30MB.json()).toEqual({ reply: textoLongo, handoff: false });
+    expect(chamadasSessao).toBe(0);
+
+    // 2. Campo extra gigante de 30 MB → 200 com texto fixo, sem tocar na sessão.
+    const corpoExtra = JSON.stringify({ session_id: "s-extra", message: "oi", lixo: "z".repeat(30_000_000) });
+    const respExtra = await worker.fetch(new Request("https://agente.teste/chat", { method: "POST", body: corpoExtra }), envEspiao);
+    expect(respExtra.status).toBe(200);
+    expect(await respExtra.json()).toEqual({ reply: textoLongo, handoff: false });
+    expect(chamadasSessao).toBe(0);
+
+    // 3. Corpo de exatamente 64 KB + 1 byte (65.537 bytes) via fluxo com content-length mentiroso ("10") → para de ler cedo e devolve 200.
+    const base = '{"session_id":"s-borda","message":"oi","extra":"';
+    const sufixo = '"}';
+    const limiteExato = `${base}${"a".repeat(65_536 - base.length - sufixo.length)}${sufixo}`;
+    expect(new TextEncoder().encode(limiteExato).byteLength).toBe(65_536);
+    const acimaDeUmByte = `${base}${"a".repeat(65_537 - base.length - sufixo.length)}${sufixo}`;
+    expect(new TextEncoder().encode(acimaDeUmByte).byteLength).toBe(65_537);
+
+    const bytes30MB = new TextEncoder().encode(`{"session_id":"s-borda","message":"oi","extra":"${"a".repeat(30_000_000)}"}`);
+    let puxados = 0;
+    let cursor = 0;
+    const fluxoMentiroso = new ReadableStream<Uint8Array>({
+      pull(c) {
+        if (cursor >= bytes30MB.byteLength) {
+          c.close();
+          return;
+        }
+        const pedaco = bytes30MB.subarray(cursor, cursor + 16_384);
+        cursor += pedaco.byteLength;
+        puxados += pedaco.byteLength;
+        c.enqueue(pedaco);
+      },
+    });
+    const respBordaAcima = await worker.fetch(new Request("https://agente.teste/chat", {
+      method: "POST",
+      headers: { "content-length": "10" },
+      body: fluxoMentiroso,
+      duplex: "half",
+    } as RequestInit), envEspiao);
+    expect(respBordaAcima.status).toBe(200);
+    expect(await respBordaAcima.json()).toEqual({ reply: textoLongo, handoff: false });
+    expect(chamadasSessao).toBe(0);
+    expect(puxados).toBeLessThanOrEqual(98_304);
+
+    // 3b. Exatamente 64 KB + 1 byte (65.537 bytes) sem content-length devolve 200 "longa demais" sem tocar na sessão.
+    const resp64kMais1 = await worker.fetch(new Request("https://agente.teste/chat", { method: "POST", body: acimaDeUmByte }), envEspiao);
+    expect(resp64kMais1.status).toBe(200);
+    expect(await resp64kMais1.json()).toEqual({ reply: textoLongo, handoff: false });
+    expect(chamadasSessao).toBe(0);
+
+    // 4. Exatamente 65.536 bytes com JSON válido passa.
+    const respExato = await worker.fetch(new Request("https://agente.teste/chat", { method: "POST", body: limiteExato }), envEspiao);
+    expect(respExato.status).toBe(200);
+    expect(await respExato.json()).toEqual({ reply: "ok sessao", handoff: false });
+    expect(chamadasSessao).toBe(1);
+
+    // 5. session_id de 60 KB no binding real vale (200) e não aparece inteiro no log.
+    const session60KB = "k".repeat(60 * 1024);
+    const stubReal = ambiente.SESSAO.getByName(`sessao:${session60KB}`);
+    await runInDurableObject(stubReal, (s: Sessao) => {
+      s.dependencias = { modelo: async () => diz("ok 60kb"), buscar: criarMundo().buscar };
+    });
+    const logs: string[] = [];
+    const espiado = vi.spyOn(console, "log").mockImplementation((texto) => { logs.push(String(texto)); });
+    try {
+      const resp60KB = await postChat(session60KB, "oi");
+      expect(resp60KB.status).toBe(200);
+      expect(await resp60KB.json()).toEqual({ reply: "ok 60kb", handoff: false });
+    } finally {
+      espiado.mockRestore();
+    }
+    expect(logs.join("\n")).not.toContain(session60KB);
+    expect(nomesVistos[0]).toBeGreaterThan(0);
+  });
+
+  it("A5c: corpo que nunca termina estoura o teto do Worker e devolve 200 com contingência (não 400)", async () => {
+    const fluxoPreso = new ReadableStream<Uint8Array>({
+      start(c) {
+        c.enqueue(new TextEncoder().encode('{"session_id":"x3","message":"oi'));
+      },
+    });
+    const logs: string[] = [];
+    const espiado = vi.spyOn(console, "log").mockImplementation((texto) => { logs.push(String(texto)); });
+    try {
+      const req = new Request("https://agente.teste/chat", { method: "POST", body: fluxoPreso, duplex: "half" } as RequestInit);
+      const resp = await tratarChat(req, ambiente, 80);
+      expect(resp.status).toBe(200);
+      const dado = await resp.json<{ reply: string; handoff: boolean }>();
+      expect(dado.handoff).toBe(true);
+      expect(dado.reply).toContain("problema técnico");
+    } finally {
+      espiado.mockRestore();
+    }
+    expect(logs.some((l) => l.includes("tempo_esgotado_no_worker"))).toBe(true);
+  });
 });

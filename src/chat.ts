@@ -1,13 +1,16 @@
-// Tratamento de POST /chat fora do módulo de entrada do Worker (A5, A6).
+// Tratamento de POST /chat fora do módulo de entrada do Worker (A1, A5, A5c, A6).
 import { CONTINGENCIA } from "./agente/loop";
 import type { Env } from "./env";
 import { nomeDoErro, type RespostaDoChat, TETO_WORKER_MS } from "./sessao";
 
 const LIMITE_DA_MENSAGEM = 8_000;
+const LIMITE_DO_CORPO = 65_536;
+const MENSAGEM_LONGA_DEMAIS = "Sua mensagem ficou longa demais para eu ler de uma vez. Pode resumir em poucas linhas?";
 const SEM_USO = { entrada: 0, saida: 0, chamadas: 0 };
 const TENTATIVAS_SESSAO = 2;
 
 class TempoEsgotadoWorker extends Error {}
+class CorpoGrandeDemais extends Error {}
 
 function comPrazo<T>(promessa: Promise<T>, ms: number): Promise<T> {
   if (ms <= 0) return Promise.reject(new TempoEsgotadoWorker());
@@ -29,18 +32,65 @@ function responder(status: number, reply: string, handoff: boolean, uso: Respost
   });
 }
 
+async function lerCorpoLimitado(pedido: Request, limite: number, prazo: number): Promise<unknown> {
+  if (!pedido.body) throw new SyntaxError("corpo vazio");
+  const leitor = pedido.body.getReader();
+  const pedacos: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const leitura = leitor.read();
+      leitura.catch(() => {});
+      const { done, value } = await comPrazo(leitura, prazo - Date.now());
+      if (done) break;
+      if (!value || value.byteLength === 0) continue;
+      total += value.byteLength;
+      if (total > limite) throw new CorpoGrandeDemais();
+      pedacos.push(value);
+    }
+  } catch (erro) {
+    leitor.cancel().catch(() => {});
+    throw erro;
+  } finally {
+    leitor.releaseLock();
+  }
+  const completo = new Uint8Array(total);
+  let posicao = 0;
+  for (const pedaco of pedacos) {
+    completo.set(pedaco, posicao);
+    posicao += pedaco.byteLength;
+  }
+  const texto = new TextDecoder("utf-8", { fatal: true, ignoreBOM: false }).decode(completo);
+  return JSON.parse(texto);
+}
+
 export async function tratarChat(pedido: Request, env: Env, tetoMs = TETO_WORKER_MS): Promise<Response> {
   const chegada = Date.now();
   const prazo = chegada + tetoMs;
   try {
+    const tamanhoInformado = pedido.headers.get("content-length");
+    if (tamanhoInformado !== null) {
+      const bruto = tamanhoInformado.trim();
+      if (/^\d+$/.test(bruto) && Number(bruto) > LIMITE_DO_CORPO) {
+        pedido.body?.cancel().catch(() => {});
+        return responder(200, MENSAGEM_LONGA_DEMAIS, false);
+      }
+    }
+
     let corpo: unknown;
     try {
-      const leitura = pedido.json();
-      leitura.catch(() => {});
-      corpo = await comPrazo(leitura, prazo - Date.now());
-    } catch {
+      corpo = await lerCorpoLimitado(pedido, LIMITE_DO_CORPO, prazo);
+    } catch (erro) {
+      if (erro instanceof CorpoGrandeDemais) {
+        return responder(200, MENSAGEM_LONGA_DEMAIS, false);
+      }
+      if (erro instanceof TempoEsgotadoWorker) {
+        console.log(JSON.stringify({ evento: "tempo_esgotado_no_worker", origem: "prazo", erro: nomeDoErro(erro) }));
+        return responder(200, CONTINGENCIA, true);
+      }
       return responder(400, "Corpo inválido: envie um JSON com session_id e message.", false);
     }
+
     if (!corpo || typeof corpo !== "object" || Array.isArray(corpo)) {
       return responder(400, "Corpo inválido: session_id e message são obrigatórios e precisam ser texto.", false);
     }
@@ -52,7 +102,7 @@ export async function tratarChat(pedido: Request, env: Env, tetoMs = TETO_WORKER
       return responder(200, "Não recebi nenhum texto. Pode escrever a sua mensagem?", false);
     }
     if (message.length > LIMITE_DA_MENSAGEM) {
-      return responder(200, "Sua mensagem ficou longa demais para eu ler de uma vez. Pode resumir em poucas linhas?", false);
+      return responder(200, MENSAGEM_LONGA_DEMAIS, false);
     }
 
     const idPedido = crypto.randomUUID();
