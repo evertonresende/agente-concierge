@@ -54,7 +54,7 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 | M1 | agente-concierge | Revisão curta do Marco 1 | A | alta | 0,5 | subagentes Opus 5.5 + conselho | concluída (`docs/revisoes/m1.md`; achados com dono) | — |
 | I | agente-concierge | Escolha do modelo por eval | A, B2 | alta | 1 | subagente em worktree · Opus 5.5, esforço médio desde a X16 | fase 1 entregue; medindo DeepSeek 4.1 e GLM-5.3 em ritmo abaixo do limite (X19); escolha do principal é do Éverton | `t3/` (subagente) |
 | E | agente-concierge | Datas | Marco 1, L1, L1a, L1b, L2 | alta | 1,5 | subagente em worktree · Gemini 4 Hydrogen | concluída: na `main` (81873fa) | `t3/datas-relativas-sao-paulo` |
-| F | agente-concierge | Lead robusto | Marco 1, L6, L7, L9, L10, L11, L15 (textos fixos), L20 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16) | rodando | `frente-f` |
+| F | agente-concierge | Lead robusto | Marco 1, L6, L7, L9, L10, L11, L15 (textos fixos), L20 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16) | concluída: na `main` (801c8a2); verificador independente rodando | `frente-f` |
 | G | agente-concierge | Robustez e handoff | Marco 1, L3, L4, L5, L5a, L12, L13a, L15, L16, L16a, L19, L21 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16) | rodando | `frente-g` |
 | H | agente-concierge | Concorrência endurecida e falha interna | Marco 1, L17, L17a, L18 | alta | 1 | subagente em worktree · Gemini 4 Hydrogen | reprovada no CHECK 2 (Worker não sobe no runtime real); em correção | `t3/durable-session-concurrency` |
 | J | agente-concierge | Página de chat em dois passos: design (canvas) e implementação | passo 1: nada; passo 2: Marco 1 e aprovação do Éverton | baixa | 0,7 + 1 | thread T3 · Fable 5.2 | passo 1 concluído (canvas aprovado pelo Éverton, com dois ajustes); passo 2 entregue (b8991ce) | `frente-j` |
@@ -300,6 +300,66 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   gateway de `producao` (P10) seguem provisórias. B2 acrescenta `--pausa-ms` ao runner; a frente
   I mede DeepSeek 4.1 e GLM-5.3 abaixo de 20 chamadas por minuto quando a opção estiver na
   `main`. Haiku e Luna não são medidos até ele avisar
+- 13/11 19h20 · INCIDENTE: a máquina ficou sem memória (limite de memória do usuário atingido,
+  carga de 36) e derrubou as sessões das frentes F, G, H, I e B2, a da coordenação (retomada
+  sozinha) e todos os servidores locais. Nada commitado se perdeu; G e H tinham trabalho no
+  disco sem commit, preservado. Causa provável: várias suítes do vitest ao mesmo tempo, cada uma
+  com 8 workers, mais os servidores locais e a conferência da coordenação
+- 13/11 19h26 · retomada depois do incidente. Regras de memória passadas a todas as frentes: suíte
+  só com `npm test -- --maxWorkers=2`, conferir a memória disponível (4 GB ou mais) antes de
+  suíte ou servidor, servidor local só durante o CHECK 2, sem subagentes. O `conferir.sh` da
+  coordenação passou a rodar a suíte com 3 workers. Estado: B2 · `--pausa-ms` conferido e na
+  `main` (merge fce21b7); I · avisada, sobe os três servidores de novo e dispara as duas rodadas
+  pausadas; H · religada com o estado do disco (f5510cb commitado, o resto em stage); F
+  (37cab3d, árvore limpa) e G (47649d8 mais mudanças sem commit) · religadas para continuar a
+  lista de cada uma; webhook falso local da 8799 religado pela coordenação
+- 13/11 19h28 · Éverton (X20): GLM-5.3 Flash entra na medição e passa à frente (1º), com o
+  DeepSeek 4.1 Flash em 2º; a frente I mede também a recusa simultânea do principal e do reserva
+  por limite e propõe a saída. O limite de uso do Claude deixou de ser restrição: voltam as
+  rodadas de verificador independente por frente (F, G e a correção da H), em esforço padrão
+- 13/11 19h34 · TETO DE CARGA, pedido pelo Éverton depois do incidente (o `systemd-oomd` matou
+  quatro sessões do Claude, uma do Gemini e uma do OpenCode às 19h23):
+  1. Suíte de testes e `tsc`: UMA por vez na máquina toda, por trava de arquivo
+     (`flock ~/.cache/agente-concierge/suite.lock npm test -- --maxWorkers=3`, idem para
+     `npm run tipos`). Vale para frentes, verificadores e para a coordenação.
+  2. Servidor local de agente para CHECK 2 (portas 8788 a 8792): um por vez na máquina; sobe
+     só para a rodada e cai pelo PID da porta quando ela termina.
+  3. Rodada de evals sem pausa: uma por vez. As rodadas com pausa da frente I ficam fora dessa
+     conta (uma conversa por vez, 13 s entre turnos).
+  4. `workerd` locais ao todo: no máximo 6 (até 4 da medição da frente I, o webhook falso
+     compartilhado da 8799 e 1 de CHECK 2).
+  5. Sessões de agente: as 5 frentes vivas mais 1 verificador; sem subagentes dentro das frentes.
+  A coordenação confere portas e memória a cada relatório que chega
+- 13/11 19h34 · F · concluída: lista inteira publicada (262c787, 583 testes), ensaio de merge limpo,
+  na `main` (merge 801c8a2) e em `dev`. Em `dev`: `BLOCO marco1: 100%`, `EVAL OK`;
+  `funciona-leads` 86% (13 de 15), faltando `lead-05` e `lead-06`, que fecham com duas ligações
+  no laço da G (quarto argumento de `pedidoDeConfirmacaoPendente` e `respostaASimAposRegistro`
+  antes do modelo) e com um ajuste de regex da B2. Verificador independente da trava (Opus)
+  rodando sobre a branch dela. G e B2 avisadas
+- 13/11 19h34 · conferência depois do incidente: G (em Opus, já no item 6 da lista dela, com o
+  trabalho do disco commitado), H (sessão viva, correção em curso) e I (servidores de volta,
+  GLM-5.3 Flash commitado em 895d8aa) retomadas às 19h25; E está concluída desde 18h51
+- 13/11 19h44 · I · rajada da recusa simultânea medida (commit 895d8aa, principal GLM-5.3 Flash,
+  reserva DeepSeek 4.1 Flash, 10 conversas simultâneas de 4 turnos, sem pausa): 80 turnos, 80
+  respostas `200` e nenhum `500`; 26 responderam normal e 54 caíram na contingência com
+  `handoff: true` ("Tive um problema técnico e não consegui concluir o seu atendimento agora. Vou
+  passar a conversa para uma pessoa do nosso time, que continua com você."), em menos de 1 s
+  quase todos; nenhum turno acima de 60 s. No gateway: 136 respostas 429 do GLM-5.3 Flash e 110
+  do DeepSeek. Cada turno de contingência gastou 4 chamadas (o laço tenta 2 vezes e cada
+  tentativa passa pelo principal e pelo reserva). Quatro saídas propostas, nenhuma implementada,
+  levadas ao Éverton: terceiro nível de reserva com limite alto (`gpt-oss-120b`); esperar e
+  tentar de novo dentro do turno; menos chamadas por turno (não repetir quando o erro é de
+  limite, no laço da G); crédito no gateway. As três rodadas com pausa (GLM-5.3 Flash, DeepSeek
+  4.1 Flash e GLM-5.3) começaram depois da rajada, com zero 429 nos 3 primeiros minutos
+- 13/11 19h50 · Éverton decidiu (X21 e acréscimo da L18): Claude Haiku 5.5 vira candidato a
+  principal, pela chave da Anthropic dele no AI Gateway, com GLM-5.3 Flash de reserva; medição
+  do Haiku (98 casos e rajada, raciocínio baixo e médio) quando ele avisar que a chave está no
+  arquivo de ambiente; `gpt-oss-120b` não entra como terceiro nível; recusa por limite vai
+  direto para o reserva e não conta para a nova tentativa. Frentes I (`src/modelo.ts`: marca o
+  erro de limite e prepara o caminho do Haiku) e G (`src/agente/loop.ts`: não repete quando o
+  erro vem marcado) avisadas. Combinado entre as duas, sem importar código uma da outra: o erro
+  lançado pelo modelo quando principal e reserva recusam por limite leva a propriedade
+  `porLimite: true`
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -731,6 +791,22 @@ frente NÃO fixa `MODELO` nem escolhe o principal; o reserva fica em aberto. Tar
 atual: medir de verdade o DeepSeek 4.1 e o GLM-5.3 no conjunto dev com
 `--paralelo 1 --pausa-ms <n>`, abaixo de 20 chamadas por minuto, com zero resposta
 429. Haiku e Luna não são medidos até o Éverton avisar (crédito do gateway, `402`).
+
+Acréscimo do Éverton (13/11, X20): a medição inclui o GLM-5.3 Flash
+(`@cf/zai-org/glm-5.3-flash`); na frente estão o GLM-5.3 Flash (1º) e o DeepSeek 4.1
+Flash (2º), sem escolha final. Antes das rodadas com pausa, a frente mede com carga
+real o que o agente responde quando o principal e o reserva recusam por limite ao
+mesmo tempo (quantos turnos caem em contingência, o texto, o `handoff`, o status e a
+latência) e traz a proposta de saída, sem implementar.
+
+Decisões do Éverton sobre essa medida (13/11, X21): novo candidato a principal, Claude
+Haiku 5.5 (`claude-haiku-5-5`), pela chave da Anthropic dele guardada no AI Gateway
+(`ANTHROPIC_API_KEY` no arquivo de ambiente; ele avisa quando gravar), com o GLM-5.3
+Flash de reserva. Com a chave lá, a frente mede o Haiku nos 98 casos e na rajada de 10
+conversas simultâneas, com raciocínio em nível baixo e em nível médio. `gpt-oss-120b`
+não entra como último nível de reserva. Recusa por limite vai direto para o reserva e
+não conta para a nova tentativa da L18. As rodadas com pausa do GLM-5.3 Flash e do
+DeepSeek 4.1 Flash continuam e escolhem o reserva. `MODELO` segue sem fixar.
 
 ### Tasks
 - [ ] Rodar o conjunto dev (nunca o reservado) com 3 candidatos, mesmo código, todos de
