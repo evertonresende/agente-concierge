@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  dataCivilEmSaoPaulo, diaDaSemana, diasEntre, ehDataInexistente, formatarData, formatarDataComDia, interpretarData,
+  dataCivilEmSaoPaulo, dataComDia, diaDaSemana, diasEntre, ehDataInexistente, formatarData, formatarDataComDia, interpretarData,
   resolverData, resolverSaida, somarDias,
 } from "../../src/nucleo/datas";
 
@@ -201,5 +201,21 @@ describe("resolverSaida com relógio injetado (P5)", () => {
     const checkin = resolverData(entradaTexto, hoje);
     expect(checkin).toBe(entradaEsperada);
     expect(resolverSaida(saidaTexto, checkin!, hoje)).toBe(saidaEsperada);
+  });
+});
+
+describe("dataComDia (L15)", () => {
+  it("português é exatamente a data com dia do código; inglês tem dia, mês por extenso e ano", () => {
+    expect(dataComDia("2027-01-15", "pt")).toBe(formatarDataComDia("2027-01-15"));
+    expect(dataComDia("2027-01-15", "pt")).toBe("sexta-feira, 15/01/2027");
+    expect(dataComDia("2027-01-15", "en")).toBe("Friday, January 15, 2027");
+    expect(dataComDia("2027-01-18", "en")).toBe("Monday, January 18, 2027");
+  });
+
+  it("virada de ano e 29 de fevereiro", () => {
+    expect(dataComDia("2026-12-31", "en")).toBe("Thursday, December 31, 2026");
+    expect(dataComDia("2027-01-01", "en")).toBe("Friday, January 1, 2027");
+    expect(dataComDia("2028-02-29", "en")).toBe("Tuesday, February 29, 2028");
+    expect(dataComDia("2028-02-29", "pt")).toBe("terça-feira, 29/02/2028");
   });
 });
