@@ -52,7 +52,7 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 | C | agente-concierge | Conjunto reservado (fora do repo) | — | alta | 2 | thread T3 · GPT-6 Astra até 13/11 18h35 | 60 casos entregues fora do repo; conversa no GPT encerrada pela X16. Caso substituto, se for preciso, numa conversa nova em Gemini 4 Hydrogen | `frente-c` (sem commits; casos fora do repo) |
 | D | agente-concierge | Simulador de hóspede hostil | B2 (formato de caso) | média | 2,5 | thread T3 · Gemini 4 Hydrogen | concluída: na `main` (6c090d0), rodada ao vivo com `SIMULADOR OK`; a B2 move os 12 casos fixos | `frente-d` |
 | M1 | agente-concierge | Revisão curta do Marco 1 | A | alta | 0,5 | subagentes Opus 5.5 + conselho | concluída (`docs/revisoes/m1.md`; achados com dono) | — |
-| I | agente-concierge | Escolha do modelo por eval | A, B2 | alta | 1 | subagente em worktree · Opus 5.5, esforço médio desde a X16 | fase 1 entregue; fase 2 espera a G na `main` | `t3/` (subagente) |
+| I | agente-concierge | Escolha do modelo por eval | A, B2 | alta | 1 | subagente em worktree · Opus 5.5, esforço médio desde a X16 | fase 1 entregue; medindo DeepSeek 4.1 e GLM-5.3 em ritmo abaixo do limite (X19); escolha do principal é do Éverton | `t3/` (subagente) |
 | E | agente-concierge | Datas | Marco 1, L1, L1a, L1b, L2 | alta | 1,5 | subagente em worktree · Gemini 4 Hydrogen | concluída: na `main` (81873fa) | `t3/datas-relativas-sao-paulo` |
 | F | agente-concierge | Lead robusto | Marco 1, L6, L7, L9, L10, L11, L15 (textos fixos), L20 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16) | rodando | `frente-f` |
 | G | agente-concierge | Robustez e handoff | Marco 1, L3, L4, L5, L5a, L12, L13a, L15, L16, L16a, L19, L21 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16) | rodando | `frente-g` |
@@ -269,6 +269,50 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   manter o gateway sem provedor de terceiro; gateway próprio para `producao`
 - 13/11 18h59 · Éverton decidiu (X18): a branch da frente I entra por merge normal, com o histórico
   como aconteceu. B2 · seguimento conferido (98 casos, simulador 12 de 12) e levado à `main`
+- 13/11 19h06 · medida intermediária: 98 casos contra `dev` com a `main` até a frente E (sem os
+  passos 2 a 4 da F, sem G e sem H): 83 de 98. contrato 77%, funciona-cotacoes 100%,
+  funciona-leads 80%, funciona-recusas 81%, funciona-respostas 90%, marco1 100%,
+  robustez-handoff 85%, robustez-manipulacao 84%, robustez-nao-inventa 70%. p95 de 10,7 s,
+  máximo de 26,2 s. Relatório em `evals/relatorios/2026-11-13-dev-98-main-ate-frente-e.json`.
+  Reprovados repassados aos donos: F (`con-07`, `lead-06`, `lead-08`, `con-10`) e G (`rec-01`,
+  `rec-10`, `resp-10`, `hand-10`, `hand-11`, `man-07`, `man-13`, `inv-04`, `inv-07`, `inv-08`);
+  `lead-05` fecha com a ligação da G
+- 13/11 19h06 · F e G · a troca de modelo na própria conversa não pegou (o turno seguinte ainda
+  executou em Fable), então as duas foram retomadas em sessão nova, com a nota de estado de cada
+  uma, a lista de achados da revisão de código delas e os pontos da coordenação. Conferido na F:
+  executa em Opus 5.5. As duas rodaram a própria revisão de código (Opus) antes da troca: F sem
+  caminho de lead duplicado nem "registrado" sem `201`, 6 achados na leitura do "sim"; G
+  reprovada como estava, com 2 achados altos (valor liberado por texto livre; resposta corrigida
+  não conferida de novo). Aprovado o quarto parâmetro opcional de `pedidoDeConfirmacaoPendente`
+  (a mensagem do turno), para uma mudança de dado derrubar o resumo pendente (L10)
+- 13/11 19h06 · webhook falso local na porta 8799 passou a ser mantido pela coordenação (processo
+  solto, a partir de `falso/` na worktree da coordenação), porque F e G apontam para ele e o
+  da G caiu com a troca de sessão. Encerrar pelo PID da porta no fim da leva 2
+- 13/11 19h13 · H · segunda conferência da coordenação, sem novo verificador. Passou: ensaio de
+  merge (361 testes), subida no runtime real, 7 dos 9 defeitos plantados aplicáveis pegos pela
+  suíte dela. REPROVADA de novo no CHECK 2: com a branch mesclada, todo turno que consulta o
+  catálogo cai em contingência no runtime real (`contrato` 0%, `funciona-leads` 0%). Causa lida
+  no arquivo: o `fetch` global chamado como método de objeto (`deps.buscar(...)`), que o runtime
+  recusa e o vitest não. Devolvida com a correção, teste de regressão e pedido de registrar a
+  origem da contingência no log do turno
+- 13/11 19h13 · Éverton (X19): `gpt-oss-120b` recusado como principal; a escolha é dele, entre
+  DeepSeek 4.1, GLM-5.3, Claude Haiku e GPT-6 Luna. Reserva em aberto; manter o gateway (P9) e
+  gateway de `producao` (P10) seguem provisórias. B2 acrescenta `--pausa-ms` ao runner; a frente
+  I mede DeepSeek 4.1 e GLM-5.3 abaixo de 20 chamadas por minuto quando a opção estiver na
+  `main`. Haiku e Luna não são medidos até ele avisar
+- 13/11 19h20 · INCIDENTE: a máquina ficou sem memória (limite de memória do usuário atingido,
+  carga de 36) e derrubou as sessões das frentes F, G, H, I e B2, a da coordenação (retomada
+  sozinha) e todos os servidores locais. Nada commitado se perdeu; G e H tinham trabalho no
+  disco sem commit, preservado. Causa provável: várias suítes do vitest ao mesmo tempo, cada uma
+  com 8 workers, mais os servidores locais e a conferência da coordenação
+- 13/11 19h26 · retomada depois do incidente. Regras de memória passadas a todas as frentes: suíte
+  só com `npm test -- --maxWorkers=2`, conferir a memória disponível (4 GB ou mais) antes de
+  suíte ou servidor, servidor local só durante o CHECK 2, sem subagentes. O `conferir.sh` da
+  coordenação passou a rodar a suíte com 3 workers. Estado: B2 · `--pausa-ms` conferido e na
+  `main` (merge fce21b7); I · avisada, sobe os três servidores de novo e dispara as duas rodadas
+  pausadas; H · religada com o estado do disco (f5510cb commitado, o resto em stage); F
+  (37cab3d, árvore limpa) e G (47649d8 mais mudanças sem commit) · religadas para continuar a
+  lista de cada uma; webhook falso local da 8799 religado pela coordenação
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -693,6 +737,13 @@ mais, só pelo AI Gateway com o billing unificado da Cloudflare (créditos pré-
 nunca pela OpenAI direto e sem chave. Ninguém compra crédito nem mexe em cobrança. Se
 a chamada falhar por falta de crédito: registrar o erro, seguir só com o Workers AI e
 avisar o Éverton no resumo da leva. O reserva continua no Workers AI.
+
+Decisão do Éverton (13/11 às 19h10, X19): o `gpt-oss-120b` não será o principal. A
+escolha é dele, depois, entre DeepSeek 4.1, GLM-5.3, Claude Haiku e GPT-6 Luna. Esta
+frente NÃO fixa `MODELO` nem escolhe o principal; o reserva fica em aberto. Tarefa
+atual: medir de verdade o DeepSeek 4.1 e o GLM-5.3 no conjunto dev com
+`--paralelo 1 --pausa-ms <n>`, abaixo de 20 chamadas por minuto, com zero resposta
+429. Haiku e Luna não são medidos até o Éverton avisar (crédito do gateway, `402`).
 
 ### Tasks
 - [ ] Rodar o conjunto dev (nunca o reservado) com 3 candidatos, mesmo código, todos de
