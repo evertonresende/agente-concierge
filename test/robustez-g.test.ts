@@ -237,6 +237,7 @@ describe("robustez: matriz de handoff (contrato seções 6 e 10)", () => {
     const prompt = montarPrompt(ESTADO_INICIAL, false);
     expect(prompt).toContain("Já na primeira vez chame passar_para_humano com o motivo contar_menos_hospedes");
     expect(prompt).toContain("Já na primeira vez chame passar_para_humano com o motivo conflito_com_regra_do_imovel");
+    expect(prompt).toContain("diga exatamente isso: que não tem acesso a outras conversas");
   });
 
   it("a flag vale só na resposta em que passa, e de novo a cada novo gatilho; depois o agente segue atendendo (L3, L4)", async () => {
