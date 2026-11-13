@@ -1,6 +1,8 @@
 // Adaptador único do modelo. O resto do código só conhece `Modelo`: mensagens de chat
 // com ferramentas, no formato de chat completions. Trocar de modelo é trocar a variável
 // MODELO; o que for específico de um provedor (gateway, parâmetros) entra só aqui.
+import { env } from "cloudflare:workers";
+import type { Env } from "./env";
 
 export interface ChamadaDeFerramenta {
   id: string;
@@ -71,16 +73,75 @@ export function normalizarResposta(bruto: unknown): RespostaDoModelo {
   };
 }
 
-export function criarModelo(ai: Ai, modelo: string | undefined): Modelo {
+export interface OpcoesDoModelo {
+  /** AI Gateway por onde passam todas as chamadas (obrigatório para modelo de terceiros). */
+  gateway?: string;
+  /** Modelo de outro provedor que responde quando o principal falha. */
+  reserva?: string;
+  /** Quanto o principal pode demorar antes de o reserva assumir. */
+  tempoDoPrincipalMs?: number;
+}
+
+// Cabe no orçamento de 45 s do turno (contrato seção 2) e deixa tempo para o reserva.
+const TEMPO_DO_PRINCIPAL_MS = 20_000;
+
+// Ajuste fino por modelo. O gateway recusa campo que o modelo não aceita (erro 7003).
+const AJUSTES: Record<string, Record<string, unknown>> = {
+  // Raciocínio padrão é "high": lento demais para o teto de 60 s.
+  "@cf/deepseek-ai/deepseek-v4.1-flash-1017": { reasoning_effort: "low" },
+};
+
+/** Parâmetros do pedido. Modelo de terceiros segue a API do provedor: a OpenAI recusa `max_tokens`. */
+export function parametros(modelo: string): Record<string, unknown> {
+  const limite = modelo.startsWith("@cf/") ? { max_tokens: MAX_TOKENS } : { max_completion_tokens: MAX_TOKENS };
+  return { ...limite, temperature: 0.2, ...AJUSTES[modelo] };
+}
+
+function opcoesDoAmbiente(): OpcoesDoModelo {
+  const vars = env as Partial<Env>;
+  return { gateway: vars.AI_GATEWAY || undefined, reserva: vars.MODELO_RESERVA || undefined };
+}
+
+class TempoDoPrincipal extends Error {}
+
+function comLimite<T>(promessa: Promise<T>, ms: number): Promise<T> {
+  let relogio: ReturnType<typeof setTimeout>;
+  const limite = new Promise<never>((_, rejeitar) => { relogio = setTimeout(() => rejeitar(new TempoDoPrincipal(`sem resposta em ${ms} ms`)), ms); });
+  return Promise.race([promessa, limite]).finally(() => clearTimeout(relogio));
+}
+
+/** Só o nome do modelo e o erro: nunca o conteúdo da conversa (contrato L22). */
+function registrarFalha(modelo: string, erro: unknown): void {
+  const descricao = erro instanceof Error ? `${erro.name}: ${erro.message}` : String(erro);
+  console.warn(JSON.stringify({ evento: "modelo_falhou", modelo, erro: descricao.slice(0, 200) }));
+}
+
+/**
+ * Sem `opcoes`, lê `AI_GATEWAY` e `MODELO_RESERVA` do ambiente do Worker. Com reserva
+ * configurado, o principal tem prazo próprio; se ele lançar ou passar do prazo, o
+ * reserva responde a mesma chamada. Sem reserva, o erro sobe para o loop (contrato L18).
+ */
+export function criarModelo(ai: Ai, modelo: string | undefined, opcoes: OpcoesDoModelo = opcoesDoAmbiente()): Modelo {
+  const executar = ai.run as (modelo: string, entrada: unknown, opcoes?: unknown) => Promise<unknown>;
+  const chamar = async (id: string, mensagens: Mensagem[], ferramentas: DefinicaoDeFerramenta[]) => {
+    try {
+      const bruto = await executar.call(ai, id, { messages: mensagens, tools: ferramentas, ...parametros(id) },
+        opcoes.gateway ? { gateway: { id: opcoes.gateway } } : undefined);
+      return normalizarResposta(bruto);
+    } catch (erro) {
+      registrarFalha(id, erro);
+      throw erro;
+    }
+  };
+
   return async (mensagens, ferramentas) => {
     if (!modelo) throw new Error("MODELO não configurado");
-    const executar = ai.run as (modelo: string, entrada: unknown) => Promise<unknown>;
-    const bruto = await executar.call(ai, modelo, {
-      messages: mensagens,
-      tools: ferramentas,
-      max_tokens: MAX_TOKENS,
-      temperature: 0.2,
-    });
-    return normalizarResposta(bruto);
+    if (!opcoes.reserva) return chamar(modelo, mensagens, ferramentas);
+    try {
+      return await comLimite(chamar(modelo, mensagens, ferramentas), opcoes.tempoDoPrincipalMs ?? TEMPO_DO_PRINCIPAL_MS);
+    } catch (erro) {
+      if (erro instanceof TempoDoPrincipal) registrarFalha(modelo, erro);
+      return chamar(opcoes.reserva, mensagens, ferramentas);
+    }
   };
 }

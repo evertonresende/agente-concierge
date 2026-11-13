@@ -17,6 +17,9 @@
       "vars": {
         "AMBIENTE": "dev",
         "MODELO": "@cf/openai/gpt-oss-120b",
+        // Reserva de outro provedor (OpenAI, chave guardada como BYOK no gateway de dev).
+        "MODELO_RESERVA": "openai/gpt-5.4-mini",
+        "AI_GATEWAY": "concierge-dev",
         "ENVIO_LEADS": "ligado"
       },
       "secrets": { "required": ["CATALOGO_URL", "LEADS_URL"] }
