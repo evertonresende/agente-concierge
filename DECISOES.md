@@ -144,6 +144,7 @@ confirmar ou reverter.
 |---|---|---|---|---|
 | P1 | Data sem ano que cai hoje, ou que já passou neste ano | Igual a hoje: é hoje (a L2 aceita entrada hoje). Já passou neste ano: é a do ano seguinte | a decisão 9 diz "próxima ocorrência" e a L2 aceita entrada hoje; a data fica declarada na resposta e o hóspede corrige | provisória |
 | P2 | Dia da semana sem data dito no próprio dia ("sexta" numa sexta) | É a ocorrência da semana seguinte; para hoje existe a palavra "hoje" | "que vem" exclui hoje, e cotar a estadia começando hoje por engano é o erro mais caro; a data fica declarada na resposta | provisória |
+| P3 | Textos de código fora da lista da L15: o rótulo "Total da estadia", o aviso de valor não confirmado e a contingência da L18 | Seguem a regra da L15: português e inglês, outro idioma recebe o português. Um detector de idioma só, em código, sem modelo (`src/nucleo/idioma.ts`); na dúvida, português. Se o tempo apertar, ficam só em português, junto com os textos fixos do lead | a L15 manda responder no idioma do hóspede, e um trecho em português no meio de uma resposta em inglês contraria isso; levantado pela frente G | provisória |
 
 ## Decisões de engenharia do planejamento
 
