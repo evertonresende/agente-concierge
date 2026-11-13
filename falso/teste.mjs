@@ -31,11 +31,25 @@ const urlModos = (seg) => new URL(`/modos/${encodeURIComponent(seg)}`, base.orig
 
 let falhas = 0;
 
+const dormir = (ms) => new Promise((resolver) => setTimeout(resolver, ms));
+
 function conferir(condicao, descricao, detalhe) {
   if (condicao) return true;
   falhas += 1;
   console.error(`FALHOU: ${descricao}${detalhe ? ` (${detalhe})` : ""}`);
   return false;
+}
+
+// Cada teste imprime "ok" só se nenhuma checagem dele falhou.
+async function teste(nome, funcao) {
+  const antes = falhas;
+  try {
+    await funcao();
+  } catch (erro) {
+    falhas += 1;
+    console.error(`FALHOU: ${nome}: erro inesperado: ${erro.message}`);
+  }
+  if (falhas === antes) console.log(`ok - ${nome}`);
 }
 
 async function chamar(url, opcoes = {}) {
@@ -58,6 +72,46 @@ function postarLead(seg, lead, cabecalhos = {}) {
   });
 }
 
+function putModo(seg, corpo) {
+  return chamar(urlModos(seg), {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(corpo),
+  });
+}
+
+function putModoBruto(seg, corpo) {
+  return chamar(urlModos(seg), {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: corpo,
+  });
+}
+
+function getModos(seg) {
+  return chamar(urlModos(seg));
+}
+
+function deleteModos(seg, telefone) {
+  const url = new URL(urlModos(seg));
+  if (telefone !== undefined) url.searchParams.set("telefone", telefone);
+  return chamar(url.toString(), { method: "DELETE" });
+}
+
+async function listar(seg) {
+  return chamar(urlLeads(seg));
+}
+
+async function esperarLead(seg, telefone, limiteMs = 3000) {
+  const fim = Date.now() + limiteMs;
+  while (Date.now() < fim) {
+    const lista = await listar(seg);
+    if (lista.corpo?.leads?.some((lead) => lead.telefone === telefone)) return true;
+    await dormir(100);
+  }
+  return false;
+}
+
 function leadValido(telefone) {
   return {
     nome: "Ana Lima",
@@ -70,9 +124,15 @@ function leadValido(telefone) {
   };
 }
 
-async function listar(seg) {
-  return chamar(urlLeads(seg));
-}
+const CAMPOS = [
+  "nome",
+  "telefone",
+  "imovel_id",
+  "checkin",
+  "checkout",
+  "hospedes",
+  "valor_total",
+];
 
 async function testePostValido() {
   const seg = segmento("valido");
@@ -94,43 +154,55 @@ async function testePostValido() {
     typeof guardado.recebido_em === "string" && !Number.isNaN(Date.parse(guardado.recebido_em)),
     "lead guarda a hora de chegada (recebido_em)",
   );
-  console.log("ok - POST valido devolve 201 e aparece no GET");
 }
 
-async function testeSemCampo() {
-  const seg = segmento("sem-campo");
-  const { telefone, ...semTelefone } = leadValido("(11) 90000-0002");
+async function testeSemCadaCampo() {
+  for (const campo of CAMPOS) {
+    const seg = segmento(`sem-${campo}`);
+    const lead = leadValido("(11) 90000-0002");
+    delete lead[campo];
 
-  const resposta = await postarLead(seg, semTelefone);
-  conferir(resposta.status === 422, "POST sem campo devolve 422", `status ${resposta.status}`);
-  conferir(
-    Array.isArray(resposta.corpo?.erros) && resposta.corpo.erros.some((erro) => erro.campo === "telefone"),
-    "422 traz o campo que faltou em erros",
-  );
-
-  const lista = await listar(seg);
-  conferir(
-    Array.isArray(lista.corpo?.leads) && lista.corpo.leads.length === 0,
-    "lead recusado por falta de campo nao aparece no GET",
-  );
-  console.log("ok - POST sem campo devolve 422 e nao guarda");
+    const resposta = await postarLead(seg, lead);
+    conferir(resposta.status === 422, `POST sem ${campo} devolve 422`, `status ${resposta.status}`);
+    conferir(
+      Array.isArray(resposta.corpo?.erros) &&
+        resposta.corpo.erros.some((erro) => erro.campo === campo),
+      `422 lista o campo ${campo} em erros`,
+    );
+    const lista = await listar(seg);
+    conferir(
+      Array.isArray(lista.corpo?.leads) && lista.corpo.leads.length === 0,
+      `lead sem ${campo} nao e guardado`,
+    );
+  }
 }
 
-async function testeTipoErrado() {
+async function testeTipoErradoDeCadaCampo() {
   const casos = [
-    ["hospedes como texto", { hospedes: "2" }],
-    ["hospedes fracionario", { hospedes: 2.5 }],
-    ["valor_total como texto", { valor_total: "2156.00" }],
-    ["checkin fora do formato", { checkin: "15/01/2027" }],
-    ["checkin com data inexistente", { checkin: "2027-02-30" }],
-    ["nome nao texto", { nome: 42 }],
+    ["nome", { nome: 42 }],
+    ["telefone", { telefone: 42 }],
+    ["imovel_id", { imovel_id: 42 }],
+    ["checkin", { checkin: 42 }],
+    ["checkin", { checkin: "15/01/2027" }],
+    ["checkin", { checkin: "2027-02-30" }],
+    ["checkout", { checkout: 42 }],
+    ["checkout", { checkout: "18/01/2027" }],
+    ["checkout", { checkout: "2027-13-01" }],
+    ["hospedes", { hospedes: "2" }],
+    ["hospedes", { hospedes: 2.5 }],
+    ["valor_total", { valor_total: "2156.00" }],
   ];
   const seg = segmento("tipo-errado");
 
-  for (const [descricao, mudanca] of casos) {
+  for (const [campo, mudanca] of casos) {
+    const descricao = `${campo} = ${JSON.stringify(mudanca[campo])}`;
     const resposta = await postarLead(seg, { ...leadValido("(11) 90000-0003"), ...mudanca });
     conferir(resposta.status === 422, `tipo errado (${descricao}) devolve 422`, `status ${resposta.status}`);
-    conferir(Array.isArray(resposta.corpo?.erros), `tipo errado (${descricao}) devolve { erros: [...] }`);
+    conferir(
+      Array.isArray(resposta.corpo?.erros) &&
+        resposta.corpo.erros.some((erro) => erro.campo === campo),
+      `tipo errado (${descricao}) lista o campo em erros`,
+    );
   }
 
   const lista = await listar(seg);
@@ -138,7 +210,6 @@ async function testeTipoErrado() {
     Array.isArray(lista.corpo?.leads) && lista.corpo.leads.length === 0,
     "nenhum lead com tipo errado foi guardado",
   );
-  console.log("ok - POST com tipo errado devolve 422 e nao guarda");
 }
 
 async function testeSegmentosIsolados() {
@@ -160,24 +231,21 @@ async function testeSegmentosIsolados() {
     listaB.corpo?.leads?.length === 1 && listaB.corpo.leads[0].telefone === leadB.telefone,
     "segmento B so enxerga o proprio lead",
   );
-  console.log("ok - segmentos diferentes nao se misturam");
 }
 
-async function testeModoPorCabecalho() {
-  const seg500 = segmento("modo-500");
+async function testeModosPorCabecalho() {
+  const seg500 = segmento("cabecalho-500");
   const resposta500 = await postarLead(seg500, leadValido("(11) 90000-0006"), { "x-falso-modo": "500" });
   conferir(resposta500.status === 500, "x-falso-modo: 500 devolve 500", `status ${resposta500.status}`);
-  const lista500 = await listar(seg500);
-  conferir(lista500.corpo?.leads?.length === 0, "lead em modo 500 nao e guardado");
+  conferir((await listar(seg500)).corpo?.leads?.length === 0, "modo 500 por cabecalho nao guarda");
 
-  const seg422 = segmento("modo-422");
+  const seg422 = segmento("cabecalho-422");
   const resposta422 = await postarLead(seg422, leadValido("(11) 90000-0007"), { "x-falso-modo": "422" });
   conferir(resposta422.status === 422, "x-falso-modo: 422 devolve 422", `status ${resposta422.status}`);
-  conferir(Array.isArray(resposta422.corpo?.erros), "modo 422 devolve { erros: [...] }");
-  const lista422 = await listar(seg422);
-  conferir(lista422.corpo?.leads?.length === 0, "lead em modo 422 nao e guardado");
+  conferir(Array.isArray(resposta422.corpo?.erros), "modo 422 por cabecalho devolve { erros: [...] }");
+  conferir((await listar(seg422)).corpo?.leads?.length === 0, "modo 422 por cabecalho nao guarda");
 
-  const segAtraso = segmento("modo-atraso-cabecalho");
+  const segAtraso = segmento("cabecalho-atraso");
   const inicio = Date.now();
   const respostaAtraso = await postarLead(segAtraso, leadValido("(11) 90000-0008"), {
     "x-falso-modo": "atraso",
@@ -185,75 +253,271 @@ async function testeModoPorCabecalho() {
   });
   const decorrido = Date.now() - inicio;
   conferir(respostaAtraso.status === 201, "modo atraso termina com 201", `status ${respostaAtraso.status}`);
-  conferir(decorrido >= 120, "modo atraso respeita x-falso-atraso-ms", `${decorrido} ms`);
-  const listaAtraso = await listar(segAtraso);
-  conferir(listaAtraso.corpo?.leads?.length === 1, "lead em modo atraso e guardado depois da espera");
+  conferir(decorrido >= 120, "modo atraso espera o x-falso-atraso-ms pedido", `${decorrido} ms`);
+  conferir(decorrido < 1150, "modo atraso nao espera mais que o x-falso-atraso-ms pedido", `${decorrido} ms`);
+  conferir((await listar(segAtraso)).corpo?.leads?.length === 1, "lead em modo atraso e guardado");
 
-  console.log("ok - modos de teste por cabecalho (500, 422 e atraso)");
+  const segZero = segmento("cabecalho-atraso-zero");
+  const respostaZero = await postarLead(segZero, leadValido("(11) 90000-0009"), {
+    "x-falso-modo": "atraso",
+    "x-falso-atraso-ms": "0",
+  });
+  conferir(respostaZero.status === 201, "atraso 0 e aceito e termina com 201", `status ${respostaZero.status}`);
+
+  const segInvalidoBaixo = segmento("cabecalho-atraso-baixo");
+  const baixo = await postarLead(segInvalidoBaixo, leadValido("(11) 90000-0010"), {
+    "x-falso-modo": "atraso",
+    "x-falso-atraso-ms": "-1",
+  });
+  conferir(baixo.status === 400, "atraso abaixo do limite devolve 400", `status ${baixo.status}`);
+  conferir((await listar(segInvalidoBaixo)).corpo?.leads?.length === 0, "atraso invalido nao guarda");
+
+  const segInvalidoAlto = segmento("cabecalho-atraso-alto");
+  const alto = await postarLead(segInvalidoAlto, leadValido("(11) 90000-0011"), {
+    "x-falso-modo": "atraso",
+    "x-falso-atraso-ms": "120001",
+  });
+  conferir(alto.status === 400, "atraso acima do limite devolve 400", `status ${alto.status}`);
 }
 
-async function testeModoPersistente() {
-  const seg = segmento("modo-persistente");
+async function testeModoGravado500e422() {
+  const seg500 = segmento("gravado-500");
+  conferir((await putModo(seg500, { modo: "500" })).status === 200, "PUT grava modo 500");
+  const resposta500 = await postarLead(seg500, leadValido("(11) 90000-0012"));
+  conferir(resposta500.status === 500, "modo 500 gravado devolve 500", `status ${resposta500.status}`);
+  conferir((await listar(seg500)).corpo?.leads?.length === 0, "modo 500 gravado nao guarda");
 
-  const controle = await chamar(urlModos(seg), {
-    method: "PUT",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ modo: "500" }),
+  const seg422 = segmento("gravado-422");
+  conferir((await putModo(seg422, { modo: "422" })).status === 200, "PUT grava modo 422");
+  const resposta422 = await postarLead(seg422, leadValido("(11) 90000-0013"));
+  conferir(resposta422.status === 422, "modo 422 gravado devolve 422", `status ${resposta422.status}`);
+  conferir(Array.isArray(resposta422.corpo?.erros), "modo 422 gravado devolve { erros: [...] }");
+  conferir((await listar(seg422)).corpo?.leads?.length === 0, "modo 422 gravado nao guarda");
+}
+
+async function testePrecedenciaDoCabecalho() {
+  const seg = segmento("precedencia");
+  conferir((await putModo(seg, { modo: "500" })).status === 200, "PUT grava modo 500 antes da precedencia");
+
+  const com422 = await postarLead(seg, leadValido("(11) 90000-0014"), { "x-falso-modo": "422" });
+  conferir(com422.status === 422, "cabecalho 422 vence o modo 500 gravado", `status ${com422.status}`);
+
+  conferir((await putModo(seg, { modo: "422" })).status === 200, "PUT troca o modo gravado para 422");
+  const com500 = await postarLead(seg, leadValido("(11) 90000-0015"), { "x-falso-modo": "500" });
+  conferir(com500.status === 500, "cabecalho 500 vence o modo 422 gravado", `status ${com500.status}`);
+
+  const comAtraso = await postarLead(seg, leadValido("(11) 90000-0016"), {
+    "x-falso-modo": "atraso",
+    "x-falso-atraso-ms": "50",
   });
-  conferir(controle.status === 200, "PUT /modos grava o modo 500", `status ${controle.status}`);
+  conferir(comAtraso.status === 201, "cabecalho atraso vence o modo 422 gravado e guarda", `status ${comAtraso.status}`);
+  conferir((await listar(seg)).corpo?.leads?.length === 1, "lead do cabecalho atraso aparece no GET");
+}
 
-  const resposta500 = await postarLead(seg, leadValido("(11) 90000-0009"));
-  conferir(resposta500.status === 500, "modo 500 gravado vale para POST sem cabecalho", `status ${resposta500.status}`);
-  const lista500 = await listar(seg);
-  conferir(lista500.corpo?.leads?.length === 0, "lead em modo 500 persistente nao e guardado");
+async function testeModoPorTelefone() {
+  const seg = segmento("telefone");
+  const phoneA = "(11) 98888-0020";
+  const phoneB = "+55 11 97777-0020";
 
-  const limpeza = await chamar(urlModos(seg), { method: "DELETE" });
-  conferir(limpeza.status === 200, "DELETE /modos limpa o modo", `status ${limpeza.status}`);
-  const respostaNormal = await postarLead(seg, leadValido("(11) 90000-0010"));
-  conferir(respostaNormal.status === 201, "sem modo gravado o POST volta a devolver 201", `status ${respostaNormal.status}`);
+  conferir((await putModo(seg, { modo: "500", telefone: phoneA })).status === 200, "PUT grava modo 500 do telefone A");
+  conferir((await putModo(seg, { modo: "422", telefone: phoneB })).status === 200, "PUT grava modo 422 do telefone B");
 
-  const segAtraso = segmento("modo-atraso-persistente");
-  const controleAtraso = await chamar(urlModos(segAtraso), {
-    method: "PUT",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ modo: "atraso", atraso_ms: 120 }),
-  });
-  conferir(controleAtraso.status === 200, "PUT /modos grava atraso configuravel", `status ${controleAtraso.status}`);
+  const respostaA = await postarLead(seg, leadValido(phoneA));
+  conferir(respostaA.status === 500, "telefone A cai no modo 500", `status ${respostaA.status}`);
+
+  // O modo de B foi gravado com +55; o POST manda sem +55 e precisa casar.
+  const respostaB = await postarLead(seg, leadValido("(11) 97777-0020"));
+  conferir(respostaB.status === 422, "telefone B casa sem o prefixo 55 e cai no modo 422", `status ${respostaB.status}`);
+
+  const respostaC = await postarLead(seg, leadValido("(11) 96666-0020"));
+  conferir(respostaC.status === 201, "outro telefone passa pelo mesmo segmento", `status ${respostaC.status}`);
+  conferir((await listar(seg)).corpo?.leads?.length === 1, "so o lead do telefone sem modo foi guardado");
+}
+
+async function testeModoGeralVersusTelefone() {
+  const seg = segmento("geral-telefone");
+  conferir((await putModo(seg, { modo: "500" })).status === 200, "PUT grava modo geral 500");
+  conferir((await putModo(seg, { modo: "422", telefone: "(11) 95555-0030" })).status === 200, "PUT grava modo 422 do telefone");
+
+  const doTelefone = await postarLead(seg, leadValido("(11) 95555-0030"));
+  conferir(doTelefone.status === 422, "modo do telefone vence o modo geral", `status ${doTelefone.status}`);
+
+  const outro = await postarLead(seg, leadValido("(11) 94444-0030"));
+  conferir(outro.status === 500, "sem modo do telefone vale o modo geral", `status ${outro.status}`);
+}
+
+async function testeModoAtrasoGravado() {
+  const seg = segmento("gravado-atraso");
+  conferir((await putModo(seg, { modo: "atraso", atraso_ms: 200 })).status === 200, "PUT grava atraso de 200 ms");
 
   const inicio = Date.now();
-  const respostaAtraso = await postarLead(segAtraso, leadValido("(11) 90000-0011"));
+  const resposta = await postarLead(seg, leadValido("(11) 90000-0031"));
   const decorrido = Date.now() - inicio;
-  conferir(respostaAtraso.status === 201, "modo atraso persistente termina com 201", `status ${respostaAtraso.status}`);
-  conferir(decorrido >= 100, "modo atraso persistente respeita atraso_ms", `${decorrido} ms`);
-  await chamar(urlModos(segAtraso), { method: "DELETE" });
+  conferir(resposta.status === 201, "atraso gravado termina com 201", `status ${resposta.status}`);
+  conferir(decorrido >= 170, "atraso gravado espera o atraso_ms pedido", `${decorrido} ms`);
+  conferir(decorrido < 1200, "atraso gravado nao espera mais que o atraso_ms pedido", `${decorrido} ms`);
+  conferir((await listar(seg)).corpo?.leads?.length === 1, "lead do atraso gravado e guardado");
 
-  console.log("ok - modos de teste persistem por segmento e podem ser limpos");
+  const segZero = segmento("gravado-atraso-zero");
+  conferir((await putModo(segZero, { modo: "atraso", atraso_ms: 0 })).status === 200, "PUT aceita atraso 0");
+  conferir((await postarLead(segZero, leadValido("(11) 90000-0032"))).status === 201, "atraso 0 gravado termina com 201");
+
+  const segMaximo = segmento("gravado-atraso-maximo");
+  conferir((await putModo(segMaximo, { modo: "atraso", atraso_ms: 120000 })).status === 200, "PUT aceita atraso no limite superior");
+  const modosMax = await getModos(segMaximo);
+  conferir(
+    modosMax.corpo?.modos?.some((modo) => modo.modo === "atraso" && modo.atraso_ms === 120000),
+    "GET /modos mostra o atraso no limite superior",
+  );
+  await deleteModos(segMaximo);
+
+  const segAcima = segmento("gravado-atraso-acima");
+  const acima = await putModo(segAcima, { modo: "atraso", atraso_ms: 120001 });
+  conferir(acima.status === 400, "PUT recusa atraso acima do limite", `status ${acima.status}`);
+  const abaixo = await putModo(segAcima, { modo: "atraso", atraso_ms: -1 });
+  conferir(abaixo.status === 400, "PUT recusa atraso abaixo do limite", `status ${abaixo.status}`);
 }
 
-async function testeDeleteLimpa() {
-  const seg = segmento("delete");
-  conferir((await postarLead(seg, leadValido("(11) 90000-0012"))).status === 201, "primeiro POST do teste de DELETE devolve 201");
-  conferir((await postarLead(seg, leadValido("(11) 90000-0013"))).status === 201, "segundo POST do teste de DELETE devolve 201");
+async function testeAtrasoGuardaAntesDeEsperar() {
+  const seg = segmento("abandono");
+  const lead = leadValido("(11) 90000-0040");
+  const controle = new AbortController();
 
-  const antes = await listar(seg);
-  conferir(antes.corpo?.leads?.length === 2, "os dois leads estao na lista antes do DELETE");
+  const promessa = fetch(urlLeads(seg), {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-falso-modo": "atraso",
+      "x-falso-atraso-ms": "1000",
+    },
+    body: JSON.stringify(lead),
+    signal: controle.signal,
+  });
+
+  let desistiu = false;
+  try {
+    await dormir(150);
+    controle.abort();
+    await promessa;
+  } catch {
+    desistiu = true;
+  }
+
+  conferir(desistiu, "cliente desiste antes do fim do atraso");
+  conferir(
+    await esperarLead(seg, lead.telefone),
+    "lead aparece no GET mesmo com o cliente desistindo antes do fim do atraso",
+  );
+}
+
+async function testeValidadeEModosAtivos() {
+  const seg = segmento("validade");
+  const phone = "(11) 93333-0050";
+  conferir((await putModo(seg, { modo: "500", validade_s: 300 })).status === 200, "PUT grava modo geral com validade");
+  conferir((await putModo(seg, { modo: "422", telefone: phone, validade_s: 300 })).status === 200, "PUT grava modo por telefone com validade");
+
+  const modos = await getModos(seg);
+  conferir(Array.isArray(modos.corpo?.modos), "GET /modos devolve { modos: [...] }");
+  const geral = modos.corpo.modos.find((modo) => modo.telefone === null && modo.modo === "500");
+  const porTelefone = modos.corpo.modos.find((modo) => modo.telefone === "11933330050" && modo.modo === "422");
+  conferir(Boolean(geral), "GET /modos mostra o modo geral");
+  conferir(Boolean(porTelefone), "GET /modos mostra o modo por telefone");
+  conferir(
+    Boolean(geral) && Date.parse(geral.expira_em) > Date.now(),
+    "GET /modos mostra quando o modo expira",
+  );
+
+  const limpezaTelefone = await deleteModos(seg, "+55 (11) 93333-0050");
+  conferir(limpezaTelefone.status === 200, "DELETE /modos?telefone devolve 200", `status ${limpezaTelefone.status}`);
+  const depoisTelefone = await getModos(seg);
+  conferir(
+    depoisTelefone.corpo?.modos?.length === 1 &&
+      depoisTelefone.corpo.modos[0].telefone === null,
+    "DELETE ?telefone remove so o modo daquele telefone",
+  );
+
+  const limpezaTudo = await deleteModos(seg);
+  conferir(limpezaTudo.status === 200, "DELETE /modos devolve 200", `status ${limpezaTudo.status}`);
+  conferir((await getModos(seg)).corpo?.modos?.length === 0, "DELETE /modos limpa todos os modos");
+  conferir((await postarLead(seg, leadValido("(11) 90000-0051"))).status === 201, "sem modos o POST volta a devolver 201");
+}
+
+async function testeExpiracaoCurta() {
+  const seg = segmento("expiracao");
+  conferir((await putModo(seg, { modo: "500", validade_s: 1 })).status === 200, "PUT grava modo com validade de 1 s");
+  conferir((await getModos(seg)).corpo?.modos?.length === 1, "modo curto aparece no GET antes de expirar");
+
+  await dormir(1200);
+
+  conferir((await getModos(seg)).corpo?.modos?.length === 0, "modo expirado some do GET /modos");
+  const resposta = await postarLead(seg, leadValido("(11) 90000-0060"));
+  conferir(resposta.status === 201, "modo expirado nao vale mais e o POST devolve 201", `status ${resposta.status}`);
+  conferir((await listar(seg)).corpo?.leads?.length === 1, "lead do POST sem modo expirado e guardado");
+}
+
+async function testePutInvalidoNaoAltera() {
+  const seg = segmento("put-invalido");
+  conferir((await putModo(seg, { modo: "500", validade_s: 300 })).status === 200, "PUT valido inicial grava modo 500");
+
+  const invalidos = [
+    ["corpo vazio", "{}"],
+    ["modo desconhecido", JSON.stringify({ modo: "999" })],
+    ["validade zero", JSON.stringify({ modo: "500", validade_s: 0 })],
+    ["validade acima do teto", JSON.stringify({ modo: "500", validade_s: 901 })],
+    ["validade fracionaria", JSON.stringify({ modo: "500", validade_s: 1.5 })],
+    ["telefone nao texto", JSON.stringify({ modo: "500", telefone: 42 })],
+    ["telefone sem digitos", JSON.stringify({ modo: "500", telefone: "sem numero" })],
+    ["atraso negativo", JSON.stringify({ modo: "atraso", atraso_ms: -1 })],
+    ["atraso acima do teto", JSON.stringify({ modo: "atraso", atraso_ms: 120001 })],
+    ["atraso nao numero", JSON.stringify({ modo: "atraso", atraso_ms: "200" })],
+    ["array no corpo", "[]"],
+    ["texto no corpo", JSON.stringify("modo 500")],
+  ];
+
+  for (const [descricao, corpo] of invalidos) {
+    const resposta = await putModoBruto(seg, corpo);
+    conferir(resposta.status === 400, `PUT invalido (${descricao}) devolve 400`, `status ${resposta.status}`);
+  }
+
+  const modos = await getModos(seg);
+  conferir(
+    modos.corpo?.modos?.length === 1 && modos.corpo.modos[0].modo === "500",
+    "PUT invalido nao altera o modo gravado",
+  );
+  const resposta = await postarLead(seg, leadValido("(11) 90000-0070"));
+  conferir(resposta.status === 500, "o modo gravado original continua valendo", `status ${resposta.status}`);
+}
+
+async function testeDeleteLeadsNaoLimpaModos() {
+  const seg = segmento("delete-leads-modos");
+  conferir((await postarLead(seg, leadValido("(11) 90000-0080"))).status === 201, "POST antes do DELETE /leads devolve 201");
+  conferir((await putModo(seg, { modo: "500", validade_s: 300 })).status === 200, "PUT grava modo antes do DELETE /leads");
 
   const resposta = await chamar(urlLeads(seg), { method: "DELETE" });
   conferir(resposta.status === 200, "DELETE /leads devolve 200", `status ${resposta.status}`);
+  conferir((await listar(seg)).corpo?.leads?.length === 0, "DELETE /leads limpa a lista daquele segmento");
 
-  const depois = await listar(seg);
-  conferir(depois.corpo?.leads?.length === 0, "DELETE limpa a lista daquele segmento");
-  console.log("ok - DELETE limpa a lista");
+  const depois = await postarLead(seg, leadValido("(11) 90000-0081"));
+  conferir(depois.status === 500, "DELETE /leads nao limpa os modos do segmento", `status ${depois.status}`);
+  conferir((await getModos(seg)).corpo?.modos?.length === 1, "o modo continua no GET /modos depois do DELETE /leads");
 }
 
 async function principal() {
-  await testePostValido();
-  await testeSemCampo();
-  await testeTipoErrado();
-  await testeSegmentosIsolados();
-  await testeModoPorCabecalho();
-  await testeModoPersistente();
-  await testeDeleteLimpa();
+  await teste("POST valido devolve 201 e aparece no GET", testePostValido);
+  await teste("POST sem cada um dos 7 campos devolve 422 e nao guarda", testeSemCadaCampo);
+  await teste("tipo errado de cada um dos 7 campos devolve 422 e nao guarda", testeTipoErradoDeCadaCampo);
+  await teste("segmentos diferentes nao se misturam", testeSegmentosIsolados);
+  await teste("modos por cabecalho (500, 422, atraso e limites)", testeModosPorCabecalho);
+  await teste("modos gravados 500 e 422 valem para o segmento", testeModoGravado500e422);
+  await teste("cabecalho x-falso-modo vence o modo gravado", testePrecedenciaDoCabecalho);
+  await teste("modo por telefone isola conversas no mesmo segmento", testeModoPorTelefone);
+  await teste("modo do telefone vence o modo geral", testeModoGeralVersusTelefone);
+  await teste("atraso gravado respeita o valor e os limites", testeModoAtrasoGravado);
+  await teste("atraso guarda o lead antes de esperar", testeAtrasoGuardaAntesDeEsperar);
+  await teste("validade, GET /modos e limpeza por telefone", testeValidadeEModosAtivos);
+  await teste("modo expira sozinho com validade curta", testeExpiracaoCurta);
+  await teste("PUT invalido devolve 400 e nao altera nada", testePutInvalidoNaoAltera);
+  await teste("DELETE /leads nao limpa modos", testeDeleteLeadsNaoLimpaModos);
 
   if (falhas > 0) {
     console.error(`FALHAS: ${falhas}`);

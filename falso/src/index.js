@@ -5,13 +5,16 @@ import { DurableObject } from "cloudflare:workers";
 // Modos de teste (500, 422 e atraso) existem só aqui, nunca no webhook real.
 //
 // Cada segmento da URL (/leads/<segmento>) tem a sua própria instância deste
-// Durable Object, logo a sua própria lista. Segmentos diferentes nunca se misturam.
+// Durable Object, logo a sua própria lista de leads e os seus próprios modos de
+// teste. Segmentos diferentes nunca se misturam.
 
 const CAMPOS_TEXTO = ["nome", "telefone", "imovel_id"];
 const CAMPOS_DATA = ["checkin", "checkout"];
 const MODOS = ["500", "422", "atraso"];
 const ATRASO_PADRAO_MS = 30000;
 const ATRASO_MAXIMO_MS = 120000;
+const VALIDADE_PADRAO_S = 120;
+const VALIDADE_MAXIMA_S = 900;
 
 export class ListaDeLeads extends DurableObject {
   #pronta = false;
@@ -35,11 +38,15 @@ export class ListaDeLeads extends DurableObject {
         valor_total REAL NOT NULL
       )
     `);
+    // Tabela nova (a versão anterior guardava um modo único em "modos"): cada
+    // telefone tem no máximo um modo ativo, e o telefone vazio é o modo geral do
+    // segmento. Modos antigos ficam para trás e não passam a valer sozinhos.
     this.ctx.storage.sql.exec(`
-      CREATE TABLE IF NOT EXISTS modos (
-        chave TEXT PRIMARY KEY,
-        modo TEXT,
-        atraso_ms INTEGER
+      CREATE TABLE IF NOT EXISTS modos_ativos (
+        telefone TEXT PRIMARY KEY,
+        modo TEXT NOT NULL,
+        atraso_ms INTEGER,
+        expira_em INTEGER NOT NULL
       )
     `);
     this.#pronta = true;
@@ -87,26 +94,58 @@ export class ListaDeLeads extends DurableObject {
     return total;
   }
 
-  lerModo() {
-    this.#preparar();
-    const linha = this.ctx.storage.sql
-      .exec("SELECT modo, atraso_ms FROM modos WHERE chave = 'atual'")
-      .toArray()[0];
-    return {
-      modo: linha?.modo ?? null,
-      atraso_ms: linha?.atraso_ms ?? null,
-    };
-  }
-
-  gravarModo(modo, atrasoMs) {
+  // Devolve só os modos ainda válidos e apaga os expirados no caminho.
+  lerModos(agora) {
     this.#preparar();
     this.ctx.storage.sql.exec(
-      `INSERT OR REPLACE INTO modos (chave, modo, atraso_ms)
-       VALUES ('atual', ?, ?)`,
-      modo,
-      atrasoMs,
+      "DELETE FROM modos_ativos WHERE expira_em <= ?",
+      agora,
     );
-    return this.lerModo();
+    return this.ctx.storage.sql
+      .exec(
+        `SELECT telefone, modo, atraso_ms, expira_em
+           FROM modos_ativos ORDER BY telefone`,
+      )
+      .toArray();
+  }
+
+  gravarModo(registro) {
+    this.#preparar();
+    this.ctx.storage.sql.exec(
+      `INSERT OR REPLACE INTO modos_ativos (telefone, modo, atraso_ms, expira_em)
+       VALUES (?, ?, ?, ?)`,
+      registro.telefone,
+      registro.modo,
+      registro.atraso_ms,
+      registro.expira_em,
+    );
+    return this.lerModos(Date.now());
+  }
+
+  // telefone null limpa todos os modos do segmento; com dígitos, só o daquele
+  // telefone.
+  limparModos(telefone) {
+    this.#preparar();
+    const { total } =
+      telefone === null
+        ? this.ctx.storage.sql
+            .exec("SELECT COUNT(*) AS total FROM modos_ativos")
+            .one()
+        : this.ctx.storage.sql
+            .exec(
+              "SELECT COUNT(*) AS total FROM modos_ativos WHERE telefone = ?",
+              telefone,
+            )
+            .one();
+    if (telefone === null) {
+      this.ctx.storage.sql.exec("DELETE FROM modos_ativos");
+    } else {
+      this.ctx.storage.sql.exec(
+        "DELETE FROM modos_ativos WHERE telefone = ?",
+        telefone,
+      );
+    }
+    return total;
   }
 }
 
@@ -192,7 +231,24 @@ function normalizarModo(valor) {
   return MODOS.includes(modo) ? modo : null;
 }
 
-function normalizarAtraso(valor, padrao) {
+// Compara telefone só pelos dígitos, aceitando o prefixo 55 de um lado e não do
+// outro. Devolve null quando não sobra dígito.
+function digitosTelefone(texto) {
+  if (typeof texto !== "string") return null;
+  const digitos = texto.replace(/\D/g, "");
+  if (!digitos) return null;
+  if (
+    digitos.length >= 12 &&
+    digitos.length <= 13 &&
+    digitos.startsWith("55")
+  ) {
+    return digitos.slice(2);
+  }
+  return digitos;
+}
+
+// Atraso vindo de cabeçalho (string); undefined é inválido.
+function atrasoDoCabecalho(valor, padrao) {
   if (valor === null || valor === undefined || valor === "") return padrao;
   const numero = Number(valor);
   if (!Number.isInteger(numero) || numero < 0 || numero > ATRASO_MAXIMO_MS) {
@@ -201,47 +257,73 @@ function normalizarAtraso(valor, padrao) {
   return numero;
 }
 
+// Atraso vindo de JSON (tem que ser número inteiro); undefined é inválido.
+function atrasoDoCorpo(valor) {
+  if (!Number.isInteger(valor) || valor < 0 || valor > ATRASO_MAXIMO_MS) {
+    return undefined;
+  }
+  return valor;
+}
+
+function validadeDoCorpo(valor) {
+  if (!Number.isInteger(valor) || valor < 1 || valor > VALIDADE_MAXIMA_S) {
+    return undefined;
+  }
+  return valor;
+}
+
+function modoParaJson(linha) {
+  return {
+    modo: linha.modo,
+    telefone: linha.telefone === "" ? null : linha.telefone,
+    atraso_ms: linha.atraso_ms ?? null,
+    expira_em: new Date(linha.expira_em).toISOString(),
+  };
+}
+
+// O modo de um telefone vale mais que o modo geral do segmento. Modos
+// expirados já foram removidos por lerModos.
+function escolherModo(modos, corpo) {
+  const digitos = digitosTelefone(corpo?.telefone);
+  const especifico = digitos
+    ? modos.find((linha) => linha.telefone === digitos)
+    : null;
+  return especifico ?? modos.find((linha) => linha.telefone === "") ?? null;
+}
+
 async function esperar(ms) {
   if (ms > 0) await new Promise((resolver) => setTimeout(resolver, ms));
 }
 
-// Modo efetivo do POST: o cabeçalho manda; sem ele, vale o modo gravado no
-// segmento pelo controle (/modos/<segmento>). GET e DELETE nunca são afetados.
-async function resolverModo(request, stub) {
+// Lê e valida o cabeçalho x-falso-modo, que tem precedência sobre o modo gravado.
+function modoDoCabecalho(request) {
   const cabecalho = request.headers.get("x-falso-modo");
-  if (cabecalho !== null) {
-    const modo = normalizarModo(cabecalho);
-    if (!modo) {
-      return {
-        erro: json(
-          { erro: `x-falso-modo invalido; use ${MODOS.join(", ")}` },
-          400,
-        ),
-      };
-    }
-    if (modo !== "atraso") return { modo, atrasoMs: 0 };
+  if (cabecalho === null) return { modo: null, atrasoMs: 0 };
 
-    const atrasoMs = normalizarAtraso(
-      request.headers.get("x-falso-atraso-ms"),
-      ATRASO_PADRAO_MS,
-    );
-    if (atrasoMs === undefined) {
-      return {
-        erro: json(
-          { erro: `x-falso-atraso-ms precisa ser inteiro entre 0 e ${ATRASO_MAXIMO_MS}` },
-          400,
-        ),
-      };
-    }
-    return { modo, atrasoMs };
+  const modo = normalizarModo(cabecalho);
+  if (!modo) {
+    return {
+      erro: json(
+        { erro: `x-falso-modo invalido; use ${MODOS.join(", ")}` },
+        400,
+      ),
+    };
   }
+  if (modo !== "atraso") return { modo, atrasoMs: 0 };
 
-  const salvo = await stub.lerModo();
-  const modo = salvo.modo ? normalizarModo(salvo.modo) : null;
-  return {
-    modo,
-    atrasoMs: modo === "atraso" ? (salvo.atraso_ms ?? ATRASO_PADRAO_MS) : 0,
-  };
+  const atrasoMs = atrasoDoCabecalho(
+    request.headers.get("x-falso-atraso-ms"),
+    ATRASO_PADRAO_MS,
+  );
+  if (atrasoMs === undefined) {
+    return {
+      erro: json(
+        { erro: `x-falso-atraso-ms precisa ser inteiro entre 0 e ${ATRASO_MAXIMO_MS}` },
+        400,
+      ),
+    };
+  }
+  return { modo, atrasoMs };
 }
 
 async function tratarLeads(request, stub, segmento) {
@@ -260,24 +342,11 @@ async function tratarLeads(request, stub, segmento) {
     return json({ erro: "metodo nao permitido" }, 405);
   }
 
-  let resolvido;
-  try {
-    resolvido = await resolverModo(request, stub);
-  } catch (erro) {
-    return json({ erro: `falha ao ler o modo: ${erro.message}` }, 500);
-  }
-  if (resolvido.erro) return resolvido.erro;
-
-  if (resolvido.modo === "500") {
-    return json({ erro: "falha forcada (500)" }, 500);
-  }
-  if (resolvido.modo === "422") {
+  const cabecalho = modoDoCabecalho(request);
+  if (cabecalho.erro) return cabecalho.erro;
+  if (cabecalho.modo === "500") return json({ erro: "falha forcada (500)" }, 500);
+  if (cabecalho.modo === "422") {
     return json({ erros: [{ campo: "modo", erro: "422 forcado" }] }, 422);
-  }
-  if (resolvido.modo === "atraso") {
-    // O atraso acontece antes da validação; se o cliente desistir no meio, o
-    // resultado fica incerto, como num tempo esgotado de verdade.
-    await esperar(resolvido.atrasoMs);
   }
 
   const texto = await request.text();
@@ -288,21 +357,53 @@ async function tratarLeads(request, stub, segmento) {
     return json({ erros: [{ campo: "corpo", erro: "JSON invalido" }] }, 422);
   }
 
+  let modo = cabecalho.modo;
+  let atrasoMs = cabecalho.atrasoMs;
+  if (!modo) {
+    const modos = await stub.lerModos(Date.now());
+    const escolhido = escolherModo(modos, corpo);
+    if (escolhido) {
+      modo = escolhido.modo;
+      atrasoMs =
+        escolhido.modo === "atraso"
+          ? (escolhido.atraso_ms ?? ATRASO_PADRAO_MS)
+          : 0;
+    }
+  }
+
+  if (modo === "500") return json({ erro: "falha forcada (500)" }, 500);
+  if (modo === "422") {
+    return json({ erros: [{ campo: "modo", erro: "422 forcado" }] }, 422);
+  }
+
   const erros = validarLead(corpo);
   if (erros.length > 0) return json({ erros }, 422);
 
+  // Lead válido: guarda antes de qualquer espera. Se o cliente desistir durante
+  // o atraso, o lead já está na lista — é o resultado incerto do L11.
   const lead = await stub.inserir(doLead(corpo));
+  if (modo === "atraso") await esperar(atrasoMs);
   return json({ ok: true, lead }, 201);
 }
 
 async function tratarModos(request, stub, segmento) {
   if (request.method === "GET") {
-    return json({ segmento, ...(await stub.lerModo()) });
+    const modos = await stub.lerModos(Date.now());
+    return json({ segmento, modos: modos.map(modoParaJson) });
   }
 
   if (request.method === "DELETE") {
-    const salvo = await stub.gravarModo(null, null);
-    return json({ ok: true, segmento, ...salvo });
+    const url = new URL(request.url);
+    const telefoneCru = url.searchParams.get("telefone");
+    let telefone = null;
+    if (telefoneCru !== null) {
+      telefone = digitosTelefone(telefoneCru);
+      if (!telefone) {
+        return json({ erro: "telefone precisa ter digitos" }, 400);
+      }
+    }
+    const removidos = await stub.limparModos(telefone);
+    return json({ ok: true, segmento, removidos });
   }
 
   if (request.method !== "PUT") {
@@ -318,18 +419,45 @@ async function tratarModos(request, stub, segmento) {
   if (corpo === null || typeof corpo !== "object" || Array.isArray(corpo)) {
     return json({ erro: "corpo precisa ser um objeto JSON" }, 400);
   }
+  const tem = (campo) => Object.prototype.hasOwnProperty.call(corpo, campo);
 
-  const modoPedido =
-    corpo.modo === null || corpo.modo === undefined || corpo.modo === "nenhum"
-      ? null
-      : normalizarModo(corpo.modo);
-  if (corpo.modo !== null && corpo.modo !== undefined && corpo.modo !== "nenhum" && !modoPedido) {
-    return json({ erro: `modo invalido; use ${MODOS.join(", ")} ou "nenhum"` }, 400);
+  if (!tem("modo")) {
+    return json({ erro: "modo e obrigatorio" }, 400);
+  }
+  const modo = normalizarModo(corpo.modo);
+  if (!modo) {
+    return json({ erro: `modo invalido; use ${MODOS.join(", ")}` }, 400);
+  }
+
+  let telefone = "";
+  if (tem("telefone") && corpo.telefone !== null) {
+    if (typeof corpo.telefone !== "string") {
+      return json({ erro: "telefone precisa ser texto" }, 400);
+    }
+    telefone = digitosTelefone(corpo.telefone) ?? "";
+    if (!telefone) {
+      return json({ erro: "telefone precisa ter digitos" }, 400);
+    }
+  }
+
+  let validadeS = VALIDADE_PADRAO_S;
+  if (tem("validade_s")) {
+    validadeS = validadeDoCorpo(corpo.validade_s);
+    if (validadeS === undefined) {
+      return json(
+        {
+          erro: `validade_s precisa ser inteiro entre 1 e ${VALIDADE_MAXIMA_S}`,
+        },
+        400,
+      );
+    }
   }
 
   let atrasoMs = null;
-  if (modoPedido === "atraso") {
-    atrasoMs = normalizarAtraso(corpo.atraso_ms, ATRASO_PADRAO_MS);
+  if (modo === "atraso") {
+    atrasoMs = tem("atraso_ms")
+      ? atrasoDoCorpo(corpo.atraso_ms)
+      : ATRASO_PADRAO_MS;
     if (atrasoMs === undefined) {
       return json(
         { erro: `atraso_ms precisa ser inteiro entre 0 e ${ATRASO_MAXIMO_MS}` },
@@ -338,8 +466,14 @@ async function tratarModos(request, stub, segmento) {
     }
   }
 
-  const salvo = await stub.gravarModo(modoPedido, atrasoMs);
-  return json({ ok: true, segmento, ...salvo });
+  const registro = {
+    telefone,
+    modo,
+    atraso_ms: atrasoMs,
+    expira_em: Date.now() + validadeS * 1000,
+  };
+  await stub.gravarModo(registro);
+  return json({ ok: true, segmento, modo: modoParaJson(registro) });
 }
 
 export default {
