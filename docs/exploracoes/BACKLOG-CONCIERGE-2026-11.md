@@ -48,7 +48,7 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 |---|---|---|---|---|---|---|---|---|
 | A | agente-concierge | Esqueleto vertical até o Marco 1 | pré-voo | alta | 3,5 | thread T3 · Fable 5.2 | concluída | `frente-a` |
 | B1 | agente-concierge | Webhook falso (Worker próprio), construído e testado local; deploy em `dev` pela coordenadora | pré-voo | alta | 1 | subagente em worktree · DeepSeek | concluída | `t3/webhook-falso-leads` |
-| B2 | agente-concierge | Harness HTTP e casos dev por bloco | — | alta | 2,5 | thread T3 · Gemini 4 Hydrogen | rodando (passo 1 na main; passo 2 reprovado pelo verificador, em correção) | `frente-b2` |
+| B2 | agente-concierge | Harness HTTP e casos dev por bloco | — | alta | 2,5 | thread T3 · Gemini 4 Hydrogen | passo 2 na main; resíduos da segunda verificação em commit de seguimento | `frente-b2` |
 | C | agente-concierge | Conjunto reservado (fora do repo) | — | alta | 2 | thread T3, fica viva · GPT-6 Astra | rodando (60 casos; relendo por classes de defeito) | `frente-c` (sem commits; casos fora do repo) |
 | D | agente-concierge | Simulador de hóspede hostil | B2 (formato de caso) | média | 2,5 | thread T3 · Gemini 4 Hydrogen | correções entregues (19 itens); conferência pela rodada ao vivo, depois do merge da B2 | `frente-d` |
 | M1 | agente-concierge | Revisão curta do Marco 1 | A | alta | 0,5 | subagentes Opus 5.5 + conselho | concluída (`docs/revisoes/m1.md`; achados com dono) | — |
@@ -166,6 +166,15 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
 - 13/11 17h56 · D · correções entregues · 0ca85ff, 493a3a4. H despachada (Gemini) na vaga
 - 13/11 17h56 · G · levantou textos de código fora da lista da L15: regra provisória P3 e
   detector único de idioma com a frente F (`src/nucleo/idioma.ts`)
+
+- 13/11 18h01 · B2 · passo 2 na `main` (87 casos, runner corrigido) · 6b34703, 7052906, cde0094,
+  7afe770, merge 77f8828. Segundo verificador (Opus, recorte): o runner passou no que
+  era crítico e alto; numa amostra de 13 casos, 3 ainda reprovam agente correto e 7
+  deixam passar agente errado. Devolvidos para um commit de seguimento, sem nova rodada
+  de verificador. `CASOS OK`, `RUNNER OK` e 130 testes na `main`
+- 13/11 18h01 · regra provisória P4 (o "sim" só vale logo depois de resumo ou pedido de
+  confirmação gerados por código), levantada pela frente F
+- 13/11 18h01 · relatório da medida de base em `evals/relatorios/2026-11-13-dev-base-marco1.json`
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
