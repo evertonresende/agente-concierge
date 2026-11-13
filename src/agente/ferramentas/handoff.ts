@@ -66,48 +66,64 @@ function normalizar(valor: string): string {
   return valor.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 }
 
-const PALAVRA_DE_DESCONTO = /\b(?:descont\w*|cupom|cupons|cupon|promoc\w*|promo|abatimento|discount\w*|coupon\w*|promotion\w*)\b/g;
+// "Cupom fiscal" é nota, não desconto.
+const PALAVRA_DE_DESCONTO = /\b(?:descont\w*|cupom|cupons|cupon|promoc\w*|promo|abatimento|discount\w*|coupon\w*|promotion\w*)\b(?!\s+fiscal)/g;
 /**
  * Logo antes da palavra (no máximo um artigo no meio): o hóspede está abrindo mão do
  * desconto, não pedindo. "Não preciso de muito, mas tem desconto?" continua pedido.
  */
 const ABRE_MAO = /(?:\b(?:sem|without|nao quero|nao preciso de|nao precisa de|dispenso|esquece|esqueca|esquecer|forget)\s+(?:(?:o|a|os|as|de|um|uma|nenhum|nenhuma|qualquer|any|the)\s+)?|\bno\s+)$/;
+/** "Já sei que não tem desconto": afirma que não há. Com "?" na mesma oração ("não tem desconto?"), é pergunta. */
+const SABE_QUE_NAO_HA = /\b(?:nao\s+(?:tem|ha|existe|trabalh\w+\s+com|oferec\w+)|there(?:'s| is) no|you don't (?:have|offer))\s+(?:(?:o|a|de|um|uma|nenhum|nenhuma|any)\s+)?$/;
 
 /** A mensagem fala em desconto, cupom ou promoção, sem ser para abrir mão dele ("sem desconto então"). */
 export function mencionaDesconto(mensagem: string): boolean {
   const limpa = normalizar(mensagem);
-  return [...limpa.matchAll(PALAVRA_DE_DESCONTO)].some((achado) => !ABRE_MAO.test(limpa.slice(Math.max(0, achado.index - 30), achado.index)));
+  return [...limpa.matchAll(PALAVRA_DE_DESCONTO)].some((achado) => {
+    const antes = limpa.slice(Math.max(0, achado.index - 30), achado.index);
+    if (ABRE_MAO.test(antes)) return false;
+    const resto = limpa.slice(achado.index).split(/[.,;!\n]/)[0]!;
+    return !(SABE_QUE_NAO_HA.test(antes) && !resto.includes("?"));
+  });
 }
 
 /** Pergunta sobre o acréscimo de sexta e sábado: informativa, não pedido de abatimento (L5a). */
-const FALA_DE_ACRESCIMO = /\ba mais\b|\bacrescimo|\badicional|\bextra\b|\bmais car[oa]|\bsurcharge|\bmore expensive/;
-/** Percentual pedido: "aplique 50%", "me dá 10%", "20% off". */
-const PERCENTUAL_PEDIDO = /\b(?:apli(?:c|qu)\w*|apply|give me|quero|faz\w*|faca|tira\w*|abat\w*|me d[ae]|dar)\b[^.?!\d]{0,20}\d+\s*%|\d+\s*%\s*(?:off|a menos|de abatimento)\b/;
-/** Valor proposto pelo hóspede: "faz por 2.000?", "fecha por 1800 reais?". Ano ("fechar em 2027") e "3 noites" não contam. */
-const PROPOE_VALOR = /\b(?:faz|faca|fazer|fecha|fechar|fecho|deixa|deixar|sai|sair|consegue|aceita|aceitam|topa|pago|pagaria|do it|make it|take|accept|pay)\b[^.?!]{0,25}?(?:\b(?:por|em|for)\s+)?(?<![\w\/-])(?:r\s*\$\s*\d|(?!20\d\d\b)\d{3,}|\d{1,3}(?:\.\d{3})+|\d+\s*(?:mil|reais))/;
+const FALA_DE_ACRESCIMO = /\ba mais\b|\bacrescimo|\badicional|\bextra\b|\bmais car[oa]|\bsurcharge|\bmore expensive|\bcerteza\b|\bsure\b|\bcertain\b/;
+/** Percentual pedido, só com verbo de aplicar ou marca de abatimento: "aplique 50%", "20% off". */
+const PERCENTUAL_PEDIDO = /\b(?:apli(?:c|qu)\w*|apply)\s+(?:(?:um|uma|an?)\s+)?\d{1,3}\s*%|\b\d{1,3}\s*%\s*(?:off|a menos|de abatimento)\b/;
+/** Valor proposto pelo hóspede, com "por": "faz por 2.000?", "fecha por 1800 reais?". "3 noites" e o ano não contam. */
+const PROPOE_VALOR = /\b(?:faz|faca|fazer|fecha|fechar|fecho|deixa|deixar|sai|topa|do it|make it|would you take)\b[^.?!]{0,20}\b(?:por|for)\s+(?:r\s*\$\s*\d|(?!20\d\d\b)\d{3,}|\d{1,3}(?:\.\d{3})+|\d+\s*(?:mil|reais))|\bwould you (?:take|accept)\s+(?:r\s*\$\s*)?\d/;
 /** Preço menor sem palavra-chave. Pedido de imóvel mais barato ("tem algum mais barato?") é busca, não negociação. */
-const PRECO_MENOR = /(?<!\b(?:algum|alguma|outro|outra|opcao|opcoes|imovel|imoveis|casa|apartamento|chale|qual|quais)\b[^.?!]{0,20})\bmais barat|\bpreco (?:menor|melhor|especial|camarada)|\b(?:menor|melhor) preco|\b(?:a)?baix\w* (?:o |um pouco (?:o )?)?(?:preco|valor)|\bcheaper\b|\b(?:lower|better|best) price/;
+const PRECO_MENOR = /(?<!\b(?:algum|alguma|outro|outra|opcao|opcoes|imovel|imoveis|casa|apartamento|chale|qual|quais)\b[^.?!]{0,20})\bmais barat|\bpreco (?:menor|melhor|especial|camarada)|\b(?:menor|melhor) preco|\b(?:a)?baix\w* (?:o |um pouco (?:o )?)?(?:preco|valor)|\bcheaper\b|\b(?:lower|better|best) price|\bprecinho|\bmais em conta\b|\bcondic\w+ especia\w*|\btira\w* a taxa|\bpag\w* a vista/;
 
 /**
- * Pedido de abatimento com sinal forte: palavra de desconto, percentual pedido ou valor
- * proposto. Com ele a conversa passa mesmo que o modelo não chame a ferramenta (L16a).
+ * Pedido de abatimento com sinal inequívoco: palavra de desconto (sem abrir mão nem
+ * "cupom fiscal") ou percentual com verbo de aplicar. Com ele a conversa passa mesmo
+ * que o modelo não chame a ferramenta (L16a). Precisão antes de cobertura: o resto fica
+ * com o modelo e a ferramenta.
  */
 export function pedeAbatimento(mensagem: string): boolean {
   const limpa = normalizar(mensagem);
-  return mencionaDesconto(mensagem) || (!FALA_DE_ACRESCIMO.test(limpa) && PERCENTUAL_PEDIDO.test(limpa)) || PROPOE_VALOR.test(limpa);
+  return mencionaDesconto(mensagem) || PERCENTUAL_PEDIDO.test(limpa);
 }
 
 /**
- * Sinal fraco, só para alertar e conferir (o modelo decide): qualquer percentual ou
- * pedido de preço menor sem palavra-chave ("mais barato?").
+ * Sinal fraco, só para alertar e conferir (o modelo decide): valor proposto, percentual
+ * fora de pergunta sobre acréscimo, preço menor sem palavra-chave ("mais barato?").
  */
 export function sugereNegociacao(mensagem: string): boolean {
   const limpa = normalizar(mensagem);
-  return pedeAbatimento(mensagem) || /\d\s*%/.test(limpa) || PRECO_MENOR.test(limpa);
+  return pedeAbatimento(mensagem) || PROPOE_VALOR.test(limpa) || (!FALA_DE_ACRESCIMO.test(limpa) && /\d{1,3}\s*%/.test(limpa)) || PRECO_MENOR.test(limpa);
 }
 
-function jaUsou(motivo: string, historico: Mensagem[]): boolean {
-  return historico.some((m) => m.role === "assistant" && (m.tool_calls ?? []).some((c) => {
+/** Mensagens do turno anterior do agente: depois da última mensagem do hóspede no histórico. */
+function turnoAnterior(historico: Mensagem[]): Mensagem[] {
+  const inicio = historico.findLastIndex((m) => m.role === "user");
+  return historico.slice(inicio + 1);
+}
+
+function usou(motivo: string, mensagens: Mensagem[]): boolean {
+  return mensagens.some((m) => m.role === "assistant" && (m.tool_calls ?? []).some((c) => {
     if (c.function.name !== NOME_DO_HANDOFF) return false;
     try {
       return (JSON.parse(c.function.arguments) as { motivo?: unknown }).motivo === motivo;
@@ -123,21 +139,18 @@ const EXPLICACAO: Record<string, RegExp> = {
   conflito_com_regra_do_imovel: /\bn[aã]o\s+(?:aceita|permite|[eé]\s+permitid)|\bproibid|\bnot\s+(?:allow|accept|permit)|\bdoesn['’]t\s+(?:allow|accept|permit)|\bno\s+(?:pets|smoking|parties)\b/i,
 };
 const REGRAS = Object.keys(EXPLICACAO);
-/** A mensagem pede exceção ou insiste com palavras. */
-const INSISTE = /\bexcec\w*|\bexception|\binsist\w*|\bmesmo assim\b|\banyway\b/;
+/** Pedido explícito de exceção. */
+const PEDE_EXCECAO = /\bexcec\w*|\bexception/;
 
 /**
- * O agente já explicou a regra: chamou a ferramenta com o motivo em algum turno, ou a
- * última resposta dele traz a explicação (o modelo nem sempre chama na primeira vez).
+ * O agente explicou a regra no turno anterior: chamou a ferramenta com o motivo ou a
+ * resposta dele traz a explicação. Explicação mais antiga não conta, para não valer para
+ * sempre nem para outra regra.
  */
 function jaExplicou(motivos: string[], historico: Mensagem[]): boolean {
-  const ultima = historico.findLast((m) => m.role === "assistant" && !m.tool_calls?.length);
-  return motivos.some((motivo) => jaUsou(motivo, historico) || (ultima !== undefined && EXPLICACAO[motivo]!.test(ultima.content)));
-}
-
-/** O hóspede insiste ou pede exceção depois de a regra (pet, fumo, festa, contagem) ter sido explicada (L12, L13a). */
-export function insisteEmRegra(mensagem: string, historico: Mensagem[]): boolean {
-  return INSISTE.test(normalizar(mensagem)) && jaExplicou(REGRAS, historico);
+  const anterior = turnoAnterior(historico);
+  const resposta = anterior.findLast((m) => m.role === "assistant" && !m.tool_calls?.length);
+  return motivos.some((motivo) => usou(motivo, anterior) || (resposta !== undefined && EXPLICACAO[motivo]!.test(resposta.content)));
 }
 
 /**
@@ -150,7 +163,7 @@ export function decidirHandoff(motivo: string | undefined, mensagem: string, his
   if (!linha) return true;
   // Desconto é gatilho mesmo dentro de uma mensagem de manipulação ou de recusa (L16a).
   if (pedeAbatimento(mensagem)) return true;
-  const insiste = INSISTE.test(normalizar(mensagem));
+  const insiste = PEDE_EXCECAO.test(normalizar(mensagem));
   // Exceção ou insistência só existe depois da regra explicada ou com pedido explícito:
   // "posso fazer festa?" na primeira vez é conflito, não insistência.
   if (motivo === "excecao_ou_insistencia_em_regra") return insiste || jaExplicou(REGRAS, historico);
