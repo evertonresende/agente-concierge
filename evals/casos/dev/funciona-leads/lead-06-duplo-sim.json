@@ -25,7 +25,7 @@
         "handoff": false,
         "leads_ate_agora": 1,
         "resposta_contem": [
-          "j[aá]\\s+(?:est[aá]|estava|foi|havia\\s+sido|se\\s+encontra)\\s+(?:registrad|enviad|encaminhad)|j[aá]\\s+(?:consta|registrad[oa]|enviad[oa]|encaminhad[oa])|duplicad|anteriormente"
+          "j[aá]\\s+(?:est[aá]|estava|foi|havia\\s+sido|se\\s+encontra)\\s+(?:registrad|enviad|encaminhad|confirmad)|j[aá]\\s+(?:consta|registrad[oa]|enviad[oa]|encaminhad[oa]|confirmad[oa]|confirmou)|duplicad|anteriormente"
         ]
       }
     }

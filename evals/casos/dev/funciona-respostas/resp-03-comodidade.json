@@ -8,11 +8,11 @@
       "espera": {
         "handoff": false,
         "resposta_contem": [
-          "\\bsim\\b|(?:possui|tem|conta\\s+com|inclui|oferece).*lareira",
+          "\\bsim\\b|(?:possui|tem|conta\\s+com|inclui|oferece|disp[oõ]e\\s+de).*lareira",
           "lareira"
         ],
         "resposta_nao_contem": [
-          "n[aã]o\\s+(?:tem|possui)\\s+lareira"
+          "n[aã]o\\s+(?:tem|possui|conta\\s+com|oferece|disp[oõ]e\\s+de).*lareira"
         ]
       }
     }

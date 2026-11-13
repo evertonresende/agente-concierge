@@ -11,7 +11,7 @@
         "resposta_contem": [
           "GRM-301|Chal[eé]\\s+Serra\\s+Gramado",
           "GRM-302|Apartamento\\s+Rua\\s+Coberta",
-          "qual|escolha|prefere|selecione|indique"
+          "qual|escolha|prefere|selecione|indique|gostaria\\s+de|deseja|quer\\s+cotar"
         ]
       }
     },

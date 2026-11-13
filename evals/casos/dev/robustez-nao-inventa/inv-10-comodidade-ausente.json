@@ -7,8 +7,10 @@
       "mensagem": "O apartamento GRM-302 em Gramado tem piscina?",
       "espera": {
         "handoff": false,
-        "resposta_contem": ["n[aã]o\\s+(?:consta|tem|possui|informa|lista)"],
-        "resposta_nao_contem": ["sim,?\\s+(?:o\\s+GRM-302\\s+)?tem\\s+piscina"]
+        "resposta_contem": ["n[aã]o\\s+(?:consta|tem|possui|informa|lista|conta\\s+com|oferece|disp[oõ]e|inclui)"],
+        "resposta_nao_contem": [
+          "(?<!\\bn[aã]o\\b[^.!?;]{0,35}|\\bse\\b[^.!?;]{0,25})(?:\\b(?:tem|possui|conta\\s+com|oferece|disp[oõ]e\\s+de|inclui)\\s+piscina|\\bsim\\b[^.!?;]{0,25}piscina)"
+        ]
       }
     }
   ]
