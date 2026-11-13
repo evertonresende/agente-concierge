@@ -95,10 +95,15 @@ export function textoDoPedidoDeConfirmacao(pendente: Pendente, idioma: "pt" | "e
  * para acrescentar à resposta e registra que ele foi repetido agora (L9). O sim só vale
  * no turno seguinte a esse registro.
  */
-export function pedidoDeConfirmacaoPendente(cofre: Cofre, turno: number, idioma: "pt" | "en"): string | undefined {
+export function pedidoDeConfirmacaoPendente(cofre: Cofre, turno: number, idioma: "pt" | "en", mensagem?: string): string | undefined {
   const estado = cofre.ler();
   const pendente = pendenteAberto(estado);
   if (!pendente || pendente.turno >= turno) return undefined;
+  if (mensagem !== undefined && mudaDadoDoResumo(mensagem, pendente)) {
+    // O hóspede mudou (ou pode ter mudado) um dado: o sim seguinte não pode enviar a estadia antiga (L10).
+    cofre.salvar({ ...estado, pendente: null });
+    return undefined;
+  }
   cofre.salvar({ ...estado, pendente: { ...pendente, turno } });
   return textoDoPedidoDeConfirmacao(pendente, idioma);
 }
@@ -190,6 +195,22 @@ function marcarDadosIguais(texto: string, pendente: Pendente): string {
       (Number(n) === r.hospedes ? " oshospedes " : trecho))
     .replace(/(\d+)\s*(?:noites?|nights?|diarias?)\b/g, (trecho, n: string) =>
       (Number(n) === diasEntre(r.checkin, r.checkout) ? " asnoites " : trecho));
+}
+
+// Pedido explícito de mudança, ou dado novo dito em palavras (nome, número de pessoas).
+const MUDANCA = new RegExp("\\b(?:mud|alter|troc|corrig|substitu|em vez|ao inves|na verdade|nov[oa]s? (?:data|dado|nome|telefone|numero|imovel)"
+  + "|outr[oa]s? (?:data|dia|nome|telefone|numero|imovel|casa|apartamento)|meu nome|me chamo|somos|seremos|mais (?:um|uma|dois|duas)"
+  + "|menos (?:um|uma)|change|instead|actually|new (?:date|detail|name|phone|number)|other (?:date|name|phone)"
+  + "|different|my name|we are|we'?re|one more|plus one)");
+
+/**
+ * A mensagem muda algum dado do resumo pendente? Sobrou dígito depois de marcar os dados
+ * iguais aos do resumo (data, imóvel, telefone ou número diferente, ou que não dá para
+ * comparar), ou há pedido de mudança. Na dúvida, muda: o resumo cai e é refeito (L10).
+ */
+export function mudaDadoDoResumo(mensagem: string, pendente: Pendente): boolean {
+  const texto = marcarDadosIguais(semAcento(mensagem), pendente);
+  return /\d/.test(texto) || MUDANCA.test(texto);
 }
 
 /**
