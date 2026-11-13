@@ -458,6 +458,14 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   dos turnos passam de 1.500 tokens de saída e de 15 s (p95 entre 15 e 22 s, máximo de 45 s),
   com contingência em 1 a 2% dos turnos. Meia hora antes o p95 era 5,7 s no mesmo código. Não
   é defeito de frente; pesa contra esse modelo, que já não é candidato a principal (X19)
+- 13/11 20h31 · F · relatório das 20h09, lido na conversa dela: achados A1 a A6 e a P11 commitados
+  (cabeça 323980b), 622 testes. CHECK 2 de `funciona-leads` caiu de 86% para 73%: `lead-04`
+  ("Sim, confirmo com as novas datas.") e `lead-07` ("Sim, confirmo essa segunda reserva
+  também.") passaram a ser recusados pela regra nova; `lead-05` e `lead-06` esperam as
+  ligações da G. A regra ficou rígida demais com palavras que só apontam para o resumo.
+  Decidido como provisórias P13 (palavra de referência confirma; palavra de novidade só com
+  resumo novo; valor junto do sim nunca confirma) e P14 (mesma reserva não é reenviada depois
+  de duas falhas definitivas). Devolvida para ajustar; depois, verificador independente
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
