@@ -87,8 +87,9 @@ const TEMPO_DO_PRINCIPAL_MS = 20_000;
 
 // Ajuste fino por modelo. O gateway recusa campo que o modelo não aceita (erro 7003).
 const AJUSTES: Record<string, Record<string, unknown>> = {
-  // Raciocínio padrão é "high": lento demais para o teto de 60 s.
+  // Raciocínio padrão é "high" no DeepSeek e "max" no GLM: lento demais para o teto de 60 s.
   "@cf/deepseek-ai/deepseek-v4.1-flash-1017": { reasoning_effort: "low" },
+  "@cf/zai-org/glm-5.3": { reasoning_effort: "low" },
 };
 
 /** Parâmetros do pedido. Modelo de terceiros (fora do `@cf/`) recebe `max_completion_tokens`, o campo das APIs de chat atuais. */

@@ -51,6 +51,7 @@ describe("adaptador do modelo", () => {
     expect(parametros("@cf/openai/gpt-oss-120b")).not.toHaveProperty("max_completion_tokens");
     expect(parametros("autor/modelo-x")).toMatchObject({ max_completion_tokens: 1500 });
     expect(parametros("autor/modelo-x")).not.toHaveProperty("max_tokens");
+    expect(parametros("@cf/zai-org/glm-5.3")).toMatchObject({ reasoning_effort: "low" });
   });
 
   it("passa pelo AI Gateway configurado", async () => {
