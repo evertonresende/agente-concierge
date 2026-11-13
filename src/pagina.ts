@@ -402,6 +402,8 @@ export const PAGINA = String.raw`<!doctype html>
 
 <script>
 (function () {
+  // O empacotador pode embrulhar funções internas com este ajudante; aqui ele não faz nada.
+  var __name = function (f) { return f; };
   var lerResposta = ${lerResposta.toString()};
 
   var DICA = 'Enter envia · Shift + Enter quebra a linha';
@@ -491,6 +493,8 @@ export const PAGINA = String.raw`<!doctype html>
     }).then(function (corpo) {
       var lida = lerResposta(corpo);
       if (!lida) throw new Error('resposta fora do contrato');
+      return lida;
+    }).then(function (lida) {
       var seguir = acompanhando();
       espera.remove();
       ocupar(false); // antes da resposta entrar: o anúncio e a rolagem contam com a área já livre
@@ -502,7 +506,8 @@ export const PAGINA = String.raw`<!doctype html>
       }
       // Resposta mais alta que a área aparece a partir do começo dela; a que cabe, inteira.
       if (seguir) conversa.scrollTop = Math.min(resposta.offsetTop, fimDe(registro.lastElementChild));
-    }).catch(function () {
+    }, function () {
+      // Só falha de rede, tempo esgotado ou resposta fora do contrato chegam aqui.
       espera.remove();
       ocupar(false);
       fala.lastChild.appendChild(el('span', 'nota', 'Sem resposta'));
@@ -513,7 +518,7 @@ export const PAGINA = String.raw`<!doctype html>
       denovo.addEventListener('click', function () { enviar(texto, fala); });
       conversa.scrollTop = fimDe(erro);
       denovo.focus();
-    }).then(function () {
+    }).finally(function () {
       clearTimeout(relogio);
     });
   }
@@ -536,7 +541,8 @@ export const PAGINA = String.raw`<!doctype html>
     enviar(texto);
   });
   campo.addEventListener('keydown', function (evento) {
-    if (evento.key === 'Enter' && !evento.shiftKey && !evento.isComposing) {
+    // keyCode 229: no Safari o Enter que confirma uma composição (IME) chega sem isComposing.
+    if (evento.key === 'Enter' && !evento.shiftKey && !evento.isComposing && evento.keyCode !== 229) {
       evento.preventDefault();
       formulario.requestSubmit();
     }
