@@ -313,6 +313,10 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   pausadas; H · religada com o estado do disco (f5510cb commitado, o resto em stage); F
   (37cab3d, árvore limpa) e G (47649d8 mais mudanças sem commit) · religadas para continuar a
   lista de cada uma; webhook falso local da 8799 religado pela coordenação
+- 13/11 19h28 · Éverton (X20): GLM-5.3 Flash entra na medição e passa à frente (1º), com o
+  DeepSeek 4.1 Flash em 2º; a frente I mede também a recusa simultânea do principal e do reserva
+  por limite e propõe a saída. O limite de uso do Claude deixou de ser restrição: voltam as
+  rodadas de verificador independente por frente (F, G e a correção da H), em esforço padrão
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -744,6 +748,13 @@ frente NÃO fixa `MODELO` nem escolhe o principal; o reserva fica em aberto. Tar
 atual: medir de verdade o DeepSeek 4.1 e o GLM-5.3 no conjunto dev com
 `--paralelo 1 --pausa-ms <n>`, abaixo de 20 chamadas por minuto, com zero resposta
 429. Haiku e Luna não são medidos até o Éverton avisar (crédito do gateway, `402`).
+
+Acréscimo do Éverton (13/11, X20): a medição inclui o GLM-5.3 Flash
+(`@cf/zai-org/glm-5.3-flash`); na frente estão o GLM-5.3 Flash (1º) e o DeepSeek 4.1
+Flash (2º), sem escolha final. Antes das rodadas com pausa, a frente mede com carga
+real o que o agente responde quando o principal e o reserva recusam por limite ao
+mesmo tempo (quantos turnos caem em contingência, o texto, o `handoff`, o status e a
+latência) e traz a proposta de saída, sem implementar.
 
 ### Tasks
 - [ ] Rodar o conjunto dev (nunca o reservado) com 3 candidatos, mesmo código, todos de
