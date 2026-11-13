@@ -267,6 +267,8 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   cobrança.** A fase 2 espera a frente G na `main`. Quatro pontos levados ao Éverton: principal
   `gpt-oss-120b`; reserva no próprio Workers AI (outro fornecedor, mesma infraestrutura);
   manter o gateway sem provedor de terceiro; gateway próprio para `producao`
+- 13/11 18h59 · Éverton decidiu (X18): a branch da frente I entra por merge normal, com o histórico
+  como aconteceu. B2 · seguimento conferido (98 casos, simulador 12 de 12) e levado à `main`
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
