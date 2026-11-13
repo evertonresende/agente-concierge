@@ -28,6 +28,7 @@ export function montarResumoRelatorio({
   motivosReprovacao,
   puladosTrava,
   soAgregado,
+  pausaMs = 0,
 }) {
   const todasLatencias = [];
   let entradaTotal = 0;
@@ -65,6 +66,7 @@ export function montarResumoRelatorio({
     conjunto,
     ambiente,
     so_agregado: Boolean(soAgregado),
+    ...(Number.isInteger(pausaMs) && pausaMs > 0 ? { pausa_ms: pausaMs } : {}),
     aprovado: Boolean(aprovado),
     veredicto: veredicto || (aprovado ? 'OK' : 'REPROVADO'),
     motivos_reprovacao: motivosReprovacao,

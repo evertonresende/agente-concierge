@@ -50,7 +50,7 @@ const NOMES_ULTIMOS = [
 
 function usoCli() {
   console.error(
-    'Uso: node evals/rodar.mjs [--alvo <url>] [--conjunto dev|reservado] [--bloco <nome>] [--so-agregado] [--listar] [--paralelo <n>] [--relatorio <arquivo>] [--sem-relatorio]'
+    'Uso: node evals/rodar.mjs [--alvo <url>] [--conjunto dev|reservado] [--bloco <nome>] [--so-agregado] [--listar] [--paralelo <n>] [--pausa-ms <n>] [--relatorio <arquivo>] [--sem-relatorio]'
   );
 }
 
@@ -62,6 +62,7 @@ function parseArgs(argv) {
     soAgregado: false,
     listar: false,
     paralelo: 2,
+    pausaMs: 0,
     relatorio: null,
     semRelatorio: false,
     timeoutMs: 60_000,
@@ -92,6 +93,13 @@ function parseArgs(argv) {
         throw new Error('--paralelo deve ser inteiro entre 1 e 32');
       }
       args.paralelo = n;
+    } else if (a === '--pausa-ms') {
+      const bruto = exigirValor(a, i++);
+      const n = Number(bruto);
+      if (!bruto.trim() || !Number.isInteger(n) || n < 0) {
+        throw new Error('--pausa-ms deve ser inteiro maior ou igual a 0');
+      }
+      args.pausaMs = n;
     } else if (a === '--relatorio') {
       args.relatorio = exigirValor(a, i++);
     } else if (a === '--sem-relatorio') {
@@ -964,6 +972,15 @@ function avaliarConjuntoParalelo(
   return falhas;
 }
 
+async function aguardarMs(ms) {
+  const alvo = performance.now() + ms;
+  while (true) {
+    const restante = alvo - performance.now();
+    if (restante <= 0) break;
+    await new Promise((resolve) => setTimeout(resolve, Math.ceil(restante)));
+  }
+}
+
 async function executarCaso({ caso, indice, args, ehDev, leadsUrlDev, runId, telefonesUsados }) {
   const ctx = gerarIdentidadeUnica(indice, telefonesUsados);
   const segredosMascara = [
@@ -1028,6 +1045,10 @@ async function executarCaso({ caso, indice, args, ehDev, leadsUrlDev, runId, tel
           falhas.push(`turno ${numTurno}: ${err.message}`);
           break;
         }
+      }
+
+      if (args.pausaMs > 0) {
+        await aguardarMs(args.pausaMs);
       }
 
       if (Array.isArray(turno.paralelo)) {
@@ -1269,6 +1290,8 @@ async function main() {
     );
   }
 
+  const sufixoPausa = args.pausaMs > 0 ? ` (pausa_ms=${args.pausaMs})` : '';
+
   if (casosElegiveis.length === 0) {
     for (const [bloco] of porBloco.entries()) {
       const pul = resultadosPulados.filter((r) => r.bloco === bloco).length;
@@ -1279,7 +1302,9 @@ async function main() {
     console.error(
       `TRAVA: nenhum caso elegível para executar (ambiente=${saude.ambiente}, pulados=${puladosTrava}).`
     );
-    console.log(args.conjunto === 'reservado' ? 'RESERVADO PARCIAL' : 'EVAL PARCIAL');
+    console.log(
+      (args.conjunto === 'reservado' ? 'RESERVADO PARCIAL' : 'EVAL PARCIAL') + sufixoPausa
+    );
     process.exit(2);
   }
 
@@ -1370,6 +1395,7 @@ async function main() {
     motivosReprovacao,
     puladosTrava,
     soAgregado: args.soAgregado,
+    pausaMs: args.pausaMs,
   });
 
   if (relatorio.latencia_ms.max >= 60_000) {
@@ -1402,9 +1428,9 @@ async function main() {
 
   if (args.conjunto === 'reservado') {
     console.log(`AGREGADO RESERVADO: ${agregadoPct}%`);
-    console.log(`RESERVADO ${veredicto}`);
+    console.log(`RESERVADO ${veredicto}${sufixoPausa}`);
   } else {
-    console.log(`EVAL ${veredicto}`);
+    console.log(`EVAL ${veredicto}${sufixoPausa}`);
   }
 
   process.exit(aprovado ? 0 : parcial ? 2 : 1);

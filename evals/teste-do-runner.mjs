@@ -721,6 +721,8 @@ async function testarRunner() {
     if (ultimoTelefone) assert.equal(relTexto.includes(ultimoTelefone), false, 'Relatório deve mascarar telefone');
     const relJson = JSON.parse(relTexto);
     assert.equal(relJson.ambiente, 'dev');
+    assert.equal(relJson.pausa_ms, undefined, 'Com pausa 0, relatório não deve incluir pausa_ms');
+    assert.equal(rOk.stdout.includes('pausa_ms'), false, 'Com pausa 0, saída não deve incluir pausa_ms');
     assert.ok(Array.isArray(relJson.conversas), 'Relatório dev normal inclui conversas');
 
     // 2. Negativo: resposta errada reprova
@@ -1269,6 +1271,126 @@ async function testarRunner() {
     } finally {
       fs.rmSync(tmpDevModoDir, { recursive: true, force: true });
       await webhookComModos.fechar();
+    }
+
+    // 9. --pausa-ms: intervalo >= 200ms entre turnos, pausa única em paralelo, latência sem a pausa, relatório/linha final e erro em valor inválido
+    const tmpPausaDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pausa-dir-'));
+    const tmpRelPausa = path.join(os.tmpdir(), `rel-pausa-${Date.now()}.json`);
+    const tmpRelPausaDev = path.join(os.tmpdir(), `rel-pausa-dev-${Date.now()}.json`);
+    const iniciosChatMs = [];
+    let requisicoesPausaTotal = 0;
+    const agPausa = await iniciarServidorMock(async (req, res) => {
+      requisicoesPausaTotal++;
+      if (req.method === 'GET' && req.url === '/saude') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, ambiente: 'dev' }));
+        return;
+      }
+      if (req.method === 'POST' && req.url === '/chat') {
+        iniciosChatMs.push(performance.now());
+        await lerCorpo(req);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ reply: 'Tudo certo.', handoff: false }));
+        return;
+      }
+      res.writeHead(404);
+      res.end();
+    });
+
+    try {
+      for (const invalido of ['-1', 'abc', '1.5', '']) {
+        requisicoesPausaTotal = 0;
+        const rInv = await rodarCli(
+          ['--alvo', agPausa.url, '--conjunto', 'dev', '--bloco', 'marco1', '--pausa-ms', invalido, '--sem-relatorio'],
+          envBase
+        );
+        assert.equal(rInv.code, 1, `--pausa-ms ${JSON.stringify(invalido)} deve falhar`);
+        assert.match(rInv.stderr, /--pausa-ms/);
+        assert.equal(requisicoesPausaTotal, 0, '--pausa-ms inválido deve encerrar antes de qualquer pedido');
+      }
+
+      const bPausa = path.join(tmpPausaDir, 'contrato');
+      fs.mkdirSync(bPausa, { recursive: true });
+      fs.writeFileSync(
+        path.join(bPausa, 'pausa-01-seq.json'),
+        JSON.stringify({
+          id: 'pausa-01-seq',
+          bloco: 'contrato',
+          confirma: false,
+          turnos: [
+            { mensagem: 'Oi 1', espera: { handoff: false } },
+            { mensagem: 'Oi 2', espera: { handoff: false } },
+          ],
+        })
+      );
+      fs.writeFileSync(
+        path.join(bPausa, 'pausa-02-par.json'),
+        JSON.stringify({
+          id: 'pausa-02-par',
+          bloco: 'contrato',
+          confirma: false,
+          turnos: [
+            { mensagem: 'Oi 3', espera: { handoff: false } },
+            {
+              paralelo: [
+                { mensagem: 'Par A', espera: { handoff: false } },
+                { mensagem: 'Par B', espera: { handoff: false } },
+              ],
+            },
+          ],
+        })
+      );
+
+      iniciosChatMs.length = 0;
+      const rPausaRes = await rodarCli(
+        [
+          '--alvo', agPausa.url,
+          '--conjunto', 'reservado',
+          '--paralelo', '1',
+          '--pausa-ms', '200',
+          '--relatorio', tmpRelPausa,
+        ],
+        { ...envBase, RESERVADO_DIR: tmpPausaDir }
+      );
+      assert.equal(rPausaRes.code, 0, `Rodada com --pausa-ms 200 deve passar:\n${rPausaRes.stdout}\n${rPausaRes.stderr}`);
+      assert.equal(iniciosChatMs.length, 5, 'Esperados 5 POSTs /chat (2 seq + 1 seq + 2 paralelos)');
+      assert.ok(iniciosChatMs[1] - iniciosChatMs[0] >= 200, `Intervalo turno 1->2 deve ser >= 200ms (obtido ${iniciosChatMs[1] - iniciosChatMs[0]})`);
+      assert.ok(iniciosChatMs[2] - iniciosChatMs[1] >= 200, `Intervalo caso 1->2 deve ser >= 200ms (obtido ${iniciosChatMs[2] - iniciosChatMs[1]})`);
+      assert.ok(iniciosChatMs[3] - iniciosChatMs[2] >= 200, `Intervalo antes do grupo paralelo deve ser >= 200ms (obtido ${iniciosChatMs[3] - iniciosChatMs[2]})`);
+      assert.ok(iniciosChatMs[4] - iniciosChatMs[3] < 100, `Grupo paralelo deve usar uma única espera (delta ${iniciosChatMs[4] - iniciosChatMs[3]})`);
+
+      const relPausaRes = JSON.parse(fs.readFileSync(tmpRelPausa, 'utf8'));
+      assert.equal(relPausaRes.pausa_ms, 200);
+      assert.ok(relPausaRes.latencia_ms.p50 < 150, `p50 (${relPausaRes.latencia_ms.p50}ms) não pode incluir a pausa de 200ms`);
+      assert.ok(relPausaRes.latencia_ms.p95 < 150, `p95 (${relPausaRes.latencia_ms.p95}ms) não pode incluir a pausa de 200ms`);
+      assert.ok(relPausaRes.latencia_ms.max < 150, `max (${relPausaRes.latencia_ms.max}ms) não pode incluir a pausa de 200ms`);
+      const ultimaLinhaRes = rPausaRes.stdout.trim().split('\n').at(-1);
+      assert.equal(ultimaLinhaRes, 'RESERVADO OK (pausa_ms=200)');
+
+      modo = 'feliz';
+      leads = [];
+      const rPausaDev = await rodarCli(
+        [
+          '--alvo', agente.url,
+          '--conjunto', 'dev',
+          '--bloco', 'marco1',
+          '--paralelo', '1',
+          '--pausa-ms', '200',
+          '--relatorio', tmpRelPausaDev,
+        ],
+        envBase
+      );
+      assert.equal(rPausaDev.code, 0, `marco1 com --pausa-ms 200 deve passar:\n${rPausaDev.stdout}\n${rPausaDev.stderr}`);
+      const relPausaDev = JSON.parse(fs.readFileSync(tmpRelPausaDev, 'utf8'));
+      assert.equal(relPausaDev.pausa_ms, 200);
+      assert.ok(relPausaDev.latencia_ms.max < 150, `Latência max em marco1 (${relPausaDev.latencia_ms.max}ms) não pode incluir pausa de 200ms`);
+      const ultimaLinhaDev = rPausaDev.stdout.trim().split('\n').at(-1);
+      assert.equal(ultimaLinhaDev, 'EVAL OK (pausa_ms=200)');
+    } finally {
+      fs.rmSync(tmpPausaDir, { recursive: true, force: true });
+      fs.rmSync(tmpRelPausa, { force: true });
+      fs.rmSync(tmpRelPausaDev, { force: true });
+      await agPausa.fechar();
     }
 
     console.log('RUNNER OK');
