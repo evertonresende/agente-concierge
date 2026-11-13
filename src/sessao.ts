@@ -42,7 +42,7 @@ interface CausaContingencia {
   erro: string;
 }
 
-function nomeDoErro(erro: unknown): string {
+export function nomeDoErro(erro: unknown): string {
   if (erro instanceof Error) {
     return erro.name && erro.name !== "Error" ? erro.name : (erro.constructor?.name || erro.name || "Error");
   }

@@ -3,8 +3,9 @@ import { env } from "cloudflare:workers";
 import { describe, expect, it, vi } from "vitest";
 import { FERRAMENTAS } from "../src/agente/ferramentas";
 import { definir } from "../src/agente/ferramentas/tipos";
+import { tratarChat } from "../src/chat";
 import type { Env } from "../src/env";
-import worker, { tratarChat } from "../src/index";
+import worker from "../src/index";
 import { apresentarResumo, type EstadoLead } from "../src/lead";
 import type { Mensagem, Modelo } from "../src/modelo";
 import { type Dependencias, type RespostaDoChat, type Sessao, TETO_SESSAO_MS, TETO_WORKER_MS } from "../src/sessao";
@@ -876,5 +877,28 @@ describe("concorrência endurecida e falhas (frente H)", () => {
     } finally {
       FERRAMENTAS.pop();
     }
+  });
+
+  it("A5: log falha_no_chat do Worker registra origem e classe do erro sem mensagem nem dado do hóspede", async () => {
+    const logs: string[] = [];
+    const espiado = vi.spyOn(console, "log").mockImplementation((texto) => { logs.push(String(texto)); });
+    try {
+      const envFalha = {
+        ...ambiente,
+        SESSAO: {
+          getByName: () => ({
+            conversar: async () => { throw new TypeError("Ana Lima (11) 98888-0000"); },
+          }),
+        },
+      } as unknown as Env;
+      const resposta = await postChat("sessao-a5", "Sou Ana Lima, (11) 98888-0000", envFalha);
+      expect(resposta.status).toBe(200);
+      expect(await resposta.json()).toMatchObject({ handoff: true });
+    } finally {
+      espiado.mockRestore();
+    }
+    const evento = logs.map((l) => JSON.parse(l) as Record<string, unknown>).find((o) => o.evento === "falha_no_chat");
+    expect(evento).toEqual({ evento: "falha_no_chat", origem: "sessao", erro: "TypeError" });
+    expect(logs.join("\n")).not.toMatch(/Ana|98888|Sou /);
   });
 });
