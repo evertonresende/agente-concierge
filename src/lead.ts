@@ -182,18 +182,27 @@ export function destinoPermitido(ambiente: string | undefined, destino: "falso" 
 
 const TEMPO_DO_WEBHOOK_MS = 10_000;
 
-/** POST do lead. Devolve só o status; o erro lançado nunca carrega a URL (ela tem token). */
-export async function postarLead(buscar: typeof fetch, url: string, corpo: CorpoDoLead): Promise<number> {
+/**
+ * POST do lead: uma tentativa só, sem seguir redirecionamento (um 307 reenviaria o corpo
+ * a outro host). Devolve só o status; o erro lançado nunca carrega a URL (ela tem token).
+ */
+export async function postarLead(buscar: typeof fetch, url: string, corpo: CorpoDoLead, tempoMs = TEMPO_DO_WEBHOOK_MS): Promise<number> {
+  const controle = new AbortController();
+  const relogio = setTimeout(() => controle.abort(), tempoMs);
   try {
     const resposta = await buscar(url, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(corpo),
-      signal: AbortSignal.timeout(TEMPO_DO_WEBHOOK_MS),
+      redirect: "manual",
+      signal: controle.signal,
     });
     await resposta.body?.cancel();
     return resposta.status;
   } catch {
     throw new Error("webhook de leads sem resposta");
+  } finally {
+    // Relógio pendente segura o Durable Object acordado depois da resposta.
+    clearTimeout(relogio);
   }
 }

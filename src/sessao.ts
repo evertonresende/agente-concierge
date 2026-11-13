@@ -1,7 +1,7 @@
 // Uma sessão de conversa = um Durable Object. Guarda o histórico e o estado do lead
 // em SQLite e garante uma mensagem por vez.
 import { DurableObject } from "cloudflare:workers";
-import { rodarTurno } from "./agente/loop";
+import { CONTINGENCIA, rodarTurno } from "./agente/loop";
 import { criarCatalogo } from "./catalogo";
 import type { Env } from "./env";
 import { type Cofre, destinoDosLeads, destinoPermitido, ESTADO_INICIAL, type EstadoLead, postarLead } from "./lead";
@@ -39,11 +39,17 @@ export class Sessao extends DurableObject<Env> {
     ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS estado (chave TEXT PRIMARY KEY, valor TEXT NOT NULL)");
   }
 
-  /** Entra na fila e processa a mensagem quando todas as anteriores terminarem. */
+  /**
+   * Entra na fila e processa a mensagem quando todas as anteriores terminarem. Nunca
+   * rejeita: processamento que lança vira a resposta de contingência (contrato L18), e
+   * por isso uma mensagem que falha não trava as seguintes.
+   */
   conversar(mensagem: string, chegada: number = Date.now()): Promise<RespostaDoChat> {
-    const vez = this.fila.then(() => this.processar(mensagem, chegada));
-    // Uma mensagem que falha não pode travar as seguintes.
-    this.fila = vez.catch(() => undefined);
+    const vez = this.fila.then(() => this.processar(mensagem, chegada)).catch((): RespostaDoChat => {
+      console.log(JSON.stringify({ evento: "falha_no_turno", sessao: this.ctx.id.toString().slice(0, 12) }));
+      return { reply: CONTINGENCIA, handoff: true, uso: { entrada: 0, saida: 0, chamadas: 0 } };
+    });
+    this.fila = vez;
     return vez;
   }
 

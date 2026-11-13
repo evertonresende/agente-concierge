@@ -1,4 +1,4 @@
-import { runInDurableObject } from "cloudflare:test";
+import { evictDurableObject, runInDurableObject } from "cloudflare:test";
 import { env } from "cloudflare:workers";
 import { describe, expect, it } from "vitest";
 import type { Env } from "../src/env";
@@ -137,6 +137,77 @@ describe("sessão", () => {
     expect(vistas.at(-2)![0]!.content).toContain("Nenhum resumo aguardando confirmação");
     expect(mundo.leads).toEqual([]);
   });
+
+  it("mensagem cujo processamento lança não trava a seguinte", async () => {
+    const stub = namespace.getByName(`teste-${++proxima}`);
+    const mundo = criarMundo();
+    let acessos = 0;
+    await runInDurableObject(stub, (sessao: Sessao) => {
+      // A primeira leitura do modelo lança dentro do processamento, fora do loop de ferramentas.
+      sessao.dependencias = {
+        buscar: mundo.buscar,
+        get modelo(): Modelo {
+          if (++acessos === 1) throw new Error("falha no processamento");
+          return async () => diz("Olá!");
+        },
+      };
+    });
+    // As duas entram na fila juntas: a segunda espera a primeira, que lança.
+    const [primeira, segunda] = await Promise.all([stub.conversar("primeira"), stub.conversar("segunda")]);
+    expect(primeira.handoff).toBe(true);
+    expect(primeira.reply).toContain("problema técnico");
+    expect(primeira.reply).not.toContain("falha no processamento");
+    expect(segunda).toMatchObject({ reply: "Olá!", handoff: false });
+    expect(await stub.conversar("terceira")).toMatchObject({ reply: "Olá!", handoff: false });
+  });
+
+  it("resumo, reinício do objeto e sim: 1 lead, com o estado vindo do storage", { timeout: 30_000 }, async () => {
+    const modelo: Modelo = async (mensagens) =>
+      ultimaDoHospede(mensagens) === "sim" ? pedeFerramentas(chamar("confirmar_reserva")) : pedeFerramentas(chamar("montar_resumo", DADOS));
+    const { stub, mundo } = await abrir(modelo);
+    await stub.conversar("quero fechar");
+
+    await evictDurableObject(stub); // a memória do objeto se perde; o storage fica
+    const memoriaNova = await runInDurableObject(stub, (sessao: Sessao) => {
+      const zerada = sessao.dependencias === null;
+      sessao.dependencias = { modelo, buscar: mundo.buscar };
+      return zerada;
+    });
+    expect(memoriaNova).toBe(true);
+
+    const confirmacao = await stub.conversar("sim");
+    expect(confirmacao.reply).toMatch(/foi registrado/);
+    expect(mundo.leads).toMatchObject([{ imovel_id: "GRM-301", nome: "Ana Lima", valor_total: 2156 }]);
+  });
+
+  for (const [caso, variaveis] of [
+    ["ENVIO_LEADS diferente de ligado", { ENVIO_LEADS: "desligado" }],
+    ["webhook no host do catálogo fora de producao", { LEADS_URL: "https://catalogo.teste/leads/token-de-teste" }],
+  ] as const) {
+    it(`${caso}: a confirmação pela sessão não faz nenhum POST`, async () => {
+      const mundo = criarMundo();
+      const posts: string[] = [];
+      const buscar = ((entrada: RequestInfo | URL, init?: RequestInit) => {
+        if (init?.method === "POST") posts.push(new URL(String(entrada)).host);
+        return mundo.buscar(entrada, init);
+      }) as typeof fetch;
+      const modelo: Modelo = async (mensagens) =>
+        ultimaDoHospede(mensagens) === "sim" ? pedeFerramentas(chamar("confirmar_reserva")) : pedeFerramentas(chamar("montar_resumo", DADOS));
+      const stub = namespace.getByName(`teste-${++proxima}`);
+      await runInDurableObject(stub, (sessao: Sessao) => {
+        const interno = sessao as unknown as { env: Env };
+        interno.env = { ...interno.env, ...variaveis };
+        sessao.dependencias = { modelo, buscar };
+      });
+
+      await stub.conversar("quero fechar");
+      const confirmacao = await stub.conversar("sim");
+      expect(posts).toEqual([]);
+      expect(confirmacao.handoff).toBe(true);
+      expect(confirmacao.reply).toContain("Não consegui registrar");
+      expect(confirmacao.reply).not.toMatch(/registrad/i);
+    });
+  }
 
   it("falha do modelo vira resposta de contingência e não trava a mensagem seguinte", async () => {
     const { modelo } = roteiro(new Error("fora do ar"), new Error("fora do ar"), diz("Olá!"));

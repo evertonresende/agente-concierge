@@ -239,10 +239,28 @@ describe("POST do lead", () => {
     expect(status).toBe(201);
     expect(pedidos).toHaveLength(1);
     expect(pedidos[0]!.init.method).toBe("POST");
+    // Sem seguir redirecionamento: um 307 não leva o corpo a outro host.
+    expect(pedidos[0]!.init.redirect).toBe("manual");
     expect(JSON.parse(pedidos[0]!.init.body as string)).toEqual({
       nome: "Ana Lima", telefone: "(11) 98888-0000", imovel_id: "GRM-301",
       checkin: "2027-01-15", checkout: "2027-01-18", hospedes: 2, valor_total: 2156,
     });
+  });
+
+  it("tempo esgotado: exatamente 1 fetch, sem nova tentativa", async () => {
+    let fetches = 0;
+    // Webhook que nunca responde: só termina quando o sinal de tempo esgotado aborta.
+    const buscar = ((_url: string, init: RequestInit) => {
+      fetches++;
+      return new Promise<Response>((_, rejeitar) => init.signal!.addEventListener("abort", () => rejeitar(new Error("abortado"))));
+    }) as unknown as typeof fetch;
+    await expect(postarLead(buscar, "https://falso.exemplo.test/leads/x", corpoDoLead(RESERVA, TOTAL), 30)).rejects.toThrow("sem resposta");
+    expect(fetches).toBe(1);
+  });
+
+  it("redirecionamento não vira registrado", async () => {
+    const buscar = (async () => new Response(null, { status: 307, headers: { location: "https://outro.exemplo.test/" } })) as unknown as typeof fetch;
+    expect(await postarLead(buscar, "https://falso.exemplo.test/leads/x", corpoDoLead(RESERVA, TOTAL))).toBe(307);
   });
 
   it("o erro de rede não carrega a URL do webhook", async () => {

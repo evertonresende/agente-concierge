@@ -1,4 +1,5 @@
 // Rotas do Worker: POST /chat (contrato seção 2), GET / (página) e GET /saude.
+import { CONTINGENCIA } from "./agente/loop";
 import type { Env } from "./env";
 import { destinoDosLeads } from "./lead";
 import { PAGINA } from "./pagina";
@@ -8,9 +9,6 @@ export { Sessao } from "./sessao";
 
 const LIMITE_DA_MENSAGEM = 8_000;
 const SEM_USO = { entrada: 0, saida: 0, chamadas: 0 };
-const FALHA_INTERNA = "Tive um problema técnico e não consegui concluir o seu atendimento agora. Vou passar a conversa "
-  + "para uma pessoa do nosso time, que continua com você.";
-
 function responder(status: number, reply: string, handoff: boolean, uso: RespostaDoChat["uso"] = SEM_USO): Response {
   return Response.json({ reply, handoff }, {
     status,
@@ -46,7 +44,7 @@ async function chat(pedido: Request, env: Env): Promise<Response> {
     return responder(200, resposta.reply, resposta.handoff, resposta.uso);
   } catch {
     console.log(JSON.stringify({ evento: "falha_no_chat" }));
-    return responder(200, FALHA_INTERNA, true);
+    return responder(200, CONTINGENCIA, true);
   }
 }
 
