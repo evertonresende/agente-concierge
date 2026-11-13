@@ -27,9 +27,10 @@ export interface Reserva {
  * Marcador de uma reserva: "enviando" (gravado antes do POST), "registrado" (201),
  * "nao_registrado" (o webhook respondeu outra coisa: com certeza não entrou) e "incerto"
  * (tempo esgotado ou sem resposta: pode ter entrado). Só "nao_registrado" permite tentar
- * de novo; "enviando" que sobrou de um reinício vale como incerto.
+ * de novo; "enviando" que sobrou de um reinício vale como incerto. "recusado" = o webhook
+ * recusou a mesma reserva duas vezes: ela não é enviada de novo na sessão.
  */
-export type SituacaoEnvio = "enviando" | "registrado" | "nao_registrado" | "incerto";
+export type SituacaoEnvio = "enviando" | "registrado" | "nao_registrado" | "incerto" | "recusado";
 
 /** A reserva já teve um envio que entrou ou pode ter entrado: não ganha outro POST na sessão (L7, L11). */
 export function reservaFechada(situacao: SituacaoEnvio | undefined): boolean {
@@ -280,7 +281,8 @@ export type MotivoNaoRegistrado =
   | "catalogo" // não deu para reler a ficha
   | "resposta" // o webhook respondeu algo diferente de 201, sem apontar um dado do hóspede
   | "incerto" // tempo esgotado ou sem resposta: pode ter chegado ou não (L11)
-  | "ja_tentado"; // esta reserva já teve um envio de resultado incerto
+  | "ja_tentado" // esta reserva já teve um envio de resultado incerto
+  | "ja_recusado"; // o webhook já recusou esta reserva duas vezes
 
 /** Campos do lead que o hóspede informa e pode corrigir. `valor_total` sai do código. */
 export const CAMPOS_DO_HOSPEDE = ["nome", "telefone", "imovel_id", "checkin", "checkout", "hospedes"] as const;
@@ -338,6 +340,7 @@ function marcar(cofre: Cofre, chave: string, situacao: SituacaoEnvio): void {
 
 /** Confirmação de uma reserva que já teve envio: nada é enviado de novo (L7, L11). */
 function jaMarcada(cofre: Cofre, situacao: SituacaoEnvio, pendente: Pendente, turnoAtual: number): ResultadoConfirmacao {
+  if (situacao === "recusado") return { tipo: "nao_registrado", motivo: "ja_recusado" };
   if (situacao !== "registrado") return { tipo: "nao_registrado", motivo: "ja_tentado" };
   // No resumo já registrado, `turno` guarda o turno do registro ou do último aviso de "já registrado".
   const repetido = turnoAtual <= pendente.turno + 1;
@@ -409,6 +412,9 @@ export async function confirmar(cofre: Cofre, turnoAtual: number, mensagem: stri
   const corrida = agora.envios[chave];
   if (reservaFechada(corrida)) return jaMarcada(cofre, corrida!, pendente, turnoAtual);
   if (!agora.pendente || chaveDaReserva(agora.pendente.reserva) !== chave) return { tipo: "sem_resumo" };
+  // Lido antes do marcador "enviando", que sobrescreve a recusa anterior desta reserva.
+  const recusadaAntes = corrida === "nao_registrado";
+  const recusaNaSessao = recusadaAntes || Object.values(agora.envios).includes("nao_registrado");
   marcar(cofre, chave, "enviando");
 
   const corpo = corpoDoLead(pendente.reserva, cotacao.totalCentavos);
@@ -426,12 +432,12 @@ export async function confirmar(cofre: Cofre, turnoAtual: number, mensagem: stri
   }
   // Com certeza não registrou: a confirmação foi gasta, mas a reserva não fica bloqueada.
   // Um novo resumo (com o dado corrigido, ou mais tarde) pode ser confirmado e enviado.
-  const estado = cofre.ler();
   // Já houve recusa nesta sessão (mesma reserva ou a de antes da correção): pedir a
-  // correção de novo vira laço; a conversa passa para humano.
-  const jaRecusado = Object.values(estado.envios).includes("nao_registrado");
-  cofre.salvar({ ...estado, pendente: null, envios: { ...estado.envios, [chave]: "nao_registrado" } });
-  return resposta.campos.length > 0 && !jaRecusado
+  // correção de novo vira laço; a conversa passa para humano. Segunda recusa da mesma
+  // reserva: ela fica bloqueada na sessão.
+  const estado = cofre.ler();
+  cofre.salvar({ ...estado, pendente: null, envios: { ...estado.envios, [chave]: recusadaAntes ? "recusado" : "nao_registrado" } });
+  return resposta.campos.length > 0 && !recusaNaSessao
     ? { tipo: "campo_recusado", campos: resposta.campos }
     : { tipo: "nao_registrado", motivo: "resposta" };
 }

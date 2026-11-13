@@ -120,6 +120,25 @@ describe("falhas do webhook na conversa", () => {
     expect(s.guardados).toEqual([]);
   });
 
+  it("422 da mesma reserva duas vezes: a segunda passa para humano e a reserva não é enviada de novo (A3)", async () => {
+    const s = sessao(["422"]);
+    await s.resumo(2);
+    expect((await s.sim(3)).handoff).toBeUndefined();
+    // O hóspede não corrige nada e o resumo é refeito com os mesmos dados.
+    await s.resumo(4);
+    const segunda = await s.sim(5);
+    expect(segunda.handoff).toBe(true);
+    expect(segunda.respostaFinal).toMatch(/Não consegui registrar/);
+    expect(s.recebidos).toHaveLength(2);
+    // Terceira rodada: nem resumo nem POST.
+    const resumo = await s.resumo(6);
+    expect(resumo.handoff).toBe(true);
+    expect(resumo.respostaFinal).toMatch(/Não consegui registrar/);
+    await s.sim(7);
+    expect(s.recebidos).toHaveLength(2);
+    expect(s.guardados).toEqual([]);
+  });
+
   it("atraso (resposta não chega): sem nova tentativa, não diz registrado, handoff true, e a reserva não é reenviada (CA-19)", async () => {
     const s = sessao(["atraso", "ok"]);
     await s.resumo(2);

@@ -167,9 +167,9 @@ export function resumir(contexto: Contexto, pedido: Extract<Pedido, { ok: true }
     // O hóspede pediu outra reserva (que já teve envio): o resumo que estava em aberto,
     // de uma reserva diferente, deixa de valer (L10).
     invalidarPendente(contexto.cofre);
-    return anterior === "registrado"
-      ? jaRegistrado(pendente, idioma)
-      : { paraOModelo: { nao_registrado: true }, respostaFinal: TEXTOS[idioma].incerto, handoff: true };
+    if (anterior === "registrado") return jaRegistrado(pendente, idioma);
+    const texto = anterior === "recusado" ? TEXTOS[idioma].naoRegistrado : TEXTOS[idioma].incerto;
+    return { paraOModelo: { nao_registrado: true }, respostaFinal: texto, handoff: true };
   }
 
   apresentarResumo(contexto.cofre, reserva, pendente.totalCentavos, contexto.turno, pendente.nomeDoImovel);
