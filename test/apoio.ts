@@ -36,7 +36,7 @@ export interface Mundo {
 }
 
 /** Catálogo fiel ao formato do contrato (seção 4) e webhook que responde `statusDoWebhook`. */
-export function criarMundo(opcoes: { statusDoWebhook?: number; fichas?: typeof FICHAS; catalogoForaDoAr?: boolean } = {}): Mundo {
+export function criarMundo(opcoes: { statusDoWebhook?: number; fichas?: typeof FICHAS; catalogoForaDoAr?: boolean; atrasoDoCatalogoMs?: number } = {}): Mundo {
   const fichas = opcoes.fichas ?? FICHAS;
   const leads: Record<string, unknown>[] = [];
   const pedidosAoCatalogo: string[] = [];
@@ -50,6 +50,7 @@ export function criarMundo(opcoes: { statusDoWebhook?: number; fichas?: typeof F
     if (!String(entrada).startsWith(BASE_CATALOGO)) throw new Error("os testes não falam com a rede");
     const caminho = url.pathname.slice(new URL(BASE_CATALOGO).pathname.length);
     pedidosAoCatalogo.push(caminho + url.search);
+    if (opcoes.atrasoDoCatalogoMs) await new Promise((r) => setTimeout(r, opcoes.atrasoDoCatalogoMs));
     if (opcoes.catalogoForaDoAr) return json({ erro: "fora do ar" }, 503);
     const lista = Object.values(fichas);
     if (caminho === "/cidades") {

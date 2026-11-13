@@ -71,6 +71,16 @@ describe("POST /chat", () => {
     expect(await resposta.json()).toMatchObject({ handoff: true });
   });
 
+  it("Durable Object que lança também não vira 500", async () => {
+    const quebrado = { getByName: () => ({ conversar: async () => { throw new Error("objeto fora do ar"); } }) };
+    const resposta = await pedir("/chat", { method: "POST", body: JSON.stringify({ session_id: "x", message: "oi" }) },
+      { ...ambiente, SESSAO: quebrado as unknown as Env["SESSAO"] });
+    expect(resposta.status).toBe(200);
+    const dado = await resposta.json<{ reply: string; handoff: boolean }>();
+    expect(dado.handoff).toBe(true);
+    expect(dado.reply).not.toContain("objeto fora do ar");
+  });
+
   it("GET em /chat devolve 405 e rota desconhecida devolve 404", async () => {
     expect((await pedir("/chat")).status).toBe(405);
     expect((await pedir("/nao-existe")).status).toBe(404);

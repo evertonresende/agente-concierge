@@ -66,7 +66,7 @@ describe("sessão", () => {
   });
 
   it("conversa do Marco 1: total, resumo, lead depois do sim e handoff no desconto", async () => {
-    const { modelo } = roteiro(
+    const { modelo, recebidas } = roteiro(
       pedeFerramentas(chamar("cotar", { imovel_id: "GRM-301", checkin: "15/01/2027", checkout: "18/01/2027", hospedes: 2 })),
       diz("O total fica em R$ 2.156,00."),
       pedeFerramentas(chamar("montar_resumo", DADOS)),
@@ -95,8 +95,12 @@ describe("sessão", () => {
       checkin: "2027-01-15", checkout: "2027-01-18", hospedes: 2, valor_total: 2156,
     }]);
 
+    // Antes do sim o modelo é avisado do resumo em aberto; depois do registro, não mais.
+    expect(recebidas[3]![0]!.content).toContain("aguardando o sim");
     const desconto = await stub.conversar("Consegue um desconto?");
     expect(desconto.handoff).toBe(true);
+    expect(recebidas[4]![0]!.content).not.toContain("aguardando o sim");
+    expect(recebidas[4]![0]!.content).toContain("Pedidos já registrados nesta conversa: 1");
     // A flag vale só para a resposta em que o agente decide passar (L3).
     expect((await stub.conversar("Qual o horário de check-in?")).handoff).toBe(false);
     expect(mundo.leads).toHaveLength(1);
@@ -111,6 +115,27 @@ describe("sessão", () => {
     expect(mundo.leads).toHaveLength(1);
     expect(respostas[0].reply).toMatch(/foi registrado/);
     expect(respostas[1].reply).toMatch(/já está registrado/);
+  });
+
+  it("ferramenta abandonada pelo prazo não grava resumo depois que o turno acabou", async () => {
+    const modelo: Modelo = async (mensagens) => {
+      const ultima = ultimaDoHospede(mensagens);
+      if (mensagens.at(-1)!.role === "tool") return diz("Preciso montar o resumo primeiro.");
+      return ultima === "sim" ? pedeFerramentas(chamar("confirmar_reserva")) : pedeFerramentas(chamar("montar_resumo", DADOS));
+    };
+    const vistas: Mensagem[][] = [];
+    const espiao: Modelo = (mensagens, ferramentas) => { vistas.push(mensagens); return modelo(mensagens, ferramentas); };
+    const { stub, mundo } = await abrir(espiao, criarMundo({ atrasoDoCatalogoMs: 400 }));
+
+    // Pedido que chegou há 44,8 s: sobram 200 ms, menos que a resposta do catálogo.
+    const cortada = await stub.conversar("quero fechar", Date.now() - 44_800);
+    expect(cortada.handoff).toBe(true);
+    expect(cortada.reply).toContain("problema técnico");
+    await pausa(700); // a leitura da ficha termina depois da resposta
+
+    await stub.conversar("sim");
+    expect(vistas.at(-2)![0]!.content).toContain("Nenhum resumo aguardando confirmação");
+    expect(mundo.leads).toEqual([]);
   });
 
   it("falha do modelo vira resposta de contingência e não trava a mensagem seguinte", async () => {

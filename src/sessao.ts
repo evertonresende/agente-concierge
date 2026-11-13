@@ -70,9 +70,16 @@ export class Sessao extends DurableObject<Env> {
     const deps = this.dependencias ??= { modelo: criarModelo(this.env.AI, this.env.MODELO), buscar: fetch };
     const turno = this.ler("turno", 0) + 1;
     this.gravar("turno", turno);
+    // O cofre só aceita gravação durante o turno. Uma ferramenta que o loop abandonou
+    // por tempo e termina depois não muda o estado do lead pelas costas do hóspede: sem
+    // conseguir gravar o marcador, ela também não chega a fazer o POST.
+    let turnoAberto = true;
     const cofre: Cofre = {
       ler: () => this.ler<EstadoLead>("lead", ESTADO_INICIAL),
-      salvar: (estado) => this.gravar("lead", estado),
+      salvar: (estado) => {
+        if (!turnoAberto) throw new Error("turno encerrado");
+        this.gravar("lead", estado);
+      },
     };
     const destino = destinoDosLeads(this.env.LEADS_URL, this.env.CATALOGO_URL);
 
@@ -94,10 +101,15 @@ export class Sessao extends DurableObject<Env> {
       },
     });
 
-    for (const nova of saida.novas) {
-      this.ctx.storage.sql.exec("INSERT INTO historico (mensagem) VALUES (?)", JSON.stringify(nova));
-    }
-    if (saida.handoff) this.gravar("handoff", true);
+    turnoAberto = false;
+
+    // Tudo ou nada: o histórico nunca fica com pedido de ferramenta sem o resultado.
+    this.ctx.storage.transactionSync(() => {
+      for (const nova of saida.novas) {
+        this.ctx.storage.sql.exec("INSERT INTO historico (mensagem) VALUES (?)", JSON.stringify(nova));
+      }
+      if (saida.handoff) this.gravar("handoff", true);
+    });
 
     // Um log por turno, sem texto de mensagem nem dado pessoal (contrato L22).
     console.log(JSON.stringify({

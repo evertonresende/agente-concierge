@@ -1,4 +1,4 @@
-import type { EstadoLead } from "../lead";
+import { type EstadoLead, pendenteAberto } from "../lead";
 import { formatarDataComDia } from "../nucleo/datas";
 import { formatarReais } from "../nucleo/dinheiro";
 
@@ -35,7 +35,7 @@ ESTILO
 
 function situacao(estado: EstadoLead, houveHandoff: boolean): string {
   const linhas: string[] = [];
-  const p = estado.pendente;
+  const p = pendenteAberto(estado);
   if (p) {
     const r = p.reserva;
     const dados = `imóvel ${r.imovel_id}, entrada ${formatarDataComDia(r.checkin)}, saída ${formatarDataComDia(r.checkout)}, `
