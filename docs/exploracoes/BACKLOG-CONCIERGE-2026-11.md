@@ -76,8 +76,10 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
 |---|---|---|---|
 | 1 | Plano pago da Cloudflare, na conta pessoal (a mesma da zona do subdomínio de produção) | Éverton, assinando em 13/11 | o gratuito dá 10 ms de CPU por requisição e ~85 chamadas de modelo por dia; os evals estouram isso (`docs/VERIFICACOES.md` §3). A coordenadora confere antes dos evals em volume |
 | 2 | `AGENTE_URL_PRODUCAO` (o subdomínio do L23) no arquivo de ambiente | Éverton | o hostname não fica em arquivo versionado; sem ele a frente K não sai |
-| 3 | `CLOUDFLARE_ACCOUNT_ID` no arquivo de ambiente, derivado da zona do domínio de `AGENTE_URL_PRODUCAO`, e a credencial de deploy por referência | coordenadora | o token cobre mais de uma conta |
-| 4 | Lacunas decididas no contrato (seção 10) | feito em 13/11; só a L1a segue aberta | frente não implementa lacuna aberta |
+| 3 | `CLOUDFLARE_ACCOUNT_ID` no arquivo de ambiente, derivado da zona do domínio do e-mail do autor (é a conta pessoal do Éverton), e a credencial de deploy por referência | coordenadora, antes de despachar A e B1 | o token cobre mais de uma conta; sem a conta o primeiro deploy de `dev` não sai |
+| 4 | Olhar no painel se o Bot Fight Mode da zona está ligado e dizer à coordenadora | Éverton | o token não lê essa configuração; ligado, ele bloqueia cliente automatizado no domínio inteiro e a decisão L23 (mexer só no hostname) não se sustenta sozinha |
+| 5 | Criar no painel a regra que desliga a checagem de integridade de navegador só para o hostname de produção, ou dar ao token permissão de regras de configuração | Éverton | o token provavelmente não cria essa regra; sem ela a frente K para de madrugada e produção não sobe sem ele |
+| 6 | Lacunas decididas no contrato (seção 10) | feito em 13/11; só a L1a segue aberta | frente não implementa lacuna aberta |
 
 ## Dono de arquivo (confere antes de cada leva)
 
@@ -104,6 +106,7 @@ mexer na configuração.
 | `falso/**` | B1 | — | — |
 | `evals/rodar.mjs`, `evals/lib/**`, `evals/casos/dev/**`, `evals/README.md` | B2 | B2 recebe casos novos de D e de C | — |
 | `evals/simulador/**` | D | D | — |
+| `evals/relatorios/**` | coordenadora (frente gera, não commita) | coordenadora | coordenadora |
 | `~/.config/agente-concierge/reservado/**` (fora do repo) | C | C | entra no repo na entrega (N) |
 | `.github/workflows/**`, `scripts/custo*.mjs` | — | — | L |
 | `scripts/validar-producao.sh` | — | — | K |
@@ -211,7 +214,20 @@ conta própria.
 8. Relatório final em até 12 linhas: o que foi feito, saída de cada CHECK, o que ficou
    de fora, commits. Sem colar diff.
 9. Lacuna `ABERTA` no contrato, ou critério impossível: pare e avise. Não decida
-   comportamento de produto.
+   comportamento de produto. Onde a linha da lacuna traz um padrão provisório,
+   implemente o padrão provisório.
+10. Deploy só onde este backlog autoriza. O comando usa `CLOUDFLARE_API_TOKEN`,
+    carregado por referência do arquivo de credencial no mesmo comando, e
+    `CLOUDFLARE_ACCOUNT_ID`, do arquivo de ambiente. O token nunca vira secret de
+    Worker e nunca aparece em saída.
+11. Servidor local: cada frente usa a própria porta (`ALVO_LOCAL`): E 8788, F 8789,
+    G 8790, H 8791, J 8792. Nos CHECK, `ALVO_LOCAL` é `http://127.0.0.1:<porta>`.
+12. Webhook falso: cada frente usa o próprio segmento de token no servidor local, e o
+    harness acha os leads da sua rodada pelo telefone único que ele mesmo gerou.
+    Ninguém além da coordenadora limpa a lista do webhook falso de `dev`, e só sem
+    rodada em curso.
+13. Relatórios de eval: a frente não commita. Só a coordenadora commita
+    `evals/relatorios/` na `main`.
 
 ---
 
@@ -296,8 +312,11 @@ formato de cada item são desconhecidos (contrato §5).
       `POST /leads/<token>` e `GET /leads/<token>`: valida presença e tipo dos 7
       campos, devolve 201 ou 422 `{ "erros": [ ... ] }`, guarda os leads com a hora de
       chegada.
+- [ ] Uma lista de leads por segmento de token, para que rodadas e frentes não se
+      misturem.
 - [ ] Modos de teste por cabeçalho ou token especial: forçar 500, forçar atraso,
-      forçar 422. `DELETE` para limpar entre rodadas de eval (existe só no falso).
+      forçar 422. `DELETE` existe só no falso e limpa uma lista; no ambiente `dev`
+      só a coordenadora usa, sem rodada em curso. O harness não depende dele.
 - [ ] Deploy e gravação de `LEADS_URL_DEV` no arquivo de ambiente.
 
 ### Critérios de aceite
@@ -421,7 +440,7 @@ mesma resposta. A L1a ("fim de semana" sem datas) está aberta: não mapeie a ex
    código com relógio injetado.
    CHECK: `npm test -- datas`
    ESPERA: zero falhas
-2. CHECK: `node evals/rodar.mjs --alvo http://127.0.0.1:8787 --conjunto dev --bloco funciona-cotacoes`
+2. CHECK: `node evals/rodar.mjs --alvo "$ALVO_LOCAL" --conjunto dev --bloco funciona-cotacoes`
    ESPERA: `BLOCO funciona-cotacoes: 100%`
 
 ## Sessão F — Lead robusto
@@ -434,7 +453,7 @@ mudança depois do resumo, falhas do webhook, estado `enviando` persistido antes
 1. Matriz de estados do lead, incluindo webhook em 422, 500 e atraso (modos do falso).
    CHECK: `npm test -- lead telefone`
    ESPERA: zero falhas
-2. CHECK: `node evals/rodar.mjs --alvo http://127.0.0.1:8787 --conjunto dev --bloco funciona-leads`
+2. CHECK: `node evals/rodar.mjs --alvo "$ALVO_LOCAL" --conjunto dev --bloco funciona-leads`
    ESPERA: `BLOCO funciona-leads: 100%`
 
 ## Sessão G — Robustez e handoff
@@ -449,7 +468,7 @@ fora de escopo, verificação pós-resposta de que todo total citado saiu do có
    regra. (CA-13)
    CHECK: `npm test -- robustez`
    ESPERA: zero falhas
-2. CHECK: `node evals/rodar.mjs --alvo http://127.0.0.1:8787 --conjunto dev --bloco robustez-manipulacao --bloco robustez-handoff --bloco robustez-nao-inventa`
+2. CHECK: `node evals/rodar.mjs --alvo "$ALVO_LOCAL" --conjunto dev --bloco robustez-manipulacao --bloco robustez-handoff --bloco robustez-nao-inventa`
    ESPERA: os três blocos em 100%
 
 ## Sessão H — Concorrência endurecida e falha interna
@@ -462,7 +481,7 @@ objeto com lead em estado `enviando`.
 1. Duas confirmações simultâneas geram exatamente 1 lead. (CA-14)
    CHECK: `npm test -- sessao concorrencia`
    ESPERA: zero falhas
-2. CHECK: critério de integração 3 contra `http://127.0.0.1:8787`
+2. CHECK: critério de integração 3 contra `"$ALVO_LOCAL"`
    ESPERA: `BLOCO contrato: 100%`
 
 ## Sessão J — Página de chat
