@@ -35,6 +35,7 @@ const SEM_USO = { entrada: 0, saida: 0, chamadas: 0 };
 // ponytail: o modelo recebe só as últimas mensagens; conversa mais longa que isso
 // esquece o começo. Trocar por resumo do histórico se as conversas reais passarem disso.
 const JANELA_DO_HISTORICO = 80;
+const LIMITE_PEDIDOS = 20;
 
 type OrigemContingencia = "modelo" | "catalogo" | "lead" | "prazo" | "interno";
 interface CausaContingencia {
@@ -83,6 +84,11 @@ export class Sessao extends DurableObject<Env> {
   conversar(mensagem: string, chegada: number = Date.now(), idPedido?: string): Promise<RespostaDoChat> {
     const entradaNaFila = Date.now();
     const vez = this.fila.then(() => this.processar(mensagem, chegada, entradaNaFila, idPedido)).catch((erro: unknown): RespostaDoChat => {
+      try {
+        this.gravar("handoff", true);
+      } catch {
+        // Melhor esforço: erro de armazenamento não impede resposta limpa de contingência.
+      }
       console.log(JSON.stringify({
         evento: "falha_no_turno",
         sessao: this.ctx.id.toString().slice(0, 12),
@@ -94,6 +100,19 @@ export class Sessao extends DurableObject<Env> {
     });
     this.fila = vez;
     return vez;
+  }
+
+  /** Chamada curta de melhor esforço quando o Worker desiste e devolve contingência (A5b). */
+  async registrarContingenciaNoWorker(_idPedido?: string): Promise<void> {
+    this.gravar("handoff", true);
+  }
+
+  private gravarPedido(idPedido: string, resposta: RespostaDoChat): void {
+    this.ctx.storage.sql.exec("INSERT OR IGNORE INTO pedidos (id, resposta) VALUES (?, ?)", idPedido, JSON.stringify(resposta));
+    this.ctx.storage.sql.exec(
+      "DELETE FROM pedidos WHERE rowid NOT IN (SELECT rowid FROM pedidos ORDER BY rowid DESC LIMIT ?)",
+      LIMITE_PEDIDOS,
+    );
   }
 
   private respostaDoPedido(idPedido: string): RespostaDoChat | null {
@@ -136,6 +155,7 @@ export class Sessao extends DurableObject<Env> {
     const prazo = Math.min(chegada + orcamentoMs + esperaNaFila, chegada + tetoMs);
 
     if (inicio >= prazo) {
+      this.gravar("handoff", true);
       console.log(JSON.stringify({
         evento: "prazo_esgotado_na_fila",
         sessao: this.ctx.id.toString().slice(0, 12),
@@ -277,9 +297,7 @@ export class Sessao extends DurableObject<Env> {
       if (JSON.stringify(pendenteFinal) !== JSON.stringify(atual.pendente)) {
         this.gravar("lead", { ...atual, pendente: pendenteFinal });
       }
-      if (idPedido) {
-        this.ctx.storage.sql.exec("INSERT OR IGNORE INTO pedidos (id, resposta) VALUES (?, ?)", idPedido, JSON.stringify(resposta));
-      }
+      if (idPedido) this.gravarPedido(idPedido, resposta);
     });
 
     const causa: CausaContingencia | null = saida.contingencia

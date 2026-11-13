@@ -64,6 +64,21 @@ async function lerCorpoLimitado(pedido: Request, limite: number, prazo: number):
   return JSON.parse(texto);
 }
 
+async function avisarContingenciaAoObjeto(env: Env, sessionId: string, idPedido: string, tetoMs: number): Promise<void> {
+  try {
+    const stub = env.SESSAO.getByName(`sessao:${sessionId}`) as unknown as {
+      registrarContingenciaNoWorker?: (idPedido?: string) => Promise<void>;
+    };
+    const chamada = stub.registrarContingenciaNoWorker?.(idPedido);
+    if (!chamada) return;
+    chamada.catch(() => {});
+    const prazoAviso = Math.min(200, Math.max(25, Math.floor(tetoMs * 0.2)));
+    await comPrazo(chamada, prazoAviso);
+  } catch {
+    // Melhor esforço: falha no aviso não impede a devolução de contingência ao hóspede.
+  }
+}
+
 export async function tratarChat(pedido: Request, env: Env, tetoMs = TETO_WORKER_MS): Promise<Response> {
   const chegada = Date.now();
   const prazo = chegada + tetoMs;
@@ -110,6 +125,7 @@ export async function tratarChat(pedido: Request, env: Env, tetoMs = TETO_WORKER
       const restante = prazo - Date.now();
       if (restante <= 0) {
         console.log(JSON.stringify({ evento: "tempo_esgotado_no_worker", origem: "prazo", erro: "TempoEsgotadoWorker" }));
+        await avisarContingenciaAoObjeto(env, session_id, idPedido, tetoMs);
         return responder(200, CONTINGENCIA, true);
       }
       try {
@@ -126,6 +142,7 @@ export async function tratarChat(pedido: Request, env: Env, tetoMs = TETO_WORKER
               ? { evento: "tempo_esgotado_no_worker", origem: "prazo", erro: nomeDoErro(erro) }
               : { evento: "falha_no_chat", origem: "sessao", erro: nomeDoErro(erro) },
           ));
+          await avisarContingenciaAoObjeto(env, session_id, idPedido, tetoMs);
           return responder(200, CONTINGENCIA, true);
         }
       }

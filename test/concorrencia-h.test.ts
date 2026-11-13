@@ -1021,4 +1021,57 @@ describe("concorrência endurecida e falhas (frente H)", () => {
     }
     expect(logs.some((l) => l.includes("tempo_esgotado_no_worker"))).toBe(true);
   });
+
+  it("A4: tabela pedidos é podada e mantém no máximo os últimos 20 pedidos", async () => {
+    const id = `poda-pedidos-${++proxima}`;
+    const mundo = criarMundo();
+    const stub = ambiente.SESSAO.getByName(`sessao:${id}`);
+    await runInDurableObject(stub, (s: Sessao) => {
+      s.dependencias = { modelo: async () => diz("ok"), buscar: mundo.buscar };
+    });
+
+    for (let i = 0; i < 30; i++) {
+      const r = await postChat(id, `mensagem ${i}`);
+      expect(r.status).toBe(200);
+    }
+
+    const total = await runInDurableObject(stub, (_s, state) =>
+      state.storage.sql.exec<{ c: number }>("SELECT count(*) AS c FROM pedidos").one().c);
+    expect(total).toBe(20);
+  });
+
+  it("A5b: contingência fora do turno registra handoff=true no estado da sessão (prazo na fila e teto do Worker)", async () => {
+    // 1. Mensagem vencida na fila dentro do objeto.
+    const stubFila = await abrir({ modelo: async () => diz("ok"), buscar: criarMundo().buscar });
+    const vencida = await stubFila.conversar("segunda", Date.now() - 60_000, "id-vencida");
+    expect(vencida.handoff).toBe(true);
+    const handoffFila = await runInDurableObject(stubFila, (_s, state) =>
+      state.storage.sql.exec<{ valor: string }>("SELECT valor FROM estado WHERE chave = 'handoff'").toArray()[0]?.valor ?? null);
+    expect(handoffFila).toBe("true");
+
+    // 2. Contingência devolvida pelo Worker no estouro do teto também grava handoff=true na sessão.
+    const idWorker = `a5b-worker-${++proxima}`;
+    const stubWorker = ambiente.SESSAO.getByName(`sessao:${idWorker}`);
+    await runInDurableObject(stubWorker, (s: Sessao) => {
+      s.dependencias = {
+        modelo: async () => {
+          await pausa(180);
+          return diz("tarde");
+        },
+        buscar: criarMundo().buscar,
+      };
+    });
+    const req = new Request("https://agente.teste/chat", {
+      method: "POST",
+      body: JSON.stringify({ session_id: idWorker, message: "oi" }),
+    });
+    const resp = await tratarChat(req, ambiente, 60);
+    expect(resp.status).toBe(200);
+    expect(await resp.json()).toMatchObject({ handoff: true });
+    await pausa(200);
+
+    const handoffWorker = await runInDurableObject(stubWorker, (_s, state) =>
+      state.storage.sql.exec<{ valor: string }>("SELECT valor FROM estado WHERE chave = 'handoff'").toArray()[0]?.valor ?? null);
+    expect(handoffWorker).toBe("true");
+  });
 });
