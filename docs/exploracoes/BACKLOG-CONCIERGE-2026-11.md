@@ -46,12 +46,12 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 
 | Sessão | Repo | Escopo resumido | Depende de | Prioridade | Horas | Roda como | Status | Worktree/Thread |
 |---|---|---|---|---|---|---|---|---|
-| A | agente-concierge | Esqueleto vertical até o Marco 1 | pré-voo | alta | 3,5 | thread T3 · Fable 5.2 | rodando | `frente-a` |
+| A | agente-concierge | Esqueleto vertical até o Marco 1 | pré-voo | alta | 3,5 | thread T3 · Fable 5.2 | rodando (entregue e conferida; corrigindo duas altas do M1 antes do merge) | `frente-a` |
 | B1 | agente-concierge | Webhook falso (Worker próprio), construído e testado local; deploy em `dev` pela coordenadora | pré-voo | alta | 1 | subagente em worktree · DeepSeek | concluída | `t3/webhook-falso-leads` |
 | B2 | agente-concierge | Harness HTTP e casos dev por bloco | — | alta | 2,5 | thread T3 · Gemini 4 Hydrogen | rodando (passo 1 na main; passo 2 reprovado pelo verificador, em correção) | `frente-b2` |
 | C | agente-concierge | Conjunto reservado (fora do repo) | — | alta | 2 | thread T3, fica viva · GPT-6 Astra | rodando (60 casos; relendo por classes de defeito) | `frente-c` (sem commits; casos fora do repo) |
-| D | agente-concierge | Simulador de hóspede hostil | B2 (formato de caso) | média | 2,5 | thread T3 · Gemini 4 Hydrogen | rodando (entregou; trocando o juiz de preço pelo da B2) | `frente-d` |
-| M1 | agente-concierge | Revisão curta do Marco 1 | A | alta | 0,5 | subagentes Opus 5.5 + conselho | pendente | — |
+| D | agente-concierge | Simulador de hóspede hostil | B2 (formato de caso) | média | 2,5 | thread T3 · Gemini 4 Hydrogen | rodando (reprovada pelo verificador; em correção) | `frente-d` |
+| M1 | agente-concierge | Revisão curta do Marco 1 | A | alta | 0,5 | subagentes Opus 5.5 + conselho | concluída (`docs/revisoes/m1.md`; achados com dono) | — |
 | I | agente-concierge | Escolha do modelo por eval | A, B2 | alta | 1 | subagente em worktree · Opus 5.5 | pendente | — |
 | E | agente-concierge | Datas | Marco 1, L1, L1a, L1b, L2 | alta | 1,5 | subagente em worktree · Gemini 4 Hydrogen | pendente | — |
 | F | agente-concierge | Lead robusto | Marco 1, L6, L7, L9, L10, L11, L15 (textos fixos), L20 | alta | 2,5 | thread T3 · Fable 5.2 | pendente | — |
@@ -125,12 +125,25 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   com textos fixos em português e inglês, L10 com o último resumo mostrado; E, H e L
   passam para o Gemini 4 Hydrogen (X14). Bot Fight Mode segue sem resposta
 
+- 13/11 17h21 · M1 · concluída: verificador (Opus) aprovou a frente A com ressalvas — preço,
+  POST, fila e trava sem defeito no caminho que não se desfaz; 13 de 20 defeitos
+  plantados pegos pela suíte. Treze achados com dono em `docs/revisoes/m1.md`: quatro
+  voltaram para a frente A antes do merge, o resto é da leva 2 (o "sim" validado por
+  código é a primeira tarefa da F)
+- 13/11 17h21 · D · verificador (Opus): REPROVADO — o simulador dá `SIMULADOR OK` com a CLI do
+  hóspede fora do ar, erro do agente derruba a rodada, o juiz de handoff acusa agente
+  certo e deixa passar errado, e 10 dos 12 casos fixos têm expectativa frágil. Os 7
+  totais conferem. Devolvido numa mensagem, casos fixos primeiro
+- 13/11 17h21 · C · 2 casos ajustados às regras decididas; 60 casos, 13 com confirmação
+- Donos dos arquivos que a frente A criou fora da tabela: `tipos.ts` com G, `pedido.ts`
+  com F, `env.ts` com I e depois H, `test/apoio.ts` congelado
+
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
   (frente J, passo 1).
 - Regras carregadas em toda sessão Claude: `coding-style`, `git-workflow`, `git-sync`,
   `security`, `task-contract`, `testing`.
-- Subagentes: `code-reviewer` em Opus 5.5, como verificador das frentes B1 e B2;
+- Subagentes: `code-reviewer` em Opus 5.5, como verificador das frentes A, B1, B2 e D;
   `design-reviewer` (frente J, passo 1).
 
 ## Pré-voo (antes da leva 1)
@@ -159,9 +172,11 @@ mexer na configuração.
 | `src/modelo.ts` (adaptador do modelo), `test/modelo*` | A | I (portão) | — |
 | `src/catalogo.ts` (cliente do catálogo) | A | G | — |
 | `src/agente/loop.ts`, `src/agente/prompt.ts` | A | G | — |
-| `src/agente/ferramentas/catalogo.ts`, `handoff.ts`, `index.ts` | A | G | — |
+| `src/agente/ferramentas/catalogo.ts`, `handoff.ts`, `index.ts`, `tipos.ts` | A | G | — |
 | `src/agente/ferramentas/cotacao.ts` | A | E | — |
-| `src/agente/ferramentas/lead.ts`, `src/lead.ts` | A | F | — |
+| `src/agente/ferramentas/lead.ts`, `src/agente/ferramentas/pedido.ts`, `src/lead.ts` | A | F | — |
+| `src/env.ts` | A | I (portão); depois H | — |
+| `test/apoio.ts` | A | congelado: ninguém altera; apoio novo vai em `test/apoio-<frente>.ts` da própria frente | — |
 | `src/nucleo/dinheiro.ts`, `src/nucleo/preco.ts` | A | — | — |
 | `src/nucleo/datas.ts` | A | E | — |
 | `src/nucleo/telefone.ts` | — | F | — |
@@ -178,6 +193,10 @@ mexer na configuração.
 | `README.md`, `DECISOES.md` (texto final; decisões novas a coordenadora registra a qualquer hora), `docs/desenhos/**`, `docs/sessoes/**`, `docs/setup/**` | — | — | N |
 | `docs/revisoes/modelos.md` | — | I (portão) | — |
 | `docs/exploracoes/**`, `docs/prompts/**`, `docs/revisoes/m1.md`, `docs/revisoes/m2.md`, `docs/conselho/**`, `docs/CONTRATO.md`, `docs/EVALS.md`, `CLAUDE.md`, `AGENTS.md` | coordenadora | coordenadora | coordenadora |
+
+Acoplamento entre E e F: `cotacao.ts` (E) chama `resumir`, de `ferramentas/lead.ts` (F),
+e os dois usam `pedido.ts` (F). F não muda a assinatura do que `cotacao.ts` usa sem
+avisar a coordenadora; E não edita `lead.ts` nem `pedido.ts`.
 
 As frentes de eval (B1, B2, C, D) **não tocam** `package.json` da raiz, lockfile,
 config de teste nem `wrangler.jsonc`. O harness é Node 24 sem dependências; o webhook
