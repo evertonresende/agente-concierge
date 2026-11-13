@@ -27,6 +27,7 @@ node evals/rodar.mjs --conjunto reservado --listar
 - `--so-agregado`: imprime apenas o percentual por bloco e o veredito final (nunca id, mensagem ou resposta).
 - `--listar`: lista contagem por bloco. No `dev`, imprime `CASOS OK` quando os 8 blocos de `docs/EVALS.md` têm 6 ou mais casos cada.
 - `--paralelo <n>`: número de casos executados simultaneamente (padrão: `2`).
+- `--pausa-ms <n>`: espera `n` ms antes de enviar cada turno de cada conversa (padrão: `0`, inteiro `>= 0`); use com `--paralelo 1` em modelo com limite por minuto.
 - `--relatorio <arquivo>` / `--sem-relatorio`: sobrescreve o destino do relatório JSON ou omite a gravação.
 
 ### Variáveis de ambiente

@@ -485,7 +485,7 @@ describe("concorrência endurecida e falhas (frente H)", () => {
     expect(chamadasNoSim1).toBe(1);
     const dado1 = await respSim1.json<{ reply: string; handoff: boolean }>();
     expect(dado1.handoff).toBe(false);
-    expect(dado1.reply).toContain("Ainda não enviei nada");
+    expect(dado1.reply).toContain("Ainda não enviei este pedido");
     expect(mundo1.leads).toEqual([]);
 
     const usersNoHistorico1 = await runInDurableObject(stub1, (_sessao, state) =>
