@@ -832,4 +832,49 @@ describe("concorrência endurecida e falhas (frente H)", () => {
       espiado.mockRestore();
     }
   });
+
+  it("postar chamado depois do prazo estourado é recusado sem disparar POST ao webhook", async () => {
+    const mundo = criarMundo();
+    let postsIniciados = 0;
+    const buscar = (async (entrada: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.method === "POST") postsIniciados++;
+      return mundo.buscar(entrada, init);
+    }) as typeof fetch;
+
+    let erroDoPostTardio: unknown = null;
+    FERRAMENTAS.push(definir("postar_tardio", "sonda de teste", {}, [], async (_args, contexto) => {
+      await pausa(140);
+      try {
+        await contexto.envio.postar({
+          nome: "Ana Lima",
+          telefone: "(11) 98888-0000",
+          imovel_id: "GRM-301",
+          checkin: "2027-01-15",
+          checkout: "2027-01-18",
+          hospedes: 2,
+          valor_total: 2156,
+        });
+      } catch (erro) {
+        erroDoPostTardio = erro;
+      }
+      return { paraOModelo: { ok: true } };
+    }));
+
+    try {
+      const stub = await abrir({
+        modelo: async () => pedeFerramentas(chamar("postar_tardio")),
+        buscar,
+        orcamentoMs: 50,
+        tetoMs: 200,
+      });
+      const resposta = await stub.conversar("sim");
+      expect(resposta.handoff).toBe(true);
+      await pausa(140);
+      expect(erroDoPostTardio).toBeInstanceOf(Error);
+      expect(postsIniciados).toBe(0);
+      expect(mundo.leads).toEqual([]);
+    } finally {
+      FERRAMENTAS.pop();
+    }
+  });
 });
