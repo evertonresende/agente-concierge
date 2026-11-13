@@ -69,3 +69,187 @@ export function dataCivilEmSaoPaulo(instanteMs: number): DataISO {
   const partes = Object.fromEntries(CALENDARIO_DE_SAO_PAULO.formatToParts(new Date(instanteMs)).map((p) => [p.type, p.value]));
   return `${partes.year}-${partes.month}-${partes.day}`;
 }
+
+const DIAS_DA_SEMANA: Record<string, number> = {
+  "domingo": 0,
+  "sunday": 0,
+  "segunda": 1,
+  "segunda-feira": 1,
+  "segunda feira": 1,
+  "monday": 1,
+  "terca": 2,
+  "terca-feira": 2,
+  "terca feira": 2,
+  "tuesday": 2,
+  "quarta": 3,
+  "quarta-feira": 3,
+  "quarta feira": 3,
+  "wednesday": 3,
+  "quinta": 4,
+  "quinta-feira": 4,
+  "quinta feira": 4,
+  "thursday": 4,
+  "sexta": 5,
+  "sexta-feira": 5,
+  "sexta feira": 5,
+  "friday": 5,
+  "sabado": 6,
+  "saturday": 6,
+};
+
+const RELATIVOS: Record<string, number> = {
+  "hoje": 0,
+  "today": 0,
+  "amanha": 1,
+  "tomorrow": 1,
+  "depois de amanha": 2,
+  "day after tomorrow": 2,
+  "the day after tomorrow": 2,
+  "ontem": -1,
+  "yesterday": -1,
+  "anteontem": -2,
+};
+
+const MESES: Record<string, number> = {
+  janeiro: 1, jan: 1, january: 1,
+  fevereiro: 2, fev: 2, february: 2, feb: 2,
+  marco: 3, mar: 3, march: 3,
+  abril: 4, abr: 4, april: 4, apr: 4,
+  maio: 5, mai: 5, may: 5,
+  junho: 6, jun: 6, june: 6,
+  julho: 7, jul: 7, july: 7,
+  agosto: 8, ago: 8, august: 8, aug: 8,
+  setembro: 9, set: 9, september: 9, sep: 9, sept: 9,
+  outubro: 10, out: 10, october: 10, oct: 10,
+  novembro: 11, nov: 11, november: 11,
+  dezembro: 12, dez: 12, december: 12, dec: 12,
+};
+
+function normalizarTexto(texto: string): string {
+  return texto
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[º°ª]/g, "")
+    .replace(/\s+/g, " ");
+}
+
+function resolverSemAno(dia: number, mes: number, hoje: DataISO): DataISO | null {
+  if (mes < 1 || mes > 12 || dia < 1 || dia > 31) return null;
+  const anoAtual = Number(hoje.slice(0, 4));
+  if (mes === 2 && dia === 29) {
+    // 2100 não é bissexto, então o próximo 29/02 pode ficar até 8 anos à frente.
+    for (let ano = anoAtual; ano <= anoAtual + 8; ano++) {
+      const candidata = montar(ano, 2, 29);
+      if (candidata && candidata >= hoje) return candidata;
+    }
+    return null;
+  }
+  const nesteAno = montar(anoAtual, mes, dia);
+  if (!nesteAno) return null;
+  return nesteAno >= hoje ? nesteAno : montar(anoAtual + 1, mes, dia);
+}
+
+function extrairNucleoDeData(norm: string): { diaEsperado?: number; resto: string } {
+  let s = norm.replace(/^(?:(?:para|pra|no|na|do|da|de|a|o|ate|desde)\s+)*/, "");
+  let diaEsperado: number | undefined;
+  const comDia = /^([a-z]+(?:[- ][a-z]+)?)\s*,?\s+(.+)$/.exec(s);
+  if (comDia && comDia[1]! in DIAS_DA_SEMANA) {
+    diaEsperado = DIAS_DA_SEMANA[comDia[1]!]!;
+    s = comDia[2]!.replace(/^(?:(?:para|pra|no|na|do|da|de|a|o|ate|desde)\s+)*/, "");
+  }
+  const resto = s.replace(/^dia\s+/, "");
+  return { diaEsperado, resto };
+}
+
+/**
+ * Resolve datas escritas pelo hóspede a partir da data civil de `hoje` (em São Paulo):
+ * - explícitas (`AAAA-MM-DD`, `DD/MM/AAAA`, `15 de janeiro de 2027`);
+ * - sem ano (`15/01`, `15 de janeiro`, `29/02`): próxima ocorrência (>= hoje);
+ * - relativas (`hoje`, `amanhã`, `depois de amanhã`, `ontem`);
+ * - dia da semana sem data (`sexta`, `sexta que vem`): próxima ocorrência estritamente futura.
+ * Expressões vagas (`fim de semana`, `Natal`, `feriado`) ou datas inexistentes devolvem null.
+ */
+export function resolverData(texto: string, hoje: DataISO): DataISO | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(hoje) || !interpretarData(hoje)) return null;
+
+  const explicita = interpretarData(texto);
+  if (explicita) return explicita;
+
+  const norm = normalizarTexto(texto);
+  if (!norm) return null;
+
+  const rel = /^(?:(?:para|pra|a partir de|desde|de|ate)\s+)?(.+)$/.exec(norm);
+  if (rel && Object.hasOwn(RELATIVOS, rel[1]!)) {
+    return somarDias(hoje, RELATIVOS[rel[1]!]!);
+  }
+
+  const sem = /^(?:(?:para|pra|na|no|nesta|neste|nessa|nesse|esta|este|essa|esse|proxima|proximo|a|o)\s+)*([a-z]+(?:[- ][a-z]+)?)(?:\s+(?:que vem|proxima|proximo|agora))?$/.exec(norm);
+  if (sem && Object.hasOwn(DIAS_DA_SEMANA, sem[1]!)) {
+    const alvo = DIAS_DA_SEMANA[sem[1]!]!;
+    const delta = ((alvo - indiceDiaDaSemana(hoje) + 7) % 7) || 7;
+    return somarDias(hoje, delta);
+  }
+
+  const { diaEsperado, resto } = extrairNucleoDeData(norm);
+  let resolvida: DataISO | null = interpretarData(resto);
+
+  if (!resolvida) {
+    const brSemAno = /^(\d{1,2})\/(\d{1,2})$/.exec(resto);
+    if (brSemAno) {
+      resolvida = resolverSemAno(Number(brSemAno[1]), Number(brSemAno[2]), hoje);
+    }
+  }
+
+  if (!resolvida) {
+    const ext = /^(\d{1,2})\s+(?:de\s+)?([a-z]+)(?:\s+(?:de\s+)?(\d{4}))?$/.exec(resto);
+    if (ext && Object.hasOwn(MESES, ext[2]!)) {
+      const dia = Number(ext[1]);
+      const mes = MESES[ext[2]!]!;
+      resolvida = ext[3] ? montar(Number(ext[3]), mes, dia) : resolverSemAno(dia, mes, hoje);
+    }
+  }
+
+  if (!resolvida) {
+    const barraMes = /^(\d{1,2})\/([a-z]+)(?:\/(\d{4}))?$/.exec(resto);
+    if (barraMes && Object.hasOwn(MESES, barraMes[2]!)) {
+      const dia = Number(barraMes[1]);
+      const mes = MESES[barraMes[2]!]!;
+      resolvida = barraMes[3] ? montar(Number(barraMes[3]), mes, dia) : resolverSemAno(dia, mes, hoje);
+    }
+  }
+
+  if (!resolvida) {
+    const en = /^([a-z]+)\s+(\d{1,2})(?:\s*,?\s*(\d{4}))?$/.exec(resto);
+    if (en && Object.hasOwn(MESES, en[1]!)) {
+      const mes = MESES[en[1]!]!;
+      const dia = Number(en[2]);
+      resolvida = en[3] ? montar(Number(en[3]), mes, dia) : resolverSemAno(dia, mes, hoje);
+    }
+  }
+
+  if (!resolvida) return null;
+  if (diaEsperado !== undefined && indiceDiaDaSemana(resolvida) !== diaEsperado) return null;
+  return resolvida;
+}
+
+function temFormaDeCalendario(resto: string): boolean {
+  if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(resto)) return true;
+  if (/^\d{1,2}\/\d{1,2}(?:\/\d{4})?$/.test(resto)) return true;
+  const ext = /^\d{1,2}\s+(?:de\s+)?([a-z]+)(?:\s+(?:de\s+)?\d{4})?$/.exec(resto);
+  if (ext && Object.hasOwn(MESES, ext[1]!)) return true;
+  const barraMes = /^\d{1,2}\/([a-z]+)(?:\/\d{4})?$/.exec(resto);
+  if (barraMes && Object.hasOwn(MESES, barraMes[1]!)) return true;
+  const en = /^([a-z]+)\s+\d{1,2}(?:\s*,?\s*\d{4})?$/.exec(resto);
+  if (en && Object.hasOwn(MESES, en[1]!)) return true;
+  return false;
+}
+
+/** Indica se o texto tem forma de data de calendário mas não existe no calendário (ex.: `30/02`, `29/02/2027`). */
+export function ehDataInexistente(texto: string): boolean {
+  const norm = normalizarTexto(texto);
+  if (!norm) return false;
+  const { resto } = extrairNucleoDeData(norm);
+  return temFormaDeCalendario(resto) && resolverData(resto, "2026-01-01") === null;
+}
