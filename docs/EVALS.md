@@ -6,8 +6,9 @@ agente cumpre o contrato, o que medimos e o que conta como aprovado.
 As lacunas foram decididas pelo Éverton em 13/11/2026 e estão na seção 10 do contrato.
 Onde um caso traz `[depende de L-n]`, a expectativa é a regra L-n do contrato: a frente
 B2 escreve o caso a partir dela. Se uma linha deste plano contradisser o contrato, vale o
-contrato. A única lacuna ainda aberta é a L1a ("fim de semana" sem datas): o caso
-`cot-10-data-relativa` espera que o agente peça entrada e saída até ela ser decidida.
+contrato. Seguem abertas a L1a ("fim de semana" sem datas: o caso `cot-10-data-relativa`
+espera que o agente peça entrada e saída até ela ser decidida), a L1b e a L17a; nas duas
+últimas vale o padrão provisório escrito no contrato.
 
 ## Objetivo
 

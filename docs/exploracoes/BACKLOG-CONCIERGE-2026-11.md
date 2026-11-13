@@ -79,7 +79,7 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
 | 3 | `CLOUDFLARE_ACCOUNT_ID` no arquivo de ambiente, derivado da zona do domínio do e-mail do autor (é a conta pessoal do Éverton), e a credencial de deploy por referência | coordenadora, antes de despachar A e B1 | o token cobre mais de uma conta; sem a conta o primeiro deploy de `dev` não sai |
 | 4 | Olhar no painel se o Bot Fight Mode da zona está ligado e dizer à coordenadora | Éverton | o token não lê essa configuração; ligado, ele bloqueia cliente automatizado no domínio inteiro e a decisão L23 (mexer só no hostname) não se sustenta sozinha |
 | 5 | Criar no painel a regra que desliga a checagem de integridade de navegador só para o hostname de produção, ou dar ao token permissão de regras de configuração | Éverton | o token provavelmente não cria essa regra; sem ela a frente K para de madrugada e produção não sobe sem ele |
-| 6 | Lacunas decididas no contrato (seção 10) | feito em 13/11; só a L1a segue aberta | frente não implementa lacuna aberta |
+| 6 | Lacunas decididas no contrato (seção 10) | feito em 13/11; seguem abertas a L1a, a L1b e a L17a (as duas últimas com padrão provisório) | frente não implementa lacuna aberta |
 
 ## Dono de arquivo (confere antes de cada leva)
 

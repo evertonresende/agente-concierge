@@ -29,7 +29,7 @@ contexto, não releia tudo: leia a última linha do log do backlog e continue.
 | Deploy em `dev` | liberado para A e B1 na leva 1 e para você, a partir da `main`, depois de cada merge |
 | Deploy em `producao` | pode sair sem o Éverton, depois de M2, com `ENVIO_LEADS=desligado` |
 | Ligar o envio real, tornar o repositório público | só com ordem explícita do Éverton |
-| Lacunas do enunciado | decididas na seção 10 do contrato; só a L1a está aberta; lacuna nova é do Éverton |
+| Lacunas do enunciado | decididas na seção 10 do contrato; seguem abertas a L1a, a L1b e a L17a, as duas últimas com padrão provisório que as frentes implementam; lacuna nova é do Éverton |
 
 Orçamento: o limite semanal de uso do Éverton estava em 74% em 13/11, com o uso extra
 desligado. Não suba o modelo de uma frente por conta própria, não abra frente que o
