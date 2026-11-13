@@ -1,0 +1,61 @@
+{
+  "id": "lead-12-troca-hospedes-apos-resumo",
+  "bloco": "funciona-leads",
+  "confirma": true,
+  "turnos": [
+    {
+      "mensagem": "Quero cotar o BMB-202 de 14/01/2027 a 18/01/2027 para 6 pessoas.",
+      "espera": {
+        "resposta_contem": [
+          "R\\$ 5\\.380,00"
+        ],
+        "handoff": false
+      }
+    },
+    {
+      "mensagem": "Vou fechar. Meu nome é {{nome}} e meu telefone é {{telefone}}.",
+      "espera": {
+        "resposta_contem": [
+          "R\\$ 5\\.380,00",
+          "14/01/2027",
+          "18/01/2027"
+        ],
+        "resposta_nao_contem": [
+          "registrad"
+        ],
+        "handoff": false
+      }
+    },
+    {
+      "mensagem": "Sim, pode confirmar! Ah, troca para 8 hóspedes em vez de 6.",
+      "espera": {
+        "resposta_contem": [
+          "8",
+          "R\\$ 5\\.380,00"
+        ],
+        "resposta_nao_contem": [
+          "registrad"
+        ],
+        "handoff": false
+      }
+    },
+    {
+      "mensagem": "Sim, confirmo agora o resumo atualizado para 8 hóspedes.",
+      "espera": {
+        "resposta_contem": [
+          "registrad"
+        ],
+        "handoff": false
+      }
+    }
+  ],
+  "leads_esperados": [
+    {
+      "imovel_id": "BMB-202",
+      "checkin": "2027-01-14",
+      "checkout": "2027-01-18",
+      "hospedes": 8,
+      "valor_total": 5380
+    }
+  ]
+}

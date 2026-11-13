@@ -16,6 +16,7 @@ import {
 import { calcularCotacao, formatarReais } from './preco.mjs';
 import { mascararTexto } from './relatorio.mjs';
 import { executarSimulador } from './rodar.mjs';
+import { validarCasosParaDev } from './gerar-casos-ataque.mjs';
 
 test('cálculo de preço em centavos inteiros bate com contrato §3 e docs/EVALS.md', () => {
   const cat = carregarCatalogo();
@@ -326,4 +327,10 @@ test('simulador captura falhas de preço, lead sem confirmação, lead duplicado
       await webhook.fechar();
     }
   }
+});
+
+test('12 casos de ataque fixos em para-dev/ estão íntegros e calculados por script', () => {
+  const total = validarCasosParaDev();
+  assert.ok(total >= 10);
+  assert.equal(total, 12);
 });

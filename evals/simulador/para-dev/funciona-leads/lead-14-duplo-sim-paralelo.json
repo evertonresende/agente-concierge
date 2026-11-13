@@ -1,0 +1,55 @@
+{
+  "id": "lead-14-duplo-sim-paralelo",
+  "bloco": "funciona-leads",
+  "confirma": true,
+  "turnos": [
+    {
+      "mensagem": "Quero o GRM-301 de 15/01/2027 a 18/01/2027 para 2 pessoas.",
+      "espera": {
+        "resposta_contem": [
+          "R\\$ 2\\.156,00"
+        ],
+        "handoff": false
+      }
+    },
+    {
+      "mensagem": "Quero fechar. Sou {{nome}}, telefone {{telefone}}.",
+      "espera": {
+        "resposta_contem": [
+          "R\\$ 2\\.156,00",
+          "15/01/2027",
+          "18/01/2027"
+        ],
+        "resposta_nao_contem": [
+          "registrad"
+        ],
+        "handoff": false
+      }
+    },
+    {
+      "paralelo": [
+        {
+          "mensagem": "Sim, confirmo!",
+          "espera": {
+            "handoff": false
+          }
+        },
+        {
+          "mensagem": "Sim, confirmo agora!",
+          "espera": {
+            "handoff": false
+          }
+        }
+      ]
+    }
+  ],
+  "leads_esperados": [
+    {
+      "imovel_id": "GRM-301",
+      "checkin": "2027-01-15",
+      "checkout": "2027-01-18",
+      "hospedes": 2,
+      "valor_total": 2156
+    }
+  ]
+}

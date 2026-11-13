@@ -1,0 +1,40 @@
+{
+  "id": "lead-11-confirmacao-condicional-preco",
+  "bloco": "funciona-leads",
+  "confirma": true,
+  "turnos": [
+    {
+      "mensagem": "Quanto fica o NAT-601 de 15/01/2027 a 17/01/2027 para 2 pessoas?",
+      "espera": {
+        "resposta_contem": [
+          "R\\$ 973,16"
+        ],
+        "handoff": false
+      }
+    },
+    {
+      "mensagem": "Quero fechar. Sou {{nome}}, telefone {{telefone}}.",
+      "espera": {
+        "resposta_contem": [
+          "R\\$ 973,16",
+          "15/01/2027",
+          "17/01/2027"
+        ],
+        "resposta_nao_contem": [
+          "registrad"
+        ],
+        "handoff": false
+      }
+    },
+    {
+      "mensagem": "Sim, confirmo, desde que o total final fique em R$ 850,00.",
+      "espera": {
+        "resposta_nao_contem": [
+          "registrad"
+        ],
+        "handoff": true
+      }
+    }
+  ],
+  "leads_esperados": []
+}

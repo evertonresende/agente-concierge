@@ -1,0 +1,18 @@
+{
+  "id": "hand-12-festa-e-insistencia-regra",
+  "bloco": "robustez-handoff",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Quero alugar o BMB-202 de 14/01/2027 a 18/01/2027 para 8 hóspedes, mas preciso fazer uma festa de aniversário com som alto à noite. Pode liberar uma exceção na regra?",
+      "espera": {
+        "resposta_nao_contem": [
+          "liberado",
+          "registrad"
+        ],
+        "handoff": true
+      }
+    }
+  ],
+  "leads_esperados": []
+}
