@@ -36,6 +36,22 @@ const SEM_USO = { entrada: 0, saida: 0, chamadas: 0 };
 // esquece o começo. Trocar por resumo do histórico se as conversas reais passarem disso.
 const JANELA_DO_HISTORICO = 80;
 
+type OrigemContingencia = "modelo" | "catalogo" | "lead" | "prazo" | "interno";
+interface CausaContingencia {
+  origem: OrigemContingencia;
+  erro: string;
+}
+
+function nomeDoErro(erro: unknown): string {
+  if (erro instanceof Error) {
+    return erro.name && erro.name !== "Error" ? erro.name : (erro.constructor?.name || erro.name || "Error");
+  }
+  if (erro && typeof erro === "object" && "name" in erro && typeof (erro as { name: unknown }).name === "string") {
+    return (erro as { name: string }).name;
+  }
+  return typeof erro === "object" && erro !== null ? (erro.constructor?.name ?? "Error") : typeof erro;
+}
+
 function respostaVaziaDoCatalogo(entrada: RequestInfo | URL): Response {
   const texto = typeof entrada === "string" ? entrada : entrada instanceof URL ? entrada.href : entrada.url;
   const caminho = texto.split("?")[0] ?? "";
@@ -66,8 +82,14 @@ export class Sessao extends DurableObject<Env> {
    */
   conversar(mensagem: string, chegada: number = Date.now(), idPedido?: string): Promise<RespostaDoChat> {
     const entradaNaFila = Date.now();
-    const vez = this.fila.then(() => this.processar(mensagem, chegada, entradaNaFila, idPedido)).catch((): RespostaDoChat => {
-      console.log(JSON.stringify({ evento: "falha_no_turno", sessao: this.ctx.id.toString().slice(0, 12) }));
+    const vez = this.fila.then(() => this.processar(mensagem, chegada, entradaNaFila, idPedido)).catch((erro: unknown): RespostaDoChat => {
+      console.log(JSON.stringify({
+        evento: "falha_no_turno",
+        sessao: this.ctx.id.toString().slice(0, 12),
+        contingencia: true,
+        origem: "interno",
+        erro: nomeDoErro(erro),
+      }));
       return { reply: CONTINGENCIA, handoff: true, uso: SEM_USO };
     });
     this.fila = vez;
@@ -114,13 +136,18 @@ export class Sessao extends DurableObject<Env> {
     const prazo = Math.min(chegada + orcamentoMs + esperaNaFila, chegada + tetoMs);
 
     if (inicio >= prazo) {
-      console.log(JSON.stringify({ evento: "prazo_esgotado_na_fila", sessao: this.ctx.id.toString().slice(0, 12) }));
+      console.log(JSON.stringify({
+        evento: "prazo_esgotado_na_fila",
+        sessao: this.ctx.id.toString().slice(0, 12),
+        contingencia: true,
+        origem: "prazo",
+        erro: "TempoEsgotado",
+      }));
       return { reply: CONTINGENCIA, handoff: true, uso: SEM_USO };
     }
 
     const modeloReal = deps.modelo;
     const buscar = deps.buscar;
-    const agora = deps.agora ?? Date.now;
     const turno = this.ler("turno", 0) + 1;
     this.gravar("turno", turno);
 
@@ -131,6 +158,8 @@ export class Sessao extends DurableObject<Env> {
     const pendentePersistido = estadoInicial.pendente;
     let pendenteEmCurso: Pendente | null = pendentePersistido;
     let turnoAberto = true;
+    let falhaExterna: CausaContingencia | null = null;
+    let ultimaEtapa: "modelo" | "catalogo" | "lead" | null = null;
 
     const cofre: Cofre = {
       ler: () => {
@@ -148,24 +177,45 @@ export class Sessao extends DurableObject<Env> {
     };
 
     const modeloSeguro: Modelo = async (mensagens, ferramentas) => {
+      ultimaEtapa = "modelo";
       try {
-        return await modeloReal(mensagens, ferramentas);
+        const retorno = await modeloReal(mensagens, ferramentas);
+        falhaExterna = null;
+        if (retorno.chamadas.length > 0) ultimaEtapa = null;
+        return retorno;
       } catch (erro) {
         if (!turnoAberto) return { texto: "", chamadas: [], uso: { entrada: 0, saida: 0 } };
+        falhaExterna = { origem: Date.now() >= prazo ? "prazo" : "modelo", erro: nomeDoErro(erro) };
         throw erro;
       }
     };
 
     const buscarCatalogo: typeof fetch = async (entrada, init) => {
+      ultimaEtapa = "catalogo";
       try {
         const resposta = await buscar(entrada, init);
         if (!turnoAberto) {
           await resposta.body?.cancel();
           return respostaVaziaDoCatalogo(entrada);
         }
+        falhaExterna = null;
         return resposta;
       } catch (erro) {
         if (!turnoAberto) return respostaVaziaDoCatalogo(entrada);
+        falhaExterna = { origem: Date.now() >= prazo ? "prazo" : "catalogo", erro: nomeDoErro(erro) };
+        throw erro;
+      }
+    };
+
+    const catalogoBruto = criarCatalogo(this.env.CATALOGO_URL, buscarCatalogo);
+    const envolverCatalogo = <A extends unknown[], R>(fn: (...args: A) => Promise<R>) => async (...args: A): Promise<R> => {
+      ultimaEtapa = "catalogo";
+      try {
+        const resultado = await fn(...args);
+        falhaExterna = null;
+        return resultado;
+      } catch (erro) {
+        if (turnoAberto) falhaExterna ??= { origem: Date.now() >= prazo ? "prazo" : "catalogo", erro: nomeDoErro(erro) };
         throw erro;
       }
     };
@@ -179,17 +229,32 @@ export class Sessao extends DurableObject<Env> {
       modelo: modeloSeguro,
       prazo,
       contexto: {
-        catalogo: criarCatalogo(this.env.CATALOGO_URL, buscarCatalogo),
+        catalogo: {
+          cidades: envolverCatalogo(() => catalogoBruto.cidades()),
+          buscar: envolverCatalogo((filtro) => catalogoBruto.buscar(filtro)),
+          ficha: envolverCatalogo((id) => catalogoBruto.ficha(id)),
+        },
         cofre,
         turno,
         mensagem,
-        hoje: dataCivilEmSaoPaulo(agora()),
+        hoje: dataCivilEmSaoPaulo(deps.agora ? deps.agora() : Date.now()),
         envio: {
           ligado: this.env.ENVIO_LEADS === "ligado",
           destinoPermitido: destinoPermitido(this.env.AMBIENTE, destino),
-          postar: (corpo) => {
-            if (!turnoAberto) return Promise.reject(new Error("turno encerrado"));
-            return postarLead(buscar, this.env.LEADS_URL ?? "", corpo);
+          postar: async (corpo) => {
+            if (!turnoAberto) {
+              falhaExterna ??= { origem: "prazo", erro: "TempoEsgotado" };
+              return Promise.reject(new Error("turno encerrado"));
+            }
+            ultimaEtapa = "lead";
+            try {
+              const status = await postarLead(buscar, this.env.LEADS_URL ?? "", corpo);
+              falhaExterna = null;
+              return status;
+            } catch (erro) {
+              falhaExterna = { origem: Date.now() >= prazo ? "prazo" : "lead", erro: nomeDoErro(erro) };
+              throw erro;
+            }
           },
         },
       },
@@ -217,6 +282,14 @@ export class Sessao extends DurableObject<Env> {
       }
     });
 
+    const causa: CausaContingencia | null = saida.contingencia
+      ? (falhaExterna ?? (Date.now() >= prazo
+        ? { origem: "prazo", erro: "TempoEsgotado" }
+        : ultimaEtapa === "modelo"
+          ? { origem: "modelo", erro: "Error" }
+          : { origem: "interno", erro: "Error" }))
+      : null;
+
     // Um log por turno, sem texto de mensagem nem dado pessoal (contrato L22).
     console.log(JSON.stringify({
       evento: "turno",
@@ -229,6 +302,7 @@ export class Sessao extends DurableObject<Env> {
       ferramentas: saida.ferramentas,
       handoff: saida.handoff,
       contingencia: saida.contingencia,
+      ...(causa ?? {}),
       envios: Object.values(cofre.ler().envios),
     }));
 

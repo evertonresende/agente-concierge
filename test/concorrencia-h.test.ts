@@ -1,6 +1,6 @@
 import { evictDurableObject, runInDurableObject } from "cloudflare:test";
 import { env } from "cloudflare:workers";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { FERRAMENTAS } from "../src/agente/ferramentas";
 import { definir } from "../src/agente/ferramentas/tipos";
 import type { Env } from "../src/env";
@@ -736,5 +736,100 @@ describe("concorrência endurecida e falhas (frente H)", () => {
     expect(confirmacao.handoff).toBe(false);
     expect(confirmacao.reply).toMatch(/foi registrado/);
     expect(mundo.leads).toHaveLength(1);
+  });
+
+  it("log de contingência registra origem e classe do erro sem mensagem nem dado pessoal", async () => {
+    const espiado = vi.spyOn(console, "log");
+    const lerLogs = () => espiado.mock.calls
+      .flatMap((c) => typeof c[0] === "string" ? [c[0]] : [])
+      .filter((linha) => linha.startsWith("{"))
+      .map((linha) => JSON.parse(linha) as Record<string, unknown>);
+
+    try {
+      // 1. Falha do catálogo (TypeError e HTTP 500 -> ErroDoCatalogo sem vazar URL/token).
+      espiado.mockClear();
+      const stubCat = await abrir({
+        modelo: async () => pedeFerramentas(chamar("listar_cidades")),
+        buscar: (async () => { throw new TypeError("https://catalogo.privado/token-secreto"); }) as unknown as typeof fetch,
+      });
+      expect((await stubCat.conversar("cidades")).handoff).toBe(true);
+      const logsCat = lerLogs();
+      expect(logsCat.at(-1)).toMatchObject({ evento: "turno", contingencia: true, origem: "catalogo", erro: "TypeError" });
+      expect(JSON.stringify(logsCat)).not.toContain("token-secreto");
+
+      espiado.mockClear();
+      const stubCat500 = await abrir({
+        modelo: async () => pedeFerramentas(chamar("listar_cidades")),
+        buscar: (async () => new Response("erro interno do catalogo", { status: 500 })) as unknown as typeof fetch,
+      });
+      expect((await stubCat500.conversar("cidades")).handoff).toBe(true);
+      expect(lerLogs().at(-1)).toMatchObject({ evento: "turno", contingencia: true, origem: "catalogo", erro: "ErroDoCatalogo" });
+
+      // 2. Falha do modelo (RangeError).
+      espiado.mockClear();
+      const stubMod = await abrir({
+        modelo: async () => { throw new RangeError("dado Ana Lima"); },
+        buscar: criarMundo().buscar,
+      });
+      expect((await stubMod.conversar("oi")).handoff).toBe(true);
+      const logsMod = lerLogs();
+      expect(logsMod.at(-1)).toMatchObject({ evento: "turno", contingencia: true, origem: "modelo", erro: "RangeError" });
+      expect(JSON.stringify(logsMod)).not.toContain("Ana Lima");
+
+      // 3. Falha no envio de lead sem vazar segredo da URL.
+      espiado.mockClear();
+      FERRAMENTAS.push(definir("sondar_falha_lead", "sonda de teste", {}, [], async (_args, contexto) => {
+        await contexto.envio.postar({
+          nome: "Ana Lima",
+          telefone: "(11) 98888-0000",
+          imovel_id: "GRM-301",
+          checkin: "2027-01-15",
+          checkout: "2027-01-18",
+          hospedes: 2,
+          valor_total: 2156,
+        });
+        return { paraOModelo: { ok: true } };
+      }));
+      try {
+        const stubLead = await abrir({
+          modelo: async () => pedeFerramentas(chamar("sondar_falha_lead")),
+          buscar: (async () => { throw new TypeError("https://leads.privado/segredo-lead"); }) as unknown as typeof fetch,
+        });
+        expect((await stubLead.conversar("sim")).handoff).toBe(true);
+        const logsLead = lerLogs();
+        expect(logsLead.at(-1)).toMatchObject({ evento: "turno", contingencia: true, origem: "lead", erro: "Error" });
+        expect(JSON.stringify(logsLead)).not.toContain("segredo-lead");
+      } finally {
+        FERRAMENTAS.pop();
+      }
+
+      // 4. Falha de prazo.
+      espiado.mockClear();
+      const stubPrazo = await abrir({
+        modelo: async () => { await pausa(150); return diz("tarde"); },
+        buscar: criarMundo().buscar,
+        orcamentoMs: 40,
+        tetoMs: 100,
+      });
+      expect((await stubPrazo.conversar("oi")).handoff).toBe(true);
+      expect(lerLogs().at(-1)).toMatchObject({ evento: "turno", contingencia: true, origem: "prazo", erro: "TempoEsgotado" });
+      await pausa(140);
+
+      // 5. Falha interna (transactionSync).
+      espiado.mockClear();
+      const stubInt = await abrir({
+        modelo: async () => diz("ok"),
+        buscar: criarMundo().buscar,
+      });
+      await runInDurableObject(stubInt, (_sessao, state) => {
+        state.storage.transactionSync = (() => { throw new Error("sqlite sigiloso"); }) as typeof state.storage.transactionSync;
+      });
+      expect((await stubInt.conversar("oi")).handoff).toBe(true);
+      const logsInt = lerLogs();
+      expect(logsInt.at(-1)).toMatchObject({ evento: "falha_no_turno", contingencia: true, origem: "interno", erro: "Error" });
+      expect(JSON.stringify(logsInt)).not.toContain("sqlite sigiloso");
+    } finally {
+      espiado.mockRestore();
+    }
   });
 });
