@@ -319,7 +319,7 @@ describe("loop de ferramentas", () => {
     const { turno } = montar();
     const { modelo, recebidas } = roteiro(pedeFerramentas(chamar("ver_imovel", { imovel_id: "rio-402" })), diz("ok"));
     await turno(1, "como é o RIO-402?", modelo);
-    const { ficha } = JSON.parse(recebidas[1]!.findLast((m) => m.role === "tool")!.content);
+    const { ficha } = JSON.parse(recebidas[1]!.findLast((m) => m.role === "tool")!.content).dados_do_catalogo;
     expect(ficha.diaria).toBe("R$ 245,50");
     expect(ficha.taxa_limpeza).toBe("R$ 75,00");
   });
