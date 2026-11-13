@@ -351,6 +351,15 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   tentar de novo dentro do turno; menos chamadas por turno (não repetir quando o erro é de
   limite, no laço da G); crédito no gateway. As três rodadas com pausa (GLM-5.3 Flash, DeepSeek
   4.1 Flash e GLM-5.3) começaram depois da rajada, com zero 429 nos 3 primeiros minutos
+- 13/11 19h50 · Éverton decidiu (X21 e acréscimo da L18): Claude Haiku 5.5 vira candidato a
+  principal, pela chave da Anthropic dele no AI Gateway, com GLM-5.3 Flash de reserva; medição
+  do Haiku (98 casos e rajada, raciocínio baixo e médio) quando ele avisar que a chave está no
+  arquivo de ambiente; `gpt-oss-120b` não entra como terceiro nível; recusa por limite vai
+  direto para o reserva e não conta para a nova tentativa. Frentes I (`src/modelo.ts`: marca o
+  erro de limite e prepara o caminho do Haiku) e G (`src/agente/loop.ts`: não repete quando o
+  erro vem marcado) avisadas. Combinado entre as duas, sem importar código uma da outra: o erro
+  lançado pelo modelo quando principal e reserva recusam por limite leva a propriedade
+  `porLimite: true`
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -789,6 +798,15 @@ Flash (2º), sem escolha final. Antes das rodadas com pausa, a frente mede com c
 real o que o agente responde quando o principal e o reserva recusam por limite ao
 mesmo tempo (quantos turnos caem em contingência, o texto, o `handoff`, o status e a
 latência) e traz a proposta de saída, sem implementar.
+
+Decisões do Éverton sobre essa medida (13/11, X21): novo candidato a principal, Claude
+Haiku 5.5 (`claude-haiku-5-5`), pela chave da Anthropic dele guardada no AI Gateway
+(`ANTHROPIC_API_KEY` no arquivo de ambiente; ele avisa quando gravar), com o GLM-5.3
+Flash de reserva. Com a chave lá, a frente mede o Haiku nos 98 casos e na rajada de 10
+conversas simultâneas, com raciocínio em nível baixo e em nível médio. `gpt-oss-120b`
+não entra como último nível de reserva. Recusa por limite vai direto para o reserva e
+não conta para a nova tentativa da L18. As rodadas com pausa do GLM-5.3 Flash e do
+DeepSeek 4.1 Flash continuam e escolhem o reserva. `MODELO` segue sem fixar.
 
 ### Tasks
 - [ ] Rodar o conjunto dev (nunca o reservado) com 3 candidatos, mesmo código, todos de
