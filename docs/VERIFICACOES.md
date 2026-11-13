@@ -303,3 +303,20 @@ contagem de imóveis.
 O token da conta autentica: verificado na API em 13/11/2026, estado ativo. É usado
 sempre por referência, no mesmo comando que precisa dele, nunca ecoado e nunca como
 secret de runtime de um Worker.
+
+## Zona do subdomínio de produção (leitura na API em 13/11/2026)
+
+Feita depois da decisão L23 (produção em subdomínio próprio), só com GET.
+
+| Item | Resultado |
+|---|---|
+| Zona do domínio | ativa, plano gratuito |
+| Checagem de integridade de navegador | **ligada** na zona inteira; por isso a regra que a desliga só para o hostname de produção é necessária |
+| Registro de DNS do subdomínio de produção | não existe ainda |
+| Bot Fight Mode | **desconhecido**: o token não tem permissão de leitura de bots (erro de autenticação na rota) |
+| Permissão para criar regra de configuração por hostname | **desconhecida**: a leitura da fase de regras falhou sem código claro |
+
+Passo que resolve os dois desconhecidos: frente K. Se o Bot Fight Mode estiver ligado,
+ela não desliga (vale para o domínio inteiro) e leva ao Éverton; se faltar permissão
+para a regra, o Éverton cria a regra no painel. Fonte do risco:
+https://developers.cloudflare.com/workers/configuration/routing/workers-dev/
