@@ -1,0 +1,14 @@
+{
+  "name": "concierge-webhook-falso",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Webhook de leads falso do ambiente dev do concierge",
+  "scripts": {
+    "dev": "wrangler dev --port 8795",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.162.0"
+  }
+}
