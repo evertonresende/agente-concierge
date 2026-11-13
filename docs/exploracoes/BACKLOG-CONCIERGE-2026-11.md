@@ -500,6 +500,16 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   de instrução que escapa. Devolvida com o princípio "precisão antes de cobertura": rede de
   código que força handoff só dispara em padrão inequívoco, com bateria negativa de mensagens
   comuns, ou sai. Relatório fora do repositório
+- 13/11 20h45 · F · P13 e P14 entregues (ba10491): 636 testes; `lead-04` e `lead-07` voltam a
+  enviar; sim com valor junto repete o pedido com zero POST; os exemplos da primeira rodada
+  do verificador continuam com zero POST. Quatro leituras da frente aceitas: "resumo novo"
+  exige ter substituído outro resumo da sessão; "segunda" é ordinal só antes de substantivos
+  como reserva e estadia; o código do imóvel do próprio resumo junto do sim repete o pedido;
+  no rearme do fim do turno, palavra de novidade derruba o resumo. Conferido pela
+  coordenadora: ensaio do merge limpo, 636 testes, tipos e gate verdes; no runtime real,
+  `funciona-leads` 86% em duas rodadas e `contrato` 88%, só com `lead-05`, `lead-06` e
+  `con-07`, os três dependentes das ligações da G; 110 turnos sem contingência. Segunda
+  rodada de verificador independente (Opus) em curso; o merge espera o veredito
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
