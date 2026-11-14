@@ -147,7 +147,8 @@ describe("nova tentativa e 3xx depois da leitura com teto (frente V)", () => {
     expect(erro).toBeInstanceOf(ErroDoCatalogo);
     expect((erro as Error).message).toContain(`status ${codigo}`);
     expect(buscar).toHaveBeenCalledTimes(1);
-    for (const chamada of buscar.mock.calls as unknown as [string][]) {
+    for (const chamada of buscar.mock.calls as unknown as [string, RequestInit][]) {
+      expect(chamada[1].redirect).toBe("manual");
       expect(chamada[0]).toBe(`${BASE_CATALOGO}/cidades`);
       expect(chamada[0]).not.toContain("outro.teste");
     }
