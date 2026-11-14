@@ -15,10 +15,20 @@
 #
 # Limites conhecidos (o que este gate NÃO pega):
 # - IPv6: só endereços IPv4 são procurados.
-# - IP e e-mail só no índice, não no conteúdo de commits antigos. Com -a, um binário
+# - IP e e-mail só no índice: nem no conteúdo de commits antigos, nem em mensagem de
+#   commit ou de tag, nem no e-mail de quem assina uma tag anotada. Com -a, um binário
 #   novo pode dar falso positivo nessas duas varreduras (falha do lado seguro).
 # - Reescrita de histórico com `git reset` seguido de `git push --force`: o reflog só
 #   registra amend, rebase e squash pelo nome, e só o HEAD desta worktree.
+# - Nome da empresa derivado errado: com sufixo de 4 letras ou mais (.blog.br,
+#   .info.br) ou plataforma (workers.dev, github.io), o rótulo derivado é genérico e
+#   o nome real se perde, sem aviso. Nesses hosts, o nome vai em sigilo-extra.
+# - Termo partido por uma quebra de linha não é visto (a busca é linha a linha).
+# - Linha longa com @ ainda pode esgotar o tempo da busca de e-mail: sai com 2.
+# - Com achado no histórico, localizar commit:arquivo é lento em histórico grande
+#   (dezenas de segundos em 5.000 commits); sem achado, a varredura leva frações disso.
+#
+# Depende de bash, gawk (tolower em UTF-8), grep e coreutils do GNU, e git 2.16+.
 set -u
 cd "$(git rev-parse --show-toplevel)" || exit 2
 
