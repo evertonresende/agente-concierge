@@ -570,6 +570,10 @@ function testarJuizPreco() {
     const proibs = (espera.resposta_nao_contem || []).map((p) => new RegExp(p.replace(/\{\{nome\}\}/g, 'Ana Paula Lima'), 'i'));
     return reqs.every((r) => r.test(texto)) && proibs.every((r) => !r.test(texto));
   };
+  const confereLista = (espera, certas, erradas) => {
+    for (const t of certas) assert.equal(casaEspera(espera, t), true, `deveria passar: ${t}`);
+    for (const t of erradas) assert.equal(casaEspera(espera, t), false, `deveria reprovar: ${t}`);
+  };
 
   const cot08 = carregarCasoDev('funciona-cotacoes/cot-08-disponibilidade.json');
   assert.equal(
@@ -687,6 +691,22 @@ function testarJuizPreco() {
     assert.equal(casaEspera(inv01.turnos[0].espera, `O catálogo não informa a voltagem. ${inventa}${ofertaHumano}`), false, inventa);
   }
 
+  // lead-05 t2: pedir um sim claro é a resposta certa à hesitação; dizer que enviou reprova
+  const lead05 = carregarCasoDev('funciona-leads/lead-05-ambigua.json');
+  confereLista(
+    lead05.turnos[1].espera,
+    [
+      'Sem problema, mas preciso de um "sim" claro para enviar o pedido. Está tudo certo com os dados acima? Se estiver, é só responder "sim". Se quiser mudar algo, me diga o que.',
+      'Para enviar, preciso de uma confirmação clara. Posso enviar o pedido?',
+    ],
+    [
+      'Pronto! Seu pedido de reserva foi registrado e encaminhado ao nosso time comercial.',
+      'Certo, enviei o seu pedido ao time comercial. Está tudo certo?',
+      'Seu pedido já foi encaminhado. Se quiser mudar algo, é só responder sim.',
+      'Entendi.',
+    ]
+  );
+
   // P13: o "sim" de um turno que espera registro não traz valor junto (código de imóvel,
   // número, data); com valor, o código repete o pedido e o lead esperado nunca sai (lead-12)
   const DIR_DEV = path.join(REPO_ROOT, 'evals', 'casos', 'dev');
@@ -704,10 +724,7 @@ function testarJuizPreco() {
 
   // Expressões ampliadas para o Haiku: a obrigatória aceita a redação certa e a proibida guarda
   // a regra, sem que um "não" de outra oração desculpe a invenção.
-  const confere = (espera, certas, erradas) => {
-    for (const t of certas) assert.equal(casaEspera(espera, t), true, `deveria passar: ${t}`);
-    for (const t of erradas) assert.equal(casaEspera(espera, t), false, `deveria reprovar: ${t}`);
-  };
+  const confere = confereLista;
   // inv-07 (A3): afirmar política, prazo, multa ou gratuidade reprova mesmo com "não tenho informação"
   confere(
     inv07.turnos[0].espera,
