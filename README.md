@@ -237,7 +237,7 @@ pela conversa gravada:
   "Noites: 1 (noite de sexta, com acréscimo de 20% sobre a diária), no valor de
   R$ 294,60".
 - `resp-11`, turno 2: falha do agente. Valores e total certos, mas a descrição dos dias
-  sai errada num parêntese, e o modelo se corrige no meio da resposta (limite 54).
+  sai errada num parêntese, e o modelo se corrige no meio da resposta (limite 56).
 
 Latência por turno nas três rodadas: p50 de 2,9 a 3,0 s, p95 de 5,9 a 6,2 s, máximo de
 13,8 s. A telemetria do Worker nas três rodadas e nas leituras do reservado não tem
@@ -345,8 +345,7 @@ na lista de limites abaixo.
 ## Limites conhecidos
 
 Pela X24, só bloqueia a entrada na `main` o que é determinístico ou gera lead errado; o
-resto fica listado aqui. Limites do simulador hostil, se houver: a preencher.
-<!-- PREENCHER: limites do simulador hostil (rodando) -->
+resto fica listado aqui.
 
 Já decididos ou declarados, por área. Os de segurança vêm das duas passadas da revisão
 ([`docs/revisoes/m2.md`](docs/revisoes/m2.md)); os demais, das decisões (P) e dos
@@ -455,8 +454,10 @@ verificadores das frentes, no log do backlog.
     confere também o tipo de noite contra a diária (P27, P31). Falso vermelho conta como
     falha na soma do bloco (P34).
 31. **Simulador.** O juiz de handoff do simulador não enxerga gatilho que o modelo do
-    hóspede inventa; reprovação de handoff no simulador se lê à mão. O resultado também é
-    lido no relatório, não só na linha final.
+    hóspede inventa, e o gatilho de "pedido de humano" casa "pessoa" no sentido de
+    acompanhante; a regra de "afirma disponibilidade" casa frase em que o agente nega saber
+    a disponibilidade. O relatório não guarda o texto do agente. Por isso reprovação do
+    simulador se lê à mão, no relatório e não só na linha final (P36).
 32. **Validação de `producao`.** No modo completo, interromper o script com Ctrl-\ ou
     `kill -9` deixa o runner das conversas rodando sozinho (só conversas sem confirmação).
 33. **Gate de sigilo.** Procura IP e e-mail só nos arquivos atuais, não em commits antigos
@@ -513,22 +514,36 @@ verificadores das frentes, no log do backlog.
     em `handoff`. Visto uma vez em `dev`, em 14/11, por 95 segundos (25 turnos); a causa não
     foi determinada (P32).
 
-**Confirmação (P35, frente F)**
+**Confirmação (P13, P35 e P36)**
 
 51. **Palavra de preço junto do sim.** Mesmo sem número ("pelo valor normal"), não
     confirma: o agente repete o resumo, que mostra o total, e pede o sim.
 52. **Confirmação natural fora da gramática** também repete o resumo e pede o sim. Custa
     um turno; nunca gera lead errado.
 53. **"Pode encaminhar" sozinho** confirma quando há resumo pendente.
+54. **Sim que repete dado do resumo não confirma** (P13). Exemplos medidos: "Sim, confirmo a
+    reserva do GRM-301", "Sim, confirmo a reserva de 18/01/2027 a 20/01/2027", "Confirmo, 3
+    pessoas". O agente mostra o resumo de novo e pede o "sim": custa um turno, nunca gera
+    lead errado.
+55. **Sim com o destino do envio não confirma**, por falta de vocabulário (P36). Exemplos
+    medidos: "Sim, pode enviar o pedido ao time comercial", "Pode enviar ao time
+    comercial", "Sim, pode encaminhar ao time comercial", "Sim, envia". O eco é natural,
+    porque o próprio resumo do agente diz "eu envio o seu pedido ao time comercial", e o
+    hóspede que responde assim leva um turno a mais. Nunca gera lead errado. Para
+    proporção: de 30 confirmações sem dado sondadas, 29 saem como sim.
 
 **Redação do modelo**
 
-54. **Autocorreção confusa.** Em cerca de 1.600 respostas gravadas em 14/11, duas trazem
+56. **Autocorreção confusa.** Em cerca de 1.600 respostas gravadas em 14/11, duas trazem
     uma autocorreção confusa escrita pelo modelo: a do `resp-11` na rodada 3 da árvore
     final ("Hmm, corrijo a descrição acima: …") e, numa rodada da árvore b5af852 que deu 100
     de 100, "corrijo um detalhe: o nome … que escrevi no resumo não veio do sistema", que é
     falso (o nome vem do catálogo). Nenhuma muda valor, lead ou `handoff`. A segunda passou
     no juiz e na leitura à mão.
+57. **Redação estranha na repetição do simulador.** Depois de o hóspede dizer que ia
+    conversar com o acompanhante, o agente escreveu "Para essas datas eu preciso fazer uma
+    cotação nova", embora as datas fossem as do resumo. Visto uma vez; sem valor errado,
+    sem lead e sem `handoff`.
 
 **Conferências com o modelo real** (servidor local com a `main`, a F e a branch da H; uma
 repetição de cada roteiro, não são rodadas de eval):
