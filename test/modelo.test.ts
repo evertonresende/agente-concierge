@@ -190,13 +190,7 @@ describe("modelos da Anthropic (formato Messages)", () => {
     expect(messages[2]!.content.map((b) => b.tool_use_id)).toEqual(["toolu_1", "toolu_2"]);
   });
 
-  it("conteúdo cru do assistente (com raciocínio) volta sem alteração", () => {
-    const blocos = [{ type: "thinking", thinking: "", signature: "sig" }, { type: "tool_use", id: "toolu_9", name: "cotar", input: {} }];
-    const { messages } = pedidoAnthropic([{ role: "user", content: "oi" }, { role: "assistant", content: "", blocos }], [], undefined) as { messages: { content: unknown[] }[] };
-    expect(messages[1]!.content).toBe(blocos);
-  });
-
-  it("lê texto, chamadas e uso; ignora o raciocínio no texto e guarda os blocos", () => {
+  it("lê texto, chamadas e uso; ignora o raciocínio no texto", () => {
     const bruto = {
       stop_reason: "tool_use",
       content: [{ type: "thinking", thinking: "", signature: "s" }, { type: "text", text: "Vou cotar." }, { type: "tool_use", id: "toolu_1", name: "cotar", input: { imovel_id: "GRM-301" } }],
@@ -206,7 +200,6 @@ describe("modelos da Anthropic (formato Messages)", () => {
     expect(r.texto).toBe("Vou cotar.");
     expect(r.chamadas).toEqual([{ id: "toolu_1", type: "function", function: { name: "cotar", arguments: '{"imovel_id":"GRM-301"}' } }]);
     expect(r.uso).toEqual({ entrada: 120, saida: 30 });
-    expect(r.blocos).toHaveLength(3);
   });
 
   it("recusa do Claude (stop_reason refusal) passa ao reserva", async () => {

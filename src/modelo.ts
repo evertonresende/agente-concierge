@@ -12,9 +12,7 @@ export interface ChamadaDeFerramenta {
 
 export type Mensagem =
   | { role: "system" | "user"; content: string }
-  // `blocos`: conteúdo cru da resposta do Claude (raciocínio incluso), devolvido sem
-  // alteração no histórico quando quem guarda a mensagem o preserva.
-  | { role: "assistant"; content: string; tool_calls?: ChamadaDeFerramenta[]; blocos?: unknown[] }
+  | { role: "assistant"; content: string; tool_calls?: ChamadaDeFerramenta[] }
   | { role: "tool"; tool_call_id: string; content: string };
 
 export interface DefinicaoDeFerramenta {
@@ -26,8 +24,6 @@ export interface RespostaDoModelo {
   texto: string;
   chamadas: ChamadaDeFerramenta[];
   uso: { entrada: number; saida: number };
-  /** Só nos modelos da Anthropic: o conteúdo cru, para voltar intacto no histórico. */
-  blocos?: unknown[];
 }
 
 export type Modelo = (mensagens: Mensagem[], ferramentas: DefinicaoDeFerramenta[]) => Promise<RespostaDoModelo>;
@@ -116,12 +112,12 @@ export function pedidoAnthropic(mensagens: Mensagem[], ferramentas: DefinicaoDeF
     if (m.role === "user") acrescentar("user", [{ type: "text", text: m.content }]);
     else if (m.role === "tool") acrescentar("user", [{ type: "tool_result", tool_use_id: m.tool_call_id, content: m.content }]);
     else if (m.role === "assistant") {
-      const blocos: Bloco[] = m.blocos
-        ? (m.blocos as Bloco[])
-        : [
-          ...(m.content.trim() ? [{ type: "text", text: m.content }] : []),
-          ...(m.tool_calls ?? []).map((c) => ({ type: "tool_use", id: c.id, name: c.function.name, input: argumentosComoObjeto(c.function.arguments) })),
-        ];
+      // Os blocos de raciocínio não voltam: a API aceita sem eles e a medição não mostrou
+      // ganho em devolvê-los (docs/revisoes/modelos.md).
+      const blocos: Bloco[] = [
+        ...(m.content.trim() ? [{ type: "text", text: m.content }] : []),
+        ...(m.tool_calls ?? []).map((c) => ({ type: "tool_use", id: c.id, name: c.function.name, input: argumentosComoObjeto(c.function.arguments) })),
+      ];
       if (blocos.length > 0) acrescentar("assistant", blocos);
     }
   }
@@ -151,7 +147,6 @@ export function lerRespostaAnthropic(bruto: unknown): RespostaDoModelo {
     chamadas,
     // Entrada inclui o que veio do cache, para o custo por conversa não sair subestimado.
     uso: { entrada: numero(uso.input_tokens) + numero(uso.cache_read_input_tokens) + numero(uso.cache_creation_input_tokens), saida: numero(uso.output_tokens) },
-    blocos,
   };
 }
 
