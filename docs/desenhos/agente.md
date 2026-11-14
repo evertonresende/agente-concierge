@@ -171,6 +171,7 @@ stateDiagram-v2
 | Resumo, leitura do sim, transições do lead, teto de envios | Reconhecer reclamação, desconto e negociação e chamar o handoff |
 | Conferência do texto do modelo antes de sair | |
 | Validação do corpo do `POST /chat` e dos dados do lead | |
+| Nome do lead só com palavras que o hóspede escreveu (P20) | Pedir o nome quando a ferramenta recusa |
 | A flag `handoff` devolvida na resposta | |
 
 O modelo nunca escreve um total por conta própria: ele recebe o texto pronto da ferramenta,
