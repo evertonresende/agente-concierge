@@ -54,7 +54,23 @@ describe("cabeçalhos de proteção da página (GET /)", () => {
     const politica = diretivas(resposta.headers.get("content-security-policy") ?? "");
     expect(politica.get("script-src")).toEqual([`'sha256-${await sha256Base64(conteudoDe(html, "script"))}'`]);
     expect(politica.get("style-src")).toEqual([`'sha256-${await sha256Base64(conteudoDe(html, "style"))}'`]);
-    expect(resposta.headers.get("content-security-policy")).not.toMatch(/unsafe-|\*/);
+    // Só style-src-attr pode ter 'unsafe-inline' (atributo inserido pela borda); nenhuma outra diretiva afrouxa.
+    for (const [nome, valores] of politica) {
+      if (nome !== "style-src-attr") expect(valores.join(" "), nome).not.toMatch(/unsafe-|\*/);
+    }
+  });
+
+  it("atributo de estilo inserido pela borda passa, sem afrouxar o bloco de estilo nem o script", async () => {
+    const resposta = await worker.fetch(new Request("https://agente.teste/"), ambiente);
+    const politica = diretivas(resposta.headers.get("content-security-policy") ?? "");
+    expect(politica.get("style-src-attr")).toEqual(["'unsafe-inline'"]);
+    expect(politica.get("style-src")).toHaveLength(1);
+    expect(politica.get("style-src")![0]).toMatch(/^'sha256-[A-Za-z0-9+/]+=*'$/);
+    expect(politica.get("script-src")).toHaveLength(1);
+    expect(politica.get("script-src")![0]).toMatch(/^'sha256-[A-Za-z0-9+/]+=*'$/);
+    for (const [nome, valores] of politica) {
+      if (nome.startsWith("script-src")) expect(valores.join(" "), nome).not.toMatch(/'unsafe-inline'|'unsafe-eval'|'unsafe-hashes'/);
+    }
   });
 
   it("o HTML não tem atributo de estilo nem manipulador embutido, que a política bloquearia", () => {

@@ -24,6 +24,9 @@ function cabecalhosDePagina(): Promise<Record<string, string>> {
       "default-src 'none'",
       `script-src ${script}`,
       `style-src ${estilo}`,
+      // A borda pode inserir um elemento oculto com atributo style; sem isto ele deixaria de
+      // ficar oculto. Atributo de estilo não executa código, e a página não escreve HTML de fora.
+      "style-src-attr 'unsafe-inline'",
       "connect-src 'self'",
       "font-src data:", // a fonte Inter vem embutida em data:
       "img-src 'none'",
