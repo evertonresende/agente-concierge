@@ -2562,14 +2562,14 @@ P45 confirmadas (X38).
 
 Feito por ele: o vídeo está gravado; o monitor dos 7 dias está agendado, fora do repositório, todo dia
 às 9h, de 15/11 a 21/11, com `--clientes` e `--entrega` contra `producao` e aviso a ele se alguma
-falhar (X38). Os itens 2 e 4 da lista de 06h49 estão fechados.
+falhar (X38). O item 4 da lista de 06h49 está fechado; do item 2, falta só o link do vídeo no e-mail.
 
 Falta com ele:
 5. Página de `producao`: a borda insere um script de detecção de robôs que a política nova bloqueia,
    o que gera um erro de console a cada carga, sem efeito na conversa (P43). Escolher: desligar essa
    injeção para o hostname na zona, aceitar o erro, ou pedir a política por nonce. Em 14/11 ele disse
    que ainda não decidiu: a P43 continua provisória e nada muda na política até lá (X38).
-6. O e-mail da entrega (item 3 da lista de 06h49).
+6. O e-mail da entrega, com o link do vídeo (itens 2 e 3 da lista de 06h49).
 
 O que ele deve saber:
 - A explicação ao hóspede quando a confirmação é recusada por data passada é escrita pelo modelo e
