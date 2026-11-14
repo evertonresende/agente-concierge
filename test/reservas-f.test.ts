@@ -37,7 +37,7 @@ describe("segunda reserva e repetição (L7)", () => {
     const segunda = await s.resumo(4, { ...DADOS, imovel_id: "RIO-402", checkin: "20/01/2027", checkout: "22/01/2027", hospedes: 1 });
     expect(segunda.respostaFinal).toContain("Studio Copacabana (RIO-402)");
     expect(s.mundo.leads).toHaveLength(1);
-    const r = await s.sim(5, "Sim, confirmo essa segunda reserva também.");
+    const r = await s.sim(5, "Sim, confirmo.");
     expect(r.respostaFinal).toMatch(/registrado/);
     expect(s.mundo.leads).toMatchObject([
       { imovel_id: "GRM-301", checkin: "2027-01-15", checkout: "2027-01-18", hospedes: 2 },
@@ -92,7 +92,7 @@ describe("segunda reserva e repetição (L7)", () => {
     await s.resumo(2);
     await s.sim(3);
     // Turno 4: o hóspede cotou outra estadia, sem resumo. O sim do turno 5 pode ser para ela.
-    const r = await s.sim(5, "Sim, confirmo essa segunda reserva também.");
+    const r = await s.sim(5, "Sim, confirmo.");
     expect(r.respostaFinal).toBeUndefined();
     expect(JSON.stringify(r.paraOModelo)).toMatch(/nada foi enviado agora.*montar_resumo/);
     expect(s.mundo.leads).toHaveLength(1);
