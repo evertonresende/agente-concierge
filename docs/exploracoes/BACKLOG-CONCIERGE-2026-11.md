@@ -1231,6 +1231,9 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   obrigatória (planejamento, as que citam o enunciado, as de primeira mensagem longa e as do conselho).
   Limite que só a leitura pega: trecho copiado do enunciado e nome da empresa escrito de outro jeito.
   Nada entra em `docs/sessoes/` antes de o Éverton olhar (X29)
+- 14/11 00h29 · Éverton · X30: reserva confirmado, GLM-5.3 Flash, sem "provisório"; nomes dos modelos mantidos
+  no "Como foi feito", com a versão exata de cada um. `docs/revisoes/modelos.md` atualizado pela
+  coordenadora; a frente N preenche o README e a seção dos modelos
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
