@@ -18,6 +18,10 @@ Os requisitos estão em [`docs/CONTRATO.md`](docs/CONTRATO.md).
 
 **URL pública:** https://concierge.evertonresende.com
 
+**Lista real de leads:** tem um único lead, o de teste de 14/11 às 07h26 ("Teste Everton
+Resende"), autorizado pelo Éverton (X36); não é lead indevido. Detalhes na seção de
+validação de `producao`.
+
 **Repositório público:** https://github.com/evertonresende/agente-concierge
 
 ## Interface
@@ -71,7 +75,11 @@ cabeçalhos `x-uso-entrada`, `x-uso-saida` e `x-chamadas-modelo`, usados para me
   > Estado da entrega: a árvore final é 9d37f9a, com todas as frentes de produto
   > verificadas (G com a P30 e a correção do teto no caminho do lead, T, F com a P20, a P29
   > e as formas de confirmação da P35, H, B2, K e S). Juiz e runner são idênticos byte a
-  > byte aos de 193d1bf (P34).
+  > byte aos de 193d1bf (P34). Os commits que entraram na `main` depois dela não mudam
+  > `src/`: mudam texto, relatórios de eval, o conjunto reservado copiado para o
+  > repositório e a configuração de `producao` (a97777b: `ENVIO_LEADS` ligado e
+  > `preview_urls: false` em `wrangler.jsonc`, com o teste da configuração). O commit
+  > publicado em `producao` é o a97777b.
 - **Modelo.** Decidido pelo Éverton por medição (`DECISOES.md` X24 e X30;
   [`docs/revisoes/modelos.md`](docs/revisoes/modelos.md)). Principal: Claude Haiku 5.5, com
   o raciocínio em nível alto, direto do provedor pelo AI Gateway. Reserva: GLM-5.3 Flash,
@@ -337,8 +345,13 @@ de 32 perguntas de ficha em dois minutos, sem contingência, e o `marco1` deu 10
 ### Conjunto reservado
 
 **110 de 120 (91,7%)**, soma de duas leituras seguidas do agregado na árvore final; o limiar
-é 90%. Leitura 1: 88% (53 de 60), que sozinha reprovaria. Leitura 2: 95% (57 de 60). As
-leituras não passaram pelo proxy de gravação.
+é 90%. Leitura 1: 88% (53 de 60), que sozinha reprovaria. Leitura 2: 95% (57 de 60). As duas
+leituras desse par final (árvore 9d37f9a, 14/11: leitura 1 das 04h52 às 04h54, leitura 2
+das 04h54 às 04h57) não passaram pelo proxy de gravação. No primeiro par (árvore b5af852,
+14/11: leitura 1 terminada às 03h11, 83%; leitura 2 das 03h12 às 03h16, 80%), a leitura 2
+passou pelo proxy de gravação, contra a regra; é o item 11 da seção 9 do
+["Como foi feito"](docs/COMO-FOI-FEITO.md). O registro não foi lido pela coordenação e foi
+movido para uma pasta privada.
 
 | Bloco | Soma | % |
 |---|---|---|
@@ -366,7 +379,10 @@ número vai ao Éverton como está.
 O segundo revisor vetou as 9 mudanças de expectativa da passada única, e os casos voltaram
 ao original: nas 7 afrouxadas, a expressão nova aprovava respostas erradas; das 2
 apertadas, uma reprovava respostas certas e a outra ficou em dúvida. Ele apertou 3 casos
-frouxos. O conjunto mede com as expectativas originais. O conjunto também achou um erro
+frouxos. Estado final do conjunto, fechado em 14/11 às 04h37: 60 casos; 53 iguais aos
+originais, 3 com a expectativa apertada pelo segundo revisor e 4 substitutos (dois deles
+com um aperto cada); nenhum afrouxado. O que voltou ao original foram as 9 mudanças vetadas
+da passada única. O conjunto também achou um erro
 real do agente: em 4 casos o hóspede confirmava de um jeito que a L9 e a P13 aceitam, e o agente
 repetia o resumo sem enviar. Pela regra 6 de `docs/EVALS.md`, esses 4 casos foram revelados,
 corrigidos no agente (P35), migraram para o conjunto de desenvolvimento e ganharam
@@ -447,7 +463,8 @@ na lista de limites abaixo.
    como data, e o agente pede as datas de novo. Custo: um turno, e a conversa em inglês
    não chega à cotação enquanto a data vier nesse formato.
 
-Os outros 61 limites seguem abaixo, por grupo, com o número e o texto de sempre.
+A lista completa segue abaixo, por grupo: os 66 limites, numerados de 1 a 66, com os
+cinco de cima incluídos.
 
 Pela X24, só bloqueia a entrada na `main` o que é determinístico ou gera lead errado; o
 resto fica listado aqui.
@@ -747,5 +764,14 @@ mistura mudança e pergunta, zero lead com dado velho e zero nome sujo.
 | [`docs/setup/`](docs/setup/) | regras, skills e subagentes do ambiente do autor usados nesta entrega |
 | [`evals/`](evals/) | runner, casos, simulador e relatórios |
 | [`falso/`](falso/) | webhook falso de `dev` |
+
+MCP: o único servidor MCP chamado na construção foi o do T3 Code, o orquestrador, para
+abrir e configurar as threads das frentes, mandar mensagem, delegar tarefa a verificador,
+esperar tarefa de fundo e ler thread. Nos 86 registros de sessão Claude do projeto há mais
+de 700 chamadas MCP, todas a esse servidor; os 3 registros de sessão do Codex que citam o
+projeto não têm chamada MCP. Nenhum outro MCP foi chamado: a documentação da Cloudflare foi
+lida por busca e leitura de página, a conta da Cloudflare por `wrangler` e pela API, e o
+modelo de outro provedor no simulador por linha de comando. Detalhe em
+[`docs/setup/README.md`](docs/setup/README.md).
 
 Contato: contato@evertonresende.com
