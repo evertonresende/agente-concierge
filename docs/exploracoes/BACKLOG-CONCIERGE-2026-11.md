@@ -52,7 +52,7 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 | C | agente-concierge | Conjunto reservado (fora do repo) | — | alta | 2 | thread T3 · GPT-6 Astra até 13/11 18h35 | 60 casos entregues fora do repo; conversa no GPT encerrada pela X16. Caso substituto, se for preciso, numa conversa nova em Gemini 4 Hydrogen | `frente-c` (sem commits; casos fora do repo) |
 | D | agente-concierge | Simulador de hóspede hostil | B2 (formato de caso) | média | 2,5 | thread T3 · Gemini 4 Hydrogen | concluída: na `main` (6c090d0), rodada ao vivo com `SIMULADOR OK`; a B2 move os 12 casos fixos | `frente-d` |
 | M1 | agente-concierge | Revisão curta do Marco 1 | A | alta | 0,5 | subagentes Opus 5.5 + conselho | concluída (`docs/revisoes/m1.md`; achados com dono) | — |
-| I | agente-concierge | Escolha do modelo por eval | A, B2 | alta | 1 | subagente em worktree · Opus 5.5, esforço médio desde a X16 | fase 1 entregue; medindo DeepSeek 4.1 e GLM-5.3 em ritmo abaixo do limite (X19); escolha do principal é do Éverton | `t3/` (subagente) |
+| I | agente-concierge | Escolha do modelo por eval | A, B2 | alta | 1 | subagente em worktree · Opus 5.5, esforço médio desde a X16 | adaptador na `main` desde 13/11 23h18 (27c3093), com o Haiku 5.5 em nível alto (X24); `dev` publicado dessa versão. Fica viva para a fase 2 (medição no código final) e para a linha do gateway de `producao` | `t3/modelo-evals-fallback` |
 | E | agente-concierge | Datas | Marco 1, L1, L1a, L1b, L2 | alta | 1,5 | subagente em worktree · Gemini 4 Hydrogen | concluída: na `main` (81873fa) | `t3/datas-relativas-sao-paulo` |
 | F | agente-concierge | Lead robusto | Marco 1, L6, L7, L9, L10, L11, L15 (textos fixos), L20 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16) | concluída: na `main` (801c8a2); verificador independente rodando | `frente-f` |
 | G | agente-concierge | Robustez e handoff | Marco 1, L3, L4, L5, L5a, L12, L13a, L15, L16, L16a, L19, L21 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16) | rodando | `frente-g` |
@@ -893,6 +893,21 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   POST. N: rascunhos, sem tocar no `DECISOES.md`. Com elas são 7 frentes vivas (F, G, H, I,
   B2, K, N); o limite de 5 foi passado por ordem do Éverton. L e M2 parcial entram quando os
   verificadores da F e da I terminarem, por causa da memória (12 GB de 17 em uso)
+- 13/11 23h18 · I · NA `main` (27c3093). Verificador independente, terceira rodada (64f0526): APROVADO,
+  sem achado alto nem médio; os dois médios da segunda rodada fechados; conferência do laço
+  como texto do usuário testada com o laço real da G (todo pedido termina no usuário, a
+  conferência não entra no histórico gravado). Depois do veredito entrou só a configuração do
+  nível alto (6008d02) e documentação (11cca93), conferidas pela coordenadora: muda uma
+  variável nos dois ambientes e comentários. Ensaio final sobre a `main`: limpo, 711 testes,
+  tipos e sigilo OK. Baixos que ficam como seguimento, sem bloquear (X24): o código numérico
+  do log pode pegar dígitos de um dado ecoado no erro; o log não diz o motivo da resposta
+  inútil; 7 de 68 defeitos plantados escapam da suíte. Para o Éverton decidir: a conferência
+  do laço chega ao modelo no mesmo nível de uma mensagem do hóspede, então um hóspede que
+  copie o texto dela não ganha autoridade, mas também não é distinguível
+- 13/11 23h18 · coordenadora · `dev` publicado da `main` em 27c3093 (Haiku 5.5, nível alto, gateway de
+  `dev`, reserva GLM-5.3 Flash, webhook falso). Fumaça contra `dev`: marco1 100% (cotação,
+  resumo, confirmação em outro turno, lead no webhook falso, desconto com handoff); contrato
+  77%, com duas falhas do juiz antigo de rótulo, que ainda é o da `main`
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
