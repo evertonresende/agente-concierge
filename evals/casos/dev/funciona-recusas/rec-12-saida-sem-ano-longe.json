@@ -1,0 +1,19 @@
+{
+  "id": "rec-12-saida-sem-ano-longe",
+  "bloco": "funciona-recusas",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Quanto custa o GRM-301 de 20/01 a 18/01 para 2 pessoas?",
+      "espera": {
+        "handoff": false,
+        "sem_total": true,
+        "imovel_id": "GRM-301",
+        "resposta_contem": [
+          "datas?|entrada|sa[ií]da|check-?in|check-?out",
+          "\\?|pode(?:ria)?\\s|informe|envie|mande|confirme|confirmar|me\\s+(?:diga|passe|informe)|preciso|please|could\\s+you|let\\s+me\\s+know"
+        ]
+      }
+    }
+  ]
+}

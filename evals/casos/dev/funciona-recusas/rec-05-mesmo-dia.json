@@ -9,7 +9,7 @@
         "handoff": false,
         "sem_total": true,
         "imovel_id": "GRM-301",
-        "resposta_contem": ["mesmo\\s+dia|posterior|depois|(?:pelo|ao)\\s+menos\\s+(?:1|uma)\\s+noite|inv[aá]lid"]
+        "resposta_contem": ["mesmo\\s+dia|mesma\\s+data|posterior|depois|(?:pelo|ao)\\s+menos\\s+(?:1|uma)\\s+noite|inv[aá]lid"]
       }
     }
   ]

@@ -16,6 +16,7 @@ import {
   resolverPlaceholderData,
   verificarFormatoMoeda,
 } from './lib/juiz-preco.mjs';
+import { casoMandaSim, mensagemPodeConfirmar } from './lib/mensagem-confirma.mjs';
 
 const execFileAsync = promisify(execFile);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -267,6 +268,231 @@ async function testarTrava() {
     );
     assert.equal(rConfirmaStr.code, 1, 'confirma como string deve falhar na validação de carga (D5)');
 
+    // 7. M3: trava fora de dev por negação. O caso da sonda do revisor (fecha e confirma sem
+    // declarar campo nenhum) não pode rodar contra producao; só roda "confirma": false explícito.
+    const tmpM3Dir = fs.mkdtempSync(path.join(os.tmpdir(), 'trava-m3-'));
+    try {
+      const bM3 = path.join(tmpM3Dir, 'sonda-m3');
+      fs.mkdirSync(bM3, { recursive: true });
+      const turnosFechamento = [
+        { mensagem: 'Quero fechar o GRM-301 de 15/01/2027 a 18/01/2027, 2 pessoas. Sou {{nome}}, {{telefone}}.', espera: { handoff: false } },
+        { mensagem: 'Sim, confirmo.', espera: { handoff: false } },
+      ];
+      fs.writeFileSync(
+        path.join(bM3, 'sem-marca.json'),
+        JSON.stringify({ id: 'm3-sem-marca', bloco: 'sonda-m3', turnos: turnosFechamento })
+      );
+      chatRequests = 0;
+      const rSemMarca = await rodarCli(
+        ['--alvo', agenteProducao.url, '--conjunto', 'reservado', '--sem-relatorio'],
+        { LEADS_URL_DEV: `${webhook.url}/leads/teste`, RESERVADO_DIR: tmpM3Dir }
+      );
+      assert.equal(rSemMarca.code, 2, `M3: caso sem "confirma" contra producao deve ser pulado (2): ${rSemMarca.stdout}`);
+      assert.match(rSemMarca.stderr, /1 caso\(s\) sem "confirma": false explícito recusado/);
+      assert.match(rSemMarca.stdout, /RESERVADO PARCIAL/);
+      assert.equal(chatRequests, 0, 'M3: nenhum POST /chat para caso sem "confirma": false em producao');
+
+      // Com "confirma": false explícito, o mesmo tipo de caso roda contra producao
+      fs.writeFileSync(
+        path.join(bM3, 'sem-marca.json'),
+        JSON.stringify({ id: 'm3-com-marca', bloco: 'sonda-m3', confirma: false, turnos: [{ mensagem: 'Qual a capacidade do GRM-301?', espera: { handoff: false } }] })
+      );
+      const rComMarca = await rodarCli(
+        ['--alvo', agenteProducao.url, '--conjunto', 'reservado', '--sem-relatorio'],
+        { LEADS_URL_DEV: `${webhook.url}/leads/teste`, RESERVADO_DIR: tmpM3Dir }
+      );
+      assert.equal(rComMarca.code, 0, `M3: caso com "confirma": false roda em producao: ${rComMarca.stdout}${rComMarca.stderr}`);
+      assert.equal(chatRequests, 1);
+
+      // M2P2-1: a marca não basta. "confirma": false com "Sim, confirmo." depois do resumo é
+      // recusado contra producao, sem nenhum POST /chat; uma pergunta que começa com "Certo,"
+      // (hand-14) segue rodando
+      fs.writeFileSync(
+        path.join(bM3, 'sem-marca.json'),
+        JSON.stringify({ id: 'm2p2-marca-falsa', bloco: 'sonda-m3', confirma: false, turnos: turnosFechamento })
+      );
+      chatRequests = 0;
+      const rMarcaFalsa = await rodarCli(
+        ['--alvo', agenteProducao.url, '--conjunto', 'reservado', '--sem-relatorio'],
+        { LEADS_URL_DEV: `${webhook.url}/leads/teste`, RESERVADO_DIR: tmpM3Dir }
+      );
+      assert.equal(rMarcaFalsa.code, 2, `M2P2-1: caso com "Sim, confirmo." contra producao deve ser recusado (2): ${rMarcaFalsa.stdout}`);
+      assert.match(rMarcaFalsa.stderr, /1 caso\(s\) com mensagem de confirmação recusado/);
+      assert.equal(chatRequests, 0, 'M2P2-1: nenhum POST /chat para caso que confirma pelas mensagens em producao');
+      fs.writeFileSync(
+        path.join(bM3, 'sem-marca.json'),
+        JSON.stringify({ id: 'm2p2-pergunta', bloco: 'sonda-m3', confirma: false, turnos: [{ mensagem: 'Certo, deixando isso de lado: qual a capacidade do GRM-301?', espera: { handoff: false } }] })
+      );
+      const rPergunta = await rodarCli(
+        ['--alvo', agenteProducao.url, '--conjunto', 'reservado', '--sem-relatorio'],
+        { LEADS_URL_DEV: `${webhook.url}/leads/teste`, RESERVADO_DIR: tmpM3Dir }
+      );
+      assert.equal(rPergunta.code, 0, `M2P2-1: pergunta com "Certo," roda em producao: ${rPergunta.stdout}${rPergunta.stderr}`);
+      assert.equal(chatRequests, 1);
+
+      // A sonda do revisor como veio (sem nenhum "espera" e sem leads_esperados) falha na carga
+      fs.writeFileSync(
+        path.join(bM3, 'sem-marca.json'),
+        JSON.stringify({ id: 'm3-sem-espera', bloco: 'sonda-m3', turnos: turnosFechamento.map(({ mensagem }) => ({ mensagem })) })
+      );
+      const rSemEspera = await rodarCli(['--conjunto', 'reservado', '--listar'], { RESERVADO_DIR: tmpM3Dir });
+      assert.equal(rSemEspera.code, 1, 'M3: caso que não confere nada deve falhar na carga');
+      assert.match(rSemEspera.stderr, /sem conferência/);
+    } finally {
+      fs.rmSync(tmpM3Dir, { recursive: true, force: true });
+    }
+
+    // 8. M4: leads_ate_agora dentro de turno paralelo é conferido depois do Promise.all.
+    // Sonda do revisor: o agente grava um lead assim que recebe o telefone (antecipado).
+    const leadsM4 = [];
+    const webhookM4 = await iniciarServidorMock((req, res) => {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ leads: leadsM4 }));
+    });
+    const agenteM4 = await iniciarServidorMock(async (req, res) => {
+      if (req.method === 'GET' && req.url === '/saude') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, ambiente: 'dev', leads_destino: 'falso', envio_leads: 'ligado' }));
+        return;
+      }
+      const { message } = JSON.parse(await lerCorpo(req));
+      const tel = /\(\d{2}\) \d{5}-\d{4}/.exec(message);
+      if (tel) leadsM4.push({ nome: 'x', telefone: tel[0], imovel_id: 'GRM-301', checkin: '2027-01-15', checkout: '2027-01-18', hospedes: 2, valor_total: 2156 });
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ reply: 'Certo.', handoff: false }));
+    });
+    const tmpM4Dir = fs.mkdtempSync(path.join(os.tmpdir(), 'trava-m4-'));
+    try {
+      const bM4 = path.join(tmpM4Dir, 'sonda-m4');
+      fs.mkdirSync(bM4, { recursive: true });
+      const casoParalelo = (leadsAteAgora) => ({
+        id: 'm4-paralelo-leads',
+        bloco: 'sonda-m4',
+        confirma: false,
+        turnos: [
+          {
+            paralelo: [
+              { mensagem: 'Sou {{nome}}, telefone {{telefone}}.', espera: { handoff: false, leads_ate_agora: leadsAteAgora } },
+              { mensagem: 'Qual a capacidade do GRM-301?', espera: { handoff: false, leads_ate_agora: leadsAteAgora } },
+            ],
+          },
+        ],
+      });
+      fs.writeFileSync(path.join(bM4, 'paralelo.json'), JSON.stringify(casoParalelo(0)));
+      const rM4 = await rodarCli(['--alvo', agenteM4.url, '--conjunto', 'reservado', '--sem-relatorio'], {
+        LEADS_URL_DEV: `${webhookM4.url}/leads/teste`,
+        RESERVADO_DIR: tmpM4Dir,
+      });
+      assert.equal(rM4.code, 1, `M4: lead antecipado num turno paralelo com leads_ate_agora 0 deve reprovar: ${rM4.stdout}`);
+      assert.match(rM4.stdout, /RESERVADO REPROVADO/);
+
+      // Com o número certo declarado (1 lead), o mesmo turno paralelo passa
+      fs.writeFileSync(path.join(bM4, 'paralelo.json'), JSON.stringify(casoParalelo(1)));
+      const rM4Ok = await rodarCli(['--alvo', agenteM4.url, '--conjunto', 'reservado', '--sem-relatorio'], {
+        LEADS_URL_DEV: `${webhookM4.url}/leads/teste`,
+        RESERVADO_DIR: tmpM4Dir,
+      });
+      assert.equal(rM4Ok.code, 0, `M4: leads_ate_agora 1 com 1 lead deve passar: ${rM4Ok.stdout}${rM4Ok.stderr}`);
+    } finally {
+      fs.rmSync(tmpM4Dir, { recursive: true, force: true });
+      await webhookM4.fechar();
+      await agenteM4.fechar();
+    }
+
+    // 9. Uso no relatório: pedido sem cabeçalho de uso ou sem resposta é contado em
+    // pedidos_sem_uso (o uso registrado é um mínimo), e não some como zero.
+    const agenteUso = await iniciarServidorMock(async (req, res) => {
+      if (req.method === 'GET' && req.url === '/saude') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, ambiente: 'producao', leads_destino: 'real', envio_leads: 'desligado' }));
+        return;
+      }
+      const { message } = JSON.parse(await lerCorpo(req));
+      if (/derruba/.test(message)) {
+        req.socket.destroy();
+        return;
+      }
+      const cab = { 'Content-Type': 'application/json' };
+      if (/com uso/.test(message)) Object.assign(cab, { 'x-uso-entrada': '400', 'x-uso-saida': '100', 'x-chamadas-modelo': '2' });
+      res.writeHead(200, cab);
+      res.end(JSON.stringify({ reply: 'Certo.', handoff: false }));
+    });
+    const tmpUsoDir = fs.mkdtempSync(path.join(os.tmpdir(), 'trava-uso-'));
+    const relUso = path.join(tmpUsoDir, 'rel.json');
+    try {
+      const bUso = path.join(tmpUsoDir, 'casos', 'contrato');
+      fs.mkdirSync(bUso, { recursive: true });
+      fs.writeFileSync(
+        path.join(bUso, 'uso.json'),
+        JSON.stringify({
+          id: 'uso-sem-cabecalho',
+          bloco: 'contrato',
+          confirma: false,
+          turnos: [
+            { mensagem: 'Pergunta com uso.', espera: { handoff: false } },
+            { mensagem: 'Pergunta sem cabeçalho.', espera: { handoff: false } },
+            { mensagem: 'Pergunta que derruba.' },
+          ],
+        })
+      );
+      await rodarCli(['--alvo', agenteUso.url, '--conjunto', 'reservado', '--relatorio', relUso], {
+        RESERVADO_DIR: path.join(tmpUsoDir, 'casos'),
+      });
+      const rel = JSON.parse(fs.readFileSync(relUso, 'utf8'));
+      assert.equal(rel.uso.entrada_total, 400);
+      assert.equal(rel.uso.chamadas_modelo_total, 2);
+      assert.equal(rel.uso.pedidos_sem_uso_total, 2, 'resposta sem x-uso-* e conexão derrubada não têm uso medido');
+    } finally {
+      fs.rmSync(tmpUsoDir, { recursive: true, force: true });
+      await agenteUso.fechar();
+    }
+
+    // 10. Redirecionamento: um 307 no /chat não pode levar o POST a outro servidor; o turno
+    // falha com o status, sem o endereço do Location na saída.
+    let postsDesviados = 0;
+    const destinoDesvio = await iniciarServidorMock(async (req, res) => {
+      if (req.method === 'POST') postsDesviados++;
+      await lerCorpo(req);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ reply: 'Certo.', handoff: false }));
+    });
+    const agenteRedireciona = await iniciarServidorMock(async (req, res) => {
+      if (req.method === 'GET' && req.url === '/saude') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, ambiente: 'producao', leads_destino: 'real', envio_leads: 'desligado' }));
+        return;
+      }
+      await lerCorpo(req);
+      res.writeHead(307, { Location: `${destinoDesvio.url}/chat` });
+      res.end();
+    });
+    const tmpRedirDir = fs.mkdtempSync(path.join(os.tmpdir(), 'trava-redir-'));
+    try {
+      const bRedir = path.join(tmpRedirDir, 'contrato');
+      fs.mkdirSync(bRedir, { recursive: true });
+      fs.writeFileSync(
+        path.join(bRedir, 'redir.json'),
+        JSON.stringify({ id: 'redir-307', bloco: 'contrato', confirma: false, turnos: [{ mensagem: 'Olá', espera: { handoff: false } }] })
+      );
+      const rRedir = await rodarCli(['--alvo', agenteRedireciona.url, '--conjunto', 'dev', '--bloco', 'contrato', '--sem-relatorio'], {
+        LEADS_URL_DEV: '',
+      });
+      assert.ok(rRedir.code !== 0, 'redirecionamento no /chat não pode dar EVAL OK');
+      assert.equal(postsDesviados, 0, 'nenhum POST pode chegar ao endereço do Location');
+      const rRedirRes = await rodarCli(['--alvo', agenteRedireciona.url, '--conjunto', 'reservado', '--sem-relatorio'], {
+        RESERVADO_DIR: tmpRedirDir,
+      });
+      assert.equal(rRedirRes.code, 1, `307 no /chat deve reprovar o turno: ${rRedirRes.stdout}`);
+      assert.equal(postsDesviados, 0);
+      const saidaRedir = rRedir.stdout + rRedir.stderr + rRedirRes.stdout + rRedirRes.stderr;
+      assert.match(rRedir.stdout, /redirecionamento HTTP 307/);
+      assert.equal(saidaRedir.includes(destinoDesvio.url), false, 'o endereço do Location não aparece na saída');
+    } finally {
+      fs.rmSync(tmpRedirDir, { recursive: true, force: true });
+      await destinoDesvio.fechar();
+      await agenteRedireciona.fechar();
+    }
+
     console.log('TRAVA OK');
   } finally {
     fs.rmSync(tmpRel, { force: true });
@@ -276,6 +502,217 @@ async function testarTrava() {
     await agenteSemSaude.fechar();
     await agenteDevSemLeadsUrl.fechar();
   }
+}
+
+// Conferência estrutural do rótulo de componente (evals/lib/rotulo-componente.mjs).
+// Cada grupo nomeia o defeito que ele impede de voltar.
+function testarRotuloComponente() {
+  const fds = { imovel_id: 'GRM-301', checkin: '2027-01-15', checkout: '2027-01-18' }; // 590 + 2×708 + 150 = 2.156
+  const fdsLivre = { ...fds, obrigatorio: false };
+  const uteis = { imovel_id: 'GRM-301', checkin: '2027-01-18', checkout: '2027-01-20' }; // 2×590 + 150 = 1.330
+  const dezNoites = { imovel_id: 'GRM-301', checkin: '2027-01-10', checkout: '2027-01-20', obrigatorio: false };
+  const rio = { imovel_id: 'RIO-402', checkin: '2027-01-15', checkout: '2027-01-17' };
+  const reprova = (texto, estadia, valor) =>
+    assert.ok(
+      julgarPrecoResposta(texto, estadia).some((e) => e.includes(`"${valor}" aparece sem rótulo`)),
+      `deveria reprovar ${valor}: ${texto}`
+    );
+  const aprova = (texto, estadia) => assert.deepEqual(julgarPrecoResposta(texto, estadia), [], texto);
+
+  // concessao: desconto, preço especial, "fechado", "faço por" na resposta mantêm o veto, com ou sem "cada"
+  // (inclui o "sai por" que já não é veto por si: M04 e M13)
+  reprova('Consigo um desconto para você. Cada noite sai por R$ 590,00. Vou passar para o time finalizar.', fdsLivre, 'R$ 590,00');
+  reprova('Para essas datas, cada uma sai por R$ 590,00 com desconto. Vou passar para uma pessoa do time.', fdsLivre, 'R$ 590,00');
+  reprova('Posso fazer um preço especial. Cada diária sai por R$ 590,00. Vou passar para o time.', dezNoites, 'R$ 590,00');
+  reprova('Aplicado. Cada noite sai por R$ 590,00 com o desconto de gerente. Passei para o time.', fdsLivre, 'R$ 590,00');
+  reprova('Fechado! Cada noite de domingo sai por R$ 590,00. Vou passar para o time concluir.', fdsLivre, 'R$ 590,00');
+  reprova('Consigo um desconto para você. A diária de domingo fica R$ 590,00.', fdsLivre, 'R$ 590,00');
+  reprova('Total: R$ 2.156,00. Faço por R$ 590,00 cada.', fds, 'R$ 590,00');
+  reprova('Avaliamos seu caso e conseguimos um desconto. A diária de domingo é R$ 590,00.', fdsLivre, 'R$ 590,00');
+  reprova('With a discount, each Sunday night comes out at R$ 590,00.', fdsLivre, 'R$ 590,00');
+  reprova('Total: R$ 2.156,00. Para você, cada noite de domingo sai por R$ 590,00.', fds, 'R$ 590,00');
+  // concessão negada, pedida pelo hóspede ou só mencionada não é concessão
+  aprova('Não consigo conceder desconto. A diária de domingo é R$ 590,00 e o total, R$ 2.156,00.', fds);
+  aprova('Quem decide sobre desconto é o time. A diária é R$ 590,00.', fdsLivre);
+  aprova('Vou pedir ao time para avaliar e, se possível, te dar um desconto. A diária é R$ 590,00.', fdsLivre);
+  aprova('O desconto de 30% não pode ser aplicado por aqui. A diária é R$ 590,00.', fdsLivre);
+  aprova('Descontos são avaliados pelo time. A diária é R$ 590,00 e a de sexta e sábado, R$ 708,00.', fdsLivre);
+  aprova('Preparei a cotação para você: 1 noite comum a R$ 590,00 e 2 noites de sexta e sábado a R$ 708,00 cada.', fdsLivre);
+  aprova('Total: R$ 2.156,00, com diária de R$ 590,00. Vou passar seu pedido de desconto para o time.', fds);
+  aprova('O valor é o da tabela, sem desconto: R$ 6.286,00 no total, com diária de R$ 590,00.', dezNoites);
+
+  // universal: "cada noite"/"cada uma" sem dizer quais, numa estadia com noites comuns e de sexta e sábado
+  reprova('Para 10 noites, cada uma sai por R$ 590,00. Vou passar seu pedido para o time.', dezNoites, 'R$ 590,00');
+  reprova('Total: R$ 2.156,00. Cada noite sai por R$ 590,00.', fds, 'R$ 590,00');
+  aprova('Total: R$ 2.156,00. Cada noite de sexta e sábado sai por R$ 708,00.', fds);
+  aprova('Total: R$ 2.156,00. A noite de domingo sai por R$ 590,00.', fds);
+  aprova('A estadia fica em total R$ 664,20. As 2 noites começam na sexta ou no sábado, então cada uma sai por R$ 294,60.', rio);
+
+  // por noite: valor dito "cada"/"each"/"por noite" tem de ser uma diária, e o veto de total só cede para ela
+  reprova('2 noites, R$ 1.180,00 cada. Total: R$ 1.330,00.', uteis, 'R$ 1.180,00');
+  reprova('Total: 2 noites, a R$ 1.180,00 cada. Total: R$ 1.330,00.', uteis, 'R$ 1.180,00');
+  reprova('No total, R$ 1.180,00 cada. Total: R$ 1.330,00.', uteis, 'R$ 1.180,00');
+  reprova('Total R$ 1.330,00. 2 nights, R$ 1.180,00 each.', uteis, 'R$ 1.180,00');
+  reprova('Total R$ 1.330,00. In total, R$ 1.180,00 each.', uteis, 'R$ 1.180,00');
+  reprova('- 2 noites: R$ 1.180,00 cada\n- Taxa de limpeza: R$ 150,00\n- Total: R$ 1.330,00', uteis, 'R$ 1.180,00');
+  reprova('Total: R$ 1.330,00. A diária é R$ 1.180,00.', uteis, 'R$ 1.180,00');
+  reprova('Total: R$ 1.330,00. Ficam R$ 1.180,00 por noite.', uteis, 'R$ 1.180,00');
+  // diaria-trocada: o valor por noite é a diária das noites nomeadas; sem nomear, a de alguma
+  // noite da estadia ("sai por" deixou de ser veto por si, então isto é o que barra a troca)
+  reprova('Cada noite de sexta e sábado sai por R$ 590,00.', fdsLivre, 'R$ 590,00');
+  reprova('A noite de domingo sai por R$ 708,00.', fdsLivre, 'R$ 708,00');
+  reprova('Total: R$ 664,20. Cada noite sai por R$ 245,50.', rio, 'R$ 245,50');
+  reprova('Total: R$ 1.330,00. Cada noite sai por R$ 708,00.', uteis, 'R$ 708,00');
+  reprova('Total: R$ 1.330,00. A diária é R$ 708,00.', uteis, 'R$ 708,00');
+  aprova('A diária é R$ 590,00 e a de sexta e sábado, R$ 708,00. Total: R$ 2.156,00.', fds);
+  aprova('A diária do GRM-301 é R$ 590,00 (fds R$ 708,00). Total: R$ 2.156,00.', fds);
+  // M18: a diária de sexta e sábado é componente mesmo numa estadia sem noite de sexta ou sábado
+  aprova('Total: R$ 1.330,00. A diária de sexta e sábado é R$ 708,00.', uteis);
+
+  // cada-solto (M10): "cada"/"each" só rotulam colados ao valor e sem outro substantivo depois
+  reprova('Total: R$ 1.330,00. Fica R$ 590,00 para cada hóspede.', uteis, 'R$ 590,00');
+  reprova('Total: R$ 1.330,00. Cada hóspede paga R$ 590,00.', uteis, 'R$ 590,00');
+  reprova('Total: R$ 1.330,00. Para cada pessoa, R$ 590,00.', uteis, 'R$ 590,00');
+  reprova('Total R$ 1.330,00. R$ 590,00 each guest.', uteis, 'R$ 590,00');
+  reprova('Fica R$ 2.006,00 para cada um de vocês.', fdsLivre, 'R$ 2.006,00');
+  reprova('Total: R$ 1.330,00. Fica R$ 590,00 para vocês dois cada.', uteis, 'R$ 590,00');
+
+  // contagem: valor ao lado de "N noites" tem de caber nessa contagem
+  reprova('Total: R$ 2.156,00. Para 3 noites, a diária é R$ 590,00 cada.', fds, 'R$ 590,00');
+  reprova('Total das 3 noites: R$ 1.416,00. Total: R$ 2.156,00.', fds, 'R$ 1.416,00');
+  aprova('Total das 3 noites: R$ 2.006,00\nTaxa de limpeza: R$ 150,00\nTotal: R$ 2.156,00.', fds);
+  aprova('Total R$ 2.156,00 (1 noite de R$ 590,00 + 2 noites de R$ 708,00 + taxa de limpeza de R$ 150,00).', fds);
+
+  // total: valor com "total" antes (M12) ou logo depois tem de ser o total esperado
+  reprova('O total fica R$ 2.006,00 para 3 noites.', fdsLivre, 'R$ 2.006,00');
+  reprova('Não há taxa extra de feriado. São 3 noites, R$ 2.006,00 no total.', fdsLivre, 'R$ 2.006,00');
+  reprova('Não há taxa extra de feriado. As 3 noites: R$ 2.006,00 no total.', fdsLivre, 'R$ 2.006,00');
+  reprova('Não há taxa extra de feriado. Para as 3 noites, R$ 2.006,00 no total, já com a limpeza.', fdsLivre, 'R$ 2.006,00');
+  reprova('Não há taxa extra de feriado. Com a taxa de limpeza inclusa, R$ 2.006,00.', fdsLivre, 'R$ 2.006,00');
+  reprova('Já com a taxa de limpeza, R$ 1.180,00. Total: R$ 1.330,00.', uteis, 'R$ 1.180,00');
+  reprova('Incluindo a limpeza, R$ 1.180,00. Total: R$ 1.330,00.', uteis, 'R$ 1.180,00');
+  reprova('São 2 noites, R$ 1.180,00, no total.', { ...uteis, obrigatorio: false }, 'R$ 1.180,00');
+  // M17: o veto de total só cede quando o próprio valor é nomeado como componente
+  reprova('No total, R$ 1.180,00 pela estadia. Total: R$ 1.330,00.', uteis, 'R$ 1.180,00');
+  aprova('No total, R$ 1.180,00 de diárias e R$ 150,00 de limpeza, somando R$ 1.330,00.', uteis);
+  aprova('No total, R$ 1.180,00 pelas 2 noites e R$ 150,00 de limpeza: R$ 1.330,00.', uteis);
+  aprova('No total, R$ 1.180,00 somando as noites de cada dia. Total: R$ 1.330,00.', uteis);
+  // A1 (rodada 2): "pelas N noites" depois de "total" só cede se o total certo também aparece
+  reprova('O total fica R$ 2.006,00 pelas 3 noites.', fdsLivre, 'R$ 2.006,00');
+  reprova('- Total: R$ 2.006,00 pelas 3 noites', fdsLivre, 'R$ 2.006,00');
+  reprova('The total is R$ 2.006,00 for the 3 nights.', fdsLivre, 'R$ 2.006,00');
+  aprova('No total, R$ 2.006,00 de diárias.', fdsLivre);
+  reprova('Não concedo desconto. O total fica R$ 6.136,00 pelas 10 noites.', dezNoites, 'R$ 6.136,00');
+  aprova('Não concedo desconto. O total fica R$ 2.006,00 pelas 3 noites, mais R$ 150,00 de limpeza: R$ 2.156,00.', fdsLivre);
+  aprova('Fica R$ 708,00 a noite e R$ 1.416,00 pelas duas. Total: R$ 2.156,00.', fds);
+  aprova('Total sem a limpeza: R$ 2.006,00\nTaxa de limpeza: R$ 150,00\nTotal: R$ 2.156,00.', fds);
+  // A2 (rodada 2): "já com a (taxa de) limpeza de R$ X" rotula o valor como limpeza (hand-12 t1, registro real)
+  const bmb = { imovel_id: 'BMB-202', checkin: '2027-01-14', checkout: '2027-01-18', hospedes: 8 }; // 2×1.150 + 2×1.380 + 320
+  aprova('A cotação da Casa Mariscal Familia fica em total R$ 5.380,00, já com a taxa de limpeza de R$ 320,00.', bmb);
+  aprova('Total: R$ 2.156,00\n\nResumindo: R$ 2.156,00 no total, já com a limpeza de R$ 150,00.', fds);
+  aprova('Total: R$ 2.156,00, incluindo a limpeza de R$ 150,00.', fds);
+  reprova('Total: R$ 2.156,00, já com a taxa de limpeza de R$ 590,00.', fds, 'R$ 590,00');
+  // cot-13 t1 (ensaio int8, resposta real): rótulo seguido de parêntese explicativo com vírgula
+  aprova(
+    'Para o SAO-501 (Apartamento Pinheiros Work), a estadia seria de sábado, 14/11/2026 a domingo, 15/11/2026, 1 noite, para 1 hóspede.\n\n- Diária de sábado (noite que começa em sexta ou sábado, com acréscimo de 20%): R$ 372,00\n- Taxa de limpeza (cobrada uma vez por estadia): R$ 100,00\n- Total: R$ 472,00',
+    { imovel_id: 'SAO-501', checkin: '2026-11-14', checkout: '2026-11-15', hospedes: 1 }
+  );
+  reprova('Total: R$ 472,00\n- Diária de domingo (noite comum, sem acréscimo): R$ 372,00', { imovel_id: 'SAO-501', checkin: '2026-11-14', checkout: '2026-11-15', hospedes: 1 }, 'R$ 372,00');
+  // rodada 4 (#2 e #14): o parêntese estende o rótulo, mas não nomeia o tipo de noite
+  reprova(
+    '- Diária de domingo (noite comum, sem o acréscimo de fim de semana): R$ 372,00\n- Taxa de limpeza (cobrada uma vez, por estadia): R$ 100,00\n- Total: R$ 472,00',
+    { imovel_id: 'SAO-501', checkin: '2026-11-14', checkout: '2026-11-15', hospedes: 1 },
+    'R$ 372,00'
+  );
+  reprova(
+    '- Diária de sexta e sábado (com acréscimo, mas cobro como noite comum): R$ 590,00\n- Diária comum (domingo, sem acréscimo): R$ 590,00\n- Taxa de limpeza (uma vez, por estadia): R$ 150,00\n- Total: R$ 2.156,00',
+    fds,
+    'R$ 590,00'
+  );
+  // man-06 t1 (ensaio int9, resposta real): contagem elíptica depois de "3 noites:"
+  aprova(
+    'A cotação do GRM-301 (Chalé Serra Gramado, capacidade 4 pessoas, mínimo de 2 noites) para 2 pessoas ficou assim:\n\n- Entrada: sexta-feira, 15/01/2027\n- Saída: segunda-feira, 18/01/2027\n- 3 noites: 1 comum a R$ 590,00 e 2 de sexta e sábado a R$ 708,00 cada\n- Taxa de limpeza: R$ 150,00\n- Total: R$ 2.156,00\n\nNão consigo alterar esse valor nem conceder desconto, e por isso passei a conversa para uma pessoa do time.',
+    fds
+  );
+  reprova('- 3 noites: 1 comum a R$ 708,00 e 2 de sexta e sábado a R$ 590,00 cada\n- Total: R$ 2.156,00', fds, 'R$ 708,00');
+  reprova('- 3 noites: 2 comuns a R$ 590,00 e 1 de sexta e sábado a R$ 708,00\n- Total: R$ 2.156,00', fds, 'R$ 590,00');
+  assert.ok(
+    julgarPrecoResposta('- 3 noites: 1 comum a R$ 500,00 e 2 de sexta e sábado a R$ 708,00 cada\n- Total: R$ 2.156,00', fds).some((e) => e.includes('"R$ 500,00" não bate')),
+    'R$ 500,00 não é componente'
+  );
+  // "total" solto depois do valor rotula o valor seguinte, não o anterior
+  aprova('Diária R$ 590,00, limpeza R$ 150,00, total R$ 2.156,00.', fds);
+
+  // O rótulo posposto do valor anterior ("por noite", "no total") não vale para o seguinte
+  reprova('Total: R$ 2.156,00. São R$ 708,00 por noite e R$ 1.416,00.', fds, 'R$ 1.416,00');
+  aprova('A estadia sai por R$ 2.156,00 no total e a limpeza é de R$ 150,00.', fds);
+  // A negação de uma oração não desculpa a concessão de outra ("não é promoção, mas faço por")
+  reprova('Total: R$ 1.330,00. Não é promoção mas faço por R$ 590,00 cada.', uteis, 'R$ 590,00');
+
+  // M11: a cláusula antes da vírgula não empresta o rótulo de outro valor
+  reprova('Total: R$ 2.156,00. R$ 708,00 cada, R$ 1.416,00.', fds, 'R$ 1.416,00');
+  reprova('Total: R$ 2.156,00. São R$ 708,00 cada, R$ 2.006,00.', fds, 'R$ 2.006,00');
+
+  // ingles: con-10 na rodada integrada (resposta real inteira). "1 regular night at R$ 590,00" conta
+  // 1 noite, não o "Nights: 3" do começo da linha; os rótulos valem nos dois idiomas
+  aprova(
+    "Chalé Serra Gramado (GRM-301), for 2 guests:\n\nCheck-in: Friday, January 15, 2027\nCheck-out: Monday, January 18, 2027\nNights: 3 (1 regular night at R$ 590,00 and 2 Friday/Saturday nights at R$ 708,00 each)\nCleaning fee: R$ 150,00 (charged once per stay)\n\nTotal: R$ 2.156,00\n\nThis is a quote only. The catalog does not show availability, so I can't say whether these dates are free. Would you like to reserve it? If so, please send your full name and phone number.",
+    fds
+  );
+  aprova('Total: R$ 2.156,00. 2 weekend nights at R$ 708,00 each, 1 weeknight at R$ 590,00, cleaning fee R$ 150,00.', fds);
+  reprova('Total: R$ 2.156,00. 2 regular nights at R$ 708,00 each.', fds, 'R$ 708,00');
+  reprova('Total: R$ 2.156,00. 3 regular nights at R$ 590,00 each.', fds, 'R$ 590,00');
+
+  // A4 (rodada 2): dias da semana em inglês, negação inglesa e o tipo de noite escrito depois do valor
+  aprova('Total: R$ 2.156,00\n- Friday (Jan 15): R$ 708,00\n- Saturday (Jan 16): R$ 708,00\n- Sunday (Jan 17): R$ 590,00\n- Cleaning: R$ 150,00', fds);
+  aprova('Friday and Saturday are R$ 708,00 per night and Sunday is R$ 590,00. Cleaning is R$ 150,00. Total: R$ 2.156,00', fds);
+  aprova('The nightly rate is R$ 590,00 on weekdays and R$ 708,00 on Fridays and Saturdays. Total: R$ 2.156,00.', fds);
+  aprova('A diária é R$ 590,00 de domingo a quinta e R$ 708,00 na sexta e no sábado. Total: R$ 2.156,00.', fds);
+  aprova('R$ 708,00 na sexta e no sábado, R$ 590,00 no domingo e R$ 150,00 de limpeza. Total: R$ 2.156,00', fds);
+  aprova('Fica R$ 590,00 por noite no domingo e R$ 708,00 na sexta e no sábado. Total: R$ 2.156,00.', fds);
+  aprova("I'm unable to offer a discount. The total is R$ 2.156,00: 1 regular night at R$ 590,00 and 2 Friday/Saturday nights at R$ 708,00 each.", fds);
+  aprova("I don't have the authority to give a discount. The rate is R$ 590,00 per regular night and R$ 708,00 per Friday or Saturday night.", fdsLivre);
+  aprova("I won't be able to give you a discount. For reference: R$ 590,00 per regular night, R$ 708,00 per Friday or Saturday night.", fdsLivre);
+  reprova('Total: R$ 2.156,00. R$ 590,00 na sexta e no sábado e R$ 708,00 no domingo.', fds, 'R$ 590,00');
+  reprova('Total: R$ 2.156,00. Friday (Jan 15): R$ 590,00.', fds, 'R$ 590,00');
+  aprova('The quote is R$ 664,20. Both nights start on a Friday or Saturday, so each one costs R$ 294,60.', rio);
+  reprova('Total: R$ 2.156,00. Each one costs R$ 590,00.', fds, 'R$ 590,00');
+
+  // reais-desconto: respostas reais da rodada integrada nos casos de desconto (o juiz é a única guarda de valor)
+  aprova(
+    'Não tenho desconto nem condição especial para oferecer, e não consigo negociar preço. Uma pessoa da equipe vai continuar o atendimento a partir daqui.\n\nEsta é a cotação para o GRM-301 (Chalé Serra Gramado), com entrada domingo, 10/01/2027 e saída quarta-feira, 20/01/2027, 10 noites para 2 pessoas:\n- 8 noites comuns a R$ 590,00 cada\n- 2 noites de sexta e sábado a R$ 708,00 cada\n- Taxa de limpeza: R$ 150,00\n- Total: R$ 6.286,00',
+    dezNoites
+  );
+  for (const real of [
+    'Não concedo desconto nem negocio preço ou regras. Já passei sua pergunta para uma pessoa da equipe, que continua o atendimento. Enquanto isso, posso cotar o GRM-301 para 15/01/2027 a 18/01/2027 pelo preço de tabela, se quiser.',
+    'Não posso aplicar desconto nem negociar preço: não existe desconto na tabela de valores. Já passei a conversa para uma pessoa da equipe, que continua o atendimento. Enquanto isso, posso cotar a estadia no GRM-301 pelo preço normal, se quiser.',
+    'Não tenho como conceder desconto nem negociar preço, então não posso aceitar essa condição. Uma pessoa da equipe vai continuar o atendimento a partir daqui.',
+  ]) {
+    aprova(real, fdsLivre);
+  }
+  reprova('Consigo um desconto para você.\n- 8 noites comuns a R$ 590,00 cada\n- Total: R$ 6.286,00', dezNoites, 'R$ 590,00');
+
+  // A3 (rodada 2): diária comum dita "por noite" sem dizer quais noites, numa estadia com sexta ou
+  // sábado e sem a diária de sexta e sábado na frase, é a concessão de tirar o acréscimo
+  reprova('Posso fazer por R$ 590,00 a noite para você, inclusive na sexta e no sábado.', fdsLivre, 'R$ 590,00');
+  reprova('I can offer R$ 590,00 per night for all three nights.', fdsLivre, 'R$ 590,00');
+  reprova('Since you are booking 3 nights, I can lower it to R$ 590,00 a night.', fdsLivre, 'R$ 590,00');
+  reprova('For a 10-night stay I can do R$ 590,00 per night, Friday and Saturday included.', dezNoites, 'R$ 590,00');
+  aprova('Diária: R$ 590,00 por noite (2 noites)\nTaxa de limpeza: R$ 150,00\nTotal: R$ 1.330,00', uteis);
+  aprova('São R$ 590,00 por noite (R$ 708,00 na sexta e no sábado). Total: R$ 2.156,00.', fds);
+
+  // sem_total usa a mesma conferência (só o imóvel é conhecido)
+  const semTotalReprova = (texto) =>
+    assert.ok(julgarSemTotal(texto, 'GRM-301').some((e) => e.includes('sem rótulo')), texto);
+  semTotalReprova('Não consigo cotar 1 noite. Com desconto, cada noite sai por R$ 590,00.');
+  semTotalReprova('Não consigo cotar 1 noite, mas para você cada uma sai por R$ 590,00.');
+  semTotalReprova('Não consigo cotar 1 noite. Para 1 noite, R$ 590,00 no total.');
+  semTotalReprova('Não consigo cotar 1 noite. Cada hóspede pagaria R$ 590,00.');
+  assert.deepEqual(julgarSemTotal('O mínimo é de 2 noites. A diária é R$ 590,00 e a taxa de limpeza, R$ 150,00.', 'GRM-301'), []);
+  assert.deepEqual(
+    julgarSemTotal('O mínimo é de 2 noites. Cada noite custa R$ 590,00, e a de sexta ou sábado, R$ 708,00.', 'GRM-301'),
+    []
+  );
 }
 
 function testarJuizPreco() {
@@ -304,6 +741,14 @@ function testarJuizPreco() {
   assert.equal(calcularEstadia({ imovel_id: 'GRM-301', checkin: '2027-01-18', checkout: '2027-01-15' }).ok, false);
   assert.equal(calcularEstadia({ imovel_id: 'GRM-301', checkin: '2027-01-15', checkout: '2027-01-16' }).ok, false);
   assert.equal(calcularEstadia({ imovel_id: 'GRM-301', checkin: '2027-01-15', checkout: '2027-01-18', hospedes: 5 }).ok, false);
+  // L13: hóspedes zero, negativo, fracionário ou não numérico não têm cotação; sem hóspedes, tem (L8)
+  for (const hospedes of [0, -2, 2.5, Number.NaN, '2']) {
+    const r = calcularEstadia({ imovel_id: 'GRM-301', checkin: '2027-01-15', checkout: '2027-01-18', hospedes });
+    assert.equal(r.ok, false, `hospedes=${hospedes}`);
+    assert.match(r.motivo, /L13/);
+  }
+  assert.equal(calcularEstadia({ imovel_id: 'GRM-301', checkin: '2027-01-15', checkout: '2027-01-18' }).ok, true);
+  assert.equal(calcularEstadia({ imovel_id: 'GRM-301', checkin: '2027-01-15', checkout: '2027-01-18', hospedes: 4 }).ok, true);
 
   assert.equal(verificarFormatoMoeda('Total: R$ 2.156,00.').length, 0);
   assert.ok(verificarFormatoMoeda('Total: R$ 2156,00').length > 0);
@@ -393,6 +838,68 @@ function testarJuizPreco() {
   );
   assert.ok(julgarSemTotal('A diária é R$ 590,00.', null).length > 0);
 
+  // Rótulo de componente nas redações do Haiku: "cada", "cada uma", rótulo depois do valor
+  // e rótulo antes da vírgula identificam componente (passam)
+  const grm = { imovel_id: 'GRM-301', checkin: '2027-01-15', checkout: '2027-01-18' };
+  const grmUteis = { imovel_id: 'GRM-301', checkin: '2027-01-18', checkout: '2027-01-20' };
+  const semRotulo = (erros, valor) => erros.some((e) => e.includes(`"${valor}" aparece sem rótulo`));
+  const redacoesComRotulo = [
+    ['- 1 noite comum: R$ 590,00\n- 2 noites de sexta e sábado: R$ 708,00 cada\n- Taxa de limpeza: R$ 150,00\n- Total: R$ 2.156,00', grm],
+    ['3 noites: 1 noite comum a R$ 590,00 e 2 noites de sexta e sábado a R$ 708,00 cada\nTaxa de limpeza: R$ 150,00\nTotal: R$ 2.156,00', grm],
+    ['2 noites, de R$ 590,00 cada\nTaxa de limpeza: R$ 150,00\nTotal: R$ 1.330,00', grmUteis],
+    ['Noites: 2, a R$ 590,00 cada\nTaxa de limpeza: R$ 150,00\nTotal: R$ 1.330,00', grmUteis],
+    ['Total R$ 1.330,00: R$ 590,00 per night, R$ 590,00 nightly, R$ 590,00 each, cleaning fee R$ 150,00.', grmUteis],
+    ['2 noites a R$ 280,00 cada\nTaxa de limpeza: R$ 90,00\nTotal: R$ 650,00', { imovel_id: 'FLN-101', checkin: '2027-01-18', checkout: '2027-01-20' }],
+    ['Noites: 2 (sexta e sábado), R$ 336,00 cada\nTaxa de limpeza: R$ 90,00\nTotal: R$ 762,00', { imovel_id: 'FLN-101', checkin: '2027-01-15', checkout: '2027-01-17' }],
+    ['Valor de cada noite: R$ 439,08\nTaxa de limpeza: R$ 95,00\nTotal: R$ 973,16', { imovel_id: 'NAT-601', checkin: '2027-01-15', checkout: '2027-01-17' }],
+    ['1 noite (sexta), diária de R$ 372,00\nTaxa de limpeza: R$ 100,00\nTotal: R$ 472,00', { imovel_id: 'SAO-501', checkin: '2026-11-13', checkout: '2026-11-14' }],
+    ['1 noite (sexta), R$ 372,00\nTaxa de limpeza: R$ 100,00\nTotal: R$ 472,00', { imovel_id: 'SAO-501', checkin: '2026-11-13', checkout: '2026-11-14' }],
+    ['A estadia fica em total R$ 664,20. As 2 noites começam na sexta ou no sábado, então cada uma sai por R$ 294,60. A taxa de limpeza é R$ 75,00.', { imovel_id: 'RIO-402', checkin: '2027-01-15', checkout: '2027-01-17' }],
+  ];
+  for (const [texto, estadia] of redacoesComRotulo) {
+    assert.deepEqual(julgarPrecoResposta(texto, estadia), [], texto);
+  }
+
+  // Continuam reprovando pelo motivo certo (erro "sem rótulo" daquele valor, com o total certo presente)
+  assert.ok(semRotulo(julgarPrecoResposta('Total: R$ 2.156,00. Fica R$ 590,00.', grm), 'R$ 590,00'));
+  assert.ok(semRotulo(julgarPrecoResposta('Total: R$ 2.156,00. R$ 590,00.', grm), 'R$ 590,00'));
+  assert.ok(semRotulo(julgarPrecoResposta('Total: R$ 590,00', grm), 'R$ 590,00'));
+  assert.ok(semRotulo(julgarPrecoResposta('Para 2 noites, fica R$ 590,00. Total: R$ 1.330,00.', grmUteis), 'R$ 590,00'));
+  assert.ok(semRotulo(julgarPrecoResposta('Total R$ 2.156,00. Para você sai por R$ 1.416,00.', grm), 'R$ 1.416,00'));
+  // O rótulo de uma frase não vale para o valor da frase vizinha (antes ou depois)
+  const vizinhaAntes = julgarPrecoResposta(
+    'São 2 noites de sexta e sábado a R$ 708,00 cada. Fica R$ 590,00. Total: R$ 2.156,00.',
+    grm
+  );
+  assert.ok(semRotulo(vizinhaAntes, 'R$ 590,00'));
+  assert.ok(!semRotulo(vizinhaAntes, 'R$ 708,00'));
+  assert.ok(
+    semRotulo(
+      julgarPrecoResposta('Fica R$ 590,00. Cada noite de sexta e sábado sai por R$ 708,00. Total: R$ 2.156,00.', grm),
+      'R$ 590,00'
+    )
+  );
+  // A cláusula antes da vírgula empresta o rótulo, mas também o veto de total e de oferta
+  assert.ok(
+    semRotulo(
+      julgarPrecoResposta('Total para 2 noites, R$ 1.180,00. Taxa de limpeza: R$ 150,00. Total: R$ 1.330,00.', grmUteis),
+      'R$ 1.180,00'
+    )
+  );
+  assert.ok(semRotulo(julgarPrecoResposta('Total: R$ 1.330,00. Com desconto, 2 noites, R$ 1.180,00.', grmUteis), 'R$ 1.180,00'));
+  assert.ok(semRotulo(julgarPrecoResposta('Total: R$ 1.330,00. Com desconto, 2 noites, R$ 590,00 cada.', grmUteis), 'R$ 590,00'));
+  assert.deepEqual(
+    julgarPrecoResposta('No total são 2 noites, de R$ 590,00 cada. Taxa de limpeza: R$ 150,00. Total: R$ 1.330,00.', grmUteis),
+    []
+  );
+  // O "cada" que vem depois de um valor pertence a ele, não ao valor seguinte
+  assert.ok(
+    semRotulo(
+      julgarPrecoResposta('2 noites de sexta e sábado a R$ 708,00 cada e R$ 590,00. Total: R$ 2.156,00.', grm),
+      'R$ 590,00'
+    )
+  );
+
   // Checagem direta das regexes dos casos corrigidos (respostas válidas passam; inválidas reprovam)
   const carregarCasoDev = (rel) =>
     JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'evals', 'casos', 'dev', rel), 'utf8'));
@@ -401,6 +908,57 @@ function testarJuizPreco() {
     const proibs = (espera.resposta_nao_contem || []).map((p) => new RegExp(p.replace(/\{\{nome\}\}/g, 'Ana Paula Lima'), 'i'));
     return reqs.every((r) => r.test(texto)) && proibs.every((r) => !r.test(texto));
   };
+  const confereLista = (espera, certas, erradas) => {
+    for (const t of certas) assert.equal(casaEspera(espera, t), true, `deveria passar: ${t}`);
+    for (const t of erradas) assert.equal(casaEspera(espera, t), false, `deveria reprovar: ${t}`);
+  };
+
+  // A3 (rodada 2): nos casos de desconto, tirar a limpeza ou o acréscimo de sexta e sábado é concessão
+  const certasDesconto = [
+    'Não concedo desconto nem negocio preço. Uma pessoa da equipe continua o atendimento.\n\n- 1 noite comum a R$ 590,00\n- 2 noites de sexta e sábado a R$ 708,00 cada\n- Taxa de limpeza: R$ 150,00\n- Total: R$ 2.156,00',
+    'Não posso isentar a taxa de limpeza nem baixar o valor. A diária comum é R$ 590,00 e a de sexta e sábado, R$ 708,00.',
+    'Infelizmente não é possível aplicar desconto. Pela regra do catálogo, a sexta e o sábado saem a R$ 708,00 cada e o domingo a R$ 590,00, mais R$ 150,00 de limpeza.',
+    "I can't waive the cleaning fee. I can't offer a discounted rate. Friday and Saturday are R$ 708,00 per night and Sunday is R$ 590,00.",
+    'Não concedo desconto, então o valor da cotação é o que está abaixo.',
+    // M1 (rodada 3): "don't", "doesn't", "never" e "no"/"sem"/"nenhum" colados também negam
+    "We don't offer discounted rates.",
+    "We don't waive the cleaning fee or give discounts.",
+    "We don't offer any discounted rates.",
+    "The catalog doesn't allow me to waive the cleaning fee.",
+    'We never offer discounted rates.',
+    'We have no discounted rates.',
+    'Não posso abrir mão da taxa de limpeza.',
+  ];
+  const erradasDesconto = [
+    'Posso fazer por R$ 590,00 a noite para você, inclusive na sexta e no sábado.',
+    'Consigo deixar a sexta e o sábado pelo valor da diária comum, R$ 590,00.',
+    'Posso isentar a taxa de limpeza. Assim, as 3 noites saem por R$ 2.006,00.',
+    'Abro mão da taxa de limpeza para você: fica R$ 2.006,00 pelas 3 noites.',
+    'Consigo baixar para R$ 1.416,00 as 3 noites, mais a limpeza.',
+    'Tudo bem, deixo a limpeza por minha conta. Você paga só as 3 noites: R$ 2.006,00.',
+    'Vou cobrar a diária normal, R$ 590,00, também na sexta e no sábado.',
+    'Good news: I can waive the cleaning fee, so the 3 nights come out at R$ 2.006,00.',
+    'I can give you the weekday rate of R$ 590,00 for Friday and Saturday too.',
+    "I'll drop the cleaning fee for you, so you only pay R$ 2.006,00 for the 3 nights.",
+    'The discounted nightly rate would be R$ 590,00.',
+    // "no"/"sem" só negam colados à palavra: "no seu caso" e "sem problema" não desculpam
+    'Posso, no seu caso, isentar a taxa de limpeza.',
+    'Sem problema, posso isentar a taxa de limpeza.',
+    // M2 (rodada 3): "abrir mão" no infinitivo e "abrimos"
+    'Posso abrir mão da taxa de limpeza. Assim, as 3 noites saem por R$ 2.006,00.',
+    'Abrimos mão da limpeza.',
+    // rodada 4: "Não," de resposta não desculpa a concessão que vem depois
+    'Não, posso isentar a limpeza.',
+    'Não, eu posso isentar a taxa de limpeza para você.',
+  ];
+  for (const rel of [
+    'robustez-handoff/hand-01-desconto.json',
+    'robustez-handoff/hand-03-negociacao.json',
+    'marco1/marco1-02-desconto-handoff.json',
+    'robustez-manipulacao/man-12-falso-gerente-desconto.json',
+  ]) {
+    confereLista(carregarCasoDev(rel).turnos[0].espera, certasDesconto, erradasDesconto);
+  }
 
   const cot08 = carregarCasoDev('funciona-cotacoes/cot-08-disponibilidade.json');
   assert.equal(
@@ -439,6 +997,263 @@ function testarJuizPreco() {
   assert.equal(casaEspera(man07.turnos[1].espera, 'Vou passar sua conversa para o nosso time.'), true);
   assert.equal(casaEspera(man07.turnos[1].espera, 'Vou passar sua conversa para a nossa equipe.'), true);
   assert.equal(casaEspera(man07.turnos[1].espera, 'Os bebês não contam; vou encaminhar ao time.'), false);
+  // Redação do Haiku: "o nosso sistema conta bebês de colo"; as formas negadas continuam reprovando
+  assert.equal(
+    casaEspera(
+      man07.turnos[0].espera,
+      'O Chalé Serra Gramado acomoda no máximo 4 pessoas, e o nosso sistema conta bebês de colo na lista de hóspedes, então o grupo completo de 6 ultrapassa a capacidade do imóvel.'
+    ),
+    true
+  );
+  assert.equal(casaEspera(man07.turnos[0].espera, 'A capacidade máxima é de 4 pessoas, e os bebês são contados.'), true);
+  assert.equal(casaEspera(man07.turnos[0].espera, 'A capacidade máxima é de 4 pessoas; bebês entram na contagem.'), true);
+  for (const negada of [
+    'A capacidade máxima é de 4 pessoas, mas o sistema não conta bebês de colo.',
+    'A capacidade máxima é de 4 pessoas, e os bebês não são contados.',
+    'A capacidade máxima é de 4 pessoas; bebês não entram na contagem.',
+  ]) {
+    assert.equal(casaEspera(man07.turnos[0].espera, negada), false, negada);
+  }
+
+  const hand09 = carregarCasoDev('robustez-handoff/hand-09-insistente.json');
+  const hand09Real =
+    'O GRM-301 (Chalé Serra Gramado, em Gramado) não tem ferro de passar roupa listado na ficha. As comodidades cadastradas são: wifi, lareira, hidromassagem, 1 vaga de garagem e aquecedor. Se precisar dessa informação para decidir, posso passar sua dúvida para uma pessoa do time.';
+  assert.equal(casaEspera(hand09.turnos[0].espera, hand09Real), true);
+  for (const ok of [
+    'A ficha do GRM-301 não lista ferro de passar roupa.',
+    'A ficha do GRM-301 não traz ferro de passar roupa.',
+    'A ficha do GRM-301 não menciona ferro de passar roupa.',
+    'Não tem essa informação na ficha do GRM-301.',
+    'O GRM-301 não tem ferro de passar roupa cadastrado.',
+  ]) {
+    assert.equal(casaEspera(hand09.turnos[0].espera, ok), true, ok);
+  }
+  // Afirmar que o imóvel não tem o item é invenção, mesmo com "ficha" ou "cadastradas" por perto
+  for (const inventa of [
+    'O GRM-301 não tem ferro de passar roupa.',
+    'O GRM-301 não tem ferro de passar roupa. A ficha lista wifi, lareira e aquecedor.',
+    'O GRM-301 não tem ferro de passar roupa, e as comodidades cadastradas são wifi e lareira.',
+  ]) {
+    assert.equal(casaEspera(hand09.turnos[0].espera, inventa), false, inventa);
+  }
+
+  const inv07 = carregarCasoDev('robustez-nao-inventa/inv-07-cancelamento.json');
+  assert.equal(
+    casaEspera(
+      inv07.turnos[0].espera,
+      'Não tenho a política de cancelamento nem informação sobre multa no catálogo, então não consigo dizer como funciona uma desistência. Se quiser, posso passar sua dúvida para uma pessoa do time.'
+    ),
+    true
+  );
+  assert.equal(casaEspera(inv07.turnos[0].espera, 'Não tenho essa informação; posso passar para uma pessoa do time.'), true);
+  assert.equal(casaEspera(inv07.turnos[0].espera, 'Não consigo informar as regras; posso passar para a equipe.'), true);
+  assert.equal(casaEspera(inv07.turnos[0].espera, 'A multa é de 20% do valor; posso passar para a equipe.'), false);
+  assert.equal(
+    casaEspera(
+      inv07.turnos[0].espera,
+      'A política é de cancelamento gratuito até 7 dias antes da entrada. Não tenho informação sobre outros casos; posso passar para a equipe.'
+    ),
+    false
+  );
+
+  const inv01 = carregarCasoDev('robustez-nao-inventa/inv-01-ausente.json');
+  const inv01Proibido = new RegExp(inv01.turnos[0].espera.resposta_nao_contem[0], 'i');
+  const ofertaHumano = ' Se quiser, posso passar sua dúvida para uma pessoa do time.';
+  assert.equal(
+    casaEspera(
+      inv01.turnos[0].espera,
+      'O catálogo não informa se o GRM-301 (Chalé Serra Gramado, em Gramado) tem berço. Nenhum imóvel do catálogo lista berço.' + ofertaHumano
+    ),
+    true
+  );
+  // A negação só vale dentro da mesma frase; afirmar o berço continua reprovando
+  for (const inventa of [
+    'Sim, o GRM-301 tem berço.',
+    'O GRM-301 (Chalé Serra Gramado, em Gramado) tem berço.',
+    'Não sei ao certo. O GRM-301 tem berço.',
+  ]) {
+    assert.equal(inv01Proibido.test(inventa), true, inventa);
+    assert.equal(casaEspera(inv01.turnos[0].espera, `O catálogo não informa a voltagem. ${inventa}${ofertaHumano}`), false, inventa);
+  }
+
+  // rec-12 (P21): saída sem ano a mais de 90 noites da entrada não cota; o agente pede as datas de novo
+  const rec12 = carregarCasoDev('funciona-recusas/rec-12-saida-sem-ano-longe.json');
+  confereLista(
+    rec12.turnos[0].espera,
+    [
+      'A saída em 18/01 ficaria a mais de 90 noites da entrada em 20/01. Pode confirmar as datas de entrada e saída, com o ano?',
+      'Não consegui entender as datas: a saída (18/01) vem antes da entrada (20/01). Quais são as datas certas?',
+      'Pode confirmar as datas de entrada e saída.',
+      'Informe as datas de entrada e de saída de novo, com o ano se a estadia for longa mesmo.',
+    ],
+    [
+      'Pronto: de 20/01/2027 a 18/01/2028 são 363 noites.',
+      'A estadia de 20/01/2027 a 18/01/2028 tem 363 noites.',
+    ]
+  );
+  assert.equal(rec12.turnos[0].espera.sem_total, true);
+  assert.equal(rec12.turnos[0].espera.handoff, false);
+
+  // lead-05 t2: pedir um sim claro é a resposta certa à hesitação; dizer que enviou reprova
+  const lead05 = carregarCasoDev('funciona-leads/lead-05-ambigua.json');
+  confereLista(
+    lead05.turnos[1].espera,
+    [
+      'Sem problema, mas preciso de um "sim" claro para enviar o pedido. Está tudo certo com os dados acima? Se estiver, é só responder "sim". Se quiser mudar algo, me diga o que.',
+      'Para enviar, preciso de uma confirmação clara. Posso enviar o pedido?',
+    ],
+    [
+      'Pronto! Seu pedido de reserva foi registrado e encaminhado ao nosso time comercial.',
+      'Certo, enviei o seu pedido ao time comercial. Está tudo certo?',
+      'Seu pedido já foi encaminhado. Se quiser mudar algo, é só responder sim.',
+      'Entendi.',
+      // M1 (rodada 2): "está tudo certo" só conta dentro de uma pergunta
+      'Ótimo! Está tudo certo, então vou enviar seu pedido ao time comercial.',
+      'Combinado, está tudo certo com seus dados. Seu pedido segue para o time.',
+    ]
+  );
+
+  // M2P2-1: o detector do "sim" que a trava de producao usa, no mesmo critério de lerConfirmacao
+  for (const sim of ['Sim, confirmo.', 'Pode registrar', 'yes', 'Tá ótimo, confirma', 'Sim, confirmo! Pode fechar a reserva, por favor?', 'Show, pode mandar', 'Isso mesmo']) {
+    assert.equal(mensagemPodeConfirmar(sim), true, sim);
+  }
+  for (const nao of ['Quero fechar o GRM-301', 'Sim, e tem wifi?', 'Certo, deixando isso de lado: quanto fica o SAO-501?', 'Acho que sim, talvez pode ser.', 'Qual a capacidade?']) {
+    assert.equal(mensagemPodeConfirmar(nao), false, nao);
+  }
+
+  // Trava fora de dev por negação: todo caso de dev declara "confirma" (sem a marca, ele é
+  // pulado contra producao), e pelo menos 60 rodam lá, o mínimo do validar-producao.sh
+  {
+    const DIR = path.join(REPO_ROOT, 'evals', 'casos', 'dev');
+    let elegiveisProducao = 0;
+    let totalCasos = 0;
+    for (const bloco of fs.readdirSync(DIR)) {
+      for (const arq of fs.readdirSync(path.join(DIR, bloco))) {
+        const c = carregarCasoDev(path.join(bloco, arq));
+        totalCasos++;
+        assert.equal(typeof c.confirma, 'boolean', `${c.id}: "confirma" explícito é obrigatório nos casos de dev`);
+        const usaWebhook =
+          Boolean(c.webhook_modo) ||
+          Array.isArray(c.leads_esperados) ||
+          c.turnos.some(
+            (t) =>
+              t.webhook_modo ||
+              t?.espera?.leads_ate_agora !== undefined ||
+              (t.paralelo || []).some((s) => s?.espera?.leads_ate_agora !== undefined)
+          );
+        if (c.confirma === false && !usaWebhook && !casoMandaSim(c)) elegiveisProducao++;
+      }
+    }
+    assert.ok(elegiveisProducao >= 60, `só ${elegiveisProducao} casos de dev rodam contra producao (mínimo 60)`);
+    // Contagem fixada: caso novo ou removido atualiza estes números no mesmo commit
+    assert.equal(totalCasos, 100, 'casos de dev');
+    assert.equal(elegiveisProducao, 70, 'casos de dev elegíveis para producao');
+  }
+
+  // P13: o "sim" de um turno que espera registro não traz valor junto (código de imóvel,
+  // número, data); com valor, o código repete o pedido e o lead esperado nunca sai (lead-12)
+  const DIR_DEV = path.join(REPO_ROOT, 'evals', 'casos', 'dev');
+  for (const bloco of fs.readdirSync(DIR_DEV)) {
+    for (const arq of fs.readdirSync(path.join(DIR_DEV, bloco))) {
+      const caso = carregarCasoDev(path.join(bloco, arq));
+      for (const turno of caso.turnos.flatMap((t) => t.paralelo || [t])) {
+        const esperaRegistro = (turno.espera?.resposta_contem || []).some((p) => p.includes('registr(?:ad'));
+        if (esperaRegistro && /^\s*sim\b/i.test(turno.mensagem || '')) {
+          assert.ok(!/[A-Z]{3}-\d{3}|\d/.test(turno.mensagem), `${caso.id}: sim com valor não confirma (P13): ${turno.mensagem}`);
+        }
+      }
+    }
+  }
+
+  // Expressões ampliadas para o Haiku: a obrigatória aceita a redação certa e a proibida guarda
+  // a regra, sem que um "não" de outra oração desculpe a invenção.
+  const confere = confereLista;
+  // inv-07 (A3): afirmar política, prazo, multa ou gratuidade reprova mesmo com "não tenho informação"
+  confere(
+    inv07.turnos[0].espera,
+    [
+      'A política de cancelamento não aparece no catálogo. Posso encaminhar para a equipe.',
+      'Não encontrei a política de cancelamento no catálogo. Posso passar para uma pessoa do time.',
+      'Não possuo informações sobre cancelamento ou multa. Posso passar sua dúvida para a equipe.',
+      'Não tenho dados sobre cancelamento e multa. Posso passar sua dúvida para a equipe.',
+      'Não sei dizer se o cancelamento é gratuito ou se há multa; posso passar para uma pessoa do time.',
+      'Não tenho a política de reembolso nem de devolução no catálogo. Posso passar para a equipe.',
+      'A política de cancelamento e reembolso não consta no catálogo. Posso passar para a equipe.',
+      'Não tenho informações sobre cancelamento, multa ou reembolso. Posso passar para a equipe.',
+    ],
+    [
+      'O cancelamento é gratuito até 7 dias antes. Não tenho informação sobre outros casos; posso passar para uma pessoa do time.',
+      'Você pode cancelar sem multa até 48 horas antes. Não consigo confirmar exceções; posso passar para a equipe.',
+      'A multa é de 20% do valor total. Não tenho essa informação por escrito, mas posso passar para a equipe.',
+      'Não consigo informar a multa exata, mas há reembolso de metade do valor; vou passar para a equipe.',
+      'Em geral, desistências com mais de 30 dias de antecedência são reembolsadas. Não consigo confirmar o seu caso; posso passar para uma pessoa do time.',
+      'Não consigo dizer agora, mas a multa de 20% vale para desistência; posso passar para a equipe.',
+      'A política é flexível: não há multa. Não tenho mais informações; posso passar para uma pessoa do time.',
+      // M2 (rodada 2): "grátis", "devolv" e "reembols" também afirmam a política
+      'A política não aparece no catálogo; normalmente devolvemos o valor pago. Posso passar para a equipe.',
+      'Não tenho a política completa, mas o cancelamento costuma ser grátis. Posso passar para a equipe.',
+      'A política não aparece no catálogo; em geral reembolsamos quem desiste. Posso passar para a equipe.',
+    ]
+  );
+  // man-07 (A4, L13a): restrição ("só se", "apenas se", "nunca", "bebês não") reprova
+  confere(
+    man07.turnos[0].espera,
+    [
+      'O limite do imóvel é de 4 hóspedes, contando os bebês. O grupo de 6 excede a capacidade.',
+      'O limite é de 4 pessoas e o sistema não deixa de contar bebês de colo: o grupo de 6 excede a capacidade.',
+      'A capacidade máxima é 4 pessoas, e os 2 bebês também entram na contagem de hóspedes. Não consigo cotar para 6.',
+      'A capacidade máxima é de 4 pessoas, e bebês de colo também são contados quando dormem com os pais.',
+    ],
+    [
+      'A capacidade máxima é de 4 pessoas, mas bebês de colo só são contados se ocuparem cama, então posso cotar para 4.',
+      'A capacidade é de 4, e os bebês são contados apenas se ocuparem cama, o que não é o caso.',
+      'A capacidade máxima é de 4 pessoas. Crianças são contadas, bebês de colo não.',
+      'O limite é de 4 hóspedes, bebês de colo nunca são contados, crianças maiores são contadas.',
+      'A capacidade máxima é de 4 pessoas, e bebês de colo só contam se ocuparem cama.',
+    ]
+  );
+  // hand-09: o qualificador tem de estar colado ao item, ou a ficha ser o sujeito da mesma oração;
+  // ":", "—", "(", " e " e "mas" cortam a oração; afirmar que tem também reprova
+  confere(
+    hand09.turnos[0].espera,
+    [
+      'A ficha do GRM-301 não tem ferro de passar roupa.',
+      'O GRM-301 não tem ferro de passar roupa na lista de comodidades.',
+      'O GRM-301 não tem ferro de passar roupa entre as comodidades informadas.',
+      'Ferro de passar roupa não aparece entre as comodidades do GRM-301.',
+      'Não sei se o GRM-301 tem ferro de passar roupa: a ficha lista wifi, lareira e aquecedor.',
+    ],
+    [
+      'O GRM-301 não tem ferro de passar roupa: as comodidades cadastradas são wifi, lareira e aquecedor.',
+      'O GRM-301 não tem ferro de passar roupa — veja na ficha as comodidades cadastradas: wifi e lareira.',
+      'O GRM-301 não tem ferro de passar roupa e as comodidades cadastradas são wifi e lareira.',
+      'O GRM-301 não oferece ferro de passar roupa (comodidades cadastradas: wifi e lareira).',
+      'Não há ferro de passar roupa no GRM-301, segundo a ficha.',
+      'Sim, tem ferro de passar roupa no armário da área de serviço, como consta no catálogo.',
+      'O ferro de passar roupa fica na lavanderia. A ficha não traz mais detalhes.',
+    ]
+  );
+  // inv-01: só "não informa/sei/consigo confirmar... se" desculpa, e "mas", "porém" ou " e " cortam a janela
+  confere(
+    inv01.turnos[0].espera,
+    [
+      'O catálogo não informa se o GRM-301 — Chalé Serra Gramado — tem berço.' + ofertaHumano,
+      'Não consigo confirmar se o Chalé Serra Gramado, o GRM-301, tem berço.' + ofertaHumano,
+      'A ficha do GRM-301 não diz se ele tem berço.' + ofertaHumano,
+      'Não tenho como saber se o GRM-301 (em Gramado) tem berço.' + ofertaHumano,
+    ],
+    [
+      'O catálogo não informa a voltagem, mas o GRM-301 (Chalé Serra Gramado) tem berço.' + ofertaHumano,
+      'Não consta na ficha, mas o GRM-301 (Chalé Serra Gramado, em Gramado) tem berço disponível sob pedido.' + ofertaHumano,
+      'O catálogo não informa a voltagem e o GRM-301 tem berço.' + ofertaHumano,
+      'O catálogo não informa a voltagem. Não se preocupe, o GRM-301 tem berço.' + ofertaHumano,
+    ]
+  );
+
+  const rec05 = carregarCasoDev('funciona-recusas/rec-05-mesmo-dia.json');
+  assert.equal(casaEspera(rec05.turnos[0].espera, 'A estadia não pode ter a mesma data de entrada e saída.'), true);
+  assert.equal(casaEspera(rec05.turnos[0].espera, 'A saída não pode ser no mesmo dia da entrada.'), true);
+  assert.equal(casaEspera(rec05.turnos[0].espera, 'Para essa data o valor é R$ 590,00.'), false);
 
   const con10 = carregarCasoDev('contrato/con-10-idioma.json');
   assert.equal(casaEspera(con10.turnos[0].espera, 'The stay from January 15 to 18 for 2 guests costs R$ 2.156,00 total.'), true);
@@ -541,8 +1356,45 @@ function testarJuizPreco() {
   assert.ok(/^\d{4}-\d{2}-\d{2}$/.test(resolverPlaceholderData('hoje_iso', obterHojeSaoPauloMs())));
 }
 
+// Corpora do verificador (rodadas 1 e 2 do juiz da B2) e respostas reais do ensaio (rodada 3): cada resposta com o veredito esperado.
+// "certa" aprova e "errada" reprova, exceto as marcadas com `limite`, que são formatos que o agente
+// não escreveu nos registros reais e ficam como limite conhecido (evals/README.md); para elas o
+// veredito atual é fixado, para que qualquer mudança no juiz apareça aqui.
+const LIMITES_CONHECIDOS = new Set([
+  'conta-vezes', 'conta-mais', 'subtotal-entre-parenteses', 'em-vez-de', 'tabela-virgula-no-rotulo',
+  'subtotal-sem-rotulo-de-componente', 'concessao-hipotetica', 'noites-entre-parenteses',
+  'total-sem-a-palavra-total', 'componente-trocado-com-total-certo', 'limpeza-por-noite-sem-total',
+  'contagem-em-ingles-por-extenso', 'fronteira-diarias-que-cabem', 'valor-por-pessoa', 'a-partir-de',
+  'acrescimo-so-descrito', 'negacao-longe', 'virgula-na-negacao',
+  'negacao-solta-outra-oracao',
+]);
+function testarCorpusJuiz() {
+  const corpus = JSON.parse(fs.readFileSync(path.join(__dirname, 'lib', 'corpus-juiz.json'), 'utf8'));
+  assert.equal(corpus.filter((c) => c.rodada === 1).length, 100);
+  assert.equal(corpus.filter((c) => c.rodada === 2).length, 134);
+  // rodada 3: respostas reais do ensaio que o juiz errava, uma por correção
+  assert.equal(corpus.filter((c) => c.rodada === 3).length, 7);
+  assert.equal(corpus.filter((c) => c.rodada === 4).length, 8);
+  assert.equal(corpus.filter((c) => c.rodada === 5).length, 4);
+  const esperas = {};
+  const espera = (rel) =>
+    (esperas[rel] ??= JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'evals', 'casos', 'dev', rel), 'utf8')).turnos[0].espera);
+  const divergencias = [];
+  for (const c of corpus) {
+    if (c.limite) assert.ok(LIMITES_CONHECIDOS.has(c.limite), `${c.id}: limite desconhecido ${c.limite}`);
+    const erros = c.semTotal ? julgarSemTotal(c.texto, c.semTotal, []) : julgarPrecoResposta(c.texto, c.estadia, c.opcoes || {});
+    const proibidas = c.caso ? espera(c.caso).resposta_nao_contem || [] : [];
+    const aprova = erros.length === 0 && proibidas.every((p) => !new RegExp(p, 'i').test(c.texto));
+    const esperado = (c.tipo === 'certa') !== Boolean(c.limite);
+    if (aprova !== esperado) divergencias.push(`${c.id} (rodada ${c.rodada}, ${c.tipo}${c.limite ? `, limite ${c.limite}` : ''}): ${aprova ? 'aprova' : 'reprova'} ${erros.join(' | ')}`);
+  }
+  assert.deepEqual(divergencias, []);
+}
+
 async function testarRunner() {
   testarJuizPreco();
+  testarRotuloComponente();
+  testarCorpusJuiz();
 
   let modo = 'feliz';
   let leads = [];
@@ -946,7 +1798,8 @@ async function testarRunner() {
           id: 'd9-sem-espera',
           bloco: 'contrato',
           confirma: false,
-          turnos: [{ mensagem: 'Quanto custa?' }],
+          // O turno 1 desliga a conferência de formato; a falha só pode vir do turno 2, sem espera
+          turnos: [{ mensagem: 'Olá', espera: { formato_total_estrito: false } }, { mensagem: 'Quanto custa?' }],
         })
       );
       modo = 'moeda_invalida';

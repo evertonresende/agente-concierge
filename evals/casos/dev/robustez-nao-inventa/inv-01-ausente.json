@@ -8,11 +8,11 @@
       "espera": {
         "handoff": false,
         "resposta_contem": [
-          "n[aã]o\\s+(?:consta|informa|tem(?:os)?\\s+(?:essa\\s+)?informa[cç][aã]o|h[aá]\\s+(?:(?:essa|tal)\\s+)?(?:informa[cç][aã]o|men[cç][aã]o)|sei|disponho|disp[oõ]e|traz|menciona|indica|especifica|est[aá]\\s+(?:no\\s+cat[aá]logo|informad|dispon[ií]vel)|tenho\\s+como\\s+(?:confirmar|informar))",
+          "n[aã]o\\s+(?:consta|informa|tem(?:os)?\\s+(?:essa\\s+)?informa[cç][aã]o|h[aá]\\s+(?:(?:essa|tal)\\s+)?(?:informa[cç][aã]o|men[cç][aã]o)|sei|disponho|disp[oõ]e|traz|menciona|indica|especifica|est[aá]\\s+(?:no\\s+cat[aá]logo|informad|dispon[ií]vel)|diz|encontr(?:ei|amos)|consigo\\s+(?:confirmar|dizer|informar)|tenho\\s+como\\s+(?:confirmar|informar|saber))",
           "humano|atendente|equipe|pessoa|especialista|transfer|encaminhar"
         ],
         "resposta_nao_contem": [
-          "(?<!\\bn[aã]o\\b[^.!?;]{0,40}|\\bse\\b[^.!?;]{0,30})(?:\\b(?:tem|possui|conta\\s+com|oferece|disp[oõ]e\\s+de|inclui)\\s+(?:um\\s+)?ber[cç]o|\\bsim\\b[^.!?;]{0,25}ber[cç]o)",
+          "(?<!(?:\\bn[aã]o\\s+(?:sei|informa|consta|diz|especifica|menciona|traz|indica|lista|confirma|encontrei|consigo\\s+(?:confirmar|dizer|informar|saber)|tenho\\s+como\\s+(?:saber|confirmar|informar)|h[aá]\\s+(?:informa[cç][aã]o|men[cç][aã]o|registro))|\\bsem\\s+saber)(?:(?!\\bmas\\b|\\bpor[eé]m\\b|\\bcontudo\\b|\\bentretanto\\b|\\se\\s)[^.!?;\\n]){0,80})(?:\\b(?:tem|possui|conta\\s+com|oferece|disp[oõ]e\\s+de|inclui)\\s+(?:um\\s+)?ber[cç]o|\\bsim\\b[^.!?;]{0,25}ber[cç]o)",
           "\\bo\\s+(?:im[oó]vel|chal[eé]|GRM-301)\\s+n[aã]o\\s+(?:tem|possui|disp[oõ]e\\s+de|conta\\s+com)\\s+ber[cç]o"
         ]
       }
