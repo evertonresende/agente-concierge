@@ -3,8 +3,8 @@
 Agente de chat para quem quer se hospedar em imóveis de temporada. Ele faz quatro coisas:
 
 1. Responde dúvidas sobre os imóveis pelo catálogo. O que o catálogo não traz, ele é
-   instruído a dizer que não sabe; dizer que a data está livre é barrado também por código
-   (limite 20).
+   instruído a dizer que não sabe. A conferência de código corta a afirmação de data livre
+   nas formas que reconhece; paráfrase passa (limite 20).
 2. Cota estadias pela regra de preço, com o total calculado por código.
 3. Registra o pedido de reserva (lead): coleta os dados, mostra um resumo, espera a
    confirmação do hóspede em outro turno e só então envia ao webhook.
@@ -452,8 +452,12 @@ verificadores das frentes, no log do backlog.
 19. **Webhook real.** O corpo do `422` e o formato de um item da lista são desconhecidos até
     o primeiro lead real. Qualquer resposta diferente de `201` é tratada como não
     registrado.
-20. **Disponibilidade.** O catálogo não informa datas livres. O agente cota, mas não diz que
-    a data está disponível, e lead registrado é pedido encaminhado, não reserva garantida.
+20. **Disponibilidade.** O catálogo não informa datas livres. O agente é instruído a cotar
+    sem dizer que a data está disponível, e lead registrado é pedido encaminhado, não
+    reserva garantida. A conferência de código reconhece formas da frase: "Sim, as datas
+    estão livres!", "está disponível de 15/01/2027 a 18/01/2027" e "Tem vaga sim" são
+    cortadas; paráfrases como "Ninguém reservou essas datas ainda, então é só confirmar.",
+    "o imóvel é seu nessas datas" e "Essas datas ficaram livres para você." passam.
 
 **Pedido HTTP**
 
