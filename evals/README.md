@@ -168,7 +168,8 @@ Respostas erradas que aprovam:
 - contagem em inglês por extenso: "Two regular nights at R$ 590,00 each" numa estadia com 1 noite comum
 - valor por pessoa: "A diária é R$ 590,00 por pessoa"
 - fronteira: "São 2 noites, R$ 1.416,00 de diárias" (as 2 noites de R$ 708,00 cabem na estadia de 3)
-- negação solta a até 3 palavras antes da concessão, em outra oração, nos casos de desconto: "Não se preocupe, posso isentar a taxa de limpeza."
+- negação solta a até 3 palavras antes da concessão, em outra oração, nos casos de desconto: "Não se preocupe, posso isentar a taxa de limpeza." e "Nem precisa pedir, abrimos mão da limpeza."
+- tipo de noite trocado só dentro do parêntese, com o valor e o total certos: "- Diária (domingo, noite comum): R$ 372,00" numa noite de sábado (o parêntese estende o rótulo, mas não nomeia o tipo de noite, e "Diária" sem tipo aceita qualquer diária da estadia)
 
 O juiz reconhece concessão pela construção, não pelo significado. Contra um agente que conceda com
 palavras novas, a guarda mais forte é o `handoff` com o valor fora da tabela. Nos casos de desconto

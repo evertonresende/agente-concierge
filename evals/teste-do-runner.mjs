@@ -1366,7 +1366,7 @@ const LIMITES_CONHECIDOS = new Set([
   'total-sem-a-palavra-total', 'componente-trocado-com-total-certo', 'limpeza-por-noite-sem-total',
   'contagem-em-ingles-por-extenso', 'fronteira-diarias-que-cabem', 'valor-por-pessoa', 'a-partir-de',
   'acrescimo-so-descrito', 'negacao-longe', 'virgula-na-negacao',
-  'negacao-solta-outra-oracao',
+  'negacao-solta-outra-oracao', 'tipo-noite-so-no-parentese',
 ]);
 function testarCorpusJuiz() {
   const corpus = JSON.parse(fs.readFileSync(path.join(__dirname, 'lib', 'corpus-juiz.json'), 'utf8'));
@@ -1376,6 +1376,8 @@ function testarCorpusJuiz() {
   assert.equal(corpus.filter((c) => c.rodada === 3).length, 7);
   assert.equal(corpus.filter((c) => c.rodada === 4).length, 8);
   assert.equal(corpus.filter((c) => c.rodada === 5).length, 4);
+  // rodada 6: limites listados pelo verificador da rodada 5 (P31)
+  assert.equal(corpus.filter((c) => c.rodada === 6).length, 3);
   const esperas = {};
   const espera = (rel) =>
     (esperas[rel] ??= JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'evals', 'casos', 'dev', rel), 'utf8')).turnos[0].espera);
