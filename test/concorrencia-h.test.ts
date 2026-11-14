@@ -1576,7 +1576,7 @@ describe("concorrência endurecida e falhas (frente H)", () => {
     try {
       const modelo: Modelo = async (mensagens) => {
         const ultima = ultimaDoHospede(mensagens);
-        if (ultima === "gravar") {
+        if (ultima === "gravar, sou Ana Lima") {
           return mensagens.at(-1)?.role === "tool"
             ? diz("gravado")
             : pedeFerramentas(chamar("sondar_estado_futuro", { gravar: 7 }), chamar("montar_resumo", DADOS));
@@ -1597,7 +1597,7 @@ describe("concorrência endurecida e falhas (frente H)", () => {
         await real.conversar(...args);
         throw new Error("entrega perdida");
       });
-      await postChat(id, "gravar", envPerdeEntrega);
+      await postChat(id, "gravar, sou Ana Lima", envPerdeEntrega);
       expect(observados[0]?.campoFuturo).toBe(7);
 
       // Reapresentação (sim) não pode apagar campoFuturo.

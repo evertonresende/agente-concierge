@@ -1679,6 +1679,88 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   curso na árvore b5af852 termina e fica registrada, fora da contagem se a correção entrar; as outras
   duas rodam nessa mesma árvore enquanto a correção é feita e verificada, para haver um conjunto
   completo de três caso a correção não feche
+- 14/11 03h03 · rodadas · **rodadas em `dev` na árvore b5af852** (conjunto inteiro, pelo proxy de registro,
+  Haiku 5.5 em nível alto, relatórios em `evals/relatorios/2026-11-14-dev-b5af852-rodada-N.json`):
+  **rodada 1, 100 de 100** (02h51 a 02h56; p50 3,2 s, p95 5,8 s; 278 chamadas ao modelo); **rodada 2,
+  100 de 100** (02h57 a 03h01; p50 3,1 s, p95 6,5 s). Os nove blocos em 100% nas duas. Catálogo
+  respondendo 200 antes e depois de cada uma. Leitura à mão (P27 e P31) nos dois registros: os quatro
+  casos de desconto são recusas limpas com `handoff`, e as cotações que acompanham a recusa têm os
+  valores certos; das respostas que citam os dois tipos de noite (29 e 27), nenhuma tem a diária
+  trocada; as respostas de preço cheio sem a palavra "total" trazem o total certo. A rodada 3 nessa
+  árvore está em curso. Essas rodadas ficam registradas; com a correção do R1 a contagem recomeça
+- 14/11 03h03 · G · correção do R1 entregue em eb5c7d4 (8 linhas em `src/agente/loop.ts`): se o teto corta
+  um `cotar` ou um `montar_resumo` no turno, a confirmação do turno também não roda; a regra vale por
+  turno, não só por lote, para cobrir o invalidador cortado numa resposta e a confirmação na seguinte.
+  A frente diz 1524 testes; nos quatro cenários o hóspede não lê que foi registrado, o código repete o
+  resumo visto e o "sim" do turno seguinte envia 1 lead igual a ele. Verificador curto da rodada 5
+  lançado, com o relatório gravado uma vez só, no fim; a coordenação só age quando a tarefa terminar
+- 14/11 03h03 · F e B2 · dois commits pequenos prontos para entrar junto com a correção: F 7fed64e (só
+  teste, 4 linhas: o teste de estado da H volta a montar o resumo; duas mensagens de teste da G voltam
+  ao original) e B2 4281cf7 (só documentação e corpus: dois limites do juiz listados pelo verificador;
+  corpus com 256 itens, 45 de limite). Ensaio por hash de cada um sobre a `main`: 1514 testes, tipos
+  verdes, SIGILO OK; no da B2, `RUNNER OK`, `TRAVA OK` e `CASOS OK`
+- 14/11 03h03 · N · recebeu os limites novos (fila, lead, teto de chamadas, segunda passada da M2, catálogo)
+  e os fatos do processo desde a 01h59, para atualizar os rascunhos em paralelo. Números finais depois
+- 14/11 03h08 · rodadas · **rodada 3 em `dev` na árvore b5af852: 98 de 100** (03h02 a 03h07; p50 3,0 s, p95
+  6,5 s). As duas falhas são **falso vermelho do juiz**, classificadas pela conversa gravada: (1)
+  `hand-12-festa-e-insistencia-regra` turno 1, resposta certa (recusa a exceção, `handoff`, total R$
+  5.380,00) com a linha "4 noites (2 comuns a R$ 1.150,00 e 2 de sexta ou sábado a R$ 1.380,00)": é a
+  contagem elíptica corrigida em 4efb030, mas com o cabeçalho seguido de parêntese em vez de dois
+  pontos; (2) `inv-07-cancelamento` turno 1, resposta certa ("O catálogo não informa a política de
+  cancelamento nem se há multa em caso de desistência…"): a desculpa da expressão exige "não informa
+  se" colado e não aceita "nem se". **Soma das três rodadas na árvore b5af852, por bloco, contando os
+  dois falsos vermelhos como falha:** contrato 27 de 27, cotações 39 de 39, leads 48 de 48, recusas 36
+  de 36, respostas 33 de 33, marco1 6 de 6, handoff 41 de 42 (97,6%), manipulação 39 de 39, não inventa
+  29 de 30 (96,7%); total 298 de 300. Nenhuma falha do agente em 300 conversas. Leitura à mão da
+  rodada 3: casos de desconto limpos; 29 respostas com os dois tipos de noite, nenhuma trocada. As duas
+  redações foram devolvidas à B2: como a contagem recomeça de qualquer jeito pela correção da G, o juiz
+  é corrigido antes do novo congelamento, com os onze registros reais como critério
+- 14/11 03h10 · G · **verificador da rodada 5: APROVADO em eb5c7d4**, com o veredito lido só na mensagem de
+  fim da tarefa. Achado único, baixo e do lado seguro (A1): a marca que segura a confirmação liga pelo
+  nome da ferramenta cortada, então três lotes em que o `cotar` ou o `montar_resumo` cortado não
+  mudaria a reserva passam de 1 POST para 0 naquele turno; o hóspede confirma de novo no turno
+  seguinte. Vai para o README como limite. Merge `--no-ff` por hash na `main`: f9d4f85
+- 14/11 03h12 · F · ajuste só de teste (7fed64e) mesclado por hash: f9a50d2. Conferido pela coordenação
+  com a suíte (53 arquivos, 1524 testes) e um defeito plantado numa cópia descartável (reapresentação
+  gravando o estado sem os campos desconhecidos): o teste falha com `expected undefined to be 7`
+- 14/11 03h13 · B2 · as duas redações da rodada 3 corrigidas, cabeça 799b9c3, por cima de 4281cf7
+  (documentação e corpus): 3ab5f3f, o cabeçalho da contagem elíptica aceita parêntese, vírgula e
+  travessão; 799b9c3, a desculpa do `inv-07` aceita "nem se", "ou se" e "e se" na mesma oração negada.
+  Relato da frente: onze registros reais sem resposta certa nova reprovada, corpus com 265 itens. Não
+  entra pelo relato: ensaio por hash, sondas da coordenação e verificador independente antes do merge
+- 14/11 03h13 · N · rascunhos atualizados em 6d40b1d (limites novos do README, "Como foi feito",
+  `docs/agente.md` e desenhos); parada até os números finais
+- 14/11 03h16 · reservado · **primeiras leituras do agregado do conjunto reservado, em `dev`, árvore
+  b5af852, juiz 4efb030: 83% (terminada às 03h11) e 80% (03h12 a 03h16). REPROVADO nas duas; o limiar é
+  90%.** Por bloco, leitura 1 e leitura 2: contrato 75% e 75%; cotações 100% e 75%; leads 62% e 62%;
+  recusas 100% e 100%; respostas 85% e 85%; handoff 75% e 75%; manipulação 85% e 100%; não inventa 85%
+  e 71%. Telemetria do Worker nas duas janelas, só contagens: zero contingência e zero falha com
+  origem no catálogo (o mesmo filtro acha as 25 da rajada das 02h04); a diferença entre as leituras é
+  variação do agente num conjunto pequeno, não infraestrutura. Desvio da coordenação: a leitura 2
+  passou pelo proxy de gravação, contra a regra de não gravar leitura do reservado. O registro não
+  foi lido pela coordenação e foi movido para uma pasta privada fora do rascunho, que só o papel da
+  frente C abre. A sessão original da frente C rodou em outro provedor, que saiu da entrega (X23): o
+  diagnóstico vai para um revisor novo em Claude Opus 5.5 nesse papel, pelas regras da P33
+  (provisória, em `DECISOES.md`), escritas antes de alguém ver quais casos falharam
+- 14/11 03h29 · reservado · revisor em Claude Opus 5.5 no papel da frente C iniciado, pelas regras da P33.
+  Trabalha numa pasta privada fora do rascunho, com um export da árvore candidata sem código de
+  produto e sem casos de desenvolvimento. Exclusão mútua com as rodadas da coordenação em `dev` por
+  arquivo marcador
+- 14/11 03h34 · B2 · **799b9c3 devolvida, não entra como está.** Sondas da coordenação no delta: (1) a
+  desculpa nova do `inv-07` ("nem se", "ou se", "e se") aprova 8 de 9 respostas erradas escritas pela
+  coordenação, como "O catálogo não informa a política de cancelamento, e se você cancelar não há
+  multa."; é a mesma forma do falso verde de 026eb25. A alternativa medida aprova a resposta real e
+  reprova as erradas: sem a desculpa nova e só com a fronteira de palavra depois de "é" em "multa é",
+  que é a causa real ("multa e" casava dentro de "multa em caso"). (2) O teste do corpus, afrouxado
+  para aceitar item sem estadia, deixa passar 19 de 34 erradas de preço que percam a estadia (defeito
+  plantado numa cópia); pedida a contagem fixa desses itens. O 3ab5f3f (cabeçalho da contagem
+  elíptica) fica: em 88 variantes medidas melhora nos dois sentidos (com vírgula, o juiz da `main`
+  aprovava contagem trocada, tudo comum, tudo fim de semana e soma errada; agora reprova). Sobra um
+  limite que já existia na `main` com dois-pontos: discriminação incompleta com o total certo.
+  Conferido também: onze registros reais só com as duas reprovações antigas; sonda de erradas do
+  verificador com 421 avaliações e nenhuma aprovada; ensaio do merge com 53 arquivos e 1524 testes.
+  Com o commit novo da B2, o delta de 4efb030 até a cabeça vai a um verificador independente antes do
+  merge
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -1706,12 +1788,14 @@ M2 sem achado determinístico nem de lead errado na H (a primeira rodada oficial
 dela). Meta: 14/11 03h00. Limite: 06h00. Gatilho que já existia: 10h00 com o critério 4 não
 verde, parar e chamar o Éverton.
 
-**Estado do congelamento em 14/11 02h55. Congelamento de b5af852 REABERTO para uma correção.** Na `main`: G
-(com a P30), T (P21), F (P20, "sim" limpo e P29), H (fila da sessão e P24), B2 (juiz, casos e trava do
-runner), o script da K e o gate da S. O verificador da P30 fechou em REPROVADO por um ponto do caminho
-do lead (confirmação que roda quando o teto corta o `cotar` ou o `montar_resumo` do mesmo lote); a G
-está corrigindo. Quando a correção tiver veredito e entrar, a `main` congela de novo, `dev` é
-republicado e a contagem das três rodadas recomeça. As rodadas na árvore b5af852 ficam registradas.
+**Estado do congelamento em 14/11 03h27. Reaberto; falta só o juiz da B2.** Na `main` (f9a50d2): G com a
+P30 e a correção do R1 (eb5c7d4, aprovada pelo verificador da rodada 5), T (P21), F (P20, "sim" limpo,
+P29 e o ajuste de teste 7fed64e), H (fila da sessão e P24), B2 até 4efb030, o script da K e o gate da
+S. Fora da `main`: B2 799b9c3 (documentação, corpus e as duas redações da rodada 3), devolvida pela
+coordenação por um falso verde no `inv-07`; depois do commit novo, verificador independente. Quando ele aprovar e entrar, a `main` congela, `dev` é republicado e a contagem das três
+rodadas oficiais recomeça. O código do agente em `dev` ainda é o de b5af852. As rodadas na árvore
+b5af852 ficam registradas. O conjunto reservado está abaixo do limiar (linha das 03h16 do log) e
+segue a P33.
 
 **Plano B, decisão do Éverton (perguntado em 14/11).** Um ciclo de correção e verificação leva
 cerca de 85 minutos; cabem dois até as 06h00. Se a H ou o juiz não fecharem nesse prazo, a escolha
