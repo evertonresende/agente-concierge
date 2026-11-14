@@ -3,8 +3,7 @@
 Rascunho da frente N para duas seções do `DECISOES.md`. A coordenadora revisa e leva o
 texto para lá; depois este arquivo sai. Fontes: o log do
 [backlog](exploracoes/BACKLOG-CONCIERGE-2026-11.md), o [`DECISOES.md`](../DECISOES.md) e a
-lista de limites do [README](../README.md). O estado final do monitor diário: a preencher.
-<!-- PREENCHER: estado final do monitor diário (frente L) -->
+lista de limites do [README](../README.md).
 
 ## Cortes: o que ficou de fora e por quê
 
@@ -22,7 +21,7 @@ lista de limites do [README](../README.md). O estado final do monitor diário: a
 | 10 | "Fim de semana" sem datas e "dia 15" sem mês | Adivinhar a convenção ou o mês erra a estadia e o preço; o agente pede as datas | L1a, P6 |
 | 11 | Textos fixos em outros idiomas além de português e inglês | Outro idioma recebe o texto fixo em português; o modelo nunca reescreve o resumo | L15 |
 | 12 | Saída sem ano a mais de 90 noites da entrada | Um erro de digitação comum virava cotação de quase um ano; o código recusa e pede as datas com o ano | P21 (frente T, na `main`) |
-| 13 | Monitor diário de saúde | Segundo item da linha de corte do backlog; estado final: a preencher | backlog, linha de corte |
+| 13 | Monitor diário de saúde como código | Segundo item da linha de corte. O que ele faria já existe em dois modos verificados do `scripts/validar-producao.sh` (`--clientes` e, com o envio ligado, `--entrega`); um script novo pediria frente, verificador e merge numa árvore congelada. Agendar a execução e escolher o canal do aviso ficam com o Éverton | P38 |
 | 14 | Exports de sessão do Gemini por linha de comando | O programa guarda as conversas num banco próprio, sem formato de mensagem. As respostas do conselho estão inteiras em `docs/conselho/` | X29 |
 
 ## O que faria com mais tempo
