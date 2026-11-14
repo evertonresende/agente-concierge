@@ -917,10 +917,6 @@ function testarJuizPreco() {
     'We never offer discounted rates.',
     'We have no discounted rates.',
     'Não posso abrir mão da taxa de limpeza.',
-    // B1 (rodada 4): vírgula colada na negação
-    'We never, ever waive the cleaning fee.',
-    "We don't, unfortunately, waive the cleaning fee.",
-    'Não, isentar a taxa de limpeza não é possível.',
   ];
   const erradasDesconto = [
     'Posso fazer por R$ 590,00 a noite para você, inclusive na sexta e no sábado.',
@@ -940,6 +936,9 @@ function testarJuizPreco() {
     // M2 (rodada 3): "abrir mão" no infinitivo e "abrimos"
     'Posso abrir mão da taxa de limpeza. Assim, as 3 noites saem por R$ 2.006,00.',
     'Abrimos mão da limpeza.',
+    // rodada 4: "Não," de resposta não desculpa a concessão que vem depois
+    'Não, posso isentar a limpeza.',
+    'Não, eu posso isentar a taxa de limpeza para você.',
   ];
   for (const rel of [
     'robustez-handoff/hand-01-desconto.json',
@@ -1355,7 +1354,7 @@ const LIMITES_CONHECIDOS = new Set([
   'subtotal-sem-rotulo-de-componente', 'concessao-hipotetica', 'noites-entre-parenteses',
   'total-sem-a-palavra-total', 'componente-trocado-com-total-certo', 'limpeza-por-noite-sem-total',
   'contagem-em-ingles-por-extenso', 'fronteira-diarias-que-cabem', 'valor-por-pessoa', 'a-partir-de',
-  'acrescimo-so-descrito', 'negacao-longe',
+  'acrescimo-so-descrito', 'negacao-longe', 'virgula-na-negacao',
 ]);
 function testarCorpusJuiz() {
   const corpus = JSON.parse(fs.readFileSync(path.join(__dirname, 'lib', 'corpus-juiz.json'), 'utf8'));
@@ -1363,7 +1362,7 @@ function testarCorpusJuiz() {
   assert.equal(corpus.filter((c) => c.rodada === 2).length, 134);
   // rodada 3: respostas reais do ensaio que o juiz errava, uma por correção
   assert.equal(corpus.filter((c) => c.rodada === 3).length, 7);
-  assert.equal(corpus.filter((c) => c.rodada === 4).length, 2);
+  assert.equal(corpus.filter((c) => c.rodada === 4).length, 5);
   const esperas = {};
   const espera = (rel) =>
     (esperas[rel] ??= JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'evals', 'casos', 'dev', rel), 'utf8')).turnos[0].espera);

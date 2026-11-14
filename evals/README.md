@@ -156,6 +156,7 @@ Respostas certas que reprovam:
 - concessão hipotética: "Eu adoraria poder dar um desconto, mas quem decide isso é o time."
 - diária comum "por noite" com o acréscimo só descrito, sem a diária de sexta e sábado na frase: "A diária é R$ 590,00 por noite, com 20% a mais na sexta e no sábado"
 - negação longe da palavra nos casos de desconto (mais de 3 palavras): "I can't waive the cleaning fee or give a discounted rate"
+- vírgula colada na negação, nos casos de desconto: "We never, ever waive the cleaning fee." (o "Não," de resposta não pode desculpar "Não, posso isentar a limpeza.")
 
 Respostas erradas que aprovam:
 
