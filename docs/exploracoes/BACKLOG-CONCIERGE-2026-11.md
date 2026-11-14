@@ -2136,6 +2136,29 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   da seção de limites (Parte 2 do rascunho, versão ad4dafc), a URL pública lida do arquivo de
   ambiente dentro do comando, e a retirada dos marcadores do vídeo e do roteiro.
   (d) a abertura do `DECISOES.md` (Parte 1 do rascunho) fica com a coordenação
+- 14/11 06h42 · entrega · **andamento das ordens da X32.**
+  (a) **Envio real, etapa 1 na `main` (a97777b):** a K gravou `ENVIO_LEADS` "ligado" em
+  `env.producao.vars` do `wrangler.jsonc` e mudou a expectativa do teste que fixa a configuração
+  (d3ac00e); em commit separado, `preview_urls: false` em `env.producao`, para a P25 sobreviver a
+  deploy (caac4c5; campo conferido no esquema do wrangler 4.162.0 e no `--dry-run`, sem aviso). A
+  coordenação leu o diff (três linhas trocadas e duas novas, em dois arquivos), ensaiou o merge e
+  rodou na árvore mesclada: 54 arquivos e 1565 testes, tipos e gate verdes. Mesclado por hash, sem
+  verificador independente: é configuração de duas linhas, e o efeito é conferido no ar pelo
+  `/saude` e pelo `--entrega`. **Etapa 2 liberada à K às 06h40:** deploy de cópia limpa de a97777b,
+  P25 por leitura, `/saude`, `--entrega`, `--clientes`. O "ligado" fica no arquivo que o deploy
+  publica: um deploy posterior da `main` mantém o envio ligado.
+  (b) **Abertura do `DECISOES.md` na `main` (0ad20a6):** texto aprovado da versão ad4dafc, com uma
+  palavra ajustada ao que a decisão 2 diz ("dia da semana", não "datas"); no fim do arquivo, as
+  seções completas de cortes (14) e do que faria com mais tempo (20), tiradas do rascunho da N. O
+  que conferi da abertura: cada linha contra a decisão que ela aponta.
+  (c) **Frente N em 9ff03bd** (`frente-n-textos`): os cinco limites no topo da seção (texto igual ao
+  aprovado; conferidos contra os limites 1, 46, 55, 54 e 6 completos), a URL pública numa linha só
+  do README, lida do arquivo de ambiente, e os marcadores do vídeo e do roteiro retirados.
+  (d) **Conjunto reservado:** aberta a cópia de entrega (regra 8 de `docs/EVALS.md`) por um agente
+  no papel da frente C, em branch própria `entrega-reservado`: os 60 casos em
+  `evals/casos/reservado/`, o material do diagnóstico em `docs/revisoes/reservado/` e os dois
+  agregados finais. A coordenação segue sem abrir os casos; confere contagem, fechamento e gate, e
+  mescla por hash. O repositório continua privado: torná-lo público segue só com ordem do Éverton
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
