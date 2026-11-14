@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
-  apresentarResumo, chaveDaReserva, confirmar, corpoDoLead, destinoDosLeads, destinoPermitido, ESTADO_INICIAL,
-  invalidarPendente, postarLead, type Cofre, type CorpoDoLead, type DependenciasDoEnvio, type EstadoLead, type Reserva,
+  apresentarResumo, camposApontados, chaveDaReserva, confirmar, corpoDoLead, destinoDosLeads, destinoPermitido, ESTADO_INICIAL,
+  invalidarPendente, LeadRecusado, postarLead, type Cofre, type CorpoDoLead, type DependenciasDoEnvio, type EstadoLead,
+  type Reserva, type SituacaoEnvio,
 } from "../src/lead";
 import { cotar, type Cotacao } from "../src/nucleo/preco";
 
@@ -172,27 +173,155 @@ describe("trava de confirmação", () => {
   });
 });
 
-describe("resposta do webhook", () => {
-  for (const status of [200, 202, 400, 422, 500, 503]) {
-    it(`status ${status} não vira registrado`, async () => {
+describe("resposta do webhook (L11)", () => {
+  /** Webhook que devolve os status da lista, um por POST; `Error` na lista é resposta que não chegou. */
+  function webhook(...respostas: (number | Error)[]) {
+    const fila = [...respostas];
+    let posts = 0;
+    const postar = async () => {
+      posts++;
+      const r = fila.shift();
+      if (r === undefined) throw new Error("POST a mais do que o teste previa");
+      if (r instanceof Error) throw r;
+      return r;
+    };
+    return { postar, posts: () => posts };
+  }
+
+  for (const status of [200, 202, 204, 301, 400, 404, 422]) {
+    it(`status ${status}: não registrado com certeza, 1 POST, e a reserva não fica bloqueada`, async () => {
       const { cofre, estado } = cofreEmMemoria();
-      const { deps, posts } = ambiente({ status });
+      const w = webhook(status);
+      const { deps } = ambiente({ postar: w.postar });
       apresentarResumo(cofre, RESERVA, TOTAL, 2);
       expect(await confirmar(cofre, 3, "sim", deps)).toEqual({ tipo: "nao_registrado", motivo: "resposta" });
-      expect(posts).toHaveLength(1);
-      expect(estado().envios[chaveDaReserva(RESERVA)]).toBe("falhou");
+      expect(w.posts()).toBe(1);
+      expect(estado().envios[chaveDaReserva(RESERVA)]).toBe("nao_registrado");
+      // A confirmação foi gasta: outro sim, sem novo resumo, não envia.
+      expect(estado().pendente).toBeNull();
+      expect(await confirmar(cofre, 4, "sim", deps)).toEqual({ tipo: "sem_resumo" });
+      expect(w.posts()).toBe(1);
     });
   }
 
-  it("tempo esgotado é resultado incerto: não registrado e sem nova tentativa", async () => {
+  for (const status of [500, 502, 503]) {
+    it(`status ${status} persistente: exatamente uma nova tentativa, depois não registrado`, async () => {
+      const { cofre, estado } = cofreEmMemoria();
+      const w = webhook(status, status);
+      const { deps } = ambiente({ postar: w.postar });
+      apresentarResumo(cofre, RESERVA, TOTAL, 2);
+      expect(await confirmar(cofre, 3, "sim", deps)).toEqual({ tipo: "nao_registrado", motivo: "resposta" });
+      expect(w.posts()).toBe(2);
+      expect(estado().envios[chaveDaReserva(RESERVA)]).toBe("nao_registrado");
+    });
+  }
+
+  it("500 e depois 201 na nova tentativa: registrado, com o mesmo corpo nos dois POSTs", async () => {
+    const { cofre, estado } = cofreEmMemoria();
+    const corpos: CorpoDoLead[] = [];
+    const { deps } = ambiente({ postar: async (corpo) => { corpos.push(corpo); return corpos.length === 1 ? 500 : 201; } });
+    apresentarResumo(cofre, RESERVA, TOTAL, 2);
+    expect(await confirmar(cofre, 3, "sim", deps)).toMatchObject({ tipo: "registrado" });
+    expect(corpos).toHaveLength(2);
+    expect(corpos[1]).toEqual(corpos[0]);
+    expect(estado().envios[chaveDaReserva(RESERVA)]).toBe("registrado");
+  });
+
+  it("500 e depois 422 na nova tentativa: não registrado, sem terceira tentativa", async () => {
     const { cofre } = cofreEmMemoria();
-    let tentativas = 0;
-    const { deps } = ambiente({ postar: async () => { tentativas++; throw new Error("tempo esgotado"); } });
+    const w = webhook(500, 422);
+    const { deps } = ambiente({ postar: w.postar });
+    apresentarResumo(cofre, RESERVA, TOTAL, 2);
+    expect(await confirmar(cofre, 3, "sim", deps)).toEqual({ tipo: "nao_registrado", motivo: "resposta" });
+    expect(w.posts()).toBe(2);
+  });
+
+  it("tempo esgotado é resultado incerto: sem nova tentativa, e a reserva não é reenviada na sessão (CA-19)", async () => {
+    const { cofre, estado } = cofreEmMemoria();
+    const w = webhook(new Error("tempo esgotado"));
+    const { deps } = ambiente({ postar: w.postar });
     apresentarResumo(cofre, RESERVA, TOTAL, 2);
     expect(await confirmar(cofre, 3, "sim", deps)).toEqual({ tipo: "nao_registrado", motivo: "incerto" });
+    expect(estado().envios[chaveDaReserva(RESERVA)]).toBe("incerto");
     expect(await confirmar(cofre, 4, "sim", deps)).toEqual({ tipo: "nao_registrado", motivo: "ja_tentado" });
-    expect(tentativas).toBe(1);
+    // Nem com um resumo novo da mesma reserva.
+    apresentarResumo(cofre, RESERVA, TOTAL, 5);
+    expect(await confirmar(cofre, 6, "sim", deps)).toEqual({ tipo: "nao_registrado", motivo: "ja_tentado" });
+    expect(w.posts()).toBe(1);
   });
+
+  it("500 e depois tempo esgotado na nova tentativa: incerto, e não 'não registrado'", async () => {
+    const { cofre, estado } = cofreEmMemoria();
+    const w = webhook(500, new Error("tempo esgotado"));
+    const { deps } = ambiente({ postar: w.postar });
+    apresentarResumo(cofre, RESERVA, TOTAL, 2);
+    expect(await confirmar(cofre, 3, "sim", deps)).toEqual({ tipo: "nao_registrado", motivo: "incerto" });
+    expect(w.posts()).toBe(2);
+    expect(estado().envios[chaveDaReserva(RESERVA)]).toBe("incerto");
+  });
+
+  it("422 que aponta um dado do hóspede: pede a correção, e o resumo corrigido é enviado", async () => {
+    const { cofre, estado } = cofreEmMemoria();
+    const corpos: CorpoDoLead[] = [];
+    const { deps } = ambiente({
+      postar: async (corpo) => {
+        corpos.push(corpo);
+        if (corpo.nome === "A") throw new LeadRecusado(["nome"]);
+        return 201;
+      },
+    });
+    apresentarResumo(cofre, { ...RESERVA, nome: "A" }, TOTAL, 2);
+    expect(await confirmar(cofre, 3, "sim", deps)).toEqual({ tipo: "campo_recusado", campos: ["nome"] });
+    expect(estado().pendente).toBeNull();
+    // O nome não entra na chave da reserva: a correção dele cai na mesma chave e precisa poder ser enviada.
+    apresentarResumo(cofre, RESERVA, TOTAL, 4);
+    expect(await confirmar(cofre, 5, "sim", deps)).toMatchObject({ tipo: "registrado" });
+    expect(corpos.map((c) => c.nome)).toEqual(["A", "Ana Lima"]);
+    expect(estado().envios[chaveDaReserva(RESERVA)]).toBe("registrado");
+  });
+
+  it("422 que não aponta dado do hóspede: não registrado, sem pedido de correção", async () => {
+    const { cofre } = cofreEmMemoria();
+    const { deps } = ambiente({ postar: async () => { throw new LeadRecusado([]); } });
+    apresentarResumo(cofre, RESERVA, TOTAL, 2);
+    expect(await confirmar(cofre, 3, "sim", deps)).toEqual({ tipo: "nao_registrado", motivo: "resposta" });
+  });
+
+  for (const marcador of ["falhou", "enviando", "incerto"]) {
+    it(`marcador "${marcador}" já gravado bloqueia a reserva como resultado incerto`, async () => {
+      const { cofre } = cofreEmMemoria({
+        pendente: { reserva: RESERVA, totalCentavos: TOTAL, turno: 2 },
+        // "falhou" é de estado gravado antes da separação dos marcadores.
+        envios: { [chaveDaReserva(RESERVA)]: marcador as SituacaoEnvio },
+      });
+      const { deps, posts } = ambiente();
+      expect(await confirmar(cofre, 3, "sim", deps)).toEqual({ tipo: "nao_registrado", motivo: "ja_tentado" });
+      expect(posts).toEqual([]);
+    });
+  }
+});
+
+describe("leitura do corpo do 422", () => {
+  const casos: [string, string, string[]][] = [
+    ["formato do webhook falso", '{"erros":[{"campo":"telefone","erro":"obrigatorio"}]}', ["telefone"]],
+    ["dois campos", '{"erros":[{"campo":"checkin","erro":"data invalida"},{"campo":"checkout","erro":"data invalida"}]}', ["checkin", "checkout"]],
+    ["lista de textos", '{"errors":["hospedes must be an integer"]}', ["hospedes"]],
+    ["caminho do campo em lista", '{"detail":[{"loc":["body","nome"],"msg":"field required"}]}', ["nome"]],
+    ["campo como chave", '{"imovel_id":["nao encontrado"]}', ["imovel_id"]],
+    ["texto solto com acento", "Telefone inválido; número de hóspedes inválido", ["telefone", "hospedes"]],
+    ["imóvel em prosa", "imóvel não encontrado", ["imovel_id"]],
+    ["valor_total não é dado do hóspede", '{"erros":[{"campo":"valor_total","erro":"invalido"}]}', []],
+    ["valor_total junto com outro campo", '{"erros":[{"campo":"valor_total"},{"campo":"nome"}]}', []],
+    ["eco do lead inteiro não aponta nada", '{"erro":"invalido","recebido":{"nome":"A","telefone":"1","imovel_id":"X","checkin":"a","checkout":"b","hospedes":1}}', []],
+    ["sem campo", '{"erro":"corpo invalido"}', []],
+    ["campo que não é do lead", '{"erros":[{"campo":"corpo","erro":"json invalido"}]}', []],
+    ["vazio", "", []],
+    ["não é JSON", "<html>Unprocessable Entity</html>", []],
+    ["nome de campo dentro de outra palavra", "sobrenome ausente", []],
+  ];
+  for (const [nome, corpo, esperado] of casos) {
+    it(nome, () => expect(camposApontados(corpo)).toEqual(esperado));
+  }
 });
 
 describe("envio desligado e destino", () => {
@@ -256,6 +385,32 @@ describe("POST do lead", () => {
     }) as unknown as typeof fetch;
     await expect(postarLead(buscar, "https://falso.exemplo.test/leads/x", corpoDoLead(RESERVA, TOTAL), 30)).rejects.toThrow("sem resposta");
     expect(fetches).toBe(1);
+  });
+
+  it("422: lança LeadRecusado com os dados que o corpo aponta, em 1 fetch", async () => {
+    let fetches = 0;
+    const buscar = (async () => {
+      fetches++;
+      return Response.json({ erros: [{ campo: "telefone", erro: "obrigatorio" }] }, { status: 422 });
+    }) as unknown as typeof fetch;
+    const erro = await postarLead(buscar, "https://falso.exemplo.test/leads/x", corpoDoLead(RESERVA, TOTAL)).catch((e: unknown) => e);
+    expect(erro).toBeInstanceOf(LeadRecusado);
+    expect((erro as LeadRecusado).campos).toEqual(["telefone"]);
+    expect(fetches).toBe(1);
+  });
+
+  it("422 com corpo que não dá para ler continua sendo 422, não resultado incerto", async () => {
+    const corpo = new ReadableStream({ start: (c) => c.error(new Error("conexão caiu")) });
+    const buscar = (async () => new Response(corpo, { status: 422 })) as unknown as typeof fetch;
+    const erro = await postarLead(buscar, "https://falso.exemplo.test/leads/x", corpoDoLead(RESERVA, TOTAL)).catch((e: unknown) => e);
+    expect(erro).toBeInstanceOf(LeadRecusado);
+    expect((erro as LeadRecusado).campos).toEqual([]);
+  });
+
+  it("201 com corpo que não dá para descartar continua sendo 201", async () => {
+    const corpo = new ReadableStream({ start: (c) => c.error(new Error("conexão caiu")) });
+    const buscar = (async () => new Response(corpo, { status: 201 })) as unknown as typeof fetch;
+    expect(await postarLead(buscar, "https://falso.exemplo.test/leads/x", corpoDoLead(RESERVA, TOTAL))).toBe(201);
   });
 
   it("redirecionamento não vira registrado", async () => {
