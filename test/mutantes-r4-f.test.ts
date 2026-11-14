@@ -5,6 +5,7 @@ import type { Contexto } from "../src/agente/ferramentas";
 import { confirmarReserva, montarResumo } from "../src/agente/ferramentas/lead";
 import { type Cofre, type CorpoDoLead, ESTADO_INICIAL, type EstadoLead, mudaDadoDoResumo, type Pendente, postarLead } from "../src/lead";
 import { criarContexto, criarMundo, URL_LEADS } from "./apoio";
+import { queroFechar } from "./apoio-f";
 
 const GRM301: Pendente = {
   reserva: { imovel_id: "GRM-301", checkin: "2027-01-15", checkout: "2027-01-18", hospedes: 2, nome: "Ana Lima", telefone: "(11) 98888-0000" },
@@ -37,7 +38,7 @@ function sessao(respostas: Record<string, Passo[]>) {
   return {
     posts: (imovel: string) => posts.filter((p) => p.imovel_id === imovel).length,
     async tentar(d: Record<string, unknown>) {
-      const r = await montarResumo.executar(d, ctx(++turno, "quero fechar"));
+      const r = await montarResumo.executar(d, ctx(++turno, queroFechar(d)));
       const s = await confirmarReserva.executar({}, ctx(++turno, "sim"));
       return { resumo: r, sim: s };
     },

@@ -98,7 +98,7 @@ describe("registro só com 201 (MÉDIA 3)", () => {
   it("modelo diz \"registrado\" com resumo pendente: a frase não chega ao hóspede e o pedido de confirmação continua", async () => {
     const { turno, mundo, estado } = conversa();
     await turno("quanto fica?", roteiro(pedeFerramentas(chamar("cotar", ESTADIA)), diz("Fica em R$ 2.156,00.")).modelo);
-    await turno("quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", { ...DADOS, nome: "Ana Aceita Pets" }))).modelo);
+    await turno("quero fechar, sou Ana Aceita Pets", roteiro(pedeFerramentas(chamar("montar_resumo", { ...DADOS, nome: "Ana Aceita Pets" }))).modelo);
     const errado = diz("Tem wifi. Pronto, seu pedido foi registrado e enviado ao time!");
     // O terceiro "NÃO" é a pergunta fechada do rearme (item 10).
     const saida = await turno("tem wifi?", roteiro(errado, errado, diz("NÃO")).modelo);
@@ -111,7 +111,7 @@ describe("registro só com 201 (MÉDIA 3)", () => {
 
   it("depois de um registro de verdade, o modelo pode dizer que o pedido já está registrado", async () => {
     const { turno } = conversa();
-    await turno("quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
+    await turno("quero fechar, sou Ana Lima", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
     await turno("sim", roteiro(pedeFerramentas(chamar("confirmar_reserva", {})), diz("ok")).modelo);
     const depois = await turno("e o check-in?", roteiro(diz("O seu pedido já foi registrado. O check-in é às 15:00.")).modelo);
     expect(depois.reply).toBe("O seu pedido já foi registrado. O check-in é às 15:00.");

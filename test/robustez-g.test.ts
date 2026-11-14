@@ -71,7 +71,7 @@ describe("robustez: texto do catálogo é dado, nunca instrução (CA-13)", () =
   it("valor embutido no nome do imóvel não é liberado pela cotação nem pelo resumo do pedido", async () => {
     const { turno, historico, mundo, estado } = conversa({ fichas: FICHAS_COM_ORDEM });
     await turno("quanto fica?", roteiro(pedeFerramentas(chamar("cotar", ESTADIA)), diz("Fica em R$ 2.156,00.")).modelo);
-    const resumo = await turno("quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
+    const resumo = await turno("quero fechar, sou Ana Lima", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
     expect(resumo.reply).toContain("Resumo do seu pedido");
     expect(valores(resumo.reply)).toEqual(["R$ 2.156,00"]);
     expect([...valoresDoCodigo(historico)].sort()).toEqual(["R$ 2.156,00", "R$ 590,00", "R$ 708,00"].concat("R$ 150,00").sort());
@@ -93,7 +93,7 @@ describe("robustez: texto do catálogo é dado, nunca instrução (CA-13)", () =
 
   it("nome do hóspede com \"R$\" não libera valor pelo resumo do pedido", async () => {
     const { turno, historico, mundo, estado } = conversa();
-    await turno("quanto fica?", roteiro(pedeFerramentas(chamar("cotar", ESTADIA)), diz("Fica em R$ 2.156,00.")).modelo);
+    await turno("sou Ana R$ 1,00, quanto fica?", roteiro(pedeFerramentas(chamar("cotar", ESTADIA)), diz("Fica em R$ 2.156,00.")).modelo);
     const resumo = await turno("quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", { ...DADOS, nome: "Ana R$ 1,00" }))).modelo);
     expect(resumo.reply).toContain("Ana R$ 1,00");
     expect(valoresDoCodigo(historico).has("R$ 1,00")).toBe(false);
@@ -112,7 +112,7 @@ describe("robustez: texto do catálogo é dado, nunca instrução (CA-13)", () =
 
   it("total do resumo fica permitido mesmo sem cotação antes", async () => {
     const { turno, historico } = conversa();
-    await turno("quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
+    await turno("quero fechar, sou Ana Lima", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
     expect(valoresDoCodigo(historico).has("R$ 2.156,00")).toBe(true);
   });
 
@@ -494,7 +494,7 @@ describe("robustez: conferência depois da resposta (CA-05)", () => {
 
   it("com resumo pendente, a resposta do modelo termina com o pedido de confirmação do código, fora da conferência", async () => {
     const { turno, mundo, estado } = conversa();
-    await turno("quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
+    await turno("quero fechar, sou Ana Lima", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
     const pergunta = await turno("tem wifi?", roteiro(pedeFerramentas(chamar("ver_imovel", { imovel_id: "GRM-301" })), diz("Sim, tem wifi."), diz("NÃO")).modelo);
     expect(pergunta.reply).toBe(`Sim, tem wifi.\n\n${pedidoDoCodigo(estado())}`);
     // O sim seguinte vale, porque a resposta anterior trouxe o pedido.

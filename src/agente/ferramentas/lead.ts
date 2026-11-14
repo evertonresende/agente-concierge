@@ -73,6 +73,26 @@ function idiomaDe(contexto: Contexto): Idioma {
   return idiomaDoHospede([...anteriores.filter((m) => m.role === "user").map((m) => m.content), contexto.mensagem]);
 }
 
+/** O que o hóspede escreveu na sessão: as mensagens dos turnos anteriores, quando o contexto as traz, e a do turno. */
+function mensagensDoHospede(contexto: Contexto): string[] {
+  return [...(contexto.historico ?? []).filter((m) => m.role === "user").map((m) => m.content), contexto.mensagem];
+}
+
+/** Palavras de um texto (letras e números), sem acento e em minúsculas. */
+const palavras = (texto: string): string[] =>
+  texto.normalize("NFKD").replace(/\p{M}/gu, "").toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [];
+
+/**
+ * Palavras do nome que o hóspede não escreveu em nenhuma mensagem da sessão. O nome do lead só pode
+ * ser formado por palavras dele (P20): o modelo não acrescenta observação, título nem sobrenome. A
+ * comparação é palavra a palavra, sem diferenciar maiúsculas nem acentos; o nome pode ter vindo em
+ * pedaços, em mensagens diferentes. Sem o histórico no contexto, só a mensagem do turno prova o nome.
+ */
+function palavrasQueOHospedeNaoEscreveu(nome: string, contexto: Contexto): string[] {
+  const escritas = new Set(mensagensDoHospede(contexto).flatMap(palavras));
+  return [...new Set(palavras(nome).filter((p) => !escritas.has(p)))];
+}
+
 function jaRegistrado(pendente: Pendente, idioma: Idioma): Resultado {
   const r = pendente.reserva;
   return {
@@ -190,12 +210,26 @@ export const montarResumo = definir(
 
 async function tentarResumir(argumentos: Argumentos, contexto: Contexto): Promise<Resultado> {
   // O nome vai como o hóspede informou (L20), numa linha só: ele entra no texto do resumo.
-  const nome = texto(argumentos, "nome")?.replace(/\s+/g, " ").slice(0, 120);
+  const inteiro = texto(argumentos, "nome")?.replace(/\s+/g, " ") ?? "";
+  const nome = inteiro.slice(0, 120);
   const informado = texto(argumentos, "telefone");
   const faltando = [!nome && "nome", !informado && "telefone", argumentos.hospedes === undefined && "número de hóspedes"]
     .filter(Boolean);
   if (!nome || !informado || faltando.length > 0) {
     return { paraOModelo: { erro: `Falta: ${faltando.join(", ")}. Pergunte ao hóspede; não invente.` } };
+  }
+  // O nome do lead só pode ser formado por palavras que o hóspede escreveu (P20). Conferido
+  // antes do corte de tamanho: palavra cortada ao meio não é palavra que ele escreveu.
+  const estranhas = palavrasQueOHospedeNaoEscreveu(inteiro, contexto);
+  if (estranhas.length > 0 || palavras(inteiro).length === 0) {
+    const quais = estranhas.length > 0 ? ` O hóspede não escreveu: ${estranhas.slice(0, 8).map((p) => `"${p}"`).join(", ")}.` : "";
+    return {
+      paraOModelo: {
+        erro: `O nome informado não é o que o hóspede escreveu.${quais} Use o nome exatamente como o hóspede escreveu, sem `
+          + "acrescentar observação, título nem sobrenome. Se ele ainda não disse o nome, pergunte; não invente. Não monte "
+          + "resumo sem isso.",
+      },
+    };
   }
   const telefone = normalizarTelefone(informado);
   if (!telefone) {

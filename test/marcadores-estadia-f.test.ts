@@ -7,6 +7,7 @@ import type { Contexto } from "../src/agente/ferramentas";
 import { confirmarReserva, montarResumo } from "../src/agente/ferramentas/lead";
 import { type Cofre, type CorpoDoLead, ESTADO_INICIAL, type EstadoLead, postarLead, type SituacaoEnvio } from "../src/lead";
 import { criarContexto, criarMundo, URL_LEADS } from "./apoio";
+import { queroFechar } from "./apoio-f";
 
 const A = { imovel_id: "GRM-301", checkin: "15/01/2027", checkout: "18/01/2027", hospedes: 2, nome: "Ana Lima", telefone: "(11) 98888-0000" };
 const B = { imovel_id: "RIO-402", checkin: "20/01/2027", checkout: "22/01/2027", hospedes: 1, nome: "Ana Lima", telefone: "(11) 98888-0000" };
@@ -53,7 +54,7 @@ function sessao(roteiro: Passo[], json = false) {
     posts,
     async resumo(d: Record<string, unknown>) {
       const [c, f] = cofreDoTurno();
-      const r = await montarResumo.executar(d, ctx(c, ++turno, "quero fechar"));
+      const r = await montarResumo.executar(d, ctx(c, ++turno, queroFechar(d)));
       f.aberto = false;
       return r;
     },
@@ -133,7 +134,7 @@ describe("C7, bloqueio a mais: o fluxo feliz não muda", () => {
       const mundo = criarMundo();
       let estado: EstadoLead = { ...ESTADO_INICIAL, envios: { ...envios } };
       const cofre: Cofre = { ler: () => estado, salvar: (e) => { estado = e; } };
-      const r = await montarResumo.executar({ ...A, telefone: "(11) 97777-0000" }, criarContexto(mundo, cofre, 2, "quero"));
+      const r = await montarResumo.executar({ ...A, telefone: "(11) 97777-0000" }, criarContexto(mundo, cofre, 2, queroFechar(A)));
       const sim = await confirmarReserva.executar({}, criarContexto(mundo, cofre, 3, "sim"));
       expect.soft(r.respostaFinal ?? "").toMatch(/^Resumo do seu pedido/);
       expect.soft(sim.respostaFinal ?? "").toMatch(/registrado/);
@@ -152,7 +153,7 @@ describe("C7, estado antigo sem os campos novos", () => {
       const cofre: Cofre = { ler: () => JSON.parse(guardado) as EstadoLead, salvar: (e) => { guardado = JSON.stringify(e); } };
       let turno = 2;
       for (const [troca, d] of TROCAS) {
-        const r = await montarResumo.executar(d, criarContexto(mundo, cofre, turno++, "quero"));
+        const r = await montarResumo.executar(d, criarContexto(mundo, cofre, turno++, queroFechar(d)));
         await confirmarReserva.executar({}, criarContexto(mundo, cofre, turno++, "sim"));
         if (bloqueia) {
           expect.soft(r.handoff, `${situacao} ${troca}`).toBe(true);
