@@ -54,7 +54,7 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 | M1 | agente-concierge | Revisão curta do Marco 1 | A | alta | 0,5 | subagentes Opus 5.5 + conselho | concluída (`docs/revisoes/m1.md`; achados com dono) | — |
 | I | agente-concierge | Escolha do modelo por eval | A, B2 | alta | 1 | subagente em worktree · Opus 5.5, esforço médio desde a X16 | adaptador na `main` desde 13/11 23h18 (27c3093), com o Haiku 5.5 em nível alto (X24); `dev` publicado dessa versão. Fica viva para a fase 2 (medição no código final) e para a linha do gateway de `producao` | `t3/modelo-evals-fallback` |
 | E | agente-concierge | Datas | Marco 1, L1, L1a, L1b, L2 | alta | 1,5 | subagente em worktree · Gemini 4 Hydrogen | concluída: na `main` (81873fa) | `t3/datas-relativas-sao-paulo` |
-| F | agente-concierge | Lead robusto | Marco 1, L6, L7, L9, L10, L11, L15 (textos fixos), L20 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16) | primeira parte na `main` (801c8a2); o complemento (P14 por estadia, P18, C7 a C9) foi reprovado na quinta rodada do verificador pelo C10 e está em correção | `frente-f` |
+| F | agente-concierge | Lead robusto | Marco 1, L6, L7, L9, L10, L11, L15 (textos fixos), L20 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16) | primeira parte na `main` (801c8a2); o complemento (P14 por estadia, P18, C7 a C11) está em 28109d8, com o ensaio limpo e a sexta rodada do verificador rodando | `frente-f` |
 | G | agente-concierge | Robustez e handoff | Marco 1, L3, L4, L5, L5a, L12, L13a, L15, L16, L16a, L19, L21 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16) | rodando | `frente-g` |
 | H | agente-concierge | Concorrência endurecida e falha interna | Marco 1, L17, L17a, L18 | alta | 1 | subagente em worktree · Gemini 4 Hydrogen até 13/11 21h26; depois Opus 5.5, esforço alto (X23) | duas rodadas de verificador independente; correções entregues (c905a09); espera a F entrar na `main` para o merge final e a terceira rodada | `t3/durable-session-concurrency` |
 | J | agente-concierge | Página de chat em dois passos: design (canvas) e implementação | passo 1: nada; passo 2: Marco 1 e aprovação do Éverton | baixa | 0,7 + 1 | thread T3 · Fable 5.2 | passo 1 concluído (canvas aprovado pelo Éverton, com dois ajustes); passo 2 entregue (b8991ce) | `frente-j` |
@@ -62,6 +62,7 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 | L | agente-concierge | Custo por conversa e monitor diário | leva 2 integrada | média | 1 | subagente em worktree · Opus 5.5, esforço médio (X23) | script pronto na branch (22eda87), em verificação; aberta em 13/11 23h22, adiantada pela X24: só `scripts/custo.mjs`; o monitor diário espera a K | `frente-l` |
 | K | agente-concierge | Produção com o envio real desligado | M2 | alta | 1,5 | thread T3 · Opus 5.5, esforço alto (X23) | gateway de `producao` criado e com o log desligado; `scripts/validar-producao.sh` na branch (33c8316), em verificação; rota e primeiro deploy parados à espera do Éverton. Rodando desde 13/11 23h14, adiantada pela X24: só a infraestrutura de `producao` com o envio real desligado; o deploy final espera a M2 | `frente-k` |
 | N | agente-concierge | Entregáveis de processo | K | alta | 2 | thread T3 · Opus 5.5, esforço alto (X23) | rascunho completo na branch (ede0c12), em verificação de sigilo e de fatos; parada até o fim da leva 2. Aberta em 13/11 23h14, adiantada pela X24: rascunhos do README, do "Como foi feito", dos desenhos e do setup, com marcador no que se preenche no fim | `frente-n` |
+| S | agente-concierge | Gate de sigilo: achados da M2 | M2, primeira passada | alta | 0,5 | subagente em worktree · Opus 5.5, esforço alto (X23) | rodando desde 13/11 23h46: conteúdo do histórico, saída sem trecho do termo, sufixo composto e teste do gate; verificador antes do merge | `frente-gate` |
 | — | — | Correções entre leva 2 e 3 | evals | alta | 1,5 | frente dona do arquivo | — | — |
 
 Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `bloqueada` ·
@@ -983,6 +984,21 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   da leva 2. Programa de export guardado fora do repositório; nada em `docs/sessoes/` até o Éverton
   escolher as sessões. Verificador independente de sigilo e de fatos rodando: `docs/setup/` é cópia de
   configuração pessoal e o repositório fica público
+- 13/11 23h46 · F · correção da quinta rodada na `frente-f` (28109d8, três commits; em `src/` só 11 linhas de
+  `src/lead.ts`): a retirada das aberturas saiu da leitura do sim (C10), testes dos marcadores de
+  estadia (C12) e "uma pergunta" como abertura neutra só no rearme (C11). Ensaio da coordenadora:
+  merge limpo, 1040 testes, tipos sem erro, SIGILO OK. Verificador independente, sexta rodada (só o
+  delta), rodando. Leitura da frente aceita e P19 ajustada: "sim, uma dúvida" é lido como outra
+  coisa, o resumo cai e o agente refaz quando o hóspede quiser fechar; o código não repete o pedido
+- 13/11 23h46 · M2 · revisão de código dos módulos estáveis (1 alto, 6 médios, 10 baixos, nenhum crítico) e
+  segunda opinião do Gemini 4 Argon sobre o cálculo (nenhuma divergência em centavos nos 15 imóveis;
+  6 pontos, nenhum de preço errado). Primeira passada fechada em `docs/revisoes/m2.md`, com a resposta
+  do Gemini em `docs/conselho/`. Roteado: gate de sigilo (conteúdo do histórico, saída com trecho do
+  termo, sufixo composto, teste) para a frente S, aberta agora; trava de `producao` do runner por
+  negação, `leads_ate_agora` em turno paralelo, juiz de hóspedes inválidos e os pedidos da L para a
+  B2, depois da lista do juiz; saída sem ano anterior à entrada (P5 contra CA-06, 363 noites cotadas)
+  para o Éverton decidir. Conferido sem imprimir valor: a hipótese do sufixo composto não se aplica
+  ao ambiente real
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -1040,6 +1056,7 @@ mexer na configuração.
 | `~/.config/agente-concierge/reservado/**` (fora do repo) | C | C | entra no repo na entrega (N) |
 | `.github/workflows/**`, `scripts/custo*.mjs` | — | — | L |
 | `scripts/validar-producao.sh` | — | — | K |
+| `scripts/verificar-sigilo.sh`, `scripts/verificar-sigilo.teste.sh` | — | — | S |
 | `README.md`, `DECISOES.md` (texto final; decisões novas a coordenadora registra a qualquer hora), `docs/desenhos/**`, `docs/sessoes/**`, `docs/setup/**` | — | — | N |
 | `docs/revisoes/modelos.md` | — | I (portão) | — |
 | `docs/exploracoes/**`, `docs/prompts/**`, `docs/revisoes/m1.md`, `docs/revisoes/m2.md`, `docs/conselho/**`, `docs/CONTRATO.md`, `docs/EVALS.md`, `CLAUDE.md`, `AGENTS.md` | coordenadora | coordenadora | coordenadora |
