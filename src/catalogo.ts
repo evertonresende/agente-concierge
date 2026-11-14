@@ -71,6 +71,32 @@ function validarFicha(dado: unknown): Ficha {
   return f as Ficha;
 }
 
+const MAX_TEXTO = 300;
+const MAX_ITENS = 40;
+const MAX_NIVEIS = 4;
+
+function sanearTexto(texto: string): string {
+  // Todo "$" sai (não só "R$": "RR$$ 1,00" viraria "R$ 1,00" numa passada só) para que
+  // nenhum texto do catálogo se pareça com um valor escrito pelo código: valor em reais
+  // só existe nos campos numéricos, formatados por nós.
+  // Corte antes dos replace: sem ele, texto longo do catálogo custa tempo quadrático.
+  return texto.slice(0, MAX_TEXTO * 2).replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]+/g, " ").replace(/R?\s*\$+/gi, "").replace(/ {2,}/g, " ").trim().slice(0, MAX_TEXTO);
+}
+
+/**
+ * Texto do catálogo é dado, nunca instrução (contrato seção 4). Tudo o que chega passa
+ * por aqui antes de qualquer uso: uma linha só, tamanho limitado e sem símbolo de moeda.
+ * Assim o nome de um imóvel não carrega um bloco de instruções para o modelo, para a
+ * cotação nem para o resumo do pedido.
+ */
+export function sanear(dado: unknown, nivel = 0): unknown {
+  if (typeof dado === "string") return sanearTexto(dado);
+  if (dado === null || typeof dado !== "object") return dado;
+  if (nivel >= MAX_NIVEIS) return null;
+  if (Array.isArray(dado)) return dado.slice(0, MAX_ITENS).map((item) => sanear(item, nivel + 1));
+  return Object.fromEntries(Object.entries(dado).slice(0, MAX_ITENS).map(([chave, valor]) => [sanearTexto(chave), sanear(valor, nivel + 1)]));
+}
+
 export function regrasDaFicha(ficha: Ficha): RegrasDoImovel {
   return {
     diariaCentavos: reaisParaCentavos(ficha.diaria),
@@ -81,7 +107,7 @@ export function regrasDaFicha(ficha: Ficha): RegrasDoImovel {
 }
 
 export function criarCatalogo(base: string | undefined, buscar: typeof fetch): Catalogo {
-  /** Devolve o JSON de um 200, `null` num 404, e lança nos demais casos (uma nova tentativa em falha de rede ou 5xx). */
+  /** Devolve o JSON saneado de um 200, `null` num 404, e lança nos demais casos (uma nova tentativa em falha de rede ou 5xx). */
   async function pedir(caminho: string): Promise<unknown> {
     if (!base) throw new ErroDoCatalogo("catálogo não configurado");
     for (let tentativa = 1; ; tentativa++) {
@@ -91,7 +117,7 @@ export function criarCatalogo(base: string | undefined, buscar: typeof fetch): C
       try {
         const resposta = await buscar(`${base}${caminho}`, { signal: controle.signal });
         status = resposta.status;
-        if (status === 200) return await resposta.json();
+        if (status === 200) return sanear(await resposta.json());
         await resposta.body?.cancel();
       } catch {
         status = 0;

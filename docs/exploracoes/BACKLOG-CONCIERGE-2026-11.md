@@ -1237,6 +1237,74 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
 - 14/11 00h37 · Éverton · redação: as linhas de decisão do `DECISOES.md` ficam só com a data, sem hora e sem
   circunstância dele; as duas entradas deste log sobre a X28 e a X29 foram reescritas do mesmo jeito.
   O conteúdo das decisões não mudou. Vale daqui em diante para todo registro de decisão
+- 14/11 00h43 · K · relatório 8. Portão passou: `/saude` no hostname próprio com o agente de usuário do
+  `Python-urllib` dá 200. Dos 17 clientes testados, só `Python-urllib` e `libwww-perl` levam 403 (erro
+  1010), e só no endereço padrão do Worker, em GET e em POST. Latência: o evento `turno` do Worker marca
+  2,2 a 4,0 s nas perguntas simples (2 chamadas) e 5,0 a 5,9 s nas cotações (3 chamadas); os cerca de 10 s
+  medidos antes eram a conexão nova da máquina de medição (o cliente tenta IPv6 primeiro e ele não sai),
+  não o agente. Medição de latência daqui em diante força IPv4 ou reusa a conexão. Uma URL de
+  pré-visualização existe em `producao`: P25, desligar pela API. O limite de taxa não chegou a ser aplicado
+- 14/11 00h43 · K · relatório 9: script corrigido em 86c00c1 (o runner não segue redirecionamento no modo
+  completo) e b57b4ee (baixos da segunda verificação); 25 de 25 defeitos plantados pegos pelo autoteste,
+  segundo a frente. Verificador curto do delta f28ce3e..b57b4ee lançado (Opus 5.5, esforço alto)
+- 14/11 00h43 · N · X30 aplicada nos rascunhos (602bfa1): reserva, nomes dos modelos com versão exata, limites 15
+  a 19 e o rascunho de cortes e de mais tempo. Recebeu a convenção de registro e o ajuste do limpador
+  dos exports (dois arquivos com trecho pessoal, trocado por marcador e listado no índice)
+- 14/11 00h43 · H · verificador da rodada 3 (a58ff5e): REPROVADO por dois achados na fila da sessão. B1, alto e
+  determinístico: "quero fechar" e "sim" mandados ao mesmo tempo geram lead de um resumo que o hóspede
+  ainda não tinha recebido. B2: quando o Worker desiste com o pedido ainda na fila do objeto, o resumo
+  gravado depois fica confirmável sem ter sido visto. O resto passou: 20.724 execuções das sequências da
+  P14 pela sessão com 0 violação, reinício do objeto, falha de gravação, corpo do pedido e os achados
+  antigos A0 a A6. Lacuna apontada: P24. Frente corrigindo B1, B2 e P24; depois, verificador do delta.
+  Limites que ficam para o README: nenhum sinal chega ao objeto; corpo acima de 64 KB com resumo pendente
+- 14/11 00h43 · G · cabeça 4515061: correção da M-1 (o total do resumo aberto entra nos valores permitidos; 9
+  linhas em `src/agente/loop.ts`, lidas pela coordenadora). Ensaio por hash sobre a `main`, com a sonda
+  da janela do verificador, em curso. **A ordem da leva 2 muda: a G entra antes da H**, porque uma não
+  depende da outra e o ensaio conjunto não teve conflito
+- 14/11 00h45 · K · P25 aplicada: `previews_enabled: false` no Worker de `producao`, endereço padrão mantido,
+  `/saude` 200 nos dois endereços, `LEADS REAIS: 0`. Correção do relatório 8: não existia URL de
+  pré-visualização (Worker com Durable Object não ganha URL por versão; o endereço já dava 404 antes). O
+  motivo da P25 no `DECISOES.md` foi corrigido: é só proteção
+- 14/11 00h45 · N · cabeça 7a7146c: horas de decisão retiradas do "Como foi feito" (4 ocorrências); limpador dos
+  exports troca frase pessoal por marcador (4 frases em 2 sessões, listadas no índice); exports
+  refeitos fora do repositório: 70 sessões (os subagentes saíam em dobro), 35 para leitura humana;
+  latência, teste de clientes e P25 nos rascunhos, marcados "a confirmar no congelamento"
+- 14/11 00h45 · G · ensaio por hash de 4515061 sobre a `main`: merge limpo, 42 arquivos e 1355 testes verdes,
+  tipos e gate verdes. Sonda da janela do verificador: com resumo aberto o total não é mais cortado
+  (antes, turno 42); sem resumo aberto continua cortado no turno 41 e o agente cota de novo (limite
+  para o README). Faltam os três defeitos plantados que escapavam (P06, P07, P08), em curso
+- 14/11 00h48 · G · **entrou na `main`: merge `--no-ff` de 4515061, main em a8da5d6.** Defeitos plantados de novo
+  sobre a `main` com a G: P06 e P08 pegos (um teste cada), P07 ainda escapa (a resposta à pergunta fechada
+  por chamada de ferramenta não tem teste; o código já trata). Pedido à frente: um commit só de teste.
+  Fora isso a frente está fechada. F e H avisadas para mergear a `main` nova
+- 14/11 00h48 · B2 · verificador da rodada 2 (7f12107): REPROVADO por quatro achados altos no juiz de preço. A1:
+  total sem a limpeza, chamado de total, passa quando vem com "pelas N noites". A2: uma resposta real e
+  certa é reprovada ("já com a taxa de limpeza de R$ X"; 1 em cerca de 800 turnos reais). A3: desconto
+  concedido com valor igual a um componente passa. A4: respostas certas em inglês reprovadas. Médios em
+  dois casos (`lead-05`, `inv-07`). Passaram a trava de `producao`, a carga e os autotestes. Nos cinco
+  registros reais o juiz novo erra uma vez; o da `main` errava de 6 a 11 por registro. Frente corrigindo,
+  com critério fechado para convergir: os dois corpus do verificador viram teste de regressão; zero certa
+  reprovada nos registros reais; zero errada aprovada em A1, A3 e nos casos da rodada 1; formato que o
+  agente nunca escreveu vira limite documentado do juiz. Pedido junto: um caso dev para a P21
+- 14/11 00h54 · coordenadora · deploy de `dev` a partir da `main` 472277c (código de a8da5d6, com a G; versão
+  a5c1b6a8) e fumaça declarada `--bloco marco1`: 100%, p50 2,4 s, p95 5,5 s, `EVAL OK`. Não conta como
+  rodada. O deploy anterior de `dev` era de 27c3093
+- 14/11 00h54 · coordenadora · P26: o resto da M-1 (total repetido sem resumo aberto, depois de 80 mensagens)
+  fica como limite conhecido, provisório. Conjunto do congelamento reduzido: gate da S, script da K e
+  teste P07 da G saem dele, porque não mudam o agente nem o juiz. Casos de eval com mensagens em
+  paralelo conferidos contra a regra nova do B1 da H: `lead-14` e `con-07` mandam dois "sim" depois de
+  resumo visto (1 lead em qualquer ordem) e `con-06` manda duas perguntas; nenhum mistura confirmação
+  com outra mensagem. Plano B perguntado ao Éverton (seção Fechamento)
+- 14/11 00h56 · T · verificador independente: APROVADO o delta da64da4..e53e777 (82.102 casos comparados com a
+  árvore da G; 59.051 mudaram, todos de "cotava com 91 a 1460 noites" para a recusa da P21; 90 noites
+  exatas continuam cotando; 11 de 12 defeitos plantados pegos). **Entrou na `main`: merge `--no-ff` de
+  e53e777, main em c9217dc**, depois do ensaio por hash (1367 testes, tipos e gate verdes). Dois baixos
+  com a frente, em commit à parte: a frase da recusa que impede o modelo de completar o ano (na sonda,
+  com a saída reenviada com ano, a estadia de 363 noites foi cotada) e o teste da ordem das recusas
+- 14/11 00h56 · H · veredito final da rodada 3 igual ao parcial. Fato novo: o B1 (mensagens simultâneas) já
+  existe na `main` sem a H, então não é regressão dela e congelar sem a H não o evita. Baixos novos:
+  nenhum teste afirma que o corpo não é lido acima do teto; `handoff` não gravado em reinício no meio
+  do turno. 12 de 16 defeitos plantados pegos. A frente já publicou correções; espero o relatório dela
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -1258,9 +1326,25 @@ ainda não tem veredito. Ao receber um veredito, conferir qual hash da F a árvo
 usou.
 
 **Congelamento da `main` para a prova.** A `main` congela quando tiver, com veredito: H, G, o juiz
-e o runner da B2, o gate da S, a P20 (nome do lead, frente F) e a P21 (datas sem ano, frente T), e
-o conjunto de casos fixo. Meta: 14/11 03h00. Limite: 06h00. Gatilho que já existia: 10h00 com o
-critério 4 não verde, parar e chamar o Éverton.
+e o runner da B2, a P20 (nome do lead, frente F) e a P21 (datas sem ano, frente T), e o conjunto de
+casos fixo. Meta: 14/11 03h00. Limite: 06h00. Gatilho que já existia: 10h00 com o critério 4 não
+verde, parar e chamar o Éverton.
+
+**Estado do congelamento em 14/11 00h56.** G: na `main` (a8da5d6). T (P21): na `main` (c9217dc); falta
+um commit pequeno com a frase da recusa e um teste. H: reprovada na rodada 3, corrigindo B1 e B2 (P24
+por último e dispensável). Juiz da B2: reprovado na rodada 2, corrigindo com critério fechado. F
+(P20): frente trabalhando. Só o que muda o comportamento do agente ou o juiz reinicia a contagem das
+rodadas: o gate da S, o script da K e o commit de teste da G (P07) podem entrar depois que as rodadas
+começarem, desde que o `git diff --stat` de cada um não toque em `src/` nem em `evals/`.
+
+**Plano B, decisão do Éverton (perguntado em 14/11).** Um ciclo de correção e verificação leva
+cerca de 85 minutos; cabem dois até as 06h00. Se a H ou o juiz não fecharem nesse prazo, a escolha
+não é da coordenação (X24: defeito determinístico bloqueia a `main`). Recomendação levada a ele: (1)
+H entra na última cabeça com o caso de mensagens simultâneas escrito como limite no README, porque
+sem a H não há fila por sessão, limite de corpo nem contingência; (2) as rodadas oficiais usam o
+juiz da B2 na última cabeça que tiver zero resposta certa reprovada nos registros reais, com os
+limites do juiz escritos em `docs/EVALS.md`. Sem resposta dele, a coordenação continua nos ciclos de
+correção e não escolhe.
 
 **Antes da primeira rodada oficial (não conta como rodada).** Ensaio local na árvore congelada, com
 o modelo real em nível alto: o conjunto de desenvolvimento inteiro, a sonda do resumo pendente e o
