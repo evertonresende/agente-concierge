@@ -585,6 +585,30 @@ function testarRotuloComponente() {
   reprova('Total: R$ 2.156,00. R$ 708,00 cada, R$ 1.416,00.', fds, 'R$ 1.416,00');
   reprova('Total: R$ 2.156,00. São R$ 708,00 cada, R$ 2.006,00.', fds, 'R$ 2.006,00');
 
+  // ingles: con-10 na rodada integrada (resposta real inteira). "1 regular night at R$ 590,00" conta
+  // 1 noite, não o "Nights: 3" do começo da linha; os rótulos valem nos dois idiomas
+  aprova(
+    "Chalé Serra Gramado (GRM-301), for 2 guests:\n\nCheck-in: Friday, January 15, 2027\nCheck-out: Monday, January 18, 2027\nNights: 3 (1 regular night at R$ 590,00 and 2 Friday/Saturday nights at R$ 708,00 each)\nCleaning fee: R$ 150,00 (charged once per stay)\n\nTotal: R$ 2.156,00\n\nThis is a quote only. The catalog does not show availability, so I can't say whether these dates are free. Would you like to reserve it? If so, please send your full name and phone number.",
+    fds
+  );
+  aprova('Total: R$ 2.156,00. 2 weekend nights at R$ 708,00 each, 1 weeknight at R$ 590,00, cleaning fee R$ 150,00.', fds);
+  reprova('Total: R$ 2.156,00. 2 regular nights at R$ 708,00 each.', fds, 'R$ 708,00');
+  reprova('Total: R$ 2.156,00. 3 regular nights at R$ 590,00 each.', fds, 'R$ 590,00');
+
+  // reais-desconto: respostas reais da rodada integrada nos casos de desconto (o juiz é a única guarda de valor)
+  aprova(
+    'Não tenho desconto nem condição especial para oferecer, e não consigo negociar preço. Uma pessoa da equipe vai continuar o atendimento a partir daqui.\n\nEsta é a cotação para o GRM-301 (Chalé Serra Gramado), com entrada domingo, 10/01/2027 e saída quarta-feira, 20/01/2027, 10 noites para 2 pessoas:\n- 8 noites comuns a R$ 590,00 cada\n- 2 noites de sexta e sábado a R$ 708,00 cada\n- Taxa de limpeza: R$ 150,00\n- Total: R$ 6.286,00',
+    dezNoites
+  );
+  for (const real of [
+    'Não concedo desconto nem negocio preço ou regras. Já passei sua pergunta para uma pessoa da equipe, que continua o atendimento. Enquanto isso, posso cotar o GRM-301 para 15/01/2027 a 18/01/2027 pelo preço de tabela, se quiser.',
+    'Não posso aplicar desconto nem negociar preço: não existe desconto na tabela de valores. Já passei a conversa para uma pessoa da equipe, que continua o atendimento. Enquanto isso, posso cotar a estadia no GRM-301 pelo preço normal, se quiser.',
+    'Não tenho como conceder desconto nem negociar preço, então não posso aceitar essa condição. Uma pessoa da equipe vai continuar o atendimento a partir daqui.',
+  ]) {
+    aprova(real, fdsLivre);
+  }
+  reprova('Consigo um desconto para você.\n- 8 noites comuns a R$ 590,00 cada\n- Total: R$ 6.286,00', dezNoites, 'R$ 590,00');
+
   // sem_total usa a mesma conferência (só o imóvel é conhecido)
   const semTotalReprova = (texto) =>
     assert.ok(julgarSemTotal(texto, 'GRM-301').some((e) => e.includes('sem rótulo')), texto);

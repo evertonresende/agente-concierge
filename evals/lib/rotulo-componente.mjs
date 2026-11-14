@@ -16,7 +16,7 @@
 const RE_VALOR = /R\$\s*(?:[1-9]\d{0,2}(?:\.\d{3})*|0),\d{2}/g;
 
 const REGEX_TERMO_COMPONENTE =
-  /(?<!\p{L})(?:di[aá]rias?|noites?|hospedagem|sub-?total|limpeza|taxa(?:\s+de\s+limpeza)?|fim\s+de\s+semana|fds|(?:\d+|uma?)\s+norma(?:l|is)|sexta(?:-feira)?|s[aá]bado|domingo|segunda(?:-feira)?|ter[cç]a(?:-feira)?|quarta(?:-feira)?|quinta(?:-feira)?|dias?\s+[uú]te(?:l|is)|semana|unit[aá]ri[oa]|por\s+noite|cada\s+(?:uma|noite|di[aá]ria)|pel[ao]s\s+(?:duas|dois|tr[eê]s)|daily|night(?:s|ly)?|each\s+night|rates?|weekend|weekdays?|cleaning|fee)(?!\p{L})/iu;
+  /(?<!\p{L})(?:di[aá]rias?|noites?|hospedagem|sub-?total|limpeza|taxa(?:\s+de\s+limpeza)?|fim\s+de\s+semana|fds|(?:\d+|uma?)\s+norma(?:l|is)|sexta(?:-feira)?|s[aá]bado|domingo|segunda(?:-feira)?|ter[cç]a(?:-feira)?|quarta(?:-feira)?|quinta(?:-feira)?|dias?\s+[uú]te(?:l|is)|semana|unit[aá]ri[oa]|por\s+noite|cada\s+(?:uma|noite|di[aá]ria)|pel[ao]s\s+(?:duas|dois|tr[eê]s)|daily|night(?:s|ly)?|weeknights?|each\s+night|rates?|weekend|weekdays?|cleaning|fee)(?!\p{L})/iu;
 
 // Rótulo de preço por noite logo DEPOIS do valor ("R$ 708,00 cada", "R$ 590,00 por noite").
 // "cada"/"each" sozinhos só contam se nada além de conector vier depois: "R$ 590,00 cada
@@ -36,7 +36,7 @@ const REGEX_UNIVERSAL_POSPOSTO = /^\s*(?:cada|each)(?!\p{L})/iu;
 const REGEX_NOITE_FDS =
   /(?<!\p{L})(?:sexta|s[aá]bado|fim\s+de\s+semana|fds|weekends?|friday|saturday)(?!\p{L})/iu;
 const REGEX_NOITE_COMUM =
-  /(?<!\p{L})(?:domingo|segunda|ter[cç]a|quarta|quinta|comu(?:m|ns)|norma(?:l|is)|[uú]te(?:l|is)|weekdays?|sunday|monday|tuesday|wednesday|thursday|regular)(?!\p{L})/iu;
+  /(?<!\p{L})(?:domingo|segunda|ter[cç]a|quarta|quinta|comu(?:m|ns)|norma(?:l|is)|[uú]te(?:l|is)|weekdays?|weeknights?|sunday|monday|tuesday|wednesday|thursday|regular)(?!\p{L})/iu;
 
 // Componente nomeado logo depois do valor ("de diárias", "pelas 2 noites", "de limpeza").
 const REGEX_ROTULO_ANEXO =
@@ -87,8 +87,10 @@ const REGEX_PEDIDO_NA_FRASE =
   /(?<!\p{L})(?:pedid\p{L}*|pedi(?:r|u)|pede|solicit\p{L}*|avaliar|verificar|consultar|request\p{L}*|ask\p{L}*)(?!\p{L})/iu;
 const REGEX_NEGACAO_DEPOIS = /^\s*(?:n[aã]o|is\s+not|isn'?t|not)(?!\p{L})/iu;
 
+// Contagem de noites, com até um qualificador antes do substantivo ("1 regular night",
+// "2 Friday/Saturday nights") ou depois dos dois-pontos ("Noites: 2").
 const REGEX_CONTAGEM =
-  /(?<!\p{L})(\d+|uma?|dois|duas|tr[eê]s|quatro|cinco)\s+(?:noites?|nights?)(?!\p{L})|(?<!\p{L})(?:noites?|nights?)\s*:\s*(\d+)(?!\d)/giu;
+  /(?<!\p{L})(\d+|uma?|dois|duas|tr[eê]s|quatro|cinco)\s+(?:[\p{L}/-]+\s+)?(?:noites?|nights?|weeknights?)(?!\p{L})|(?<!\p{L})(?:noites?|nights?)\s*:\s*(\d+)(?!\d)/giu;
 const NUMEROS = { um: 1, uma: 1, dois: 2, duas: 2, tres: 3, 'três': 3, quatro: 4, cinco: 5 };
 
 const REGEX_SO_CONECTOR = /^[\s(]*(?:de|a|por|at|of)?\s*$/iu;
