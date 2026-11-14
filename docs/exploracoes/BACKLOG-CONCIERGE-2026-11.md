@@ -59,9 +59,9 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 | H | agente-concierge | Concorrência endurecida e falha interna | Marco 1, L17, L17a, L18 | alta | 1 | subagente em worktree · Gemini 4 Hydrogen até 13/11 21h26; depois Opus 5.5, esforço alto (X23) | duas rodadas de verificador independente; correções entregues (c905a09); espera a F entrar na `main` para o merge final e a terceira rodada | `t3/durable-session-concurrency` |
 | J | agente-concierge | Página de chat em dois passos: design (canvas) e implementação | passo 1: nada; passo 2: Marco 1 e aprovação do Éverton | baixa | 0,7 + 1 | thread T3 · Fable 5.2 | passo 1 concluído (canvas aprovado pelo Éverton, com dois ajustes); passo 2 entregue (b8991ce) | `frente-j` |
 | M2 | agente-concierge | Revisão de código, segurança e segunda opinião | leva 2 integrada | alta | 1,5 | subagentes Opus 5.5 + segunda opinião do Gemini 4 Argon em esforço alto (X23) | primeira passada rodando desde 13/11 23h22, adiantada pela X24: segurança na `main` atual, código dos módulos estáveis e segunda opinião do Gemini sobre o cálculo; a segunda passada é só o delta, depois da leva 2 | — |
-| L | agente-concierge | Custo por conversa e monitor diário | leva 2 integrada | média | 1 | subagente em worktree · Opus 5.5, esforço médio (X23) | rodando desde 13/11 23h22, adiantada pela X24: só `scripts/custo.mjs`; o monitor diário espera a K | `frente-l` |
-| K | agente-concierge | Produção com o envio real desligado | M2 | alta | 1,5 | thread T3 · Opus 5.5, esforço alto (X23) | rodando desde 13/11 23h14, adiantada pela X24: só a infraestrutura de `producao` com o envio real desligado; o deploy final espera a M2 | `frente-k` |
-| N | agente-concierge | Entregáveis de processo | K | alta | 2 | thread T3 · Opus 5.5, esforço alto (X23) | rodando desde 13/11 23h14, adiantada pela X24: rascunhos do README, do "Como foi feito", dos desenhos e do setup, com marcador no que se preenche no fim | `frente-n` |
+| L | agente-concierge | Custo por conversa e monitor diário | leva 2 integrada | média | 1 | subagente em worktree · Opus 5.5, esforço médio (X23) | script pronto na branch (22eda87), em verificação; aberta em 13/11 23h22, adiantada pela X24: só `scripts/custo.mjs`; o monitor diário espera a K | `frente-l` |
+| K | agente-concierge | Produção com o envio real desligado | M2 | alta | 1,5 | thread T3 · Opus 5.5, esforço alto (X23) | gateway de `producao` criado e com o log desligado; `scripts/validar-producao.sh` na branch (33c8316), em verificação; rota e primeiro deploy parados à espera do Éverton. Rodando desde 13/11 23h14, adiantada pela X24: só a infraestrutura de `producao` com o envio real desligado; o deploy final espera a M2 | `frente-k` |
+| N | agente-concierge | Entregáveis de processo | K | alta | 2 | thread T3 · Opus 5.5, esforço alto (X23) | rascunho completo na branch (ede0c12), em verificação de sigilo e de fatos; parada até o fim da leva 2. Aberta em 13/11 23h14, adiantada pela X24: rascunhos do README, do "Como foi feito", dos desenhos e do setup, com marcador no que se preenche no fim | `frente-n` |
 | — | — | Correções entre leva 2 e 3 | evals | alta | 1,5 | frente dona do arquivo | — | — |
 
 Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `bloqueada` ·
@@ -949,6 +949,40 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   primeira passagem envia (a ordem de entrada é F, H, G, e a G ainda muda esse ponto): o teste prova
   que a segunda passagem não acrescenta efeito. Prova pedida em três árvores. A H já tem a F nova
   (efb67f7): 907 testes verdes na branch
+- 13/11 23h39 · I · nível alto provado em `dev` publicado: no log do gateway, janela da fumaça de 23h17m50 a
+  23h18m28, 41 chamadas ao Haiku, 41 com status 200, as 41 com o nível alto, nenhuma ao reserva
+  (leitura da frente). Na branch, seis commits depois da entrada na `main`: log de falha sem dígito
+  solto e com nome de erro de lista fechada (33e67f1, 6e5d5dc), motivo da resposta inútil numa palavra
+  (ede844c), testes K10 e K11 (53681a5), `AI_GATEWAY` de `producao` (d561a05) e o passo do Secrets Store
+  no roteiro (b34ab95). Ensaio da coordenadora em b34ab95: merge limpo, 734 testes, tipos sem erro,
+  SIGILO OK. Verificador independente, quarta rodada (só o delta), rodando
+- 13/11 23h39 · L · `scripts/custo.mjs` e teste na `frente-l` (22eda87); o CHECK de aceite passa na leitura da
+  frente. Verificador independente rodando. Aviso da frente: os relatórios versionados são de código e
+  modelo antigos; o número do README sai de uma rodada nova com o modelo final, de um relatório só.
+  Pedidos à dona do runner, a repassar à B2: modelo por chamada, tokens de cache separados, modelo e
+  nível no cabeçalho do relatório, uso dos pedidos que falham
+- 13/11 23h39 · M2 · revisão de segurança, primeira passada (código da `main` em c6764a0): 0 críticos, 1 alto,
+  5 médios, 7 baixos. Bloqueiam: (M1) a trava de valores aceita `R$` de texto livre do modelo escrito
+  junto com chamada de ferramenta e de nome de hóspede no resumo, roteado à G; (M2) o gateway guardava
+  o pedido inteiro com nome e telefone, contra a L22, resolvido em `producao` pela K (log desligado,
+  conferido por leitura; o de `dev` segue ligado, com dados sintéticos); (M3) o gate não lê o conteúdo
+  de commits antigos: varredura da coordenadora com os 10 termos fixos em 459 commits publicáveis
+  (`git log -p --branches --tags --remotes`): 0 linhas; repetir antes de tornar o repositório público.
+  Não bloqueiam e vão para a lista de limites: sem limite de gasto por cliente ou sessão (alto; a
+  correção é de configuração e de conta, decisão do Éverton), `session_id` como única credencial, leads
+  com dados de terceiros quando o envio real for ligado, e os baixos. Relatório no rascunho da
+  coordenadora; `docs/revisoes/m2.md` sai quando as três revisões da primeira passada chegarem
+- 13/11 23h39 · K · relatórios 3 e 4: `scripts/validar-producao.sh` na `frente-k` (33c8316), verificador
+  independente rodando; prova de que o envio desligado é zero POST na `main` (6 testes, um deles pelo
+  Durable Object); o cliente urllib do Python leva 403 (erro 1010) no endereço padrão de `dev`,
+  evidência para a regra de integridade de `producao` (L23). Prova do modelo em `producao` decidida
+  sem religar o log: nível provado em `dev`, variável presa por teste, e em `producao` o log do Worker
+  sem `principal_pulado` nem `modelo_falhou`. Rota e primeiro deploy seguem parados à espera do Éverton
+- 13/11 23h39 · N · rascunho completo na `frente-n` (ede0c12): README, "Como foi feito", dois desenhos e
+  `docs/setup/` (com o hook de início de sessão e a skill de orquestração, reduzida). Parada até o fim
+  da leva 2. Programa de export guardado fora do repositório; nada em `docs/sessoes/` até o Éverton
+  escolher as sessões. Verificador independente de sigilo e de fatos rodando: `docs/setup/` é cópia de
+  configuração pessoal e o repositório fica público
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -957,6 +991,10 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   `security`, `task-contract`, `testing`.
 - Subagentes: `code-reviewer` em Opus 5.5, como verificador das frentes A, B1, B2 e D;
   `design-reviewer` (frente J, passo 1).
+- Seções do `CLAUDE.md` global que valeram: entregas grandes (discovery e depois coordenadora),
+  isolamento de worktree, sync git e escalação.
+- Hook de início de sessão `git-sync` e a skill de orquestração de entregas (planejamento e
+  coordenação).
 
 ## Pré-voo (antes da leva 1)
 
