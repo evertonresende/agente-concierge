@@ -613,6 +613,16 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   o loop ainda ignora `porLimite` (a G corrige). Cinco perguntas ficam para chamada real em
   `dev`, entre elas se o Haiku sem gateway falha na hora ou fica pendurado (o que decide
   como `producao` se comporta enquanto não houver gateway). Devolvida; o merge espera
+- 13/11 21h33 · I · `docs/revisoes/modelos.md` completo na branch (6310b70): tabela de cinco linhas no mesmo
+  código, medidas que não medem o modelo à parte, o que falta para `producao`
+- 13/11 21h33 · Éverton · pedido de mais uma medição do Haiku 5.5, com o raciocínio em nível alto: 98 casos
+  e rajada de 10 conversas, no mesmo código e com o mesmo juiz das rodadas de baixo e médio
+  (commit 895d8aa), e a tabela com os três níveis lado a lado (acerto por bloco e total, tempo
+  por turno, tokens e custo por conversa). O `MODELO` continua no nível médio até ele ver.
+  Passado à frente I com três cuidados: rodada de controle em nível médio na cópia recriada,
+  prova de que o nível enviado foi mesmo o alto (nível inválido vira médio no código) e
+  contagem das respostas cortadas por limite de tokens. Roda em paralelo com a correção do
+  adaptador, num servidor só, na porta 8797
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
