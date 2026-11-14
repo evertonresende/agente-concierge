@@ -607,6 +607,21 @@ function testarRotuloComponente() {
   reprova('Total: R$ 2.156,00. 2 regular nights at R$ 708,00 each.', fds, 'R$ 708,00');
   reprova('Total: R$ 2.156,00. 3 regular nights at R$ 590,00 each.', fds, 'R$ 590,00');
 
+  // A4 (rodada 2): dias da semana em inglês, negação inglesa e o tipo de noite escrito depois do valor
+  aprova('Total: R$ 2.156,00\n- Friday (Jan 15): R$ 708,00\n- Saturday (Jan 16): R$ 708,00\n- Sunday (Jan 17): R$ 590,00\n- Cleaning: R$ 150,00', fds);
+  aprova('Friday and Saturday are R$ 708,00 per night and Sunday is R$ 590,00. Cleaning is R$ 150,00. Total: R$ 2.156,00', fds);
+  aprova('The nightly rate is R$ 590,00 on weekdays and R$ 708,00 on Fridays and Saturdays. Total: R$ 2.156,00.', fds);
+  aprova('A diária é R$ 590,00 de domingo a quinta e R$ 708,00 na sexta e no sábado. Total: R$ 2.156,00.', fds);
+  aprova('R$ 708,00 na sexta e no sábado, R$ 590,00 no domingo e R$ 150,00 de limpeza. Total: R$ 2.156,00', fds);
+  aprova('Fica R$ 590,00 por noite no domingo e R$ 708,00 na sexta e no sábado. Total: R$ 2.156,00.', fds);
+  aprova("I'm unable to offer a discount. The total is R$ 2.156,00: 1 regular night at R$ 590,00 and 2 Friday/Saturday nights at R$ 708,00 each.", fds);
+  aprova("I don't have the authority to give a discount. The rate is R$ 590,00 per regular night and R$ 708,00 per Friday or Saturday night.", fdsLivre);
+  aprova("I won't be able to give you a discount. For reference: R$ 590,00 per regular night, R$ 708,00 per Friday or Saturday night.", fdsLivre);
+  reprova('Total: R$ 2.156,00. R$ 590,00 na sexta e no sábado e R$ 708,00 no domingo.', fds, 'R$ 590,00');
+  reprova('Total: R$ 2.156,00. Friday (Jan 15): R$ 590,00.', fds, 'R$ 590,00');
+  aprova('The quote is R$ 664,20. Both nights start on a Friday or Saturday, so each one costs R$ 294,60.', rio);
+  reprova('Total: R$ 2.156,00. Each one costs R$ 590,00.', fds, 'R$ 590,00');
+
   // reais-desconto: respostas reais da rodada integrada nos casos de desconto (o juiz é a única guarda de valor)
   aprova(
     'Não tenho desconto nem condição especial para oferecer, e não consigo negociar preço. Uma pessoa da equipe vai continuar o atendimento a partir daqui.\n\nEsta é a cotação para o GRM-301 (Chalé Serra Gramado), com entrada domingo, 10/01/2027 e saída quarta-feira, 20/01/2027, 10 noites para 2 pessoas:\n- 8 noites comuns a R$ 590,00 cada\n- 2 noites de sexta e sábado a R$ 708,00 cada\n- Taxa de limpeza: R$ 150,00\n- Total: R$ 6.286,00',

@@ -16,7 +16,7 @@
 const RE_VALOR = /R\$\s*(?:[1-9]\d{0,2}(?:\.\d{3})*|0),\d{2}/g;
 
 const REGEX_TERMO_COMPONENTE =
-  /(?<!\p{L})(?:di[aá]rias?|noites?|hospedagem|sub-?total|limpeza|taxa(?:\s+de\s+limpeza)?|fim\s+de\s+semana|fds|(?:\d+|uma?)\s+norma(?:l|is)|sexta(?:-feira)?|s[aá]bado|domingo|segunda(?:-feira)?|ter[cç]a(?:-feira)?|quarta(?:-feira)?|quinta(?:-feira)?|dias?\s+[uú]te(?:l|is)|semana|unit[aá]ri[oa]|por\s+noite|cada\s+(?:uma|noite|di[aá]ria)|pel[ao]s\s+(?:duas|dois|tr[eê]s)|daily|night(?:s|ly)?|weeknights?|each\s+night|rates?|weekend|weekdays?|cleaning|fee)(?!\p{L})/iu;
+  /(?<!\p{L})(?:di[aá]rias?|noites?|hospedagem|sub-?total|limpeza|taxa(?:\s+de\s+limpeza)?|fim\s+de\s+semana|fds|(?:\d+|uma?)\s+norma(?:l|is)|sexta(?:-feira)?|s[aá]bado|domingo|segunda(?:-feira)?|ter[cç]a(?:-feira)?|quarta(?:-feira)?|quinta(?:-feira)?|dias?\s+[uú]te(?:l|is)|semana|unit[aá]ri[oa]|por\s+noite|cada\s+(?:uma|noite|di[aá]ria)|pel[ao]s\s+(?:duas|dois|tr[eê]s)|(?:sunday|monday|tuesday|wednesday|thursday|friday|saturday)s?|daily|night(?:s|ly)?|weeknights?|each\s+night|rates?|weekend|weekdays?|cleaning|fee)(?!\p{L})/iu;
 
 // Rótulo de preço por noite logo DEPOIS do valor ("R$ 708,00 cada", "R$ 590,00 por noite").
 // "cada"/"each" sozinhos só contam se nada além de conector vier depois: "R$ 590,00 cada
@@ -26,17 +26,17 @@ const REGEX_POR_NOITE_POSPOSTO =
 
 // Rótulo de preço por noite ANTES do valor ("Valor de cada noite:", "diária de").
 const REGEX_POR_NOITE_ANTES =
-  /(?<!\p{L})(?:cada\s+(?:uma|noite|di[aá]ria)|each\s+night|por\s+noite|per\s+night|nightly|di[aá]ria)(?!\p{L})/iu;
+  /(?<!\p{L})(?:cada\s+(?:uma|noite|di[aá]ria)|each\s+(?:night|one)|por\s+noite|per\s+night|nightly|di[aá]ria)(?!\p{L})/iu;
 
 // "cada noite"/"cada uma"/"R$ X cada": afirma o mesmo preço para todas as noites citadas.
-const REGEX_UNIVERSAL_ANTES = /(?<!\p{L})(?:cada\s+(?:uma|noite|di[aá]ria)|each\s+night)(?!\p{L})/iu;
+const REGEX_UNIVERSAL_ANTES = /(?<!\p{L})(?:cada\s+(?:uma|noite|di[aá]ria)|each\s+(?:night|one))(?!\p{L})/iu;
 const REGEX_UNIVERSAL_POSPOSTO = /^\s*(?:cada|each)(?!\p{L})/iu;
 
 // Diz quais noites: de sexta e sábado (diária com acréscimo) ou comuns.
 const REGEX_NOITE_FDS =
-  /(?<!\p{L})(?:sexta|s[aá]bado|fim\s+de\s+semana|fds|weekends?|friday|saturday)(?!\p{L})/iu;
+  /(?<!\p{L})(?:sexta|s[aá]bado|fim\s+de\s+semana|fds|weekends?|fridays?|saturdays?)(?!\p{L})/iu;
 const REGEX_NOITE_COMUM =
-  /(?<!\p{L})(?:domingo|segunda|ter[cç]a|quarta|quinta|comu(?:m|ns)|norma(?:l|is)|[uú]te(?:l|is)|weekdays?|weeknights?|sunday|monday|tuesday|wednesday|thursday|regular)(?!\p{L})/iu;
+  /(?<!\p{L})(?:domingo|segunda|ter[cç]a|quarta|quinta|comu(?:m|ns)|norma(?:l|is)|[uú]te(?:l|is)|weekdays?|weeknights?|sundays?|mondays?|tuesdays?|wednesdays?|thursdays?|regular)(?!\p{L})/iu;
 
 // Componente nomeado logo depois do valor ("de diárias", "pelas 2 noites", "de limpeza").
 const REGEX_ROTULO_ANEXO =
@@ -90,7 +90,7 @@ const REGEX_CONCESSAO = new RegExp(
 // "Para você, cada uma sai por..." só conta antes do valor, na mesma frase e depois de ":".
 const REGEX_PARA_VOCE = /(?<!\p{L})(?:para|pra)\s+voc[eê](?!\p{L})/giu;
 const REGEX_NEGACAO =
-  /(?<!\p{L})(?:n[aã]o|sem|nem|nenhuma?|not|without|never|cannot|can'?t|isn'?t)(?!\p{L})/iu;
+  /(?<!\p{L})(?:n[aã]o|sem|nem|nenhuma?|not|without|never|cannot|unable|(?:can|isn|don|won|aren)[’']?t)(?!\p{L})/iu;
 // Pedido ou consulta ao time na mesma frase: "Vou pedir ao time para avaliar e, se
 // possível, te dar um desconto" não concede.
 const REGEX_PEDIDO_NA_FRASE =
@@ -233,12 +233,13 @@ export function motivoNaoComponente(texto, valor, perfis, contexto = {}) {
 
   // Diária certa para as noites nomeadas: "de sexta e sábado" pede a diária com acréscimo,
   // "comum"/"de domingo" a diária comum; nomeando as duas, qualquer uma.
-  // O tipo de noite vem antes do valor. Depois dele só vale o que é do próprio valor: até o
-  // primeiro " e " e sem outro valor na cláusula ("A diária é R$ 590,00 e a de sexta e
-  // sábado, R$ 708,00" e "R$ 590,00 (fds R$ 708,00)" nomeiam o valor seguinte).
-  const depoisProprio = depois === restoDaClausula ? depois.split(/\s(?:e|and|mas|but)\s/iu)[0] : '';
-  const nomeiaAntes = REGEX_NOITE_FDS.test(antes) || REGEX_NOITE_COMUM.test(antes);
-  const trechoTipo = nomeiaAntes ? antes : depoisProprio;
+  // O tipo de noite escrito logo depois do valor, até o primeiro " e " ou "(", é do próprio
+  // valor e vale antes do que veio antes dele, que pode ser do valor anterior ("R$ 590,00 de
+  // domingo a quinta e R$ 708,00 na sexta"). "A diária é R$ 590,00 e a de sexta e sábado,
+  // R$ 708,00" e "R$ 590,00 (fds R$ 708,00)" nomeiam o valor seguinte.
+  const depoisProprio = depois.split(/\s(?:e|and|mas|but)\s|\(/iu)[0];
+  const nomeiaDepois = REGEX_NOITE_FDS.test(depoisProprio) || REGEX_NOITE_COMUM.test(depoisProprio);
+  const trechoTipo = nomeiaDepois ? depoisProprio : antes;
   const nomeiaFds = REGEX_NOITE_FDS.test(trechoTipo);
   const nomeiaComum = REGEX_NOITE_COMUM.test(trechoTipo);
   const conhecidas = perfis.filter((p) => p.noitesNormais !== null);
