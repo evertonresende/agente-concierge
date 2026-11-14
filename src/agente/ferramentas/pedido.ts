@@ -48,6 +48,7 @@ export async function prepararPedido(argumentos: Argumentos, contexto: Contexto,
       ok: false,
       erro: "A data de saída veio sem ano e, depois da entrada, a estadia ficaria longa demais: deve ser engano de "
         + "digitação. Peça ao hóspede as datas de entrada e de saída de novo, com o ano se a estadia for longa mesmo. "
+        + "Não complete o ano por conta própria nem chame a ferramenta de novo com um ano que o hóspede não escreveu. "
         + "Não informe nenhum total e não passe para humano.",
     };
   }

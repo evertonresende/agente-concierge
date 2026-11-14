@@ -273,6 +273,18 @@ describe("rearme passa pela pergunta fechada ao modelo (item 10, complemento da 
     expect(c.mundo.leads).toEqual([]);
   });
 
+  it("(c) \"NÃO\" junto com chamada de ferramenta na pergunta fechada: o resumo cai e o sim seguinte não envia (P07)", async () => {
+    const c = await comResumo();
+    const r = roteiro(diz("There is 1 parking spot."), { ...pedeFerramentas(chamar("confirmar_reserva")), texto: "NÃO" });
+    const t2 = await c.turno("Is there parking?", r.modelo);
+    expect(r.recebidas).toHaveLength(2);
+    expect(r.recebidas[1]![0]!.content).toContain("Responda só SIM ou NÃO");
+    expect(t2.reply).toBe("There is 1 parking spot.");
+    expect(c.estado().pendente).toBeNull();
+    await c.turno("yes", roteiro(pedeFerramentas(chamar("confirmar_reserva")), diz("How many guests in total?")).modelo);
+    expect(c.mundo.leads).toEqual([]);
+  });
+
   it("(e) com conferência e correção no turno, a pergunta fechada sai uma vez só", async () => {
     const c = await comResumo();
     const errado = diz("Tem wifi. Pronto, seu pedido foi registrado!");
