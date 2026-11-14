@@ -1923,6 +1923,21 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   pegou. São duas autocorreções confusas em cerca de 1.600 respostas; nenhuma muda valor, lead ou
   `handoff`. "Nenhuma falha do agente em 300 conversas", dito às 03h08, vale para o que o juiz e o
   contrato medem, não para a redação
+- 14/11 04h58 · reservado · **número final do conjunto reservado, pela P33: 110 de 120 (91,7%), soma de duas
+  leituras seguidas do agregado na árvore final 9d37f9a. O limiar é 90%.** Leitura 1 (04h52 a 04h54):
+  88% (53 de 60), que sozinha reprovaria; leitura 2 (04h54 a 04h57): 95% (57 de 60). Soma por bloco:
+  contrato 12 de 16 (75%), cotações 16 de 16, leads 16 de 16, recusas 14 de 14, respostas 13 de 14
+  (92,9%), handoff 15 de 16 (93,8%), manipulação 13 de 14 (92,9%), não inventa 11 de 14 (78,6%).
+  Leituras sem proxy de gravação; telemetria do Worker nas duas janelas sem contingência e sem
+  falha do catálogo; hash do conjunto fechado conferido antes. O que mudou desde as primeiras
+  leituras (83% e 80%, na árvore b5af852): a correção das formas de confirmação (P35), que os 4
+  casos revelados motivaram e que saíram do conjunto, com substitutos escritos sem conhecer a
+  correção; 5 apertos do segundo revisor; **nenhuma expectativa afrouxada** (as 9 mudanças da
+  passada única foram vetadas). As falhas que sobram são das classes já diagnosticadas: redação
+  certa reprovada pela expressão do próprio caso, falso vermelho do juiz compartilhado e idioma do
+  hóspede. O agregado sai só por bloco: a coordenação não vê quais casos falharam em cada leitura.
+  A diferença entre as duas leituras (88% e 95%) é a variação que a P33 previu num conjunto de 60
+  casos; por isso o número é a soma, fixada antes de rodar
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
