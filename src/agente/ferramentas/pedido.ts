@@ -44,6 +44,19 @@ export async function prepararPedido(argumentos: Argumentos, contexto: Contexto,
   }
   const ficha = await contexto.catalogo.ficha(id);
   if (!ficha) return { ok: false, erro: "Imóvel não encontrado no catálogo. Não informe nenhum valor." };
-  const hospedes = numero(argumentos, "hospedes") ?? hospedesPadrao;
+  const hospedes = contarHospedes(argumentos) ?? hospedesPadrao;
   return { ok: true, ficha, checkin, checkout, hospedes, cotacao: cotar(regrasDaFicha(ficha), checkin, checkout, hospedes) };
+}
+
+const PARTES_DO_GRUPO = ["adultos", "criancas", "bebes"] as const;
+
+/**
+ * Número de hóspedes que o código usa (L13): a soma de adultos, crianças e bebês, quando
+ * o modelo manda as partes; senão, `hospedes`. Parte inválida (negativa ou fracionada)
+ * vira o número da conta, para a regra de preço recusar com o motivo; 0 no total também.
+ */
+export function contarHospedes(argumentos: Argumentos): number | undefined {
+  const partes = PARTES_DO_GRUPO.map((parte) => numero(argumentos, parte)).filter((n): n is number => n !== undefined);
+  if (partes.length === 0) return numero(argumentos, "hospedes");
+  return partes.find((n) => !Number.isInteger(n) || n < 0) ?? partes.reduce((soma, n) => soma + n, 0);
 }
