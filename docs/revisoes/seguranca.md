@@ -221,6 +221,7 @@ Ficaram registrados, sem correção:
   bloqueia o script, de propósito: `script-src` continua só com o hash do script da página. O
   efeito é um erro no console do navegador a cada carga, sem efeito na conversa. Tirar o erro
   pede configuração da zona, que é do Éverton, ou política por nonce, que fica para "O que
-  faria com mais tempo".
+  faria com mais tempo". Decidido por ele em 14/11 (P43, X39): aceita o erro de console como
+  está. A política não muda.
 - **Gasto do modelo.** Sem pendência nova: vale o limite 24, com o limite de gasto na conta do
   provedor como controle (X29).
