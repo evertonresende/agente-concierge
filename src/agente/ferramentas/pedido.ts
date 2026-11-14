@@ -1,6 +1,6 @@
 // Leitura comum do pedido de estadia que o modelo manda para cotar e para resumir.
 import { type Ficha, regrasDaFicha } from "../../catalogo";
-import { type DataISO, ehDataInexistente, formatarDataComDia, resolverData, resolverSaida } from "../../nucleo/datas";
+import { type DataISO, ehDataInexistente, formatarDataComDia, resolverData, resolverSaida, saidaSemAnoAlemDoTeto } from "../../nucleo/datas";
 import type { Mensagem } from "../../modelo";
 import { cotar, type Cotacao } from "../../nucleo/preco";
 import { type Argumentos, type Contexto, numero, texto } from "./tipos";
@@ -41,6 +41,15 @@ export async function prepararPedido(argumentos: Argumentos, contexto: Contexto,
       erro: `A data de entrada (${formatarDataComDia(checkin)}) já passou (hoje é ${formatarDataComDia(contexto.hoje)}). `
         + "Não é possível cotar ou reservar datas no passado. Explique o motivo ao hóspede e peça novas datas de "
         + "entrada e de saída. Não informe nenhum total e não passe para humano.",
+    };
+  }
+  if (saida && saidaSemAnoAlemDoTeto(saida, checkin, contexto.hoje)) {
+    return {
+      ok: false,
+      erro: "A data de saída veio sem ano e, depois da entrada, a estadia ficaria longa demais: deve ser engano de "
+        + "digitação. Peça ao hóspede as datas de entrada e de saída de novo, com o ano se a estadia for longa mesmo. "
+        + "Não complete o ano por conta própria nem chame a ferramenta de novo com um ano que o hóspede não escreveu. "
+        + "Não informe nenhum total e não passe para humano.",
     };
   }
   const ficha = await contexto.catalogo.ficha(id);

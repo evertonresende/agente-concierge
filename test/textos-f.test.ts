@@ -5,6 +5,7 @@ import type { Contexto } from "../src/agente/ferramentas";
 import { confirmarReserva, montarResumo } from "../src/agente/ferramentas/lead";
 import { type Cofre, ESTADO_INICIAL, type EstadoLead, LeadRecusado } from "../src/lead";
 import { criarContexto, criarMundo } from "./apoio";
+import { queroFechar } from "./apoio-f";
 
 const DADOS = { imovel_id: "GRM-301", checkin: "15/01/2027", checkout: "18/01/2027", hospedes: 2, nome: "Ana Lima", telefone: "+14155550123" };
 // Palavras em português que um texto em inglês não pode trazer.
@@ -104,7 +105,7 @@ describe("textos fixos em inglês (L15)", () => {
   it("uma noite só: singular nos dois idiomas", async () => {
     const dados = { ...DADOS, imovel_id: "RIO-402", checkin: "20/01/2027", checkout: "21/01/2027", hospedes: 1 };
     expect((await sessao().resumo(2, QUER_FECHAR, dados)).respostaFinal).toContain("(1 night)");
-    expect((await sessao().resumo(2, "quero fechar", dados)).respostaFinal).toContain("(1 noite)");
+    expect((await sessao().resumo(2, queroFechar(dados), dados)).respostaFinal).toContain("(1 noite)");
   });
 });
 

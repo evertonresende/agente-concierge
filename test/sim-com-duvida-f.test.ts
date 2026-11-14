@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { confirmarReserva, montarResumo } from "../src/agente/ferramentas/lead";
 import { type Cofre, ESTADO_INICIAL, type EstadoLead, lerConfirmacao, type Pendente, pedidoDeConfirmacaoPendente } from "../src/lead";
 import { criarContexto, criarMundo } from "./apoio";
+import { comAnteriores, queroFechar } from "./apoio-f";
 
 const DADOS = { imovel_id: "GRM-301", checkin: "15/01/2027", checkout: "18/01/2027", hospedes: 2, nome: "Ana Lima", telefone: "(11) 98888-0000" };
 const GRM301: Pendente = {
@@ -25,7 +26,7 @@ describe("C10: um sim seguido do anúncio de uma dúvida envia o lead (regressã
       const mundo = criarMundo();
       let estado: EstadoLead = ESTADO_INICIAL;
       const cofre: Cofre = { ler: () => estado, salvar: (e) => { estado = e; } };
-      await montarResumo.executar(DADOS, criarContexto(mundo, cofre, 2, "quero fechar"));
+      await montarResumo.executar(DADOS, criarContexto(mundo, cofre, 2, queroFechar(DADOS)));
       const r = await confirmarReserva.executar({}, criarContexto(mundo, cofre, 3, mensagem));
       expect(r.respostaFinal ?? "").not.toMatch(/registrado/);
       expect(mundo.leads).toEqual([]);
@@ -52,14 +53,14 @@ describe("C10, dano em dois turnos: o sim com dúvida não envia, e só sai o le
       const mundo = criarMundo();
       let estado: EstadoLead = ESTADO_INICIAL;
       const cofre: Cofre = { ler: () => estado, salvar: (e) => { estado = e; } };
-      await montarResumo.executar(DADOS, criarContexto(mundo, cofre, 2, "quero fechar"));
+      await montarResumo.executar(DADOS, criarContexto(mundo, cofre, 2, queroFechar(DADOS)));
       // Turno 3: sim com anúncio de dúvida. Nada sai, pelo confirmar_reserva nem pelo rearme do fim do turno.
       const t3 = await confirmarReserva.executar({}, criarContexto(mundo, cofre, 3, primeira));
       expect(t3.respostaFinal ?? "").not.toMatch(/registrado/);
       expect(pedidoDeConfirmacaoPendente(cofre, 3, "pt", primeira)).toBeUndefined();
       expect(mundo.leads).toEqual([]);
       // Turno 4: a dúvida anunciada muda um dado, e o modelo monta o resumo novo. Turno 5: "sim".
-      const t4 = await montarResumo.executar(novo, criarContexto(mundo, cofre, 4, depois));
+      const t4 = await montarResumo.executar(novo, comAnteriores(criarContexto(mundo, cofre, 4, depois), queroFechar(DADOS), primeira));
       expect(t4.respostaFinal ?? "").toMatch(/^Resumo do seu pedido de reserva:/);
       const t5 = await confirmarReserva.executar({}, criarContexto(mundo, cofre, 5, "sim"));
       expect(t5.respostaFinal ?? "").toMatch(/registrado/);

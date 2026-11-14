@@ -107,7 +107,7 @@ describe("loop de ferramentas", () => {
 
   it("M1 cenário 2: nome do hóspede com valor no resumo não libera o valor nos turnos seguintes", async () => {
     const { turno } = conversa();
-    await turno("quanto fica?", roteiro(pedeFerramentas(chamar("cotar", ESTADIA)), diz("Fica R$ 2.156,00.")).modelo);
+    await turno("sou Ana R$ 10,00, quanto fica?", roteiro(pedeFerramentas(chamar("cotar", ESTADIA)), diz("Fica R$ 2.156,00.")).modelo);
     await turno("quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", { ...DADOS, nome: "Ana R$ 10,00" }))).modelo);
     const errado = diz("Combinado: fica R$ 10,00.");
     const depois = await turno("então fica R$ 10,00?", roteiro(errado, errado, diz("NÃO")).modelo);
@@ -162,7 +162,7 @@ describe("loop de ferramentas", () => {
   it("resumo encerra o turno com o texto do código e não envia nada", async () => {
     const { turno, mundo } = montar();
     const { modelo, recebidas } = roteiro(pedeFerramentas(chamar("montar_resumo", DADOS)));
-    const saida = await turno(2, "quero fechar", modelo);
+    const saida = await turno(2, "quero fechar, sou Ana Lima", modelo);
     for (const trecho of ["Chale Serra Gramado (GRM-301)", "sexta-feira, 15/01/2027", "segunda-feira, 18/01/2027", "Hóspedes: 2", "Ana Lima", "(11) 98888-0000", "R$ 2.156,00"]) {
       expect(saida.reply).toContain(trecho);
     }
@@ -174,7 +174,7 @@ describe("loop de ferramentas", () => {
   it("resumo e confirmação pedidos na mesma resposta do modelo: só o resumo acontece", async () => {
     const { turno, mundo } = montar();
     const { modelo } = roteiro(pedeFerramentas(chamar("montar_resumo", DADOS), chamar("confirmar_reserva")));
-    const saida = await turno(2, "meus dados são esses, pode registrar", modelo);
+    const saida = await turno(2, "sou Ana Lima, meus dados são esses, pode registrar", modelo);
     expect(saida.reply).toContain("Resumo do seu pedido");
     expect(mundo.leads).toEqual([]);
     // Toda chamada de ferramenta tem resultado no histórico.
@@ -193,7 +193,7 @@ describe("loop de ferramentas", () => {
 
   it("resumo num turno, sim no seguinte: 1 lead com os 7 campos e resposta de registrado", async () => {
     const { turno, mundo } = montar();
-    await turno(2, "quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
+    await turno(2, "quero fechar, sou Ana Lima", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
     const saida = await turno(3, "sim, confirmo", roteiro(pedeFerramentas(chamar("confirmar_reserva"))).modelo);
     expect(saida.reply).toMatch(/registrad/i);
     expect(saida.reply).toContain("R$ 2.156,00");
@@ -209,7 +209,7 @@ describe("loop de ferramentas", () => {
 
   it("webhook respondeu 500: a resposta não diz registrado e passa para humano", async () => {
     const { turno, mundo } = montar({ statusDoWebhook: 500 });
-    await turno(2, "quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
+    await turno(2, "quero fechar, sou Ana Lima", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
     const saida = await turno(3, "sim", roteiro(pedeFerramentas(chamar("confirmar_reserva"))).modelo);
     expect(saida.reply).not.toMatch(/registrad/i);
     expect(saida.reply).toContain("Não consegui");
@@ -220,7 +220,7 @@ describe("loop de ferramentas", () => {
 
   it("cotar outra estadia depois do resumo troca o resumo e exige novo sim (L10)", async () => {
     const { turno, mundo, estado } = montar();
-    await turno(2, "quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
+    await turno(2, "quero fechar, sou Ana Lima", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
     // O modelo só cotou a data nova; o resumo novo sai do código, sem o modelo redigir.
     const troca = await turno(3, "sim, mas muda a saída para 19/01/2027", roteiro(pedeFerramentas(chamar("cotar", { ...ESTADIA, checkout: "19/01/2027" }))).modelo);
     expect(troca.reply).toContain("Resumo do seu pedido");
@@ -235,7 +235,7 @@ describe("loop de ferramentas", () => {
 
   it("estadia nova recusada depois do resumo: a confirmação pendente cai e nada é enviado", async () => {
     const { turno, mundo, estado } = montar();
-    await turno(2, "quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
+    await turno(2, "quero fechar, sou Ana Lima", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
     await turno(3, "muda para uma noite só", roteiro(pedeFerramentas(chamar("cotar", { ...ESTADIA, checkout: "16/01/2027" })), diz("O mínimo é de 2 noites.")).modelo);
     expect(estado().pendente).toBeNull();
     await turno(4, "sim", roteiro(pedeFerramentas(chamar("confirmar_reserva")), diz("Preciso montar um novo resumo.")).modelo);
@@ -244,7 +244,7 @@ describe("loop de ferramentas", () => {
 
   it("confirmação pedida junto com uma cotação de outra data não envia a reserva antiga", async () => {
     const { turno, mundo } = montar();
-    await turno(2, "quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
+    await turno(2, "quero fechar, sou Ana Lima", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
     // O modelo pede a confirmação ANTES da cotação nova, na mesma resposta.
     const saida = await turno(3, "sim, mas muda a saída para 19/01/2027", roteiro(
       pedeFerramentas(chamar("confirmar_reserva"), chamar("cotar", { ...ESTADIA, checkout: "19/01/2027" })),
@@ -259,8 +259,8 @@ describe("loop de ferramentas", () => {
 
   it("confirmação pedida junto com um resumo de dado novo não envia a reserva antiga", async () => {
     const { turno, mundo } = montar();
-    await turno(2, "quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
-    await turno(3, "sim, mas somos 3", roteiro(pedeFerramentas(chamar("confirmar_reserva"), chamar("montar_resumo", { ...DADOS, hospedes: 3 }))).modelo);
+    await turno(2, "quero fechar, sou Ana Lima", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
+    await turno(3, "sim, mas somos 3, sou Ana Lima", roteiro(pedeFerramentas(chamar("confirmar_reserva"), chamar("montar_resumo", { ...DADOS, hospedes: 3 }))).modelo);
     expect(mundo.leads).toEqual([]);
   });
 
@@ -270,7 +270,7 @@ describe("loop de ferramentas", () => {
   ] as const) {
     it(`cotação com ${caso} depois do resumo derruba a confirmação pendente`, async () => {
       const { turno, mundo, estado } = montar();
-      await turno(2, "quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
+      await turno(2, "quero fechar, sou Ana Lima", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
       await turno(3, "sim, mas muda", roteiro(pedeFerramentas(chamar("cotar", argumentos)), diz("Pode conferir o dado?")).modelo);
       expect(estado().pendente).toBeNull();
       await turno(4, "sim", roteiro(pedeFerramentas(chamar("confirmar_reserva")), diz("Preciso de um novo resumo.")).modelo);
@@ -282,9 +282,9 @@ describe("loop de ferramentas", () => {
     it(`catálogo fora do ar em ${ferramenta} com dado novo depois do resumo derruba a confirmação pendente`, async () => {
       const opcoes = { catalogoForaDoAr: false };
       const { turno, mundo, estado } = montar(opcoes);
-      await turno(2, "quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
+      await turno(2, "quero fechar, sou Ana Lima", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
       opcoes.catalogoForaDoAr = true;
-      const falha = await turno(3, "sim, mas muda a saída para 19/01/2027", roteiro(pedeFerramentas(chamar(ferramenta, { ...DADOS, checkout: "19/01/2027" }))).modelo);
+      const falha = await turno(3, "sim, mas muda a saída para 19/01/2027, sou Ana Lima", roteiro(pedeFerramentas(chamar(ferramenta, { ...DADOS, checkout: "19/01/2027" }))).modelo);
       expect(falha.contingencia).toBe(true);
       expect(estado().pendente).toBeNull();
       opcoes.catalogoForaDoAr = false;
@@ -296,11 +296,11 @@ describe("loop de ferramentas", () => {
   it("pedir de novo uma reserva já registrada derruba o resumo em aberto de outra reserva", async () => {
     const { turno, mundo, estado } = montar();
     const OUTRA = { ...DADOS, checkout: "19/01/2027" };
-    await turno(2, "quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
+    await turno(2, "quero fechar, sou Ana Lima", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
     await turno(3, "sim", roteiro(pedeFerramentas(chamar("confirmar_reserva"))).modelo);
-    await turno(4, "quero outra, até dia 19", roteiro(pedeFerramentas(chamar("montar_resumo", OUTRA))).modelo);
+    await turno(4, "quero outra, até dia 19, sou Ana Lima", roteiro(pedeFerramentas(chamar("montar_resumo", OUTRA))).modelo);
     expect(estado().pendente).toMatchObject({ reserva: { checkout: "2027-01-19" } });
-    const repetida = await turno(5, "na verdade quero a primeira mesmo", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
+    const repetida = await turno(5, "na verdade quero a primeira mesmo, sou Ana Lima", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
     expect(repetida.reply).toContain("já está registrado");
     expect(estado().pendente).toBeNull();
     await turno(6, "sim", roteiro(pedeFerramentas(chamar("confirmar_reserva")), diz("Não há pedido aguardando confirmação.")).modelo);
@@ -309,8 +309,8 @@ describe("loop de ferramentas", () => {
 
   it("pedido de novo resumo recusado derruba o resumo anterior", async () => {
     const { turno, mundo, estado } = montar();
-    await turno(2, "quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
-    await turno(3, "na verdade somos 6", roteiro(pedeFerramentas(chamar("montar_resumo", { ...DADOS, hospedes: 6 })), diz("O imóvel acomoda no máximo 4 pessoas.")).modelo);
+    await turno(2, "quero fechar, sou Ana Lima", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
+    await turno(3, "na verdade somos 6, sou Ana Lima", roteiro(pedeFerramentas(chamar("montar_resumo", { ...DADOS, hospedes: 6 })), diz("O imóvel acomoda no máximo 4 pessoas.")).modelo);
     expect(estado().pendente).toBeNull();
     await turno(4, "sim", roteiro(pedeFerramentas(chamar("confirmar_reserva")), diz("Preciso de um novo resumo.")).modelo);
     expect(mundo.leads).toEqual([]);
@@ -318,7 +318,7 @@ describe("loop de ferramentas", () => {
 
   it("cotação nova depois do registro é só cotação: não reabre resumo", async () => {
     const { turno, mundo } = montar();
-    await turno(2, "quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
+    await turno(2, "quero fechar, sou Ana Lima", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
     await turno(3, "sim", roteiro(pedeFerramentas(chamar("confirmar_reserva"))).modelo);
     const saida = await turno(4, "e até dia 19, quanto fica?", roteiro(pedeFerramentas(chamar("cotar", { ...ESTADIA, checkout: "19/01/2027" })), diz("Fica R$ 2.746,00.")).modelo);
     expect(saida.reply).toBe("Fica R$ 2.746,00.");
@@ -327,7 +327,7 @@ describe("loop de ferramentas", () => {
 
   it("repetir a cotação da mesma estadia não invalida o resumo", async () => {
     const { turno, estado } = montar();
-    await turno(2, "quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
+    await turno(2, "quero fechar, sou Ana Lima", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
     await turno(3, "quanto era mesmo?", roteiro(pedeFerramentas(chamar("cotar", ESTADIA)), diz("R$ 2.156,00."), diz("NÃO")).modelo);
     expect(estado().pendente).not.toBeNull();
   });
@@ -416,7 +416,7 @@ describe("ligações da frente F no loop", () => {
 
   it("sim repetido logo depois do registro: texto fixo, sem chamada de modelo e sem novo envio (L15)", async () => {
     const { turno, mundo } = conversa();
-    await turno("quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
+    await turno("quero fechar, sou Ana Lima", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
     await turno("sim", roteiro(pedeFerramentas(chamar("confirmar_reserva", {})), diz("Pedido registrado.")).modelo);
     expect(mundo.leads).toHaveLength(1);
     const repetido = await turno("sim", roteiro().modelo);
@@ -428,7 +428,7 @@ describe("ligações da frente F no loop", () => {
 
   it("dado mudado pelo hóspede sem ferramenta derruba o pedido de confirmação do resumo antigo", async () => {
     const { turno, mundo } = conversa();
-    await turno("quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
+    await turno("quero fechar, sou Ana Lima", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
     // O "NÃO" é a pergunta fechada do rearme (item 10).
     const pergunta = await turno("tem wifi?", roteiro(diz("Sim, a ficha lista wifi."), diz("NÃO")).modelo);
     // O pedido de confirmação é anexado por código (o texto exato é da frente F).

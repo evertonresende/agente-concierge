@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { confirmarReserva, montarResumo } from "../src/agente/ferramentas/lead";
 import { type Cofre, ESTADO_INICIAL, type EstadoLead, lerConfirmacao, mudaDadoDoResumo, type Pendente, pedidoDeConfirmacaoPendente } from "../src/lead";
 import { criarContexto, criarMundo } from "./apoio";
+import { queroFechar } from "./apoio-f";
 
 const DADOS = { imovel_id: "GRM-301", checkin: "15/01/2027", checkout: "18/01/2027", hospedes: 2, nome: "Ana Lima", telefone: "(11) 98888-0000" };
 const GRM301: Pendente = {
@@ -39,7 +40,7 @@ function sessao() {
   const ctx = (turno: number, mensagem: string) => criarContexto(mundo, cofre, turno, mensagem);
   return {
     mundo, cofre, estado: () => estado,
-    resumo: (turno: number) => montarResumo.executar(DADOS, ctx(turno, "quero fechar")),
+    resumo: (turno: number) => montarResumo.executar(DADOS, ctx(turno, queroFechar(DADOS))),
     confirma: (turno: number, mensagem: string) => confirmarReserva.executar({}, ctx(turno, mensagem)),
   };
 }

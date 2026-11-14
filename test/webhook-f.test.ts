@@ -6,6 +6,7 @@ import type { Contexto } from "../src/agente/ferramentas";
 import { confirmarReserva, montarResumo } from "../src/agente/ferramentas/lead";
 import { chaveDaReserva, type Cofre, type CorpoDoLead, ESTADO_INICIAL, type EstadoLead, postarLead } from "../src/lead";
 import { criarContexto, criarMundo, URL_LEADS } from "./apoio";
+import { queroFechar } from "./apoio-f";
 
 const DADOS = { imovel_id: "GRM-301", checkin: "15/01/2027", checkout: "18/01/2027", hospedes: 2, nome: "Ana Lima", telefone: "(11) 98888-0000" };
 type Modo = "ok" | "500" | "422" | "atraso";
@@ -39,7 +40,7 @@ function sessao(modos: Modo[], envio: Partial<Contexto["envio"]> = {}) {
     recebidos,
     guardados,
     estado: () => estado,
-    resumo: (turno: number, dados: Record<string, unknown> = DADOS) => montarResumo.executar(dados, contexto(turno, "quero fechar")),
+    resumo: (turno: number, dados: Record<string, unknown> = DADOS) => montarResumo.executar(dados, contexto(turno, queroFechar(dados))),
     sim: (turno: number) => confirmarReserva.executar({}, contexto(turno, "Sim, confirmo.")),
   };
 }
