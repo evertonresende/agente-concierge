@@ -126,9 +126,9 @@ describe("nova tentativa e 3xx depois da leitura com teto (frente V)", () => {
       const erro = catalogo(buscar).cidades().catch((e: Error) => e);
       await vi.advanceTimersByTimeAsync(TEMPO_POR_PEDIDO_MS - 1);
       expect(buscar).toHaveBeenCalledTimes(1);
-      expect(leituras[0].cancelada).toBe(false);
+      expect(leituras[0]!.cancelada).toBe(false);
       await vi.advanceTimersByTimeAsync(1);
-      expect(leituras[0].cancelada).toBe(true);
+      expect(leituras[0]!.cancelada).toBe(true);
       await vi.advanceTimersByTimeAsync(TEMPO_POR_PEDIDO_MS);
       const final = await erro;
       expect(final).toBeInstanceOf(ErroDoCatalogo);
