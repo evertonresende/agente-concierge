@@ -101,9 +101,11 @@ flowchart TB
 Texto alternativo: com imóvel, datas, hóspedes, nome e telefone, o código monta o resumo
 e o mostra num turno. No turno seguinte, só um sim inequívoco confirma; hesitação repete
 o pedido; um sim com anúncio de dúvida ("sim, uma dúvida") não envia nada (P19); condição de preço passa para humano; qualquer dado mudado, uma pergunta do
-próprio agente ou a recusa do nome (P28) derruba o resumo. Na confirmação, o código grava o marcador de envio,
-relê a ficha e recalcula o total; se mudou, mostra um resumo novo. Com o envio desligado
-não há POST. Resposta 201 é a única que vira "registrado". 5xx tem uma nova tentativa;
+próprio agente ou a recusa do nome (P28) derruba o resumo. Na confirmação, a ordem é a do
+código (`confirmar` em `src/lead.ts`): com o envio desligado, nada é relido e não há POST nem
+marcador. Com o envio ligado, o código relê a ficha e recalcula o total; se mudou, mostra um
+resumo novo, ainda sem marcador. Se o total não mudou, grava o marcador de envio e só então
+faz o POST. Resposta 201 é a única que vira "registrado". 5xx tem uma nova tentativa;
 422 com campo apontado pede a correção; tempo esgotado ou resultado incerto não se
 repete; qualquer outro código não registra, passa para humano e bloqueia a estadia já
 na primeira vez. A segunda falha, de qualquer tipo, para a mesma estadia passa para humano e
@@ -117,7 +119,8 @@ stateDiagram-v2
   state "sem pedido" as sem
   state "cotado" as cotado
   state "resumo pendente<br/>(texto fixo de código)" as pendente
-  state "enviando<br/>marcador gravado, ficha relida" as enviando
+  state "conferindo<br/>ficha relida, total recalculado, sem marcador" as conferindo
+  state "enviando<br/>marcador gravado, POST" as enviando
   state "registrado" as registrado
   state "não registrado<br/>handoff true" as nao
   state "incerto<br/>handoff true, sem nova tentativa" as incerto
@@ -130,9 +133,13 @@ stateDiagram-v2
   pendente --> pendente: hesitação ou sim com dúvida, nada enviado (P15, P19)
   pendente --> cotado: dado mudou (L10), pergunta do agente (P18) ou nome recusado (P28)
   pendente --> nao: condição de preço (L9)
-  pendente --> enviando: sim inequívoco no turno seguinte (L9, P11, P13)
-  enviando --> pendente: total recalculado mudou, resumo novo
-  enviando --> nao: ENVIO_LEADS desligado, zero POST (L24)
+  pendente --> nao: sim com ENVIO_LEADS desligado, nada relido, zero POST (L24)
+  pendente --> conferindo: sim inequívoco no turno seguinte, envio ligado (L9, P11, P13)
+  conferindo --> pendente: total mudou, resumo novo, sem marcador
+  conferindo --> cotado: a ficha relida recusa a estadia, o resumo cai
+  conferindo --> nao: catálogo fora do ar, zero POST
+  conferindo --> bloqueada: estadia já bloqueada, zero POST (P14)
+  conferindo --> enviando: total igual, grava o marcador
   enviando --> registrado: 201
   enviando --> enviando: 5xx, uma nova tentativa (L11)
   enviando --> pendente: 422 com campo, pede correção
@@ -150,8 +157,8 @@ stateDiagram-v2
   resumo gravado.
 - Se o teto de chamadas (P30) corta um `cotar` ou um `montar_resumo` no turno em que o
   hóspede confirma, a confirmação daquele turno não roda; o hóspede confirma de novo.
-- No envio, o total é recalculado com a ficha lida de novo. O valor do webhook sai desse
-  cálculo, não do texto da conversa.
+- Na confirmação com o envio ligado, o total é recalculado com a ficha lida de novo, antes
+  do marcador. O valor do webhook sai desse cálculo, não do texto da conversa.
 - Um lead por reserva: a confirmação é consumida uma vez.
 - O marcador de envio é gravado antes do POST. Um reinício do objeto no meio não gera
   segundo envio; marcador sem resultado conta como incerto.
