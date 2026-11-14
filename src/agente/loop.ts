@@ -677,6 +677,8 @@ export async function rodarTurno(entrada: EntradaDoTurno): Promise<SaidaDoTurno>
           ? conferir(resposta.texto, permitidos(), situacaoDoTurno())
           : [];
         if (problemas.length === 0) return fechar(resposta.texto);
+        // A chamada focada é uma só no turno: depois dela, montar_resumo passa direto (P17).
+        if (problemas.includes(FOCO)) focou = true;
         rascunho = resposta.texto;
         visto.push(
           { role: "assistant", content: rascunho },
@@ -687,8 +689,12 @@ export async function rodarTurno(entrada: EntradaDoTurno): Promise<SaidaDoTurno>
 
       // A confirmação roda por último no lote: se o modelo pediu junto uma cotação ou um
       // resumo com dado novo, eles invalidam a confirmação pendente antes (contrato L10).
-      // A busca roda antes da cotação do mesmo lote, para a trava de escolha ver a lista (L21).
-      const ordem = (c: ChamadaDeFerramenta) => (c.function.name === CONFIRMAR ? 2 : c.function.name.startsWith("buscar") ? 0 : 1);
+      // A busca roda antes da cotação do mesmo lote, para a trava de escolha ver a lista (L21),
+      // e a passagem para uma pessoa roda antes do resumo, que encerra o turno.
+      const ordem = (c: ChamadaDeFerramenta) => {
+        const nome = c.function.name;
+        return nome.startsWith("buscar") ? 0 : nome === CONFIRMAR ? 3 : nome === "montar_resumo" ? 2 : 1;
+      };
       const chamadas = [...resposta.chamadas].sort((a, b) => ordem(a) - ordem(b));
       guardar({ role: "assistant", content: resposta.texto, tool_calls: chamadas });
       let respostaFinal: string | undefined;

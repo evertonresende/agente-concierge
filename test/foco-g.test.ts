@@ -58,6 +58,26 @@ describe("P17: sinal do hóspede vira uma chamada focada, nunca handoff nem text
     expect(saida.reply).toContain("Resumo do seu pedido");
   });
 
+  it("uma chamada focada só por turno: depois da conferência, montar_resumo passa direto", async () => {
+    const { turno } = await comCotacao();
+    const r = roteiro(diz("Claro, já monto o pedido."), pedeFerramentas(chamar("montar_resumo", { ...ESTADIA, ...PESSOA })));
+    const saida = await turno("Vocês aplicam 20% a mais na sexta? Pode fechar assim mesmo, Ana Lima, (11) 98888-0000.", r.modelo);
+    expect(r.recebidas).toHaveLength(2);
+    expect(saida.reply).toContain("Resumo do seu pedido");
+  });
+
+  it.each([
+    ["resumo antes", ["montar_resumo", "passar_para_humano"]],
+    ["passagem antes", ["passar_para_humano", "montar_resumo"]],
+  ])("desconto com montar_resumo e passar_para_humano no mesmo lote (%s): o turno termina com handoff", async (_nome, ordem) => {
+    const { turno } = await comCotacao();
+    const chamadas = ordem.map((nome) => nome === "montar_resumo"
+      ? chamar("montar_resumo", { ...ESTADIA, ...PESSOA })
+      : chamar("passar_para_humano", { motivo: "desconto_ou_negociacao" }));
+    const saida = await turno("Pode fechar com 10% de desconto? Ana Lima, (11) 98888-0000.", roteiro(pedeFerramentas(...chamadas)).modelo);
+    expect(saida.handoff).toBe(true);
+  });
+
   it("valor em reais ditado pelo hóspede, diferente do calculado: chamada focada antes do resumo (man-06)", async () => {
     const { turno } = conversa();
     const r = roteiro(
