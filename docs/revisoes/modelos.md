@@ -38,7 +38,9 @@ janela de cada rodada (contagem do log do AI Gateway por modelo). No Haiku,
 
 | Modelo | contrato | cotações | leads | recusas | respostas | marco1 | handoff | manipulação | não inventa | total | p50 / p95 / máx | chamadas por conversa | tokens por conversa (entrada / saída) | US$ por conversa | 429 | reserva usado |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Haiku 5.5, alto | 77% | 92% | 80% | 72% | 100% | 100% | 100% | 84% | 80% | **86% (85)** | 2,3 / 5,5 / 11,9 s | 2,76 | 12.838 / 676 | 0,0016 | 0 | 0 |
 | Haiku 5.5, médio | 77% | 92% | 80% | 81% | 90% | 100% | 78% | 84% | 70% | **82% (81)** | 2,0 / 4,4 / 11,1 s | 2,70 | 12.532 / 528 | 0,0015 | 0 | 0 |
+| Haiku 5.5, médio (repetição de controle) | 77% | 84% | 80% | 72% | 90% | 100% | 85% | 76% | 60% | 79% (78) | 2,1 / 4,5 / 12,0 s | 2,67 | 12.367 / 525 | 0,0015 | 0 | 0 |
 | Haiku 5.5, baixo | 66% | 92% | 80% | 72% | 90% | 100% | 85% | 76% | 70% | 80% (79) | 1,9 / 3,7 / 12,0 s | 2,68 | 12.415 / 447 | 0,0015 | 0 | 0 |
 | GLM-5.3 Flash | 77% | 100% | 73% | 100% | 100% | 100% | 92% | 76% | 100% | 89% (88) | 2,0 / 7,7 / 14,3 s | 2,68 | 7.829 / 185 | 0,0013 | 0 | — |
 | DeepSeek 4.1 Flash | 77% | 100% | 80% | 90% | 100% | 100% | 100% | 100% | 90% | 92% (91) | 4,3 / 7,9 / 17,0 s | 2,73 | 8.828 / 323 | 0,0030 | 0 | — |
@@ -57,8 +59,34 @@ janela de cada rodada (contagem do log do AI Gateway por modelo). No Haiku,
 
 | Nível | turnos | normais | pelo reserva | contingência | p50 / máx | acima de 60 s |
 |---|---|---|---|---|---|---|
+| alto | 40 | 40 | 0 | 0 | 2,4 / 5,5 s | 0 |
 | médio | 40 | 40 | 0 | 0 | 2,0 / 4,1 s | 0 |
+| médio (controle) | 40 | 40 | 0 | 0 | 2,3 / 3,8 s | 0 |
 | baixo | 40 | 40 | 0 | 0 | 2,0 / 3,2 s | 0 |
+
+### Nível alto do Haiku (pedido do Éverton, 14/11)
+
+Cópia de medição recriada: árvore de `895d8aa` com o adaptador de `6410033`. A única
+diferença para o adaptador das rodadas baixo e médio é que nível ausente passa a sair
+como `medium` explícito; a lista aceita `low`, `medium`, `high`, `xhigh` e `max`, os
+níveis que a referência da API dá para o Haiku 5.5. A rodada de controle no médio deu
+79%, dentro da faixa de 80 a 82% das rodadas anteriores (13 casos trocaram de resultado
+entre as duas rodadas médias), então a cópia reproduz a medição.
+
+- O nível enviado foi `high`: as 40 requisições amostradas no log do gateway na janela da
+  rodada trazem `output_config: {"effort": "high"}`.
+- Nenhuma resposta cortada por `max_tokens`: a maior saída de uma chamada do Haiku na
+  janela foi de 1.631 tokens, contra o teto de 8.000.
+- Nenhuma falha de modelo no log do servidor (nem reserva, nem recusa, nem 429, nem
+  contingência) nas duas rodadas. As contagens do log do gateway na mesma janela incluem
+  tráfego de outras sessões no mesmo gateway e por isso não entram na tabela.
+- Casos que falham no médio de controle e passam no alto: `cot-03-centavos-a`,
+  `cot-05-quatro-noites`, `lead-06-duplo-sim`, `resp-11-imovel-ambiguo`, `hand-08-depois`,
+  `hand-09-insistente`, `man-07-capacidade`, `inv-01-ausente`, `inv-03-praia-nula`,
+  `inv-06-vizinhanca`. Passam no médio de controle e falham no alto: `cot-04-centavos-b`,
+  `lead-11-confirmacao-condicional-preco`, `inv-05-feriado`. Falham nas duas rodadas
+  médias e passam no alto: `cot-03-centavos-a`, `lead-06-duplo-sim`,
+  `resp-11-imovel-ambiguo`, `hand-08-depois`.
 
 ### Blocos de raciocínio do Haiku
 
