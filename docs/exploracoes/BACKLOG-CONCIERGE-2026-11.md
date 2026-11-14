@@ -1237,6 +1237,42 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
 - 14/11 00h37 · Éverton · redação: as linhas de decisão do `DECISOES.md` ficam só com a data, sem hora e sem
   circunstância dele; as duas entradas deste log sobre a X28 e a X29 foram reescritas do mesmo jeito.
   O conteúdo das decisões não mudou. Vale daqui em diante para todo registro de decisão
+- 14/11 00h43 · K · relatório 8. Portão passou: `/saude` no hostname próprio com o agente de usuário do
+  `Python-urllib` dá 200. Dos 17 clientes testados, só `Python-urllib` e `libwww-perl` levam 403 (erro
+  1010), e só no endereço padrão do Worker, em GET e em POST. Latência: o evento `turno` do Worker marca
+  2,2 a 4,0 s nas perguntas simples (2 chamadas) e 5,0 a 5,9 s nas cotações (3 chamadas); os cerca de 10 s
+  medidos antes eram a conexão nova da máquina de medição (o cliente tenta IPv6 primeiro e ele não sai),
+  não o agente. Medição de latência daqui em diante força IPv4 ou reusa a conexão. Uma URL de
+  pré-visualização existe em `producao`: P25, desligar pela API. O limite de taxa não chegou a ser aplicado
+- 14/11 00h43 · K · relatório 9: script corrigido em 86c00c1 (o runner não segue redirecionamento no modo
+  completo) e b57b4ee (baixos da segunda verificação); 25 de 25 defeitos plantados pegos pelo autoteste,
+  segundo a frente. Verificador curto do delta f28ce3e..b57b4ee lançado (Opus 5.5, esforço alto)
+- 14/11 00h43 · N · X30 aplicada nos rascunhos (602bfa1): reserva, nomes dos modelos com versão exata, limites 15
+  a 19 e o rascunho de cortes e de mais tempo. Recebeu a convenção de registro e o ajuste do limpador
+  dos exports (dois arquivos com trecho pessoal, trocado por marcador e listado no índice)
+- 14/11 00h43 · H · verificador da rodada 3 (a58ff5e): REPROVADO por dois achados na fila da sessão. B1, alto e
+  determinístico: "quero fechar" e "sim" mandados ao mesmo tempo geram lead de um resumo que o hóspede
+  ainda não tinha recebido. B2: quando o Worker desiste com o pedido ainda na fila do objeto, o resumo
+  gravado depois fica confirmável sem ter sido visto. O resto passou: 20.724 execuções das sequências da
+  P14 pela sessão com 0 violação, reinício do objeto, falha de gravação, corpo do pedido e os achados
+  antigos A0 a A6. Lacuna apontada: P24. Frente corrigindo B1, B2 e P24; depois, verificador do delta.
+  Limites que ficam para o README: nenhum sinal chega ao objeto; corpo acima de 64 KB com resumo pendente
+- 14/11 00h43 · G · cabeça 4515061: correção da M-1 (o total do resumo aberto entra nos valores permitidos; 9
+  linhas em `src/agente/loop.ts`, lidas pela coordenadora). Ensaio por hash sobre a `main`, com a sonda
+  da janela do verificador, em curso. **A ordem da leva 2 muda: a G entra antes da H**, porque uma não
+  depende da outra e o ensaio conjunto não teve conflito
+- 14/11 00h45 · K · P25 aplicada: `previews_enabled: false` no Worker de `producao`, endereço padrão mantido,
+  `/saude` 200 nos dois endereços, `LEADS REAIS: 0`. Correção do relatório 8: não existia URL de
+  pré-visualização (Worker com Durable Object não ganha URL por versão; o endereço já dava 404 antes). O
+  motivo da P25 no `DECISOES.md` foi corrigido: é só proteção
+- 14/11 00h45 · N · cabeça 7a7146c: horas de decisão retiradas do "Como foi feito" (4 ocorrências); limpador dos
+  exports troca frase pessoal por marcador (4 frases em 2 sessões, listadas no índice); exports
+  refeitos fora do repositório: 70 sessões (os subagentes saíam em dobro), 35 para leitura humana;
+  latência, teste de clientes e P25 nos rascunhos, marcados "a confirmar no congelamento"
+- 14/11 00h45 · G · ensaio por hash de 4515061 sobre a `main`: merge limpo, 42 arquivos e 1355 testes verdes,
+  tipos e gate verdes. Sonda da janela do verificador: com resumo aberto o total não é mais cortado
+  (antes, turno 42); sem resumo aberto continua cortado no turno 41 e o agente cota de novo (limite
+  para o README). Faltam os três defeitos plantados que escapavam (P06, P07, P08), em curso
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
