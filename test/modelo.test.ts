@@ -282,18 +282,22 @@ describe("ids de chamada de ferramenta no pedido ao Haiku", () => {
 });
 
 describe("log de falha do modelo", () => {
-  it("mascara endereço e identificador longo antes de registrar", async () => {
+  async function logDe(mensagem: string): Promise<string> {
     const aviso = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const conta = "0123456789abcdef0123456789abcdef";
-    const ai = { run: async () => { throw new Error(`AiGatewayError: falhou em https://gateway.exemplo/v1/${conta}/gw/anthropic conta ${conta}`); } } as unknown as Ai;
-    await criarModelo(ai, "principal/x", {})([], []).catch(() => {});
-    const linha = String(aviso.mock.calls[0]![0]);
+    const ai = { run: async () => { throw new Error(mensagem); } } as unknown as Ai;
+    await criarModelo(ai, "principal/x", {})([{ role: "user", content: "Sou Maria Souza, telefone 11 98765-4321" }], []).catch(() => {});
+    const linha = aviso.mock.calls.map((c) => String(c[0])).join("\n");
     aviso.mockRestore();
-    expect(linha).toContain("modelo_falhou");
-    expect(linha).not.toContain(conta);
-    expect(linha).not.toContain("https://");
-    expect(linha).toContain("<endereço>");
-    expect(linha).toContain("<id>");
+    return linha;
+  }
+
+  it("registra só o nome do erro e o primeiro código, sem texto livre", async () => {
+    const linha = await logDe("AiGatewayError: 7003: falhou em https://gw.exemplo/v1/0123456789abcdef0123456789abcdef host api.exemplo.invalid 203.0.113.7 Bearer tokenSecreto sk-ant-api03-x maria@exemplo.invalid 'Sou Maria Souza, telefone 11 98765-4321'");
+    expect(JSON.parse(linha)).toEqual({ evento: "modelo_falhou", modelo: "principal/x", erro: "Error 7003" });
+  });
+
+  it("sem código numérico, só o nome do erro", async () => {
+    expect(JSON.parse(await logDe("fora do ar"))).toMatchObject({ erro: "Error" });
   });
 });
 

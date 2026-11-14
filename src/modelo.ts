@@ -261,7 +261,9 @@ function opcoesDoAmbiente(): OpcoesDoModelo {
   return { gateway: vars.AI_GATEWAY || undefined, reserva: vars.MODELO_RESERVA || undefined, esforco: vars.MODELO_ESFORCO || undefined };
 }
 
-class TempoDoPrincipal extends Error {}
+class TempoDoPrincipal extends Error {
+  override name = "TempoDoPrincipal";
+}
 
 function comLimite<T>(promessa: Promise<T>, ms: number): Promise<T> {
   let relogio: ReturnType<typeof setTimeout>;
@@ -270,14 +272,14 @@ function comLimite<T>(promessa: Promise<T>, ms: number): Promise<T> {
 }
 
 /**
- * Só o nome do modelo e o erro: nunca o conteúdo da conversa (contrato L22). Endereço e
- * sequência longa de hexadecimal (id de conta, de gateway, de pedido) saem mascarados.
+ * Só o nome do modelo, o nome do erro e o primeiro código numérico da mensagem (ex.:
+ * `AiGatewayError 7003`). Nenhum texto livre: um erro que ecoasse nome ou telefone do
+ * pedido feriria o contrato L22, e endereço ou identificador de conta não entra.
  */
 function registrarFalha(modelo: string, erro: unknown): void {
-  const descricao = (erro instanceof Error ? `${erro.name}: ${erro.message}` : String(erro))
-    .replace(/[a-z][a-z0-9+.-]*:\/\/\S+/gi, "<endereço>")
-    .replace(/[0-9a-f]{16,}/gi, "<id>");
-  console.warn(JSON.stringify({ evento: "modelo_falhou", modelo, erro: descricao.slice(0, 200) }));
+  const nome = erro instanceof Error ? erro.name : typeof erro;
+  const codigo = (erro instanceof Error ? erro.message : String(erro)).match(/\b\d{3,4}\b/)?.[0];
+  console.warn(JSON.stringify({ evento: "modelo_falhou", modelo, erro: codigo ? `${nome} ${codigo}` : nome }));
 }
 
 /** Se a última tentativa recusou por limite e a anterior também, o erro sai como `RecusaPorLimite`. */
