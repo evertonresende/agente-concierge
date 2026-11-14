@@ -194,7 +194,7 @@ Ditas pelo Éverton ao abrir a sessão coordenadora, salvo onde a linha diz outr
 
 ## Decisões provisórias (aguardam o Éverton)
 
-Tomadas pela coordenação durante a ausência dele, pela X15. Cada uma vale até ele
+Tomadas pela coordenação enquanto ele não respondia, pela X15, pela X27 e pela X28. Cada uma vale até ele
 confirmar ou reverter.
 
 | ID | Situação | Regra provisória | Motivo | Estado |
