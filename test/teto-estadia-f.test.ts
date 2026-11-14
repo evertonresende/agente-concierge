@@ -6,6 +6,7 @@ import type { Contexto } from "../src/agente/ferramentas";
 import { confirmarReserva, montarResumo } from "../src/agente/ferramentas/lead";
 import { type Cofre, type CorpoDoLead, ESTADO_INICIAL, type EstadoLead, postarLead } from "../src/lead";
 import { criarContexto, criarMundo, URL_LEADS } from "./apoio";
+import { queroFechar } from "./apoio-f";
 
 const DADOS = { imovel_id: "GRM-301", checkin: "15/01/2027", checkout: "18/01/2027", hospedes: 2, nome: "Ana Lima", telefone: "(11) 98888-0000" };
 const OUTRA = { ...DADOS, imovel_id: "RIO-402", checkin: "20/01/2027", checkout: "22/01/2027", hospedes: 1 };
@@ -29,7 +30,7 @@ function sessao(passos: Passo[]) {
   });
   return {
     posts,
-    resumo: (t: number, d: Record<string, unknown> = DADOS) => montarResumo.executar(d, ctx(t, "quero fechar")),
+    resumo: (t: number, d: Record<string, unknown> = DADOS) => montarResumo.executar(d, ctx(t, queroFechar(d))),
     sim: (t: number) => confirmarReserva.executar({}, ctx(t, "sim")),
   };
 }

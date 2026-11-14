@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { confirmarReserva, montarResumo } from "../src/agente/ferramentas/lead";
 import { type Cofre, ESTADO_INICIAL, type EstadoLead } from "../src/lead";
 import { criarContexto, criarMundo } from "./apoio";
+import { queroFechar } from "./apoio-f";
 
 const DADOS = { imovel_id: "GRM-301", checkin: "15/01/2027", checkout: "18/01/2027", hospedes: 2, nome: "Ana Lima", telefone: "(11) 98888-0000" };
 
@@ -13,7 +14,7 @@ function sessao() {
   return {
     mundo,
     estado: () => estado,
-    resumo: (turno: number, dados: Record<string, unknown>) => montarResumo.executar(dados, criarContexto(mundo, cofre, turno, "quero fechar")),
+    resumo: (turno: number, dados: Record<string, unknown>) => montarResumo.executar(dados, criarContexto(mundo, cofre, turno, queroFechar(dados))),
     sim: (turno: number) => confirmarReserva.executar({}, criarContexto(mundo, cofre, turno, "sim")),
   };
 }

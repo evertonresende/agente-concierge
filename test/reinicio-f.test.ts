@@ -7,6 +7,7 @@ import type { Contexto } from "../src/agente/ferramentas";
 import { confirmarReserva, montarResumo } from "../src/agente/ferramentas/lead";
 import { type Cofre, ESTADO_INICIAL, type EstadoLead, postarLead } from "../src/lead";
 import { criarContexto, criarMundo, URL_LEADS } from "./apoio";
+import { queroFechar } from "./apoio-f";
 
 const DADOS = { imovel_id: "GRM-301", checkin: "15/01/2027", checkout: "18/01/2027", hospedes: 2, nome: "Ana Lima", telefone: "(11) 98888-0000" };
 
@@ -28,12 +29,12 @@ describe("C7 (MÉDIO, depende de reinício no meio do POST): o resultado incerto
         ...criarContexto(mundo, cofre, turno, mensagem),
         envio: { ligado: true, destinoPermitido: true, postar: (corpo) => postarLead(buscar, URL_LEADS, corpo, 60_000) },
       });
-      await montarResumo.executar(DADOS, ctx(2, "quero fechar"));
+      await montarResumo.executar(DADOS, ctx(2, queroFechar(DADOS)));
       void confirmarReserva.executar({}, ctx(3, "sim")); // a requisição se perde no reinício
       for (let i = 0; i < 20; i++) await new Promise((r) => setTimeout(r, 1));
       expect(Object.values(estado.envios)).toEqual(["enviando"]);
       const antes = posts.length;
-      const r = await montarResumo.executar({ ...DADOS, telefone: "(11) 97777-0000" }, ctx(4, "quero fechar"));
+      const r = await montarResumo.executar({ ...DADOS, telefone: "(11) 97777-0000" }, ctx(4, queroFechar(DADOS)));
       await confirmarReserva.executar({}, ctx(5, "sim"));
       expect(r.handoff).toBe(true);
       expect(r.respostaFinal).toMatch(/^Não consegui confirmar o registro/);
@@ -47,7 +48,7 @@ describe("marcador \"enviando\" de estado antigo, sem contador nem bloqueio grav
     const mundo = criarMundo();
     let estado: EstadoLead = { ...ESTADO_INICIAL, envios: { "GRM-301|2027-01-15|2027-01-18|2|11988880000": "enviando" } };
     const cofre: Cofre = { ler: () => estado, salvar: (e) => { estado = e; } };
-    const ctx = (turno: number) => criarContexto(mundo, cofre, turno, "quero fechar");
+    const ctx = (turno: number) => criarContexto(mundo, cofre, turno, queroFechar({ nome: "Ana Lima Souza" }));
     let turno = 2;
     for (const d of [{ ...DADOS, telefone: "(11) 97777-0000" }, { ...DADOS, nome: "Ana Lima Souza" }, { ...DADOS, hospedes: 3 }]) {
       const r = await montarResumo.executar(d, ctx(turno++));
