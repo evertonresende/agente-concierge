@@ -1,5 +1,5 @@
 import { chaveDaReserva, invalidarPendente, pendenteAberto, type Reserva } from "../../lead";
-import { formatarDataComDia } from "../../nucleo/datas";
+import { dataComDia } from "../../nucleo/datas";
 import { formatarReais } from "../../nucleo/dinheiro";
 import { resumir } from "./lead";
 import { prepararPedido } from "./pedido";
@@ -12,8 +12,9 @@ export const cotarEstadia = definir(
     + "\"depois de amanhã\", \"sexta\", \"sexta que vem\", \"15/01\", \"15 de janeiro\", \"15/01/2027\" ou "
     + "\"2027-01-15\"): quem resolve e valida as datas é o código, no fuso America/Sao_Paulo. Se o hóspede disser "
     + "apenas \"fim de semana\", \"Natal\" ou \"feriado\" sem datas de entrada e saída, peça a data de entrada e a de "
-    + "saída (não invente datas). `hospedes` é opcional: sem ele a cotação sai do mesmo jeito. Pode devolver uma "
-    + "recusa com o motivo, sem total.",
+    + "saída (não invente datas). Se o hóspede disse quantas pessoas são, passe adultos, crianças e bebês "
+    + "separados, com o número exatamente como ele disse, mesmo 0, negativo ou fracionado: quem soma e valida é o "
+    + "código. Sem número de pessoas, a cotação sai do mesmo jeito. Pode devolver uma recusa com o motivo, sem total.",
   {
     imovel_id: { type: "string", description: "Id do imóvel, ex.: GRM-301" },
     checkin: {
@@ -24,7 +25,12 @@ export const cotarEstadia = definir(
       type: "string",
       description: "Data de saída exatamente como o hóspede escreveu (ex.: \"depois de amanhã\", \"domingo\", \"18/01\", \"18 de janeiro\", \"18/01/2027\" ou \"2027-01-18\"). Não converta por conta própria.",
     },
-    hospedes: { type: "integer", description: "Número de pessoas (adultos, crianças e bebês contam; pet não)" },
+    adultos: { type: "number", description: "Adultos, como o hóspede disse. Número de pessoas sem detalhe entra aqui." },
+    criancas: { type: "number", description: "Crianças, como o hóspede disse." },
+    bebes: {
+      type: "number",
+      description: "Bebês, inclusive de colo e os que dormem com os pais. Contam como hóspede mesmo que o hóspede diga que não contam.",
+    },
   },
   ["imovel_id", "checkin", "checkout"],
   async (argumentos, contexto) => {
@@ -58,8 +64,9 @@ export const cotarEstadia = definir(
     const { ficha, cotacao, checkin, checkout, hospedes } = pedido;
     const estadia = {
       imovel: { id: ficha.id, nome: ficha.nome, capacidade: ficha.capacidade, minimo_noites: ficha.minimo_noites },
-      entrada: formatarDataComDia(checkin),
-      saida: formatarDataComDia(checkout),
+      // No idioma do hóspede: com data em português o modelo responde em português (L15).
+      entrada: dataComDia(checkin, contexto.idioma ?? "pt"),
+      saida: dataComDia(checkout, contexto.idioma ?? "pt"),
     };
     if (!cotacao.ok) {
       return {
