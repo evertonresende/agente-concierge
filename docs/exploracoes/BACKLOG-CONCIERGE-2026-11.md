@@ -1397,6 +1397,29 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   itens, avaliando pelo `espera` do caso, e com um teste só das proibidas novas contra recusas certas.
   P27: limites aceitos, compensados por leitura à mão das rodadas oficiais pelo proxy de registro; a
   definição de rodada oficial na seção Fechamento foi ajustada para isso
+- 14/11 01h30 · S · correção do índice corrompido em 66cf0e3 (cabeça 3ebd124, mais dois casos de teste e uma
+  linha no cabeçalho). Conferência da coordenadora com as sondas do verificador no gate novo: índice
+  corrompido sai com 2 nos dois cenários (11 de 11; antes, 9 de 11), médios 32 de 32 e baixos 13 de 13,
+  sem regressão. Ensaio por hash sobre a `main`: 1369 testes e tipos verdes, `TESTE DO GATE OK` em duas
+  localidades, `SIGILO OK` no repositório real em 1,6 s com o arquivo de ambiente de verdade. **Entrou
+  na `main`: merge `--no-ff` de 3ebd124, main em 5a06b7b.** O gate novo varre o histórico inteiro a cada
+  execução: fecha os achados 4, 5 e 6 da primeira passada da M2
+- 14/11 01h30 · H · verificador do delta da fila (03e1605): REPROVADO por um achado novo. B6: as duas
+  tentativas do Worker entram na fila e o Worker desiste; a primeira cópia gasta a marca de desistência
+  sem gravar o pedido e a segunda roda o turno. Sem resumo visto dava 0 lead antes do 6956937 e agora
+  dá 1 (regressão da correção do B2); com resumo visto, o lead sai com as datas novas, que o hóspede
+  não viu (já acontecia). Gatilho: falha de transporte simulada. Passou: B1 fechado, misturas de 5 e 10
+  mensagens, dois "sim" depois de resumo visto (30 pares, 1 lead), P14 com 13.188 execuções e 0
+  violação, 20 repetições sob carga sem falha, integração verde. Limite novo (B7): a marca do B1 não
+  sobrevive a reinício quando o "sim" ainda estava na fila. Frente corrigindo o B6 em cima de a4abacb;
+  é o terceiro ciclo da fila
+- 14/11 01h30 · H · verificador do delta 03e1605..a4abacb: APROVADO. P24 confere (mensagem vazia, de 8.001 e de
+  60.000 caracteres: o "sim" reapresenta com 0 POST e 0 chamada ao modelo; sem resumo pendente nada
+  muda; corpo acima de 64 KB não toca na sessão; falha do aviso não muda a resposta; a marca sobrevive
+  a reinício). O commit dos testes com o nome só muda o texto do hóspede (55 linhas conferidas). Com a
+  F e a H juntas sobre a `main`: 1464 testes verdes. Lacuna de teste (o aviso gravar `handoff` não é
+  pego) pedida à frente. Limite para o README: `session_id` novo com mensagem vazia instancia o objeto
+  e cria as tabelas vazias
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -1422,12 +1445,11 @@ e o runner da B2, a P20 (nome do lead, frente F) e a P21 (datas sem ano, frente 
 casos fixo. Meta: 14/11 03h00. Limite: 06h00. Gatilho que já existia: 10h00 com o critério 4 não
 verde, parar e chamar o Éverton.
 
-**Estado do congelamento em 14/11 00h56.** G: na `main` (a8da5d6). T (P21): na `main`, completa
-(1a9b8d5, com a frase da recusa e o teste da ordem). H: reprovada na rodada 3, corrigindo B1 e B2 (P24
-por último e dispensável). Juiz da B2: reprovado na rodada 2, corrigindo com critério fechado. F
-(P20): frente trabalhando. Só o que muda o comportamento do agente ou o juiz reinicia a contagem das
-rodadas: o gate da S, o script da K e o commit de teste da G (P07) podem entrar depois que as rodadas
-começarem, desde que o `git diff --stat` de cada um não toque em `src/` nem em `evals/`.
+**Estado do congelamento em 14/11 01h30.** Na `main`: G, T (P21), o script da K e o gate da S (5a06b7b).
+H: terceiro ciclo da fila, corrigindo o B6 em cima de a4abacb; B1, B2 e a P24 já têm veredito
+favorável. F (P20): 8f8fbd5 no verificador; conferida com o modelo real. Juiz da B2: f4ee189 no
+verificador da rodada 3, com barra fechada. Só o que muda o comportamento do agente ou o juiz
+reinicia a contagem das rodadas.
 
 **Plano B, decisão do Éverton (perguntado em 14/11).** Um ciclo de correção e verificação leva
 cerca de 85 minutos; cabem dois até as 06h00. Se a H ou o juiz não fecharem nesse prazo, a escolha
