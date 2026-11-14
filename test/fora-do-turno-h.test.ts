@@ -38,7 +38,9 @@ async function abrir(vistas: string[]) {
   });
   const marca = () => runInDurableObject(stub, (_s, state) =>
     state.storage.sql.exec<{ valor: string }>("SELECT valor FROM estado WHERE chave = 'reapresentar'").toArray()[0]?.valor ?? null);
-  return { id, mundo, marca };
+  const handoffGravado = () => runInDurableObject(stub, (_s, state) =>
+    state.storage.sql.exec<{ valor: string }>("SELECT valor FROM estado WHERE chave = 'handoff'").toArray()[0]?.valor ?? null);
+  return { id, mundo, marca, handoffGravado };
 }
 
 async function postChat(sessionId: string, message: string) {
@@ -73,6 +75,17 @@ describe("resposta do Worker fora do turno com resumo pendente (frente H, P24)",
 
       await postChat(s.id, "sim");
       expect(s.mundo.leads).toMatchObject([{ checkin: "2027-01-15", checkout: "2027-01-18", hospedes: 2 }]);
+    });
+
+    it(`P24: resumo pendente e ${caso.nome} → resposta com handoff false e o handoff gravado da sessão continua como estava`, async () => {
+      const vistas: string[] = [];
+      const s = await abrir(vistas);
+      await postChat(s.id, "quero fechar, sou Ana Lima");
+      const antes = await s.handoffGravado();
+
+      expect((await postChat(s.id, caso.mensagem)).handoff).toBe(false);
+      expect(await s.marca()).not.toBeNull();
+      expect(await s.handoffGravado()).toBe(antes);
     });
 
     it(`P24: sem resumo pendente, ${caso.nome} não liga a marca e não muda o turno seguinte`, async () => {
