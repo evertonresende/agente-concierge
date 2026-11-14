@@ -2071,6 +2071,40 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   commits posteriores à cabeça das correções, e o merge da `frente-n` é pelo hash exato da cabeça
   verificada, que não contém o rascunho. Antes de qualquer merge da `frente-n`, conferir que
   `docs/rascunho-aberturas.md` não existe no hash mesclado
+- 14/11 05h49 · N · **correções dos 14 achados do verificador final em f015880** (cabeça das correções, com a
+  `main` 1cf9fb1 mesclada). Conferido pela coordenação antes de abrir a verificação: `src/` igual ao
+  de 9d37f9a; o delta contra a `main` só toca o README e arquivos de `docs/`;
+  `docs/rascunho-aberturas.md` não existe nesse hash; os seis blocos Mermaid renderizam (o diagrama
+  do lead ganhou o estado "conferindo" e passou de 9 para 10 nós). A lista de limites foi a 64 (o
+  64 é o telefone com zero na frente, que a N provou executando a função); fechamento da M2: 14
+  resolvidos, 24 limites, 1 decisão do Éverton, 1 não se aplica, 3 não conferidos de novo.
+  **Segundo verificador aberto** sobre 4a9ece4..f015880 (Opus 5.5, esforço alto), com barra fechada:
+  aprova só com zero crítico, zero alto e zero médio. O merge da `frente-n` espera o fim dele.
+  **Rascunho da X31 entregue em 3a6b9d7**, um commit por cima de f015880 que só cria
+  `docs/rascunho-aberturas.md` (abertura do `DECISOES.md` com 311 palavras; cinco limites primeiro:
+  1, 46, 55, 54 e 6; quase entraram 2, 60 e 24). Li o rascunho: sem item de sigilo e sem promessa
+  acima dos limites; não passou por verificador, porque não entra na `main` antes de o Éverton ler.
+  **Fato para corrigir depois do merge:** o `fabrica.md` fala em "o revisor do reservado" no
+  singular; foram dois, os dois em Claude Opus 5.5 com esforço alto (prompts 17 e 18 de
+  `docs/prompts/03-frentes.md`)
+- 14/11 06h12 · N · **segundo verificador dos textos, sobre f015880: REPROVADO**, 0 críticos, 2 altos, 3
+  médios, 6 baixos. Nenhum número de resultado errado; 13 das 14 correções da rodada 1 passaram (a
+  das exceções de processo ficou parcial); fatos novos (simulador, rajada, `producao`, telemetria,
+  limites 54 a 64, fechamento da M2) conferidos, vários executando a função; gate verde; desenhos
+  renderizam e o diagrama do lead diz o mesmo que o código. **Os dois altos são da mesma classe:**
+  frase que diz "barrado por código" para uma conferência que reconhece a forma da frase. (1)
+  README: "dizer que a data está livre é barrado também por código"; o verificador executou o corte
+  final e "Ninguém reservou essas datas ainda, então é só confirmar." passa inteira. (2) Desenho do
+  agente: "o agente só diz que registrou depois de um 201"; "O time comercial já recebeu o seu
+  pedido." passa. Viram texto exato e limite no README (o 20 reescrito e um 65 novo); não reabrem a
+  `main` (X24: depende do modelo, não gera lead). Médios: a descrição do código do simulador de
+  13/11; quatro merges sem verificador aprovado fora da lista de exceções (B2 passo 1, F passo 1,
+  D e S); a linha do "Como foi feito" sobre o próprio verificador. Tudo devolvido à N às 06h12, com
+  uma varredura pedida: toda frase do mesmo tipo é conferida executando a função com a forma
+  citada e duas paráfrases. **Branch:** como a `frente-n` está em 3a6b9d7, com o rascunho da X31, as
+  correções vão numa branch nova, `frente-n-textos`, aberta em f015880; o merge na `main` será pelo
+  hash da cabeça dela, e a `frente-n` só recebe as correções depois, por merge, para atualizar o
+  rascunho. Uma terceira rodada do verificador julga a cabeça nova
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
