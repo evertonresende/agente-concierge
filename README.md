@@ -18,9 +18,9 @@ Os requisitos estão em [`docs/CONTRATO.md`](docs/CONTRATO.md).
 
 **URL pública:** https://concierge.evertonresende.com
 
-**Lista real de leads:** tem um único lead, o de teste de 14/11 às 07h26 ("Teste Everton
-Resende"), autorizado pelo Éverton (X36); não é lead indevido. Detalhes na seção de
-validação de `producao`.
+**Lista real de leads:** o único lead anterior à avaliação é o de teste de 14/11 às 07h26
+("Teste Everton Resende"), autorizado pelo Éverton (X36); não é lead indevido. Detalhes na
+seção de validação de `producao`.
 
 **Repositório público:** https://github.com/evertonresende/agente-concierge
 
