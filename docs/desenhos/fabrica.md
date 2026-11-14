@@ -217,10 +217,12 @@ Linha de corte do plano: o acabamento da página (J) e o monitor diário (L) cae
 o tempo apertar; horas e corte estão no backlog.
 
 Provedores por frente (X6, X16, X23): coordenadora no Claude Fable 5.2; A e J no Fable;
-F e G começaram no Fable e passaram ao Claude Opus 5.5; D e E rodaram no Gemini 4
+F e G começaram no Fable e passaram ao Claude Opus 5.5 (a F voltou ao Fable 5.2 de 13/11
+23h28 a 14/11 02h55, por um desvio contra a X23 que a coordenação não percebeu); D e E rodaram no Gemini 4
 Hydrogen e terminaram antes da X23; B2 e H rodaram no Gemini 4 Hydrogen até a X23 e depois
 no Opus 5.5; C no GPT-6 Astra; B1 no DeepSeek; I, K, L, N e
-todos os verificadores no Opus 5.5; segunda opinião da M2 no Gemini 4 Argon.
+todos os verificadores no Opus 5.5; S, T e o revisor do reservado no papel da frente
+C (P33) também no Opus 5.5; segunda opinião da M2 no Gemini 4 Argon.
 
 ## 4. Ciclo de uma entrega até a `main`
 
