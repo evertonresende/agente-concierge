@@ -72,3 +72,35 @@ describe("nome de ferramenta vindo do modelo (frente V)", () => {
     expect(eventoTurno(logs)?.ferramentas).toEqual(["listar_cidades"]);
   });
 });
+
+describe("corte do nome de ferramenta sem meio caractere no fim (frente V)", () => {
+  const EMOJI = "\u{1F600}"; // dois substitutos em UTF-16
+  const lerChat = (nome: string) => normalizarResposta({
+    choices: [{ message: { content: "", tool_calls: [{ id: "c1", type: "function", function: { name: nome, arguments: "{}" } }] } }],
+  }).chamadas[0]!.function.name;
+  const lerMessages = (nome: string) => lerRespostaAnthropic({
+    type: "message",
+    stop_reason: "tool_use",
+    content: [{ type: "tool_use", id: "toolu_1", name: nome, input: {} }],
+    usage: { input_tokens: 1, output_tokens: 1 },
+  }).chamadas[0]!.function.name;
+  const bemFormado = (texto: string) => !/\p{Cs}/u.test(texto); // nenhum substituto solto
+
+  for (const [adaptador, ler] of [["chat completions", lerChat], ["API Messages", lerMessages]] as const) {
+    it(`${adaptador}: 63 letras + emoji + texto sai com até 64 unidades e bem formado`, () => {
+      const nome = ler("a".repeat(63) + EMOJI + "mais texto");
+      expect(nome.length).toBeLessThanOrEqual(64);
+      expect(bemFormado(nome)).toBe(true);
+      expect(Array.from(nome).join("")).toBe(nome);
+      expect(nome).toBe("a".repeat(63));
+    });
+
+    it(`${adaptador}: 64 letras + emoji sai com as 64 letras`, () => {
+      expect(ler("a".repeat(64) + EMOJI)).toBe("a".repeat(64));
+    });
+
+    it(`${adaptador}: 62 letras + emoji cabe inteiro em 64 unidades`, () => {
+      expect(ler("a".repeat(62) + EMOJI + "x")).toBe("a".repeat(62) + EMOJI);
+    });
+  }
+});

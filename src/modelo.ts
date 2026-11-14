@@ -54,15 +54,21 @@ function numero(valor: unknown): number {
   return typeof valor === "number" && Number.isFinite(valor) ? valor : 0;
 }
 
+// Nome de ferramenta vindo do modelo é cortado aqui: os nomes válidos têm bem menos que
+// isso, e um nome inventado e longo não chega inteiro ao histórico nem ao log.
+const MAX_NOME_DE_FERRAMENTA = 64;
+
+/** Corta em unidades UTF-16 sem deixar um substituto alto solto no fim (meio emoji). */
+function cortarNomeDeFerramenta(nome: string): string {
+  const cortado = nome.slice(0, MAX_NOME_DE_FERRAMENTA);
+  return /[\ud800-\udbff]$/.test(cortado) ? cortado.slice(0, -1) : cortado;
+}
+
 /**
  * Lê a resposta crua nos dois formatos que o Workers AI devolve: chat completions
  * (`choices[0].message`) e o formato antigo (`response` + `tool_calls` soltos). O
  * raciocínio do modelo é descartado: não vai para o histórico nem para o hóspede.
  */
-// Nome de ferramenta vindo do modelo é cortado aqui: os nomes válidos têm bem menos que
-// isso, e um nome inventado e longo não chega inteiro ao histórico nem ao log.
-const MAX_NOME_DE_FERRAMENTA = 64;
-
 export function normalizarResposta(bruto: unknown): RespostaDoModelo {
   const raiz = objeto(bruto);
   const escolhas = Array.isArray(raiz.choices) ? raiz.choices : [];
@@ -80,7 +86,7 @@ export function normalizarResposta(bruto: unknown): RespostaDoModelo {
     return [{
       id: idDe(chamada.id),
       type: "function",
-      function: { name: nome.slice(0, MAX_NOME_DE_FERRAMENTA), arguments: typeof argumentos === "string" ? argumentos : JSON.stringify(argumentos) },
+      function: { name: cortarNomeDeFerramenta(nome), arguments: typeof argumentos === "string" ? argumentos : JSON.stringify(argumentos) },
     }];
   });
 
@@ -213,7 +219,7 @@ export function lerRespostaAnthropic(bruto: unknown): RespostaDoModelo {
   const chamadas = usos.map((b): ChamadaDeFerramenta => ({
     id: idDe(b.id),
     type: "function",
-    function: { name: (b.name as string).slice(0, MAX_NOME_DE_FERRAMENTA), arguments: JSON.stringify(b.input) },
+    function: { name: cortarNomeDeFerramenta(b.name as string), arguments: JSON.stringify(b.input) },
   }));
   if (texto === "" && chamadas.length === 0) throw inutil("vazia", `stop_reason ${fim}, sem texto nem ferramenta`);
   // O fim tem de bater com o conteúdo: "tool_use" sem ferramenta deixaria um texto do tipo
