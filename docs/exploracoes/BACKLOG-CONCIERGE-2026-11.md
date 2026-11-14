@@ -1938,6 +1938,20 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   hóspede. O agregado sai só por bloco: a coordenação não vê quais casos falharam em cada leitura.
   A diferença entre as duas leituras (88% e 95%) é a variação que a P33 previu num conjunto de 60
   casos; por isso o número é a soma, fixada antes de rodar
+- 14/11 05h00 · N · números finais escritos no README e no "Como foi feito" (4a9ece4); marcador único
+  `PREENCHER` no que ainda falta (simulador, `producao`, URL pública, reservado no repositório,
+  exports e vídeo). Verificador final dos entregáveis iniciado, com barra de oito itens
+- 14/11 05h03 · K · **deploy final de `producao` às 05h01, com o envio real desligado**, de cópia limpa da
+  `main` 25c3d5a. Parcial da frente, passos 1 a 4 verdes: `LEADS REAIS: 0` antes do deploy; `/saude`
+  com ambiente `producao`, destino real e envio desligado; os quatro clientes com `CLIENTES OK`;
+  segredos por referência; rota do hostname intacta; gateway de `producao` com o log desligado.
+  **Anomalia corrigida na hora:** o deploy religou as URLs de pré-visualização (o wrangler as liga
+  por padrão quando a configuração não define `preview_urls`); a K reaplicou a P25 pela API às
+  05h03 e conferiu por leitura. Nenhuma URL de versão chegou a existir, porque o Worker tem Durable
+  Object. A P25 dizia que o ajuste sobrevivia aos deploys: texto corrigido em `DECISOES.md`. A
+  configuração não muda depois do congelamento; reaplicar a P25 vira passo fixo depois de cada
+  deploy de `producao`, inclusive o da entrega. O modo completo da validação espera o simulador
+  hostil liberar `dev` (uma rodada sem pausa por vez)
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
