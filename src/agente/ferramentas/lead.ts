@@ -305,6 +305,14 @@ export const confirmarReserva = definir(
       destinoPermitido: contexto.envio.destinoPermitido,
       postar: contexto.envio.postar,
       recotar: async (reserva) => {
+        // L2 também na confirmação: um resumo aberto até depois do dia de entrada não é enviado.
+        if (reserva.checkin < contexto.hoje) {
+          return {
+            ok: false,
+            motivo: "datas_invalidas",
+            explicacao: "A data de entrada já passou. Não é possível reservar datas no passado: peça novas datas ao hóspede.",
+          };
+        }
         const ficha = await contexto.catalogo.ficha(reserva.imovel_id);
         if (!ficha) return null;
         return cotar(regrasDaFicha(ficha), reserva.checkin, reserva.checkout, reserva.hospedes);
