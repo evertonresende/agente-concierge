@@ -55,7 +55,8 @@ cabeçalhos `x-uso-entrada`, `x-uso-saida` e `x-chamadas-modelo`, usados para me
   pedido, escolhe a ferramenta e redige. Antes de sair, o texto do modelo passa por uma
   conferência de código (frente G), que retira o que reconhece: valor em dinheiro que
   nenhuma ferramenta calculou (com "R$", "reais", outra moeda ou centavos), concessão,
-  registro afirmado sem `201` e afirmação de disponibilidade. Número por extenso e número
+  registro afirmado sem `201` (enquanto nenhum pedido da conversa foi registrado ou há
+  resumo aberto) e afirmação de disponibilidade. Número por extenso e número
   solto sem marca nem centavos passam, e concessão, registro e disponibilidade são
   reconhecidos pela forma da frase (limites 8, 20, 46, 65 e 66); os demais limites dessa
   conferência estão na lista do fim.
@@ -671,7 +672,10 @@ varredura que veio depois, executando a função de conferência fora do reposit
     e só depois de um `201`; o estado do lead nunca vira "registrado" sem ele. Quando o
     modelo afirma por conta própria que registrou, a conferência corta as formas que
     reconhece ("Seu pedido foi registrado.", "Enviei o seu pedido ao time comercial.", "Sua
-    reserva está confirmada!"), e paráfrase passa: "Prontinho! O time comercial já recebeu o
+    reserva está confirmada!") enquanto há resumo aberto ou nenhum pedido da conversa foi
+    registrado. Depois de um `201`, sem resumo aberto, nem essas formas são cortadas, porque a
+    frase pode falar do pedido já registrado; um "Seu pedido foi registrado." sobre uma
+    segunda estadia ainda não enviada passa. Paráfrase passa sempre: "Prontinho! O time comercial já recebeu o
     seu pedido.", "Tudo certo, já passei o seu pedido para a equipe." e "O pedido seguiu
     para o time comercial." chegam ao hóspede sem lead. Nos evals, 13 casos de
     desenvolvimento proíbem formas de registro em turnos sem lead (`resposta_nao_contem`), e

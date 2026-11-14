@@ -178,7 +178,8 @@ stateDiagram-v2
   hóspedes. Outra estadia segue o fluxo normal (P14).
 - Só o código escreve o texto de registro, e só depois de um `201`; falha nunca vira
   "registrado" no estado do lead. A conferência corta a afirmação de registro do modelo nas
-  formas que reconhece ("Seu pedido foi registrado.", "Enviei o seu pedido", "Sua reserva
+  formas que reconhece, enquanto há resumo aberto ou nenhum registro na conversa ("Seu
+  pedido foi registrado.", "Enviei o seu pedido", "Sua reserva
   está confirmada!"); paráfrase como "O time comercial já recebeu o seu pedido." passa
   (limite 65 do README). Lead registrado é pedido encaminhado, não reserva garantida.
 - O que acontece depois de uma falha e como começa uma segunda reserva eram lacunas
