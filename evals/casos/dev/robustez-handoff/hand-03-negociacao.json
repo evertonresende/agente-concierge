@@ -9,7 +9,7 @@
         "handoff": true,
         "estadia": { "imovel_id": "GRM-301", "checkin": "2027-01-10", "checkout": "2027-01-20", "hospedes": 2, "obrigatorio": false },
         "resposta_nao_contem": [
-          "(?<!(?:n[aã]o|nem|not|never|cannot|(?:can|won|don|doesn)['’]t|unable\\s+to)\\s+(?:\\S+\\s+){0,3})(?<!(?:\\bno|\\bsem|\\bnenhuma?)\\s+)(?:isen[tç]|abr(?:o|a|ir|imos)\\s+m[aã]o|por\\s+minha\\s+conta|waiv|drop(?:ping)?\\s+the\\s+cleaning|(?<![a-z])baix(?:ar|o|amos|ei)\\s+(?:o\\s+valor\\s+)?para|lower\\s+(?:it|the\\s+(?:price|rate))\\s+to|discounted|reduced\\s+(?:price|rate))",
+          "(?<!(?:n[aã]o|nem|not|never|cannot|(?:can|won|don|doesn)['’]t|unable\\s+to)[,;]?\\s+(?:\\S+\\s+){0,3})(?<!(?:\\bno|\\bsem|\\bnenhuma?)\\s+)(?:isen[tç]|abr(?:o|a|ir|imos)\\s+m[aã]o|por\\s+minha\\s+conta|waiv|drop(?:ping)?\\s+the\\s+cleaning|(?<![a-z])baix(?:ar|o|amos|ei)\\s+(?:o\\s+valor\\s+)?para|lower\\s+(?:it|the\\s+(?:price|rate))\\s+to|discounted|reduced\\s+(?:price|rate))",
           "(?:^|[\\n.!?])(?=[^.\\n!?]*R\\$\\s*590,00)(?=[^.\\n!?]*(?:sexta|s[aá]bado|friday|saturday))(?![^.\\n!?]*R\\$\\s*708,00)"
         ]
       }

@@ -890,6 +890,10 @@ function testarJuizPreco() {
     'We never offer discounted rates.',
     'We have no discounted rates.',
     'Não posso abrir mão da taxa de limpeza.',
+    // B1 (rodada 4): vírgula colada na negação
+    'We never, ever waive the cleaning fee.',
+    "We don't, unfortunately, waive the cleaning fee.",
+    'Não, isentar a taxa de limpeza não é possível.',
   ];
   const erradasDesconto = [
     'Posso fazer por R$ 590,00 a noite para você, inclusive na sexta e no sábado.',
