@@ -16,7 +16,14 @@
       "durable_objects": { "bindings": [{ "name": "SESSAO", "class_name": "Sessao" }] },
       "vars": {
         "AMBIENTE": "dev",
-        "MODELO": "@cf/openai/gpt-oss-120b",
+        // Principal escolhido pelo Éverton (X22): Claude Haiku 5.5, pela binding do AI Gateway,
+        // com a chave da Anthropic guardada no gateway (BYOK). Raciocínio em nível alto (decisão do
+        // Éverton, 13/11; muito alto descartado).
+        "MODELO": "anthropic/claude-haiku-5.5",
+        "MODELO_ESFORCO": "high",
+        // Reserva provisório (X22), de outro fornecedor, no Workers AI, sem chave de terceiro.
+        "MODELO_RESERVA": "@cf/zai-org/glm-5.3-flash",
+        "AI_GATEWAY": "concierge-dev",
         "ENVIO_LEADS": "ligado"
       },
       "secrets": { "required": ["CATALOGO_URL", "LEADS_URL"] }
@@ -26,7 +33,13 @@
       "durable_objects": { "bindings": [{ "name": "SESSAO", "class_name": "Sessao" }] },
       "vars": {
         "AMBIENTE": "producao",
-        "MODELO": "@cf/openai/gpt-oss-120b",
+        "MODELO": "anthropic/claude-haiku-5.5",
+        "MODELO_ESFORCO": "high",
+        "MODELO_RESERVA": "@cf/zai-org/glm-5.3-flash",
+        // Sem AI_GATEWAY até existir o gateway de producao com a chave (autorizado pelo Éverton
+        // em 13/11; a frente K cria). Sem ele o adaptador pula o Haiku (log principal_pulado) e
+        // o reserva responde; um gateway nomeado que não existe
+        // derrubaria também o reserva, que passa pelo mesmo gateway.
         // Desligado até a ordem do Éverton (contrato L24).
         "ENVIO_LEADS": "desligado"
       },
