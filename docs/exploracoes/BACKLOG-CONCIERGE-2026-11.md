@@ -2019,6 +2019,24 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   e, depois de ligado o envio, `--entrega`. Falta agendar a execução diária e escolher o canal do
   aviso de falha: ficam com o Éverton, com o comando pronto na lista dele. A frente L fecha com o
   `scripts/custo.mjs` na `main`
+- 14/11 05h32 · entregáveis · **`docs/prompts/` completo na `main` (68d0cf5):** 60 prompts de abertura (18 de
+  frentes, 37 de verificadores, 5 de revisores), extraídos do registro da sessão coordenadora por
+  script, na ordem de envio, com data, hora e modelo. Trocados por marcadores: caminhos da máquina e
+  o identificador local da conversa da coordenadora. Omitidas e marcadas no lugar: duas frases sobre
+  a disponibilidade do Éverton, nos prompts das frentes F e G. As mensagens de acompanhamento não
+  entram. Gate verde; além do gate, procurei identificadores longos, contas e endereços: nada.
+  **Desenhos:** os seis blocos Mermaid de `docs/desenhos/agente.md` e `fabrica.md` (cabeça f06104d
+  da frente N) passam no parser e renderizam no Mermaid 11.4.1, em navegador sem interface; li o
+  desenho do agente renderizado. **Frente N em f06104d:** simulador, rajada, `producao` com as duas
+  passadas, limites 54 a 57 e corte do monitor nos textos; pedido a ela o fechamento da M2 em
+  `docs/revisoes/m2.md`, achado por achado. O verificador final da N julga 4a9ece4; o que entrou
+  depois ganha verificação própria antes do merge. **Frases da sonda do sim** (resumo pendente do
+  GRM-301, 18/01/2027 a 20/01/2027, 3 hóspedes, R$ 1.330,00), as sete com dado do resumo que não
+  confirmam: "Sim, confirmo a reserva do GRM-301", "Sim, confirmo a reserva para 3 hóspedes", "Sim,
+  confirmo a reserva de 18/01/2027 a 20/01/2027", "Sim, confirmo o Chalé Serra Gramado", "Sim,
+  confirmo o total de R$ 1.330,00", "Confirmo, 3 pessoas", "Sim, pode enviar o pedido do GRM-301".
+  **Limpeza:** o webhook falso local antigo, na porta 8799, foi encerrado pelo PID; nenhuma porta de
+  eval local ficou aberta
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
