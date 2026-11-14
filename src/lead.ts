@@ -438,7 +438,7 @@ const TRECHO_DE_PERGUNTA = /[^.!?,;\n]*[?？؟]+/g;
 // (C9). Na leitura do sim ficam: sim com anúncio de dúvida não é confirmação limpa (C10).
 const ABERTURA_COM_NUMERO = /(?<![a-z0-9])(?:so uma pergunta|uma pergunta|uma duvida)(?![a-z0-9])/g;
 // Abertura que não diz nada sobre a reserva ("ah, antes de confirmar, qual é o bairro?").
-const ABERTURA_NEUTRA = /(?<![a-z0-9])(?:oi|ola|ah|bom|entao|hum+|hey|hi|hello|alias|antes de (?:confirmar|fechar)|antes|so uma pergunta|uma duvida|e|mas|and|but|so)(?![a-z0-9])/g;
+const ABERTURA_NEUTRA = /(?<![a-z0-9])(?:oi|ola|ah|bom|entao|hum+|hey|hi|hello|alias|antes de (?:confirmar|fechar)|antes|so uma pergunta|uma pergunta|uma duvida|e|mas|and|but|so)(?![a-z0-9])/g;
 
 /**
  * Fora dos trechos de pergunta sobra uma afirmação que não é sim nem hesitação? É a regra

@@ -100,3 +100,30 @@ describe("C9: abertura neutra com \"uma\" seguida de pergunta pura mantém o res
     it(`com mudança junto, derruba: "${mensagem}"`, () => expect(mudaDadoDoResumo(mensagem, GRM301)).toBe(true));
   }
 });
+
+describe("C11: \"uma pergunta\" sem \"só\" antes de pergunta pura mantém o resumo no rearme; com sim, continua sem enviar", () => {
+  const rearma = (mensagem: string) => {
+    let estado: EstadoLead = { ...ESTADO_INICIAL, pendente: GRM301 };
+    const cofre: Cofre = { ler: () => estado, salvar: (e) => { estado = e; } };
+    return { pedido: pedidoDeConfirmacaoPendente(cofre, 3, "pt", mensagem), pendente: estado.pendente };
+  };
+  it("\"uma pergunta, tem wifi?\" mantém e repete o resumo", () => {
+    const r = rearma("uma pergunta, tem wifi?");
+    expect(r.pedido).toContain("- Total: R$ 2.156,00");
+    expect(r.pendente).not.toBeNull();
+  });
+  for (const mensagem of ["uma pergunta, somos 3, tem wifi?", "uma pergunta, vou levar minha sogra, tem wifi?", "sim, uma pergunta", "uma pergunta, sim"]) {
+    it(`${JSON.stringify(mensagem)} derruba no rearme`, () => expect(rearma(mensagem)).toEqual({ pedido: undefined, pendente: null }));
+  }
+  for (const mensagem of ["sim, uma pergunta", "uma pergunta, sim", "confirmo, uma pergunta", "Sim. Uma pergunta, tem wifi?"]) {
+    it(`${JSON.stringify(mensagem)} pelo confirmar_reserva: nenhum POST no turno`, async () => {
+      const mundo = criarMundo();
+      let estado: EstadoLead = ESTADO_INICIAL;
+      const cofre: Cofre = { ler: () => estado, salvar: (e) => { estado = e; } };
+      await montarResumo.executar(DADOS, criarContexto(mundo, cofre, 2, "quero fechar"));
+      const r = await confirmarReserva.executar({}, criarContexto(mundo, cofre, 3, mensagem));
+      expect(r.respostaFinal ?? "").not.toMatch(/registrado/);
+      expect(mundo.leads).toEqual([]);
+    });
+  }
+});
