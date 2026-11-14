@@ -454,27 +454,31 @@ describe("concorrência endurecida e falhas (frente H)", () => {
   });
 
   it("item 1b: objeto real lança depois de gravar 'sim' com resumo pendente → no máximo o efeito da 1ª passagem, nunca lead vindo da 2ª", async () => {
-    // Subcaso 1 (regra P4): resumo no turno 1, pergunta no turno 2; no turno 3 ("sim"), a 1ª passagem
-    // apenas reapresenta o resumo e grava, depois lança. A 2ª passagem não pode ler "sim" como confirmação.
-    const id1 = `retentativa-sim-p4-${++proxima}`;
+    // Subcaso 1: resumo no turno 1; o turno 2 cai em contingência (o modelo falha duas vezes), então o
+    // hóspede não viu o resumo repetido. No turno 3 ("sim"), a 1ª passagem só reapresenta e grava, depois
+    // lança. A 2ª passagem não pode ler "sim" como confirmação: nada é enviado.
+    const id1 = `retentativa-sim-contingencia-${++proxima}`;
     const mundo1 = criarMundo();
-    let chamadasNoSim1 = 0;
+    let posts1 = 0;
+    const buscar1 = (async (entrada: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.method === "POST") posts1++;
+      return mundo1.buscar(entrada, init);
+    }) as typeof fetch;
     const modelo1: Modelo = async (mensagens) => {
       const ultima = ultimaDoHospede(mensagens);
       if (ultima === "quero fechar") return pedeFerramentas(chamar("montar_resumo", DADOS));
-      if (ultima === "sim") {
-        chamadasNoSim1++;
-        return pedeFerramentas(chamar("confirmar_reserva"));
-      }
-      return diz("O check-in é às 15:00.");
+      if (ultima === "sim") return pedeFerramentas(chamar("confirmar_reserva"));
+      throw new Error("modelo indisponível");
     };
     const stub1 = ambiente.SESSAO.getByName(`sessao:${id1}`);
     await runInDurableObject(stub1, (sessao: Sessao) => {
-      sessao.dependencias = { modelo: modelo1, buscar: mundo1.buscar };
+      sessao.dependencias = { modelo: modelo1, buscar: buscar1 };
     });
 
     expect((await postChat(id1, "quero fechar")).status).toBe(200);
-    expect((await postChat(id1, "qual o horário?")).status).toBe(200);
+    const contingencia = await postChat(id1, "qual o horário?");
+    expect(contingencia.status).toBe(200);
+    expect((await contingencia.json<{ handoff: boolean }>()).handoff).toBe(true);
 
     let tentativas1 = 0;
     const envFalha1 = comNamespaceRealEnvolvido(async (stub, args) => {
@@ -486,10 +490,10 @@ describe("concorrência endurecida e falhas (frente H)", () => {
     const respSim1 = await postChat(id1, "sim", envFalha1);
     expect(respSim1.status).toBe(200);
     expect(tentativas1).toBe(2);
-    expect(chamadasNoSim1).toBe(1);
     const dado1 = await respSim1.json<{ reply: string; handoff: boolean }>();
     expect(dado1.handoff).toBe(false);
     expect(dado1.reply).toContain("Ainda não enviei este pedido");
+    expect(posts1).toBe(0);
     expect(mundo1.leads).toEqual([]);
 
     const usersNoHistorico1 = await runInDurableObject(stub1, (_sessao, state) =>
@@ -497,7 +501,7 @@ describe("concorrência endurecida e falhas (frente H)", () => {
         .map((l) => JSON.parse(l.mensagem) as Mensagem)
         .filter((m) => m.role === "user")
         .map((m) => m.content));
-    expect(usersNoHistorico1).toEqual(["quero fechar", "qual o horário?", "sim"]);
+    expect(usersNoHistorico1.filter((m) => m === "sim")).toHaveLength(1);
 
     // Subcaso 2: "sim" no turno seguinte ao resumo → 1ª passagem envia 1 lead e grava, depois lança;
     // a 2ª passagem devolve a mesma resposta gravada, com exatamente 1 POST e "sim" 1 vez no histórico.
@@ -546,6 +550,64 @@ describe("concorrência endurecida e falhas (frente H)", () => {
         .filter((m) => m.role === "user")
         .map((m) => m.content));
     expect(usersNoHistorico2).toEqual(["quero fechar", "sim"]);
+  });
+
+  it("item 1b-pergunta: resumo, pergunta e 'sim' com falha depois da 1ª passagem → a 2ª passagem não acrescenta efeito", async () => {
+    // Não fixa se a 1ª passagem envia: isso depende de o laço repetir o resumo depois da pergunta (F e G).
+    // Prova só o que é da sessão: a 2ª passagem devolve a resposta gravada, sem modelo e sem POST.
+    const id = `retentativa-sim-pergunta-${++proxima}`;
+    const mundo = criarMundo();
+    let posts = 0;
+    let chamadasModelo = 0;
+    const buscar = (async (entrada: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.method === "POST") posts++;
+      return mundo.buscar(entrada, init);
+    }) as typeof fetch;
+    const modelo: Modelo = async (mensagens) => {
+      chamadasModelo++;
+      const ultima = ultimaDoHospede(mensagens);
+      if (ultima === "quero fechar") return pedeFerramentas(chamar("montar_resumo", DADOS));
+      if (ultima === "sim") return pedeFerramentas(chamar("confirmar_reserva"));
+      return diz("O check-in é às 15:00.");
+    };
+    const stub = ambiente.SESSAO.getByName(`sessao:${id}`);
+    await runInDurableObject(stub, (sessao: Sessao) => {
+      sessao.dependencias = { modelo, buscar };
+    });
+
+    expect((await postChat(id, "quero fechar")).status).toBe(200);
+    expect((await postChat(id, "qual o horário?")).status).toBe(200);
+
+    let tentativas = 0;
+    let postsDepoisDa1a = -1;
+    let modeloDepoisDa1a = -1;
+    let gravadaNa1a: RespostaDoChat | undefined;
+    const envFalha = comNamespaceRealEnvolvido(async (realStub, args) => {
+      tentativas++;
+      const resposta = await realStub.conversar(...args);
+      if (tentativas === 1) {
+        postsDepoisDa1a = posts;
+        modeloDepoisDa1a = chamadasModelo;
+        gravadaNa1a = resposta;
+        throw new Error("falha depois da 1ª passagem");
+      }
+      return resposta;
+    });
+    const resp = await postChat(id, "sim", envFalha);
+    expect(resp.status).toBe(200);
+    expect(tentativas).toBe(2);
+    expect(postsDepoisDa1a).toBeLessThanOrEqual(1);
+    expect(posts).toBe(postsDepoisDa1a);
+    expect(chamadasModelo).toBe(modeloDepoisDa1a);
+    expect(await resp.json()).toEqual({ reply: gravadaNa1a!.reply, handoff: gravadaNa1a!.handoff });
+    expect(mundo.leads.length).toBeLessThanOrEqual(1);
+
+    const usersNoHistorico = await runInDurableObject(stub, (_sessao, state) =>
+      state.storage.sql.exec<{ mensagem: string }>("SELECT mensagem FROM historico ORDER BY id").toArray()
+        .map((l) => JSON.parse(l.mensagem) as Mensagem)
+        .filter((m) => m.role === "user")
+        .map((m) => m.content));
+    expect(usersNoHistorico.filter((m) => m === "sim")).toHaveLength(1);
   });
 
   it("item 1c: objeto real lança antes de gravar → retentativa processa 1 vez e responde", async () => {
