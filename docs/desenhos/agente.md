@@ -2,10 +2,10 @@
 
 Um agente só. Requisitos em [`docs/CONTRATO.md`](../CONTRATO.md); decisões citadas (L, P,
 X) em [`DECISOES.md`](../../DECISOES.md). Os desenhos descrevem o código da integração da
-leva 2 (frentes F, G, H e I). F, G e H ainda não estão na `main`: o que depende delas é
-desenho, não garantia, e dois pontos estão em correção (a trava de valores, na G, e o sim
-com anúncio de dúvida, na F). Conferir contra a `main` final: a preencher.
-<!-- PREENCHER: conferir os desenhos contra a main depois da entrada de F, G e H, em especial a trava de valores (G) e a P19 (F) -->
+leva 2 (frentes F, G, H e I). F e I estão na `main`, verificadas; G e H ainda não: o que
+depende delas é desenho, não garantia, e a trava de valores está em correção na G.
+Conferir contra a `main` final: a preencher.
+<!-- PREENCHER: conferir os desenhos contra a main depois da entrada de G e H, em especial a trava de valores (G) -->
 
 ## 1. Um turno: do pedido à resposta
 
@@ -52,7 +52,7 @@ flowchart TB
 
   subgraph M["Modelos, pelo AI Gateway"]
     P["Principal: Claude Haiku 5.5"]
-    R["Reserva: outro fornecedor<br/>(provisório GLM-5.3 Flash)"]
+    R["Reserva: GLM-5.3 Flash<br/>outro fornecedor"]
     P -.->|"falha, resposta inútil<br/>ou recusa por limite"| R
   end
 
@@ -95,8 +95,7 @@ flowchart TB
 
 Texto alternativo: com imóvel, datas, hóspedes, nome e telefone, o código monta o resumo
 e o mostra num turno. No turno seguinte, só um sim inequívoco confirma; hesitação repete
-o pedido; um sim com anúncio de dúvida ("sim, uma dúvida") não deve enviar nada (P19, em
-correção na frente F); condição de preço passa para humano; qualquer dado mudado, ou uma pergunta do
+o pedido; um sim com anúncio de dúvida ("sim, uma dúvida") não envia nada (P19); condição de preço passa para humano; qualquer dado mudado, ou uma pergunta do
 próprio agente, derruba o resumo. Na confirmação, o código grava o marcador de envio,
 relê a ficha e recalcula o total; se mudou, mostra um resumo novo. Com o envio desligado
 não há POST. Resposta 201 é a única que vira "registrado". 5xx tem uma nova tentativa;
@@ -122,7 +121,7 @@ stateDiagram-v2
   [*] --> sem
   sem --> cotado: cotar válido (código)
   cotado --> pendente: dados completos, montar_resumo
-  pendente --> pendente: hesitação ou sim com dúvida, nada enviado (P15; P19 em correção)
+  pendente --> pendente: hesitação ou sim com dúvida, nada enviado (P15, P19)
   pendente --> cotado: dado mudou (L10) ou pergunta do agente (P18)
   pendente --> nao: condição de preço (L9)
   pendente --> enviando: sim inequívoco no turno seguinte (L9, P11, P13)

@@ -97,7 +97,7 @@ de chegar à `main` ou a `dev`.
 | B2 (runner e casos) | 3 | **falso verde crítico**: caso pulado pela trava saía do denominador e o `marco1` dava 100% e `EVAL OK` sem rodar a conversa de lead; 20 de 80 casos reprovariam um agente correto; 2 de manipulação rodariam contra `producao`. Na terceira, o juiz novo tinha ficado mais frouxo: aprovava desconto escrito como "cada noite sai por", total errado e política inventada |
 | D (simulador) | 1 | `SIMULADOR OK` com a ferramenta do hóspede fora do ar; erro do agente derrubava a rodada; juiz de handoff acusava agente certo e deixava passar errado; 10 de 12 casos fixos frágeis |
 | E (datas) | conferência da coordenação | tabela própria de datas em três fusos, sem diferença; o CHECK no runtime achou regressão da L8 (1 de 3 respostas sem a pergunta de quantas pessoas), corrigida e repetida 10 de 10 |
-| F (lead) | 5 até este rascunho; estado final a preencher <!-- PREENCHER: rodadas finais do verificador da F --> | R1: hesitação com dado ("acho que sim, mas somos 3") e o "sim" seguinte enviava o dado antigo. R2: "acho que sim, mas no mês que vem" reexibia o resumo antigo e o sim o enviava, 10 de 10; das 50 confirmações naturais, 15 não enviavam. R3: um "?" em qualquer ponto mantinha o resumo; combinações de `422` e `5xx` somavam 3 e 4 POSTs para a mesma estadia. R4: com outras formas de pontuação, 34 de 106 mensagens mantinham o resumo antigo (virou limite conhecido, P18). R5: um sim com anúncio de dúvida ainda podia enviar o lead (daí a P19); em correção |
+| F (lead) | 6, aprovada na sexta | R1: hesitação com dado ("acho que sim, mas somos 3") e o "sim" seguinte enviava o dado antigo. R2: "acho que sim, mas no mês que vem" reexibia o resumo antigo e o sim o enviava, 10 de 10; das 50 confirmações naturais, 15 não enviavam. R3: um "?" em qualquer ponto mantinha o resumo; combinações de `422` e `5xx` somavam 3 e 4 POSTs para a mesma estadia. R4: com outras formas de pontuação, 34 de 106 mensagens mantinham o resumo antigo (virou limite conhecido, P18). R5: um sim com anúncio de dúvida ainda podia enviar o lead (daí a P19). R6: aprovada, com zero envio nesses casos e a confirmação legítima intacta |
 | G (robustez) | 2, a terceira depois dos ajustes | R1: o código ligava `handoff` com texto fixo em mensagem comum ("Pode fechar, meu telefone é…", "a 500 m da praia"). R2: as redes por palavra passavam 24 de 80 mensagens comuns para humano ("esse lugar é descontraído?", "não estou pedindo desconto"); a conferência cortava a explicação do acréscimo de sexta e sábado; o lead podia sair com menos pessoas do que o grupo cotado |
 | H (concorrência) | 2 do verificador, 2 conferências da coordenação | **crítico**: a nova tentativa do Worker reenviava a mesma mensagem sem identificador, e um "sim" podia valer duas vezes. A coordenadora achou no runtime real dois defeitos que o vitest não pega: o Worker não subia (constante exportada no módulo de entrada) e todo turno com catálogo caía em contingência (`fetch` chamado como método de objeto). R2: resumo gravado cuja resposta se perdia no caminho podia ser confirmado sem o hóspede ter visto; corpo sem limite de tamanho (corrigido pela P12 na branch da H, em verificação) |
 | I (modelo) | 3, aprovada na terceira | R1: resposta `200` inútil do Haiku (vazia, cortada, erro como valor) não ia ao reserva. R2: fim de resposta que não batia com o conteúdo passava, e o mesmo id duas vezes quebrava o pareamento de chamada e resultado. R3: aprovada, sem achado alto nem médio; 7 de 68 defeitos plantados escapam, como seguimento |
@@ -192,8 +192,10 @@ Como a escolha andou:
 6. Limite da medição: uma rodada só no nível alto; entre duas rodadas do médio, 13 casos
    trocaram de resultado.
 
-Modelo reserva final: a preencher.
-<!-- PREENCHER: modelo reserva escolhido pelo Éverton e motivo -->
+Modelo reserva: GLM-5.3 Flash, confirmado pelo Éverton (X30). Motivo registrado: o Haiku
+vem direto do provedor e não deve falhar, então o reserva quase não entra. Na medição, o
+GLM-5.3 Flash era o mais barato por conversa dos três candidatos a reserva, com acerto
+perto dos outros dois.
 
 ## 8. Rodadas no código integrado
 
@@ -253,18 +255,15 @@ Resultado das três rodadas: a preencher.
 
 ## 10. Quem fez o quê
 
-<!-- PREENCHER: revisão do Éverton desta seção (modelos e provedores por fase) -->
-Seção a revisar pelo Éverton: a preencher.
-
 | Provedor e modelo | O que fez | Fase |
 |---|---|---|
 | Claude Fable 5.2 | coordenadora do começo ao fim; frentes A (produto até o Marco 1) e J (design e página); começo das frentes F e G | leva 1 e leva 2 até a X16 (13/11, 18h35) nas frentes |
 | Claude Opus 5.5 | verificadores independentes e subagentes de revisão desde a leva 1; frentes I, K, L e N; F e G depois da X16; B2 e H depois da X23 | toda a entrega; a partir da X23 (13/11, 21h26), o único modelo das frentes e dos verificadores, com esforço médio, alto ou muito alto conforme a tarefa |
 | Gemini 4 Hydrogen | frentes B2 (runner e casos), D (simulador), E (datas) e H (concorrência); conselho às cegas das lacunas e do Marco 1 | leva 1 e leva 2, até a X23 |
-| Gemini 3.8 Flash | o hóspede simulado do simulador hostil (padrão de `evals/simulador/hospede-cli.mjs`) | rodadas ao vivo do simulador |
+| Gemini 3.8 Flash (`gemini-3.8-flash-low`) | o hóspede simulado do simulador hostil (padrão de `evals/simulador/hospede-cli.mjs`) | rodadas ao vivo do simulador |
 | Gemini 4 Argon | segunda opinião da revisão final (M2) | leva 3; desde a X23 é a única segunda opinião de outro provedor |
 | GPT-6 Astra | frente C (conjunto reservado); conselho às cegas das lacunas e do Marco 1 | leva 1, até a X16 |
-| DeepSeek | frente B1 (webhook falso) | leva 1, até a X16 |
+| DeepSeek Flash, pago (`deepseek/deepseek-flash`, pelo OpenCode) | frente B1 (webhook falso) | leva 1, até a X16 |
 
 A partir de 13/11 às 21h26 (X23), as frentes e os verificadores usam um modelo só, o
 Claude Opus 5.5, e a segunda opinião de outro provedor fica para a revisão final. Antes,

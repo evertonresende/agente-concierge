@@ -53,14 +53,14 @@ cabeçalhos `x-uso-entrada`, `x-uso-saida` e `x-chamadas-modelo`, usados para me
   conferência garante: a preencher.
   <!-- PREENCHER: descrever a garantia da conferência só depois que a correção da G entrar na main e for verificada -->
 
-  > Estado deste rascunho: a `main` já tem o adaptador do modelo (Haiku 5.5 em nível alto,
-  > reserva e gateway em `dev`), mas ainda não tem as frentes F, G e H. O que está descrito
-  > como decidido e depende delas (conferência ampliada, limite de corpo) entra com elas.
-- **Modelo.** Decidido pelo Éverton por medição (`DECISOES.md` X22 e X24): Claude Haiku
-  5.5, com o raciocínio em nível alto, como principal. O reserva está em aberto; o
-  provisório é o GLM-5.3 Flash, de outro fornecedor. Recusa por limite de pedidos vai
-  direto ao reserva (L18). Nível final e reserva: a preencher.
-  <!-- PREENCHER: nível final do raciocínio e modelo reserva escolhido -->
+  > Estado deste rascunho: a `main` já tem o adaptador do modelo (frente I) e a trava do
+  > lead (frente F), verificados. Ainda não tem as frentes G e H: o que depende delas
+  > (conferência ampliada, limite de corpo) entra com elas.
+- **Modelo.** Decidido pelo Éverton por medição (`DECISOES.md` X24 e X30;
+  [`docs/revisoes/modelos.md`](docs/revisoes/modelos.md)). Principal: Claude Haiku 5.5, com
+  o raciocínio em nível alto, direto do provedor pelo AI Gateway. Reserva: GLM-5.3 Flash,
+  de outro fornecedor, no Workers AI, que só entra quando o principal falha. Recusa por
+  limite de pedidos vai direto ao reserva, sem nova tentativa (L18).
 - **AI Gateway** da Cloudflare entre o Worker e os modelos (X21 e X24): guarda a chave do
   provedor do principal, registra qual modelo respondeu e os erros de limite. Sem gateway
   configurado, o reserva responde direto (decisão provisória P16).
@@ -133,6 +133,11 @@ gateway da conta com a chave da Anthropic guardada nele. Sem isso, responde o re
 
 ## Como validar `producao` sem enviar lead
 
+`producao` está no ar com o envio real desligado, no endereço padrão do Worker e no
+hostname próprio, que chega ao Worker por uma rota, sem escrita no DNS (X26, P22). O
+endereço padrão não serve como URL de entrega: a plataforma barra nele alguns clientes
+HTTP, e isso não se desliga (X28).
+
 O webhook real não recebe nenhum POST antes da entrega, nem como teste. A validação é por
 composição:
 
@@ -186,9 +191,9 @@ Pela X24, só bloqueia a entrada na `main` o que é determinístico ou gera lead
 resto fica listado aqui. A lista fecha no fim: a preencher.
 <!-- PREENCHER: lista final de limites -->
 
-Já decididos ou declarados. Os itens 1, 2, 4 e 5 descrevem comportamento das frentes F, G
-e H, que ainda não estão na `main`: em correção, conferir quando entrarem (a preencher).
-<!-- PREENCHER: conferir os limites 1, 2, 4 e 5 depois que F, G e H entrarem na main -->
+Já decididos ou declarados. Os itens 1, 2, 4 e 5 dependem das frentes G e H, que ainda não
+estão na `main`: conferir quando entrarem (a preencher).
+<!-- PREENCHER: conferir os limites 1, 2, 4 e 5 depois que G e H entrarem na main -->
 Os itens 10 a 14 vêm da primeira passada da revisão de segurança
 ([`docs/revisoes/m2.md`](docs/revisoes/m2.md)).
 
@@ -222,7 +227,17 @@ Os itens 10 a 14 vêm da primeira passada da revisão de segurança
     vão ao webhook do time comercial.
 13. **Página de chat sem cabeçalhos de proteção** do navegador.
 14. **Dados da sessão sem prazo de apagamento** no armazenamento do objeto.
-15. **Medição do nível alto.** A comparação de níveis do Haiku teve uma rodada só no nível
+15. **Pergunta com dado, sem sinal claro.** Com resumo pendente, derrubar o resumo diante
+    de uma pergunta que traz um dado novo depende do modelo.
+16. **Conversa muito longa.** Depois que a cotação sai da janela de mensagens que o modelo
+    recebe, o agente cota de novo em vez de repetir o valor.
+17. **Pedido de humano.** "Quero falar com um humano" só vira `handoff` se o modelo chamar
+    a ferramenta.
+18. **Log.** Até 4 dígitos de um dado podem ir para o log se a plataforma ecoar o pedido
+    numa mensagem de erro.
+19. **Veredito do simulador.** O resultado do simulador hostil é lido no relatório, não só
+    na linha final.
+20. **Medição do nível alto.** A comparação de níveis do Haiku teve uma rodada só no nível
    alto, e entre duas rodadas do mesmo nível 13 casos trocaram de resultado.
 
 ## Onde está cada documento
