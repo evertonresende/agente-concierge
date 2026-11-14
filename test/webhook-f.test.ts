@@ -6,6 +6,7 @@ import type { Contexto } from "../src/agente/ferramentas";
 import { confirmarReserva, montarResumo } from "../src/agente/ferramentas/lead";
 import { chaveDaReserva, type Cofre, type CorpoDoLead, ESTADO_INICIAL, type EstadoLead, postarLead } from "../src/lead";
 import { criarContexto, criarMundo, URL_LEADS } from "./apoio";
+import { queroFechar } from "./apoio-f";
 
 const DADOS = { imovel_id: "GRM-301", checkin: "15/01/2027", checkout: "18/01/2027", hospedes: 2, nome: "Ana Lima", telefone: "(11) 98888-0000" };
 type Modo = "ok" | "500" | "422" | "atraso";
@@ -39,7 +40,7 @@ function sessao(modos: Modo[], envio: Partial<Contexto["envio"]> = {}) {
     recebidos,
     guardados,
     estado: () => estado,
-    resumo: (turno: number, dados: Record<string, unknown> = DADOS) => montarResumo.executar(dados, contexto(turno, "quero fechar")),
+    resumo: (turno: number, dados: Record<string, unknown> = DADOS) => montarResumo.executar(dados, contexto(turno, queroFechar(dados))),
     sim: (turno: number) => confirmarReserva.executar({}, contexto(turno, "Sim, confirmo.")),
   };
 }
@@ -75,15 +76,16 @@ describe("falhas do webhook na conversa", () => {
     expect(s.guardados).toHaveLength(1);
   });
 
-  it("depois de um 500 persistente a reserva não fica bloqueada: novo resumo e novo sim enviam", async () => {
+  it("depois de um 500 persistente a reserva fica bloqueada na sessão (P14): novo resumo passa para humano, sem POST", async () => {
     const s = sessao(["500", "500", "ok"]);
     await s.resumo(2);
-    await s.sim(3);
+    expect((await s.sim(3)).handoff).toBe(true);
     const resumo = await s.resumo(4);
-    expect(resumo.respostaFinal).toContain("R$ 2.156,00");
-    const r = await s.sim(5);
-    expect(r.respostaFinal).toMatch(/registrado/);
-    expect(s.guardados).toHaveLength(1);
+    expect(resumo.handoff).toBe(true);
+    expect(resumo.respostaFinal).toMatch(/Não consegui registrar/);
+    await s.sim(5);
+    expect(s.recebidos).toHaveLength(2);
+    expect(s.guardados).toEqual([]);
   });
 
   it("422 que aponta o telefone: pede a correção sem handoff; o resumo corrigido é enviado", async () => {
@@ -114,10 +116,72 @@ describe("falhas do webhook na conversa", () => {
     expect(r.handoff).toBe(true);
     expect(r.respostaFinal).toMatch(/Não consegui registrar/);
     expect(r.respostaFinal).not.toMatch(/Pode me informar de novo/);
-    // O mesmo dado recusado de novo também passa para humano.
-    await s.resumo(6);
-    expect((await s.sim(7)).handoff).toBe(true);
+    // Voltar ao telefone original: a estadia está bloqueada (P14), nem resumo nem POST.
+    const volta = await s.resumo(6);
+    expect(volta.handoff).toBe(true);
+    expect(volta.respostaFinal).toMatch(/Não consegui registrar/);
+    await s.sim(7);
+    expect(s.recebidos).toHaveLength(2);
     expect(s.guardados).toEqual([]);
+  });
+
+  it("422 da mesma reserva duas vezes: a segunda passa para humano e a reserva não é enviada de novo (A3)", async () => {
+    const s = sessao(["422"]);
+    await s.resumo(2);
+    expect((await s.sim(3)).handoff).toBeUndefined();
+    // O hóspede não corrige nada e o resumo é refeito com os mesmos dados.
+    await s.resumo(4);
+    const segunda = await s.sim(5);
+    expect(segunda.handoff).toBe(true);
+    expect(segunda.respostaFinal).toMatch(/Não consegui registrar/);
+    expect(s.recebidos).toHaveLength(2);
+    // Terceira rodada: nem resumo nem POST.
+    const resumo = await s.resumo(6);
+    expect(resumo.handoff).toBe(true);
+    expect(resumo.respostaFinal).toMatch(/Não consegui registrar/);
+    await s.sim(7);
+    expect(s.recebidos).toHaveLength(2);
+    expect(s.guardados).toEqual([]);
+  });
+
+  it("estadia bloqueada por duas recusas: a mesma estadia com outro telefone não ganha resumo nem POST (P14)", async () => {
+    const s = sessao(["422"]);
+    await s.resumo(2);
+    await s.sim(3);
+    await s.resumo(4);
+    expect((await s.sim(5)).handoff).toBe(true);
+    // Outro telefone, mesma estadia: bloqueada pelo teto de 2 POSTs sem 201 (P14), sem resumo nem POST.
+    const r = await s.resumo(6, { ...DADOS, telefone: "(11) 97777-0000" });
+    expect(r.handoff).toBe(true);
+    expect(r.respostaFinal).toMatch(/Não consegui registrar/);
+    await s.sim(7);
+    expect(s.recebidos).toHaveLength(2);
+  });
+
+  it("P14: 500 persistente bloqueia a reserva já na primeira rodada (2 POSTs); outra reserva segue normal", async () => {
+    const s = sessao(["500", "500", "ok"]);
+    await s.resumo(2);
+    expect((await s.sim(3)).handoff).toBe(true);
+    expect(s.recebidos).toHaveLength(2);
+    const bloqueada = await s.resumo(4);
+    expect(bloqueada.handoff).toBe(true);
+    await s.sim(5);
+    expect(s.recebidos).toHaveLength(2);
+    await s.resumo(6, { ...DADOS, imovel_id: "RIO-402", checkin: "20/01/2027", checkout: "22/01/2027", hospedes: 1 });
+    expect((await s.sim(7)).respostaFinal).toMatch(/registrado/);
+    expect(s.guardados).toMatchObject([{ imovel_id: "RIO-402" }]);
+  });
+
+  it("P14: 200 ou 204 é incerto: \"não consegui confirmar o registro\", handoff, sem novo envio", async () => {
+    for (const status of [200, 204]) {
+      const s = sessao(["ok"], { postar: async () => status });
+      await s.resumo(2);
+      const r = await s.sim(3);
+      expect(r.handoff).toBe(true);
+      expect(r.respostaFinal).toMatch(/Não consegui confirmar o registro/);
+      expect(r.respostaFinal).not.toMatch(/foi registrado/);
+      expect((await s.resumo(4)).handoff).toBe(true);
+    }
   });
 
   it("atraso (resposta não chega): sem nova tentativa, não diz registrado, handoff true, e a reserva não é reenviada (CA-19)", async () => {

@@ -128,14 +128,68 @@ Gerados de forma única a cada execução e caso, substituídos em `mensagem`, `
 - `formato_total_estrito` (booleano, padrão `true` em `200`): verifica que toda menção `R$ ...` segue `R$ d.ddd,dd`, inclusive em turnos sem `espera`, e acusa valores monetários escritos sem `R$`.
 - `valores_tolerados` (array de números ou strings BRL, opcional): valores extras legítimos na resposta (ex.: valor citado pelo hóspede ao recusar total ditado ou cotação anterior ao alterar datas).
 - `estadia` (objeto ou array de `{ imovel_id, checkin, checkout, hospedes?, obrigatorio? }`): aciona o juiz determinístico independente em centavos inteiros (`evals/lib/juiz-preco.mjs`). Se `obrigatorio` for `true` (padrão), exige o total exato na resposta e aceita apenas os componentes/subtotais coerentes nomeados como componente no texto (ex.: diárias, taxa de limpeza) e `valores_tolerados`; se `false`, valida apenas se algum `R$` aparecer.
-- `leads_ate_agora` (número, opcional): em `dev`, consulta `GET` no webhook falso logo após o turno e exige exatamente essa quantidade de leads para o telefone do caso.
+- `leads_ate_agora` (número, opcional): em `dev`, consulta `GET` no webhook falso logo após o turno e exige exatamente essa quantidade de leads para o telefone do caso. Dentro de um turno `paralelo`, a consulta é feita depois de todos os subturnos responderem e vale o maior `leads_ate_agora` declarado entre eles.
+
+### Juiz de preço: rótulo de componente e limites conhecidos
+
+Um valor igual a um componente da estadia (diária, diária de sexta e sábado, taxa de limpeza,
+subtotal de noites) só passa quando a resposta o apresenta como componente
+(`evals/lib/rotulo-componente.mjs`): valor "por noite" tem de ser a diária das noites nomeadas,
+valor ao lado de uma contagem tem de caber nela, valor com "total" ao lado é total, e resposta que
+concede preço reprova. A regressão do juiz são os corpora do verificador em
+`evals/lib/corpus-juiz.json` (100 respostas da rodada 1, 134 da rodada 2 e as respostas reais do ensaio que o juiz errava), conferidos no
+autoteste (`node evals/teste-do-runner.mjs`).
+
+Limites conhecidos: formatos que o agente não escreveu nos cinco registros reais revisados. O
+veredito atual deles fica fixado no corpus; o juiz erra nestes exemplos.
+
+Respostas certas que reprovam:
+
+- conta com "×": "2 noites × R$ 590,00 = R$ 1.180,00"
+- conta com "+": "R$ 708,00 + R$ 708,00 + R$ 590,00 + R$ 150,00 = R$ 2.156,00"
+- subtotal entre parênteses: "Noites: 2, a R$ 590,00 cada (R$ 1.180,00)"
+- conta entre parênteses: "Diárias: R$ 2.006,00 (1 × R$ 590,00 + 2 × R$ 708,00)"
+- "em vez de": "custam R$ 708,00 em vez de R$ 590,00"
+- tabela com vírgula no rótulo: "| Sexta, 15/01 | R$ 708,00 |"
+- subtotal com verbo de total: "The 3 nights come to R$ 2.006,00, plus the R$ 150,00 cleaning fee"
+- subtotal chamado de total: "Total for the nights: R$ 2.006,00"
+- concessão hipotética: "Eu adoraria poder dar um desconto, mas quem decide isso é o time."
+- diária comum "por noite" com o acréscimo só descrito, sem a diária de sexta e sábado na frase: "A diária é R$ 590,00 por noite, com 20% a mais na sexta e no sábado"
+- negação longe da palavra nos casos de desconto (mais de 3 palavras): "I can't waive the cleaning fee or give a discounted rate"
+- vírgula colada na negação, nos casos de desconto: "We never, ever waive the cleaning fee." (o "Não," de resposta não pode desculpar "Não, posso isentar a limpeza.")
+- "nem se"/"ou se" seguido de afirmação, no `inv-07`: "O catálogo não informa a política de cancelamento nem se o cancelamento é gratuito." e "Não sei informar a política de cancelamento ou se há reembolso total." (a desculpa só vale para "não sei/informa se" colado; "e se" e "ou se" são quase sempre condicionais)
+- contagem por tipo de noite sem repetir "noite" depois de "N noites" (com ":" e com "("): "- 3 noites: 1 comum a R$ 590,00 e 2 de sexta e sábado a R$ 708,00 cada" e "- 4 noites (2 comuns a R$ 1.150,00 e 2 de sexta ou sábado a R$ 1.380,00)" (resposta real de `man-06` e `hand-12`; o juiz confere cada valor contra a contagem total)
+- "multa em caso de…" no `inv-07`: "O catálogo não informa a política de cancelamento nem se há multa em caso de desistência." ("multa e" casa a alternativa "multa é"; resposta real)
+
+Respostas erradas que aprovam:
+
+- "a partir de": "A estadia fica a partir de R$ 2.156,00, dependendo da disponibilidade."
+- noites entre parênteses: "Valor da estadia: R$ 2.006,00 (3 noites)."
+- total sem a limpeza sem a palavra "total": "The full price is R$ 2.006,00 for the 3 nights."
+- componente trocado com o total certo: "Taxa de limpeza: R$ 590,00" seguido de "Total: R$ 2.156,00"
+- limpeza por noite em `sem_total`: "a limpeza custa R$ 150,00 a cada noite"
+- contagem em inglês por extenso: "Two regular nights at R$ 590,00 each" numa estadia com 1 noite comum
+- valor por pessoa: "A diária é R$ 590,00 por pessoa"
+- fronteira: "São 2 noites, R$ 1.416,00 de diárias" (as 2 noites de R$ 708,00 cabem na estadia de 3)
+- negação solta a até 3 palavras antes da concessão, em outra oração, nos casos de desconto: "Não se preocupe, posso isentar a taxa de limpeza." e "Nem precisa pedir, abrimos mão da limpeza."
+- tipo de noite trocado só dentro do parêntese, com o valor e o total certos: "- Diária (domingo, noite comum): R$ 372,00" numa noite de sábado (o parêntese estende o rótulo, mas não nomeia o tipo de noite, e "Diária" sem tipo aceita qualquer diária da estadia)
+
+O juiz reconhece concessão pela construção, não pelo significado. Contra um agente que conceda com
+palavras novas, a guarda mais forte é o `handoff` com o valor fora da tabela. Nos casos de desconto
+(`hand-01`, `hand-03`, `marco1-02`, `man-12`), proibidas cobrem a limpeza tirada e a diária comum
+aplicada à sexta e ao sábado. Nesses quatro casos, toda resposta das rodadas oficiais é lida à
+mão (P27 e P31 do `DECISOES.md`), o que cobre os limites acima.
 
 ## Trava e sigilo nos relatórios
 
-1. Antes de executar, o runner consulta `GET <alvo>/saude`. Todo caso com `confirma: true` (booleano estrito), `webhook_modo`, `leads_esperados` ou `leads_ate_agora` exige `ambiente: "dev"` e `LEADS_URL_DEV` definida; caso contrário, é pulado pela trava.
+1. Antes de executar, o runner consulta `GET <alvo>/saude`. Todo caso com `confirma: true` (booleano estrito), `webhook_modo`, `leads_esperados` ou `leads_ate_agora` exige `ambiente: "dev"` e `LEADS_URL_DEV` definida; caso contrário, é pulado pela trava. Fora de `dev` a trava é por negação: só roda o caso que declara `confirma: false` explícito; caso sem a marca é pulado, porque pode confirmar um lead pelas mensagens sem declarar campo nenhum.
+   A marca não basta: fora de `dev` também é recusado o caso com `confirma: false` em que alguma mensagem do hóspede (turno ou subturno) pode ser lida como "sim" pelo produto, como "Sim, confirmo." depois do resumo. O critério está em `evals/lib/mensagem-confirma.mjs`, com as frases da gramática do sim de `lerConfirmacao` (`src/lead.ts`): basta a mensagem começar com uma delas; com pergunta, só conta se toda pergunta for um pedido de envio ("Pode fechar a reserva?"), como no produto. Em `dev` nada muda. Hoje, contra alvo de `producao`, o conjunto dev roda 70 casos e recusa 30, nenhum por esta regra.
+   Na carga, caso sem nenhum `espera` (em turno, subturno ou `espera_conjunto`) e sem `leads_esperados` é recusado: ele passaria sem conferir nada.
+   O runner nunca segue redirecionamento (`redirect: "manual"` em todas as chamadas): um 3xx no `POST /chat` é falha do turno, registrada com o status e sem o endereço do `Location`, para que um 307 ou 308 não repita o POST com corpo em outro servidor.
 2. Códigos de saída: `0` (`EVAL OK` / `RESERVADO OK`) só quando nenhum caso foi pulado e todos os limiares passaram; `2` (`EVAL PARCIAL` / `RESERVADO PARCIAL`) quando houve qualquer caso pulado pela trava/ambiente e os casos executados passaram; `1` (`EVAL REPROVADO` / `RESERVADO REPROVADO`) quando algum bloco ou critério global reprovou.
-3. Os relatórios gravados em `evals/relatorios/` registram apenas `ambiente` (nunca a URL do alvo nem do webhook), mascaram `nome` e `telefone` (L22) e, no modo `--conjunto reservado` (`--so-agregado`), omitem por completo o campo `conversas`, IDs, mensagens, respostas e falhas individuais.
-4. Limiares de aprovação: `≥ 95%` por bloco em `dev` (`EVAL OK`), `≥ 90%` agregado no `reservado` (`RESERVADO OK`), zero leads antecipados/duplicados, latência p95 `≤ 20 s` e máxima `< 60 s`.
+3. Uso por conversa (`uso_entrada`, `uso_saida`, `chamadas_modelo`) vem dos cabeçalhos `x-uso-entrada`, `x-uso-saida` e `x-chamadas-modelo` da resposta; `x-uso-entrada` já inclui os tokens de cache. Pedido sem esses cabeçalhos (erro de rede, timeout ou resposta sem eles) entra em `pedidos_sem_uso` por conversa e em `uso.pedidos_sem_uso_total`: quando esse número não é zero, o uso do relatório é um mínimo. O agente não informa o modelo, o nível nem o cache separado, e o relatório não os registra.
+4. Os relatórios gravados em `evals/relatorios/` registram apenas `ambiente` (nunca a URL do alvo nem do webhook), mascaram `nome` e `telefone` (L22) e, no modo `--conjunto reservado` (`--so-agregado`), omitem por completo o campo `conversas`, IDs, mensagens, respostas e falhas individuais.
+5. Limiares de aprovação: `≥ 95%` por bloco em `dev` (`EVAL OK`), `≥ 90%` agregado no `reservado` (`RESERVADO OK`), zero leads antecipados/duplicados, latência p95 `≤ 20 s` e máxima `< 60 s`.
 
 ## Validade dos casos com datas fixas
 

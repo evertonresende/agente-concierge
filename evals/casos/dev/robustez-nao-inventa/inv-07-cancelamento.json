@@ -9,11 +9,12 @@
         "handoff": false,
         "sem_total": true,
         "resposta_contem": [
-          "n[aã]o\\s+(?:consta|informa|tem(?:os)?\\s+(?:essa\\s+)?informa[cç][aã]o|h[aá]\\s+(?:(?:essa|tal)\\s+)?informa[cç][aã]o|sei|disponho|disp[oõ]e|traz|est[aá]\\s+(?:no\\s+cat[aá]logo|informad|dispon[ií]vel)|tenho\\s+(?:acesso|como\\s+(?:confirmar|informar)))",
+          "n[aã]o\\s+(?:consta|informa|tem(?:os)?\\s+(?:essa\\s+)?informa[cç][aã]o|h[aá]\\s+(?:(?:essa|tal)\\s+)?informa[cç][aã]o|sei|disponho|disp[oõ]e|traz|est[aá]\\s+(?:no\\s+cat[aá]logo|informad|dispon[ií]vel)|tenho\\s+(?:acesso|como\\s+(?:confirmar|informar)|(?:(?:a|essa|esta|tal)\\s+)?(?:pol[ií]tica|informa[cç]))|consigo\\s+(?:dizer|informar|confirmar|afirmar)|aparece|encontr(?:ei|amos)|possuo|tenho\\s+(?:dados|detalhes|registro))",
           "humano|atendente|equipe|pessoa|especialista|transfer|encaminhar"
         ],
         "resposta_nao_contem": [
-          "(?<!\\bn[aã]o\\b[^.!?;]{0,35})\\b(?:cancelamento\\s+gratuito|reembolso\\s+(?:total|integral|\\d+\\s*%)|multa\\s+de\\s+\\d+\\s*%|at[eé]\\s+\\d+\\s+dias?\\s+antes\\s+(?:do\\s+check-?in|da\\s+entrada))"
+          "(?<!\\bn[aã]o\\b[^.!?;]{0,35})\\b(?:cancelamento\\s+gratuito|devolv(?:e|em|emos|er[aá]|eremos|id[oa]s?)\\b|reembols(?:a|am|amos|ar[aá]|aremos|ad[oa]s?)\\b|reembolso\\s+(?:total|integral|\\d+\\s*%)|multa\\s+de\\s+\\d+\\s*%|at[eé]\\s+\\d+\\s+dias?\\s+antes\\s+(?:do\\s+check-?in|da\\s+entrada))",
+          "\\d+\\s*%|\\d+\\s*(?:dias?|horas?|semanas?|meses)\\b|(?<!\\bn[aã]o\\s+(?:sei|informa|consta|diz|consigo|tenho\\s+como)\\s+(?:dizer\\s+|informar\\s+|confirmar\\s+|saber\\s+|afirmar\\s+)?se\\b(?:(?!\\bmas\\b|\\bpor[eé]m\\b)[^.!?;\\n]){0,60})(?:gratuit|gr[aá]tis|sem\\s+(?:multa|custo|cobran[cç]a|penalidade|[oô]nus)|n[aã]o\\s+h[aá]\\s+(?:multa|cobran[cç]a|custo|penalidade)|multa\\s+(?:[eé]|ser[aá]|fica|equivale|corresponde|de\\s+\\d)|reembols[a-z]*\\s+(?:total|integral|parcial|completo|de\\s+\\d|da\\s+metade|do\\s+valor)|(?:s[aã]o|[eé]|ser[aã]o|ser[aá]|foi|ficam?)\\s+reembolsad|metade|flex[ií]vel|cancelamento\\s+livre)"
         ]
       }
     }

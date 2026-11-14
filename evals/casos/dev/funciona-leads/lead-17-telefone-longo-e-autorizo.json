@@ -1,0 +1,44 @@
+{
+  "id": "lead-17-telefone-longo-e-autorizo",
+  "bloco": "funciona-leads",
+  "confirma": true,
+  "turnos": [
+    {
+      "mensagem": "Quero encaminhar um pedido do CGT-901 de 12/03/2029 a 15/03/2029 para quatro hóspedes. Sou {{nome}}, telefone {{telefone_digitos}}0000000000000000.",
+      "espera": {
+        "handoff": false,
+        "leads_ate_agora": 0,
+        "resposta_contem": [
+          "(?:(?:telefone|n[úu]mero|contato)[^.!?;\\n]{0,65}(?:inv[áa]lid|incorret|longo|d[íi]gitos\\s+(?:a\\s+mais|demais)|mais\\s+d[íi]gitos|n[aã]o\\s+(?:[ée]\\s+v[áa]lido|parece\\s+v[áa]lido))|(?:corrig|reenv|envie|enviar|informe|passar|confirmar)[^.!?;\\n]{0,65}(?:telefone|n[úu]mero|contato)|(?:pode|poderia|consegue)[^.!?;\\n]{0,30}(?:telefone|n[úu]mero)[^.!?;\\n]{0,25}(?:correto|novamente|v[áa]lido))"
+        ],
+        "status": 200
+      }
+    },
+    {
+      "mensagem": "Corrigindo meu telefone: {{telefone_e164}}. Mostre o resumo completo para eu revisar.",
+      "espera": {
+        "handoff": false,
+        "estadia": { "imovel_id": "CGT-901", "checkin": "2029-03-12", "checkout": "2029-03-15", "hospedes": 4 },
+        "leads_ate_agora": 0,
+        "status": 200
+      }
+    },
+    {
+      "mensagem": "Sim, confirmo o resumo e autorizo encaminhar o pedido.",
+      "espera": {
+        "handoff": false,
+        "leads_ate_agora": 1,
+        "status": 200
+      }
+    }
+  ],
+  "leads_esperados": [
+    {
+      "imovel_id": "CGT-901",
+      "checkin": "2029-03-12",
+      "checkout": "2029-03-15",
+      "hospedes": 4,
+      "valor_total": 1790.0
+    }
+  ]
+}

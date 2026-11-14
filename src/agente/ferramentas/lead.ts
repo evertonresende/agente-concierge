@@ -1,9 +1,8 @@
 import { regrasDaFicha } from "../../catalogo";
 import {
-  apresentarResumo, type CampoDoHospede, chaveDaReserva, confirmar, invalidarPendente, type Leitura, type Pendente, type Reserva,
-  reservaFechada, simAposRegistro,
+  apresentarResumo, type CampoDoHospede, chaveDaReserva, confirmar, invalidarPendente, lerConfirmacao, type Leitura, type Pendente,
+  pendenteAberto, type Reserva, estadiaBloqueada, reservaFechada, simAposRegistro, textoDoResumo, dataComDia,
 } from "../../lead";
-import { type DataISO, diasEntre, formatarDataComDia, indiceDiaDaSemana } from "../../nucleo/datas";
 import { formatarReais } from "../../nucleo/dinheiro";
 import { type Idioma, idiomaDoHospede } from "../../nucleo/idioma";
 import { cotar } from "../../nucleo/preco";
@@ -14,18 +13,6 @@ import { type Argumentos, type Contexto, definir, type Resultado, texto } from "
 // Textos fixos de código, em português e em inglês (L15): o resumo, o pedido de
 // confirmação, o resultado da confirmação e os avisos de falha. O modelo nunca os reescreve.
 // Nenhum deles diz "registrado" antes de um 201 do webhook. Outro idioma recebe português.
-const DIAS_EM_INGLES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-const MESES_EM_INGLES = [
-  "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December",
-];
-
-/** "2027-01-15" -> "sexta-feira, 15/01/2027" ou "Friday, January 15, 2027". */
-function dataComDia(data: DataISO, idioma: Idioma): string {
-  if (idioma === "pt") return formatarDataComDia(data);
-  const [ano, mes, dia] = data.split("-").map(Number);
-  return `${DIAS_EM_INGLES[indiceDiaDaSemana(data)]}, ${MESES_EM_INGLES[mes! - 1]} ${dia}, ${ano}`;
-}
-
 const ROTULOS: Record<Idioma, Record<CampoDoHospede, string>> = {
   pt: {
     nome: "o nome", telefone: "o telefone", imovel_id: "o imóvel", checkin: "a data de entrada", checkout: "a data de saída",
@@ -39,7 +26,6 @@ const ROTULOS: Record<Idioma, Record<CampoDoHospede, string>> = {
 
 const TEXTOS = {
   pt: {
-    pedeConfirmacao: "Está tudo certo? Para confirmar, responda \"sim\" e eu envio o seu pedido ao time comercial.",
     aindaNaoEnviei: "Ainda não enviei este pedido.",
     confiraDeNovo: "Para não haver engano, confira o pedido mais uma vez.",
     totalMudou: "O valor desta estadia mudou desde o resumo anterior, então ainda não enviei este pedido.",
@@ -56,19 +42,8 @@ const TEXTOS = {
       + "com o nosso time comercial. Não enviei de novo.",
     pedeCorrecao: (dados: string) => `Não consegui registrar o seu pedido: o sistema de reservas não aceitou ${dados}. `
       + "Pode me informar de novo? Com a correção eu monto um novo resumo para você confirmar.",
-    resumo: (d: DadosDoResumo) => [
-      "Resumo do seu pedido de reserva:",
-      `- Imóvel: ${d.imovel}`,
-      `- Entrada: ${d.entrada}`,
-      `- Saída: ${d.saida} (${d.noites} ${d.noites === 1 ? "noite" : "noites"})`,
-      `- Hóspedes: ${d.hospedes}`,
-      `- Nome: ${d.nome}${d.soPrimeiroNome ? " (se puder, me diga também o sobrenome)" : ""}`,
-      `- Telefone: ${d.telefone}`,
-      `- Total: ${d.total}`,
-    ],
   },
   en: {
-    pedeConfirmacao: "Is everything correct? To confirm, reply \"yes\" and I will send your request to our sales team.",
     aindaNaoEnviei: "I have not sent this request yet.",
     confiraDeNovo: "To avoid any mistake, please check the request once more.",
     totalMudou: "The price of this stay has changed since the previous summary, so I have not sent this request yet.",
@@ -85,23 +60,8 @@ const TEXTOS = {
       + "with our sales team. I did not send it again.",
     pedeCorrecao: (dados: string) => `I could not register your booking request: the booking system did not accept ${dados}. `
       + "Could you send it again? With the correction I will prepare a new summary for you to confirm.",
-    resumo: (d: DadosDoResumo) => [
-      "Summary of your booking request:",
-      `- Property: ${d.imovel}`,
-      `- Check-in: ${d.entrada}`,
-      `- Check-out: ${d.saida} (${d.noites} ${d.noites === 1 ? "night" : "nights"})`,
-      `- Guests: ${d.hospedes}`,
-      `- Name: ${d.nome}${d.soPrimeiroNome ? " (if you can, please tell me your last name too)" : ""}`,
-      `- Phone: ${d.telefone}`,
-      `- Total: ${d.total}`,
-    ],
   },
 } satisfies Record<Idioma, unknown>;
-
-interface DadosDoResumo {
-  imovel: string; entrada: string; saida: string; noites: number; hospedes: number; nome: string; soPrimeiroNome: boolean;
-  telefone: string; total: string;
-}
 
 /**
  * Idioma dos textos fixos deste turno, pelas mensagens do hóspede. `historico` é um
@@ -113,22 +73,24 @@ function idiomaDe(contexto: Contexto): Idioma {
   return idiomaDoHospede([...anteriores.filter((m) => m.role === "user").map((m) => m.content), contexto.mensagem]);
 }
 
-/** Resumo mostrado ao hóspede antes da confirmação (contrato seção 5). */
-export function textoDoResumo(pendente: Pendente, idioma: Idioma = "pt"): string {
-  const r = pendente.reserva;
-  const t = TEXTOS[idioma];
-  const linhas = t.resumo({
-    imovel: pendente.nomeDoImovel ? `${pendente.nomeDoImovel} (${r.imovel_id})` : r.imovel_id,
-    entrada: dataComDia(r.checkin, idioma),
-    saida: dataComDia(r.checkout, idioma),
-    noites: diasEntre(r.checkin, r.checkout),
-    hospedes: r.hospedes,
-    nome: r.nome,
-    soPrimeiroNome: !r.nome.includes(" "),
-    telefone: r.telefone,
-    total: formatarReais(pendente.totalCentavos),
-  });
-  return [...linhas, "", t.pedeConfirmacao].join("\n");
+/** O que o hóspede escreveu na sessão: as mensagens dos turnos anteriores, quando o contexto as traz, e a do turno. */
+function mensagensDoHospede(contexto: Contexto): string[] {
+  return [...(contexto.historico ?? []).filter((m) => m.role === "user").map((m) => m.content), contexto.mensagem];
+}
+
+/** Palavras de um texto (letras e números), sem acento e em minúsculas. */
+const palavras = (texto: string): string[] =>
+  texto.normalize("NFKD").replace(/\p{M}/gu, "").toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [];
+
+/**
+ * Palavras do nome que o hóspede não escreveu em nenhuma mensagem da sessão. O nome do lead só pode
+ * ser formado por palavras dele (P20): o modelo não acrescenta observação, título nem sobrenome. A
+ * comparação é palavra a palavra, sem diferenciar maiúsculas nem acentos; o nome pode ter vindo em
+ * pedaços, em mensagens diferentes. Sem o histórico no contexto, só a mensagem do turno prova o nome.
+ */
+function palavrasQueOHospedeNaoEscreveu(nome: string, contexto: Contexto): string[] {
+  const escritas = new Set(mensagensDoHospede(contexto).flatMap(palavras));
+  return [...new Set(palavras(nome).filter((p) => !escritas.has(p)))];
 }
 
 function jaRegistrado(pendente: Pendente, idioma: Idioma): Resultado {
@@ -162,14 +124,19 @@ export function resumir(contexto: Contexto, pedido: Extract<Pedido, { ok: true }
   const pendente: Pendente = {
     reserva, totalCentavos: pedido.cotacao.totalCentavos, turno: contexto.turno, nomeDoImovel: pedido.ficha.nome,
   };
-  const anterior = contexto.cofre.ler().envios[chaveDaReserva(reserva)];
-  if (reservaFechada(anterior)) {
+  const estado = contexto.cofre.ler();
+  const anterior = estado.envios[chaveDaReserva(reserva)];
+  // Reserva que já teve envio, ou estadia bloqueada pelo teto de falhas (P14), mesmo com
+  // outro nome, telefone ou número de hóspedes: não ganha resumo novo.
+  const bloqueio = anterior === "registrado" ? undefined : estadiaBloqueada(estado, reserva);
+  if (reservaFechada(anterior) || bloqueio) {
     // O hóspede pediu outra reserva (que já teve envio): o resumo que estava em aberto,
     // de uma reserva diferente, deixa de valer (L10).
     invalidarPendente(contexto.cofre);
-    return anterior === "registrado"
-      ? jaRegistrado(pendente, idioma)
-      : { paraOModelo: { nao_registrado: true }, respostaFinal: TEXTOS[idioma].incerto, handoff: true };
+    if (anterior === "registrado") return jaRegistrado(pendente, idioma);
+    const incerto = bloqueio === "incerto" || anterior === "incerto" || anterior === "enviando";
+    const texto = incerto ? TEXTOS[idioma].incerto : TEXTOS[idioma].naoRegistrado;
+    return { paraOModelo: { nao_registrado: true }, respostaFinal: texto, handoff: true };
   }
 
   apresentarResumo(contexto.cofre, reserva, pendente.totalCentavos, contexto.turno, pendente.nomeDoImovel);
@@ -181,11 +148,14 @@ export function resumir(contexto: Contexto, pedido: Extract<Pedido, { ok: true }
 }
 
 /** A mensagem do hóspede não é um sim inequívoco ao resumo: nada foi enviado (L9). */
-function naoConfirmou(leitura: Exclude<Leitura, "sim">, idioma: Idioma): Resultado {
+function naoConfirmou(leitura: Exclude<Leitura, "sim">, pendente: Pendente, idioma: Idioma): Resultado {
   const t = TEXTOS[idioma];
   switch (leitura) {
     case "hesitacao":
-      return { paraOModelo: { enviado: false, motivo: "o hóspede hesitou" }, respostaFinal: `${t.aindaNaoEnviei} ${t.pedeConfirmacao}` };
+      return {
+        paraOModelo: { enviado: false, motivo: "o hóspede hesitou" },
+        respostaFinal: `${t.aindaNaoEnviei}\n\n${textoDoResumo(pendente, idioma)}`,
+      };
     case "condicao_de_preco":
       return { paraOModelo: { enviado: false, motivo: "condição de preço" }, handoff: true, respostaFinal: t.semNegociacao };
     case "pergunta":
@@ -240,12 +210,36 @@ export const montarResumo = definir(
 
 async function tentarResumir(argumentos: Argumentos, contexto: Contexto): Promise<Resultado> {
   // O nome vai como o hóspede informou (L20), numa linha só: ele entra no texto do resumo.
-  const nome = texto(argumentos, "nome")?.replace(/\s+/g, " ").slice(0, 120);
+  const inteiro = texto(argumentos, "nome")?.replace(/\s+/g, " ") ?? "";
+  const nome = inteiro.slice(0, 120);
   const informado = texto(argumentos, "telefone");
   const faltando = [!nome && "nome", !informado && "telefone", argumentos.hospedes === undefined && "número de hóspedes"]
     .filter(Boolean);
   if (!nome || !informado || faltando.length > 0) {
     return { paraOModelo: { erro: `Falta: ${faltando.join(", ")}. Pergunte ao hóspede; não invente.` } };
+  }
+  // Nome de pessoa não tem dígito nem símbolo de moeda (P29): com eles, o campo levaria um
+  // preço falso a quem lê o lead. Algarismo romano e sufixo por extenso passam.
+  if (/[\p{Nd}\p{No}\p{Sc}]/u.test(inteiro)) {
+    return {
+      paraOModelo: {
+        erro: "O nome informado tem número ou símbolo de moeda, e nome de pessoa não tem. Peça ao hóspede o nome dele "
+          + "sem número nem valor. Não invente, não corrija por conta própria e não monte resumo sem isso.",
+      },
+    };
+  }
+  // O nome do lead só pode ser formado por palavras que o hóspede escreveu (P20). Conferido
+  // antes do corte de tamanho: palavra cortada ao meio não é palavra que ele escreveu.
+  const estranhas = palavrasQueOHospedeNaoEscreveu(inteiro, contexto);
+  if (estranhas.length > 0 || palavras(inteiro).length === 0) {
+    const quais = estranhas.length > 0 ? ` O hóspede não escreveu: ${estranhas.slice(0, 8).map((p) => `"${p}"`).join(", ")}.` : "";
+    return {
+      paraOModelo: {
+        erro: `O nome informado não é o que o hóspede escreveu.${quais} Use o nome exatamente como o hóspede escreveu, sem `
+          + "acrescentar observação, título nem sobrenome. Se ele ainda não disse o nome, pergunte; não invente. Não monte "
+          + "resumo sem isso.",
+      },
+    };
   }
   const telefone = normalizarTelefone(informado);
   if (!telefone) {
@@ -273,7 +267,27 @@ async function tentarResumir(argumentos: Argumentos, contexto: Contexto): Promis
     };
   }
 
+  // O hóspede disse um sim limpo ao resumo do turno anterior e o modelo, em vez de confirmar,
+  // pediu o mesmo resumo de novo: a chamada vale como a confirmação, pelo caminho dela.
+  const reserva: Reserva = {
+    imovel_id: pedido.ficha.id, checkin: pedido.checkin, checkout: pedido.checkout, hospedes: pedido.hospedes, nome, telefone,
+  };
+  if (eSimAoMesmoResumo(contexto, reserva)) return confirmarReserva.executar({}, contexto);
   return resumir(contexto, pedido, nome, telefone);
+}
+
+/**
+ * A reserva pedida é a do resumo em aberto (imóvel, datas, hóspedes, nome e telefone), ele foi
+ * mostrado no turno anterior e a mensagem do turno é um sim a ele, pela mesma leitura da
+ * confirmação. Com qualquer diferença, o pedido de resumo segue como resumo novo, sem envio.
+ */
+function eSimAoMesmoResumo(contexto: Contexto, reserva: Reserva): boolean {
+  const pendente = pendenteAberto(contexto.cofre.ler());
+  return pendente !== null
+    && contexto.turno === pendente.turno + 1
+    && chaveDaReserva(pendente.reserva) === chaveDaReserva(reserva)
+    && pendente.reserva.nome === reserva.nome
+    && lerConfirmacao(contexto.mensagem, pendente, contexto.turno) === "sim";
 }
 
 export const confirmarReserva = definir(
@@ -305,7 +319,7 @@ export const confirmarReserva = definir(
       case "mesmo_turno":
         return { paraOModelo: { erro: "O resumo acabou de ser mostrado. Nada foi enviado: a confirmação precisa vir na próxima mensagem do hóspede." } };
       case "nao_confirmou":
-        return naoConfirmou(resultado.leitura, idioma);
+        return naoConfirmou(resultado.leitura, resultado.pendente, idioma);
       case "reapresentado":
         return {
           paraOModelo: { enviado: false, resumo_apresentado: true, aguardando: "confirmação do hóspede na próxima mensagem" },
