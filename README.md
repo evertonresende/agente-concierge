@@ -850,8 +850,13 @@ mistura mudança e pergunta, zero lead com dado velho e zero nome sujo.
 | [`docs/conselho/`](docs/conselho/) | perguntas e respostas da consulta às cegas a modelos de outros provedores |
 | [`docs/prompts/`](docs/prompts/) | prompts das sessões de planejamento e de coordenação |
 | [`docs/setup/`](docs/setup/) | regras, skills e subagentes do ambiente do autor usados nesta entrega |
+| [`docs/sessoes/`](docs/sessoes/) | exports das sessões de trabalho, com índice |
 | [`evals/`](evals/) | runner, casos, simulador e relatórios |
 | [`falso/`](falso/) | webhook falso de `dev` |
+
+Os exports das sessões de trabalho (planejamento, coordenação e frentes) estão em
+[`docs/sessoes/`](docs/sessoes/README.md). Eles trazem só o texto das mensagens, com
+máscaras de sigilo. O índice diz o que entrou, o que ficou de fora e as máscaras aplicadas.
 
 MCP: o único servidor MCP chamado na construção foi o do T3 Code, o orquestrador, para
 abrir e configurar as threads das frentes, mandar mensagem, delegar tarefa a verificador,

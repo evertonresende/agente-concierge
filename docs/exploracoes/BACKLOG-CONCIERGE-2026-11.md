@@ -2409,6 +2409,20 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   em "O que faria com mais tempo" (item 21 do `DECISOES.md`). Nada mais aberto com ele na X37.
   Registro: X39 e a linha P43 no `DECISOES.md`, a seção "O que ficou com o Éverton" do
   `docs/revisoes/seguranca.md`, o estado e a lista. O README não muda: o limite 27 já declara o erro
+- 14/11 12h27 · exports · **exports das sessões no repositório (X40).** O Éverton mudou a parte 2 da
+  X33. As 12 sessões de topo do projeto (duas de planejamento, a coordenadora e nove de frente) foram
+  geradas de uma vez, numa pasta fora do git, do registro de conversas da ferramenta de orquestração:
+  só texto de usuário e de agente, sem data e hora, com máscaras. As 100 sub-sessões e subagentes
+  aparecem só pelo nome, no cabeçalho, na árvore do índice e no ponto da conversa; o texto e o retorno
+  deles não foram exportados. A sessão coordenadora vai até a mensagem anterior ao pedido. Checagens
+  com zero achado nos 13 arquivos (token e valores do arquivo de ambiente, endereços, chaves, nome da
+  empresa, janela de 8 palavras do enunciado, IP, nome de máquina, caminho local e as demais do
+  índice), e o gate do repositório sem achado nos arquivos. O Éverton viu a pasta, a lista e as
+  contagens e deu o ok antes do commit; as checagens rodaram de novo depois do ok, com zero achado.
+  Ninguém leu os arquivos inteiros, e o índice diz isso. As duas saídas de ferramenta citadas na
+  lista de 06h49 não entram: resultado de ferramenta fica de fora.
+  Textos no mesmo commit: X40 e item 11 de "mais tempo" no `DECISOES.md`, marcador no "Como foi
+  feito" e no README (trecho escrito pela frente N, aplicado pela coordenação por ser um commit só)
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -2437,7 +2451,7 @@ dela). Meta: 14/11 03h00. Limite: 06h00. Gatilho que já existia: 10h00 com o cr
 verde, parar e chamar o Éverton.
 
 **Estado em 14/11 11h18. ENTREGA NO AR, com as correções de segurança da X37 publicadas.** `main`
-em 3541db2 mais o registro da X39; código igual ao da fca6d6d; `producao` na versão 9e8b35d1, publicada da `main` fca6d6d às
+em f9522b9 mais os exports das sessões em `docs/sessoes/` (X40); código igual ao da fca6d6d; `producao` na versão 9e8b35d1, publicada da `main` fca6d6d às
 10h37, com `ENTREGA OK` (1 lead real, o de teste da X36) e `CLIENTES OK`. **Código do agente:** a
 árvore final 9d37f9a mais os commits de segurança de 14/11 (cabeçalhos da página, catálogo sem seguir
 redirecionamento e com teto, nome de ferramenta, texto do catálogo, `preview_urls` em `dev` e a
