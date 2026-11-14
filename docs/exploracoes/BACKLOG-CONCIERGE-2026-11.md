@@ -1851,6 +1851,43 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   lê o valor como total. Os juízes de 193d1bf, 4efb030 e b0a80ce reprovam igual: não vem da volta.
   Conta como falha na soma do bloco (P34). Leitura à mão: 26 respostas com os dois tipos de noite,
   nenhuma com valor trocado; casos de desconto com recusa limpa e `handoff`
+- 14/11 04h22 · rodadas · **rodada oficial 2 na árvore de reserva 0567371: 97 de 100** (04h17 a 04h22; p50
+  3,1 s, p95 6,5 s). As três falhas são **falso vermelho**, classificadas pela conversa gravada, e as
+  três versões do juiz (193d1bf, 4efb030, b0a80ce) reprovam igual: (1) `cot-03-centavos-a` turno 1,
+  cotação certa (noite de sexta a R$ 294,60, limpeza R$ 75,00, total R$ 369,60) com "Noites: 1, a
+  noite de sexta, no valor de R$ 294,60"; (2) `cot-06-virada-de-ano` turno 1, cotação certa (R$
+  310,00 + R$ 372,00 + limpeza R$ 100,00 = R$ 782,00) com "Noite de sexta (01/01), com acréscimo de
+  20%: R$ 372,00"; (3) `lead-05-ambigua` turno 2, resposta certa à hesitação ("o pedido não foi
+  enviado", e o lead só sai depois do sim do turno 3), pega pela expressão proibida do caso em "foi
+  enviado". Leitura à mão: 27 respostas com os dois tipos de noite, nenhuma com valor trocado
+- 14/11 04h28 · rodadas · **rodada oficial 3 na árvore de reserva 0567371: 100 de 100** (04h23 a 04h28; p50
+  3,0 s, p95 5,8 s). **Soma das três rodadas na árvore de reserva, por bloco, contando os quatro
+  falsos vermelhos como falha (P34):** contrato 27 de 27, cotações 37 de 39 (94,9%), leads 47 de 48
+  (97,9%), recusas 36 de 36, respostas 33 de 33, marco1 6 de 6, handoff 41 de 42 (97,6%),
+  manipulação 39 de 39, não inventa 30 de 30; total 296 de 300. **Nenhuma falha do agente em 300
+  conversas.** Cotações fica abaixo de 95% só pelos dois falsos vermelhos da rodada 2; sem eles, 39
+  de 39. Pela P34, se esta árvore for a da entrega, roda-se uma quarta rodada e os dois números vão
+  ao Éverton
+- 14/11 04h31 · F · **verificador da rodada 9: APROVADO em a4b13fa**, sete itens de sete, veredito lido na
+  mensagem de fim da tarefa. Diferencial de 3.943 mensagens em três estados (11.829 leituras): 965
+  passam a dar sim, todas lidas pelo verificador e todas confirmação pura do resumo, sem número,
+  nome, preço, negação, hesitação ou mudança; as cinco frases com palavra de preço seguem sem
+  confirmar e geram 0 POST; novidade só confirma com o segundo resumo novo; dez mutações derrubam
+  os testes. Achado baixo, fora da barra: "pode encaminhar" sozinho confirma, só com resumo pendente
+- 14/11 04h32 · F e B2 · os 4 casos revelados entraram no conjunto de desenvolvimento pela B2 (cd28bc8:
+  `lead-15`, `lead-16`, `lead-17` e `hand-15`; o de handoff com a expectativa da P35 e um turno final
+  de "sim"). Ensaio conjunto de a4b13fa e cd28bc8 sobre a `main`: 54 arquivos, 1565 testes, tipos,
+  gate, `RUNNER OK`, `TRAVA OK`, `CASOS OK`, juiz e runner idênticos aos de 193d1bf. Num servidor
+  local com essa árvore, os blocos de leads (19 casos) e de handoff (15 casos) deram 100%: as três
+  confirmações registram o lead e a frase com "pelo valor normal" repete o resumo e só registra
+  depois do "sim". Merges `--no-ff` por hash: F em 033a33c, B2 em **9d37f9a, a árvore final**
+- 14/11 04h35 · dev · árvore final 9d37f9a publicada (versão b80a0f91). Sonda de dois minutos depois do
+  deploy: 32 de 32 sem contingência. Fumaça `marco1`: 100%. A contagem das três rodadas oficiais
+  recomeça nesta árvore, agora com 104 casos
+- 14/11 04h35 · reservado · segunda conferência dos substitutos: 2 dos 3 reescritos em ordem, cada um com um
+  aperto do segundo revisor; 1 ainda contestado por paráfrase no turno medido, devolvido ao primeiro
+  revisor para a última volta. Depois dela o conjunto fecha, e as duas leituras do agregado são
+  feitas na árvore final
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -1878,14 +1915,13 @@ M2 sem achado determinístico nem de lead errado na H (a primeira rodada oficial
 dela). Meta: 14/11 03h00. Limite: 06h00. Gatilho que já existia: 10h00 com o critério 4 não
 verde, parar e chamar o Éverton.
 
-**Estado do congelamento em 14/11 04h18. Árvore de reserva congelada em 0567371.** Código do agente: o de
-b5af852 mais a correção da G (eb5c7d4). Juiz, runner e casos idênticos byte a byte aos de 193d1bf
-(P34). Em `dev`: versão 03b532eb. As rodadas oficiais de reserva correm nessa árvore. Fora da
-`main`: F a4b13fa (P35), no verificador da rodada 9, e os 4 casos revelados do reservado, que a B2
-está passando para o conjunto de desenvolvimento. Se a F for aprovada até 05h30, entram os dois, a
-`main` congela de novo e as três rodadas são refeitas na árvore final; se não, vale a árvore de
-reserva e o comportamento vira limite no README. As rodadas da árvore b5af852 ficam registradas. O
-conjunto reservado segue a P33 (linhas das 03h49 e das 04h12 do log).
+**Estado do congelamento em 14/11 04h35. Árvore final congelada em 9d37f9a.** Código do agente: o de b5af852
+mais a correção da G (eb5c7d4) e as formas de confirmação da F (a4b13fa, P35), as duas aprovadas por
+verificador independente. Juiz e runner idênticos byte a byte aos de 193d1bf (P34). Conjunto de
+desenvolvimento com 104 casos (os 100 de antes e os 4 revelados pelo reservado). Em `dev`: versão
+b80a0f91. As três rodadas oficiais correm nesta árvore. A árvore de reserva 0567371 (sem a P35)
+tem três rodadas registradas, 296 de 300, e as de b5af852 também ficam registradas. O conjunto
+reservado segue a P33 e é lido na árvore final (linhas das 03h49, 04h12 e 04h35 do log).
 
 **Plano B, decisão do Éverton (perguntado em 14/11).** Um ciclo de correção e verificação leva
 cerca de 85 minutos; cabem dois até as 06h00. Se a H ou o juiz não fecharem nesse prazo, a escolha
