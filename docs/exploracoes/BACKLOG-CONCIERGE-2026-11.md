@@ -54,7 +54,7 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 | M1 | agente-concierge | Revisão curta do Marco 1 | A | alta | 0,5 | subagentes Opus 5.5 + conselho | concluída (`docs/revisoes/m1.md`; achados com dono) | — |
 | I | agente-concierge | Escolha do modelo por eval | A, B2 | alta | 1 | subagente em worktree · Opus 5.5, esforço médio desde a X16 | adaptador na `main` desde 13/11 23h18 (27c3093), com o Haiku 5.5 em nível alto (X24); `dev` publicado dessa versão. Fica viva para a fase 2 (medição no código final) e para a linha do gateway de `producao` | `t3/modelo-evals-fallback` |
 | E | agente-concierge | Datas | Marco 1, L1, L1a, L1b, L2 | alta | 1,5 | subagente em worktree · Gemini 4 Hydrogen | concluída: na `main` (81873fa) | `t3/datas-relativas-sao-paulo` |
-| F | agente-concierge | Lead robusto | Marco 1, L6, L7, L9, L10, L11, L15 (textos fixos), L20 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16) | concluída: na `main` (801c8a2); verificador independente rodando | `frente-f` |
+| F | agente-concierge | Lead robusto | Marco 1, L6, L7, L9, L10, L11, L15 (textos fixos), L20 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16) | primeira parte na `main` (801c8a2); o complemento (P14 por estadia, P18, C7 a C9) foi reprovado na quinta rodada do verificador pelo C10 e está em correção | `frente-f` |
 | G | agente-concierge | Robustez e handoff | Marco 1, L3, L4, L5, L5a, L12, L13a, L15, L16, L16a, L19, L21 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16) | rodando | `frente-g` |
 | H | agente-concierge | Concorrência endurecida e falha interna | Marco 1, L17, L17a, L18 | alta | 1 | subagente em worktree · Gemini 4 Hydrogen até 13/11 21h26; depois Opus 5.5, esforço alto (X23) | duas rodadas de verificador independente; correções entregues (c905a09); espera a F entrar na `main` para o merge final e a terceira rodada | `t3/durable-session-concurrency` |
 | J | agente-concierge | Página de chat em dois passos: design (canvas) e implementação | passo 1: nada; passo 2: Marco 1 e aprovação do Éverton | baixa | 0,7 + 1 | thread T3 · Fable 5.2 | passo 1 concluído (canvas aprovado pelo Éverton, com dois ajustes); passo 2 entregue (b8991ce) | `frente-j` |
@@ -922,6 +922,25 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   módulos estáveis (núcleo de preço e datas, catálogo, página, webhook falso, runner e
   simulador, gate de sigilo) e segunda opinião do Gemini 4 Argon, em esforço alto, sobre o
   cálculo de preço. Os módulos em mudança ficam para a segunda passada, só do delta
+- 13/11 23h29 · F · verificador independente, quinta rodada (só o delta, cabeça 0e6a29c): REPROVADO por um
+  achado. Passou: C7 corrigido, nenhum bloqueio a mais, a P14 inteira (3.768 sequências) idêntica à
+  rodada 4. Reprova o C10 (ALTO, regressão do a9c8a8f): a retirada das aberturas "uma dúvida", "uma
+  pergunta" e "só uma pergunta" também valeu na leitura do sim (src/lead.ts:466), e "sim, uma dúvida"
+  passou a enviar o lead (17 de 32 mensagens; na rodada 4, nenhuma); na sequência do verificador saem
+  dois leads da mesma estadia. Bloqueia pela X24 item 3 (lead errado). Decisão provisória P19: sim com
+  anúncio de dúvida não envia. Correção pedida à frente: tirar a retirada só da leitura do sim, levar
+  para a suíte os 10 testes do C10 e os casos do C7 que pegam os defeitos plantados X06 e X03; C11
+  (baixo, lado seguro: "uma pergunta, tem wifi?" ainda derruba o resumo) em commit separado, se for a
+  troca de um termo. Seis de 14 defeitos plantados escapam da suíte (C12, baixo)
+- 13/11 23h29 · K · relatório 2: o gateway `concierge-producao` existe e guarda a chave da Anthropic (X24 item
+  2), com as mesmas opções do de `dev`, conferido por leitura. Achado: o roteiro da frente I estava
+  incompleto, o secret precisa existir no Secrets Store antes de ligar o provedor ao gateway. Pedido à
+  frente I: a linha `AI_GATEWAY` de `producao` e a correção do roteiro. A rota de `producao` segue
+  parada à espera do Éverton (rota do Worker ou domínio personalizado; Bot Fight Mode)
+- 13/11 23h29 · N · relatório 1: rascunhos do `README.md` e do `docs/COMO-FOI-FEITO.md` na `frente-n` (6ed4579),
+  com marcador no que se preenche no fim. Respondido: os nomes dos modelos ficam, com revisão do
+  Éverton; nada em `docs/sessoes/` até o Éverton escolher as sessões, e a frente adianta fora do
+  repositório o programa que limpa um export
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
