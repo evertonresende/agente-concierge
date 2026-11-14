@@ -2,13 +2,16 @@
 
 Agente de chat para quem quer se hospedar em imóveis de temporada. Ele faz quatro coisas:
 
-1. Responde dúvidas sobre os imóveis usando só o catálogo. O que o catálogo não traz, ele
-   diz que não sabe.
+1. Responde dúvidas sobre os imóveis pelo catálogo. O que o catálogo não traz, ele é
+   instruído a dizer que não sabe; dizer que a data está livre é barrado também por código
+   (limite 20).
 2. Cota estadias pela regra de preço, com o total calculado por código.
 3. Registra o pedido de reserva (lead): coleta os dados, mostra um resumo, espera a
    confirmação do hóspede em outro turno e só então envia ao webhook.
 4. Passa a conversa para uma pessoa em reclamação, pedido de desconto, negociação ou
-   assunto fora do alcance dele. Nunca negocia preço.
+   assunto fora do alcance dele. Não negocia preço: nenhuma ferramenta aceita desconto, e o
+   valor do lead sai do cálculo do código. Reconhecer o pedido e passar para humano depende
+   do modelo, e o texto dele passa por uma conferência com limites (limites 1, 2, 8 e 46).
 
 Os requisitos estão em [`docs/CONTRATO.md`](docs/CONTRATO.md). O que ainda depende do fim da
 entrega está marcado como "a preencher".
@@ -49,9 +52,10 @@ cabeçalhos `x-uso-entrada`, `x-uso-saida` e `x-chamadas-modelo`, usados para me
   semana, as recusas, o texto em reais (`R$ 2.156,00`), o valor enviado ao webhook, as
   transições do lead, o resumo para confirmação e o aviso de falha. O modelo entende o
   pedido, escolhe a ferramenta e redige. Antes de sair, o texto do modelo passa por uma
-  conferência de código: valor em reais que nenhuma ferramenta calculou, concessão,
-  registro afirmado sem `201` e afirmação de disponibilidade não chegam ao hóspede (frente
-  G). Os limites dessa conferência estão na lista do fim.
+  conferência de código (frente G), que retira o que reconhece: valor com "R$" que nenhuma
+  ferramenta calculou, concessão, registro afirmado sem `201` e afirmação de
+  disponibilidade. Número por extenso e valor sem marca de moeda passam (limites 8 e 46); os
+  demais limites dessa conferência estão na lista do fim.
 - **Nome do lead.** Só pode ser formado por palavras que o hóspede escreveu na conversa
   (P20), sem dígito nem símbolo de moeda (P29); se não for, a ferramenta do resumo recusa e
   o modelo pede o nome.
