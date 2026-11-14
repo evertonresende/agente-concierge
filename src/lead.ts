@@ -423,7 +423,7 @@ export function mudaDadoDoResumo(mensagem: string, pendente: Pendente): boolean 
   if (mensagem.length > MAXIMO_DA_MENSAGEM) return true;
   // Fora de um sim também derrubam: palavra de novidade ("quero outra reserva"), valor do
   // resumo repetido ("não são 2 pessoas": a marca engole a palavra "pessoas") e negação.
-  const texto = marcarDadosIguais(semAcento(mensagem), pendente);
+  const texto = marcarDadosIguais(semAcento(mensagem).replace(ABERTURA_COM_NUMERO, " "), pendente);
   // Afirmação só mantém o resumo se for um sim ou uma hesitação: a lista de sinais nunca
   // fica completa ("quero cancelar", "vou com o João"). Afirmação junto com pergunta vale
   // pela afirmação ("levo o João, ok?"); só a mensagem que é toda pergunta segue pela lista.
@@ -435,6 +435,8 @@ export function mudaDadoDoResumo(mensagem: string, pendente: Pendente): boolean 
 // Trecho que termina em "?" (separado por vírgula, ponto, ponto e vírgula ou quebra de linha).
 const TRECHO_DE_PERGUNTA = /[^.!?,;\n]*[?？؟]+/g;
 // Abertura que não diz nada sobre a reserva ("ah, antes de confirmar, qual é o bairro?").
+// Aberturas que têm "uma" (sinal de número): saem antes da busca de sinais (C9).
+const ABERTURA_COM_NUMERO = /(?<![a-z0-9])(?:so uma pergunta|uma pergunta|uma duvida)(?![a-z0-9])/g;
 const ABERTURA_NEUTRA = /(?<![a-z0-9])(?:oi|ola|ah|bom|entao|hum+|hey|hi|hello|alias|antes de (?:confirmar|fechar)|antes|so uma pergunta|uma duvida|e|mas|and|but|so)(?![a-z0-9])/g;
 
 /**
@@ -461,7 +463,7 @@ export function lerConfirmacao(mensagem: string, pendente: Pendente, turno?: num
   if (mensagem.length > MAXIMO_DA_MENSAGEM) return "outra";
   // Ponto de interrogação de largura cheia (？) e árabe (؟) também fazem pergunta.
   const bruto = mensagem.replace(/[？؟]/g, "?");
-  const texto = marcarDadosIguais(semAcento(bruto), pendente);
+  const texto = marcarDadosIguais(semAcento(bruto).replace(ABERTURA_COM_NUMERO, " "), pendente);
   if (PRECO.test(texto)) return "condicao_de_preco";
   const limpo = semPontuacao(texto);
   const comValores = comValoresDoResumo(texto);

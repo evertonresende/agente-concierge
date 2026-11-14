@@ -86,3 +86,17 @@ describe("C1, decisão 1: cancelamento com pergunta derruba; só a mensagem toda
     expect(mundo.leads).toEqual([]);
   });
 });
+
+describe("C9: abertura neutra com \"uma\" seguida de pergunta pura mantém o resumo", () => {
+  for (const mensagem of ["uma dúvida, tem wifi?", "uma dúvida: tem wifi?", "só uma pergunta, tem wifi?", "só uma pergunta: tem wifi?"]) {
+    it(`mantém e repete o resumo: "${mensagem}"`, () => {
+      let estado: EstadoLead = { ...ESTADO_INICIAL, pendente: GRM301 };
+      const cofre: Cofre = { ler: () => estado, salvar: (e) => { estado = e; } };
+      expect(pedidoDeConfirmacaoPendente(cofre, 3, "pt", mensagem)).toContain("- Total: R$ 2.156,00");
+      expect(estado.pendente).not.toBeNull();
+    });
+  }
+  for (const mensagem of ["uma dúvida, vou levar minha sogra, tem wifi?", "só uma pergunta: somos 3, tem wifi?", "uma pessoa a mais, tem wifi?"]) {
+    it(`com mudança junto, derruba: "${mensagem}"`, () => expect(mudaDadoDoResumo(mensagem, GRM301)).toBe(true));
+  }
+});
