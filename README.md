@@ -642,6 +642,9 @@ verificadores das frentes, no log do backlog.
 64. **Telefone com zero de longa distância.** "011 98765-4321" não é aceito como telefone
     (o DDD não pode começar com zero), e o agente pede o telefone de novo. Custa um turno;
     "11 98765-4321" passa. Conferido executando a função da árvore final.
+**Conferência do texto: formas que passam** (achadas pelo verificador final dos textos e pela
+varredura que veio depois, executando a função de conferência fora do repositório)
+
 65. **Afirmação de registro escrita pelo modelo.** Só o código escreve o texto de registro,
     e só depois de um `201`; o estado do lead nunca vira "registrado" sem ele. Quando o
     modelo afirma por conta própria que registrou, a conferência corta as formas que
