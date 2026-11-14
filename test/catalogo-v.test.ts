@@ -83,3 +83,73 @@ describe("texto do catálogo sem caracteres invisíveis de formatação ou dire�
     expect(sanear(comum)).toBe(comum);
   });
 });
+
+describe("nova tentativa e 3xx depois da leitura com teto (frente V)", () => {
+  const catalogo = (buscar: unknown) => criarCatalogo(BASE_CATALOGO, buscar as typeof fetch);
+
+  it("200 com JSON inválido: uma nova tentativa e erro com status 0", async () => {
+    const buscar = vi.fn(async () => new Response("{não é json", { status: 200 }));
+    const erro = await catalogo(buscar).cidades().catch((e: Error) => e);
+    expect(erro).toBeInstanceOf(ErroDoCatalogo);
+    expect((erro as Error).message).toContain("status 0");
+    expect(buscar).toHaveBeenCalledTimes(2);
+  });
+
+  it("200 sem corpo: uma nova tentativa e erro com status 0", async () => {
+    const buscar = vi.fn(async () => new Response(null, { status: 200 }));
+    const erro = await catalogo(buscar).cidades().catch((e: Error) => e);
+    expect(erro).toBeInstanceOf(ErroDoCatalogo);
+    expect((erro as Error).message).toContain("status 0");
+    expect(buscar).toHaveBeenCalledTimes(2);
+  });
+
+  it("tempo limite na leitura de um corpo que nunca termina: leitura cancelada, nova tentativa e status 0", async () => {
+    vi.useFakeTimers();
+    try {
+      const TEMPO_POR_PEDIDO_MS = 8_000; // o mesmo de src/catalogo.ts
+      const leituras: { cancelada: boolean }[] = [];
+      const buscar = vi.fn(async (_url: string, opcoes: RequestInit) => {
+        const leitura = { cancelada: false };
+        leituras.push(leitura);
+        // Como o fetch real: o aborto do sinal derruba o fluxo do corpo em leitura.
+        const corpo = new ReadableStream<Uint8Array>({
+          start(controle) {
+            controle.enqueue(new TextEncoder().encode('{"cidades":['));
+            opcoes.signal!.addEventListener("abort", () => {
+              leitura.cancelada = true;
+              controle.error(opcoes.signal!.reason);
+            });
+          },
+        });
+        return new Response(corpo, { status: 200 });
+      });
+      const erro = catalogo(buscar).cidades().catch((e: Error) => e);
+      await vi.advanceTimersByTimeAsync(TEMPO_POR_PEDIDO_MS - 1);
+      expect(buscar).toHaveBeenCalledTimes(1);
+      expect(leituras[0].cancelada).toBe(false);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(leituras[0].cancelada).toBe(true);
+      await vi.advanceTimersByTimeAsync(TEMPO_POR_PEDIDO_MS);
+      const final = await erro;
+      expect(final).toBeInstanceOf(ErroDoCatalogo);
+      expect((final as Error).message).toContain("status 0");
+      expect(buscar).toHaveBeenCalledTimes(2);
+      expect(leituras.map((l) => l.cancelada)).toEqual([true, true]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it.each([301, 302, 303, 307, 308])("%d com location: um pedido só, erro do catálogo e o location nunca é buscado", async (codigo) => {
+    const desvio = "https://outro.teste/desvio";
+    const buscar = vi.fn(async () => new Response(null, { status: codigo, headers: { location: desvio } }));
+    const erro = await catalogo(buscar).cidades().catch((e: Error) => e);
+    expect(erro).toBeInstanceOf(ErroDoCatalogo);
+    expect((erro as Error).message).toContain(`status ${codigo}`);
+    expect(buscar).toHaveBeenCalledTimes(1);
+    for (const chamada of buscar.mock.calls as unknown as [string][]) {
+      expect(chamada[0]).toBe(`${BASE_CATALOGO}/cidades`);
+      expect(chamada[0]).not.toContain("outro.teste");
+    }
+  });
+});
