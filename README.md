@@ -82,8 +82,8 @@ cabeçalhos `x-uso-entrada`, `x-uso-saida` e `x-chamadas-modelo`, usados para me
   provedor do principal, registra qual modelo respondeu e os erros de limite. Sem gateway
   configurado, o reserva responde direto (decisão provisória P16).
 - **Dois ambientes.** `dev` usa o catálogo real e um webhook falso, nosso (`falso/`), que
-  replica o contrato do real. `producao` usa o webhook real, com o envio desligado
-  (`ENVIO_LEADS=desligado`) até a ordem do Éverton (L24).
+  replica o contrato do real. `producao` usa o webhook real, com o envio real ligado
+  desde 14/11 (`ENVIO_LEADS=ligado`, L24 e X32).
 
 Desenhos: [`docs/desenhos/`](docs/desenhos/).
 
@@ -152,7 +152,7 @@ gateway da conta com a chave da Anthropic guardada nele. Sem isso, responde o re
 
 ## Como validar `producao` sem enviar lead
 
-`producao` está no ar com o envio real desligado, no endereço padrão do Worker e no
+`producao` está no ar com o envio real ligado desde 14/11 (X32), no endereço padrão do Worker e no
 hostname próprio, que chega ao Worker por uma rota, sem escrita no DNS (X26, P22). O
 endereço padrão não serve como URL de entrega: a plataforma barra nele alguns clientes
 HTTP, e isso não se desliga (X28). No teste da frente K, `Python-urllib` e `libwww-perl`
@@ -167,7 +167,7 @@ O webhook real não recebe nenhum POST antes da entrega, nem como teste. A valid
 composição:
 
 1. `GET /saude` em `producao` mostra `ambiente: "producao"`, `leads_destino: "real"`,
-   `envio_leads: "desligado"` e a presença das variáveis.
+   `envio_leads: "ligado"` e a presença das variáveis.
 2. `GET` no webhook real (permitido) confere endereço e token e devolve a lista de leads,
    que precisa estar vazia.
 3. O caminho do POST é o mesmo código que roda em `dev` contra o webhook falso.
@@ -186,8 +186,8 @@ arquivo de ambiente e nunca aparecem na saída.
 
 ### Deploy final e validação
 
-A árvore final foi publicada em `producao` em 14/11, com o envio real desligado. Nenhum lead
-real do começo ao fim: o webhook real só foi lido por GET, antes e depois de cada etapa. Os
+A árvore final foi publicada primeiro em `producao` em 14/11, com o envio real desligado.
+Nenhum lead real do começo ao fim: o webhook real só foi lido por GET, antes e depois de cada etapa. Os
 quatro clientes (curl, Python `requests`, Python `urllib` e `fetch` do Node) receberam 200:
 `CLIENTES OK`.
 
@@ -207,15 +207,20 @@ registra texto, então a resposta não ficou em lugar nenhum. As 16 respostas gr
 mesmo caso em `dev` estão certas e rotuladas; isso mostra que a forma reprovada é rara, não
 que ela estava certa. Não houve terceira passada.
 
-Envio real de leads: desligado até a ordem do Éverton. Depois de ligado, `--entrega`
-confirma o estado: a preencher.
-<!-- PREENCHER: envio real ligado e ENTREGA OK (ordem do Éverton) -->
+Em 14/11, `producao` foi publicada de novo, da `main` a97777b, com o envio real ligado (X32).
+`scripts/validar-producao.sh --entrega` deu `ENVIO: ligado`, `LEADS REAIS: 0` e `ENTREGA OK`,
+duas vezes, com `--clientes` no meio (`CLIENTES OK`, os quatro clientes com 200);
+`LEADS REAIS: 0` antes e depois. Nenhuma conversa com confirmação foi feita contra
+`producao`, e o modo completo não rodou com o envio ligado: as duas passadas acima foram
+feitas com o envio desligado. O "ligado" está gravado em `wrangler.jsonc`, em `env.producao.vars.ENVIO_LEADS`,
+e o teste `test/configuracao-i.test.ts` exige esse valor: um novo deploy publica esse
+arquivo e mantém o envio ligado.
 
 ### Sete dias no ar
 
 Não há monitor automático entregue: o monitor diário foi cortado como código (P38). O que ele
-faria já existe em dois modos de `scripts/validar-producao.sh`: `--clientes` e, depois de
-ligado o envio, `--entrega`. Agendar a execução diária e escolher por onde chega o aviso de
+faria já existe em dois modos de `scripts/validar-producao.sh`: `--clientes` e
+`--entrega`. Agendar a execução diária e escolher por onde chega o aviso de
 falha ficam com o Éverton; o comando está pronto.
 
 ## Custo por conversa

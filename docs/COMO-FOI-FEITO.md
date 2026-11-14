@@ -361,6 +361,12 @@ segunda passada com o script sem mudança, uma vez só: 70 de 70, `PRODUCAO OK`.
 ficam registradas, e a soma é 139 de 140. Repetir até passar e chamar de verde esconderia a
 primeira.
 
+Ainda em 14/11, `producao` foi publicada de novo, da `main` a97777b, com o envio real ligado
+(X32). `--entrega` deu `ENTREGA OK` duas vezes, com `--clientes` no meio (`CLIENTES OK`) e
+`LEADS REAIS: 0` antes e depois. Nenhuma conversa com confirmação foi feita contra
+`producao`, e o modo completo não rodou com o envio ligado. O "ligado" está gravado em
+`wrangler.jsonc`, e o teste `test/configuracao-i.test.ts` exige esse valor.
+
 O monitor diário dos 7 dias no ar foi cortado como código (P38), segundo item da linha de
 corte: o que ele faria já existe em dois modos do script de validação. Agendar e escolher o
 canal do aviso ficaram com o Éverton.
