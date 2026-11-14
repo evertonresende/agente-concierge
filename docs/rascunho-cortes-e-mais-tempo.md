@@ -5,7 +5,7 @@ texto para lá; depois este arquivo sai. Fontes: o log do
 [backlog](exploracoes/BACKLOG-CONCIERGE-2026-11.md), o [`DECISOES.md`](../DECISOES.md) e a
 lista de limites do [README](../README.md). Itens que dependem do fim da leva 2 estão
 marcados: a preencher.
-<!-- PREENCHER: estado final dos cortes depois da leva 2 (monitor diário, G, H, P20, P21) -->
+<!-- PREENCHER: estado final dos cortes depois da leva 2 (monitor diário, H) -->
 
 ## Cortes: o que ficou de fora e por quê
 
@@ -22,7 +22,7 @@ marcados: a preencher.
 | 9 | Endereço padrão do Worker como URL de entrega | A plataforma barra nele alguns clientes HTTP, e isso não se desliga. A entrega usa o hostname próprio, por rota do Worker, sem escrita no DNS | X28, P22 |
 | 10 | "Fim de semana" sem datas e "dia 15" sem mês | Adivinhar a convenção ou o mês erra a estadia e o preço; o agente pede as datas | L1a, P6 |
 | 11 | Textos fixos em outros idiomas além de português e inglês | Outro idioma recebe o texto fixo em português; o modelo nunca reescreve o resumo | L15 |
-| 12 | Saída sem ano a mais de 90 noites da entrada | Um erro de digitação comum virava cotação de quase um ano; o código recusa e pede as datas com o ano | P21 (em verificação) |
+| 12 | Saída sem ano a mais de 90 noites da entrada | Um erro de digitação comum virava cotação de quase um ano; o código recusa e pede as datas com o ano | P21 (frente T, na `main`) |
 | 13 | Monitor diário de saúde | Segundo item da linha de corte do backlog; estado final: a preencher | backlog, linha de corte |
 | 14 | Exports de sessão do Gemini por linha de comando | O programa guarda as conversas num banco próprio, sem formato de mensagem. As respostas do conselho estão inteiras em `docs/conselho/` | X29 |
 
@@ -44,9 +44,9 @@ marcados: a preencher.
    hóspede, com a bateria de 106 mensagens do verificador como critério.
 6. **Número por extenso** na conferência de valores, e o total amarrado à estadia por mais
    do que rótulo e datas.
-7. **Memória de cotação em conversa longa.** Guardar a última cotação no estado da sessão,
-   para o agente repetir o valor em vez de cotar de novo quando ela sai da janela de
-   mensagens.
+7. **Memória de cotação e de nome em conversa longa.** Guardar a última cotação e o nome
+   no estado da sessão, para o agente repetir o valor e usar o nome quando eles saem da
+   janela de 80 mensagens, em vez de pedir de novo (P26 e a regra do nome, P20).
 8. **Segurança da revisão final.** Limite de gasto por sessão ou por cliente, credencial de
    sessão além do `session_id`, cabeçalhos de proteção na página e prazo de apagamento dos
    dados da sessão.
