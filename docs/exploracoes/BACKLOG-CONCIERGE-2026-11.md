@@ -2288,6 +2288,15 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   no registro desta sessão, em nenhum arquivo; a sonda passou a omitir o campo. Os exports não entram
   nesta entrega (X33); se um dia entrarem, esse trecho sai antes. **Segue proibido:** qualquer outro
   POST ao webhook real, e eval com confirmação contra `producao`
+- 14/11 07h46 · entrega · **X36 na `main`, em quatro merges: c4e3719 (decisão, regras e registros), f52dead
+  (README, frente N 652cf5e), b281ad7 (retoques) e e20d3e3 (README, frente N c6bb7de).** Os retoques
+  vieram de uma segunda varredura, sem as quebras de linha: a primeira procurava por linha e os textos
+  quebram a frase no meio. Achou quatro pontos meus (a X36 também muda o item 4 da X32; a regra do
+  `CLAUDE.md` passou a dizer que a lista real parte de 1 lead; a seção 6 das verificações; "dessa
+  etapa" no "Como foi feito") e uma frase do README, que a frente N ajustou. Nenhum teste nem script
+  lê os documentos editados; gate de sigilo verde em cada commit e em cada merge. O Éverton autorizou
+  fechar os quatro itens depois de uma edição recusada sem querer. Lista real conferida de novo por
+  GET depois dos textos: 1 lead, o de teste
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
