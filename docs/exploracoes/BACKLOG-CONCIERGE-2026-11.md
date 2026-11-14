@@ -1319,6 +1319,18 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   só uma frase do texto da recusa da P21 (o modelo não completa o ano sozinho); entra o teste da ordem
   das recusas. Ensaio com 1368 testes verdes. Falta ver com o modelo real se ele obedece a frase: entra
   no ensaio local da árvore congelada. `dev` publicado continua em 472277c (sem a T)
+- 14/11 01h03 · H · correção dos dois casos de fila em 03e1605 (B1 em ffb885a, B2 em 6956937, teste do alcance
+  do B1 em 03e1605; já com a `main` a8da5d6 mesclada). Segundo a frente: 1413 testes e tipos verdes; as
+  sondas D1, D2 e D2b do verificador dão 0 leads; dois "sim" depois de resumo visto dão 1 lead nas duas
+  ordens. Dúvida registrada por ela: um teste de `fila-resumo-h` falhou uma vez depois do merge com a G
+  e não se repetiu em 30 rodadas. Verificador do delta lançado (Opus 5.5, esforço alto) com barra
+  fechada de nove itens, entre eles 20 repetições sob carga dos dois arquivos de teste da fila. A P24
+  vem num commit separado em cima desse hash
+- 14/11 01h03 · S · correções do gate em af79e24 (12 commits sobre 1d5e406): os cinco médios, cinco baixos em
+  código e os limites que sobram no cabeçalho. Segundo a frente: `TESTE DO GATE OK`, as cinco mutações
+  que escapavam agora são pegas, e o gate no repositório real termina em menos de 2 s com `SIGILO OK`.
+  Verificador do delta lançado (Opus 5.5, esforço alto), com barra fechada de oito itens. O gate não
+  está no conjunto do congelamento: pode entrar com as rodadas já em curso
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
