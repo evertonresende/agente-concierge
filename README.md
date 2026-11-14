@@ -16,7 +16,7 @@ Agente de chat para quem quer se hospedar em imóveis de temporada. Ele faz quat
 Os requisitos estão em [`docs/CONTRATO.md`](docs/CONTRATO.md). O que ainda depende do fim da
 entrega está marcado como "a preencher".
 
-**URL pública:** a preencher. <!-- PREENCHER: URL pública do agente (só com ordem do Éverton, L23) -->
+**URL pública:** https://concierge.evertonresende.com
 
 **Repositório público:** a preencher. <!-- PREENCHER: repositório público (só com ordem do Éverton) -->
 
