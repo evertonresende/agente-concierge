@@ -1003,6 +1003,22 @@ function testarJuizPreco() {
     assert.equal(casaEspera(inv01.turnos[0].espera, `O catálogo não informa a voltagem. ${inventa}${ofertaHumano}`), false, inventa);
   }
 
+  // rec-12 (P21): saída sem ano a mais de 90 noites da entrada não cota; o agente pede as datas de novo
+  const rec12 = carregarCasoDev('funciona-recusas/rec-12-saida-sem-ano-longe.json');
+  confereLista(
+    rec12.turnos[0].espera,
+    [
+      'A saída em 18/01 ficaria a mais de 90 noites da entrada em 20/01. Pode confirmar as datas de entrada e saída, com o ano?',
+      'Não consegui entender as datas: a saída (18/01) vem antes da entrada (20/01). Quais são as datas certas?',
+    ],
+    [
+      'Pronto: de 20/01/2027 a 18/01/2028 são 363 noites.',
+      'Pode confirmar as datas de entrada e saída.',
+    ]
+  );
+  assert.equal(rec12.turnos[0].espera.sem_total, true);
+  assert.equal(rec12.turnos[0].espera.handoff, false);
+
   // lead-05 t2: pedir um sim claro é a resposta certa à hesitação; dizer que enviou reprova
   const lead05 = carregarCasoDev('funciona-leads/lead-05-ambigua.json');
   confereLista(
@@ -1027,9 +1043,11 @@ function testarJuizPreco() {
   {
     const DIR = path.join(REPO_ROOT, 'evals', 'casos', 'dev');
     let elegiveisProducao = 0;
+    let totalCasos = 0;
     for (const bloco of fs.readdirSync(DIR)) {
       for (const arq of fs.readdirSync(path.join(DIR, bloco))) {
         const c = carregarCasoDev(path.join(bloco, arq));
+        totalCasos++;
         assert.equal(typeof c.confirma, 'boolean', `${c.id}: "confirma" explícito é obrigatório nos casos de dev`);
         const usaWebhook =
           Boolean(c.webhook_modo) ||
@@ -1044,6 +1062,9 @@ function testarJuizPreco() {
       }
     }
     assert.ok(elegiveisProducao >= 60, `só ${elegiveisProducao} casos de dev rodam contra producao (mínimo 60)`);
+    // Contagem fixada: caso novo ou removido atualiza estes números no mesmo commit
+    assert.equal(totalCasos, 100, 'casos de dev');
+    assert.equal(elegiveisProducao, 70, 'casos de dev elegíveis para producao');
   }
 
   // P13: o "sim" de um turno que espera registro não traz valor junto (código de imóvel,
