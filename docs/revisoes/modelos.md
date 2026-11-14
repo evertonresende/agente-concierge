@@ -4,8 +4,9 @@ Estado em 14/11/2026: **principal escolhido pelo Éverton: Claude Haiku 5.5, rac
 em nível alto (`high`)**, decidido em 13/11 às 23h10 depois das tabelas dos níveis
 (antes, X22 tinha fixado o médio). O muito alto (`xhigh`) está descartado. Configuração:
 `MODELO_ESFORCO: "high"` em `dev` e em `producao` no `wrangler.jsonc`; sem a variável, o
-código manda `medium`, o padrão da API. O reserva continua em aberto entre GLM-5.3 Flash
-(provisório), DeepSeek 4.1 Flash e GLM-5.3; o Éverton decide com a tabela abaixo.
+código manda `medium`, o padrão da API. **Reserva escolhido pelo Éverton em 14/11 às 00h29: GLM-5.3
+Flash** (X30); os outros candidatos eram o DeepSeek 4.1 Flash e o GLM-5.3. O Haiku vem direto do
+provedor, pelo gateway, e o reserva só entra quando o principal falha.
 
 **Todos os números deste documento são de código anterior às frentes G e B2 mais
 recentes** (prompt, loop e casos novos). A fase 2 remede tudo com F, G e H na `main`.
