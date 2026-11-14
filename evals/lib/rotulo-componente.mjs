@@ -242,7 +242,10 @@ export function motivoNaoComponente(texto, valor, perfis, contexto = {}) {
   // R$ 708,00" e "R$ 590,00 (fds R$ 708,00)" nomeiam o valor seguinte.
   const depoisProprio = depois.split(/\s(?:e|and|mas|but)\s|\(/iu)[0];
   const nomeiaDepois = REGEX_NOITE_FDS.test(depoisProprio) || REGEX_NOITE_COMUM.test(depoisProprio);
-  const trechoTipo = nomeiaDepois ? depoisProprio : antes;
+  // Parêntese explicativo no rótulo não nomeia o tipo de noite: "Diária de domingo (noite comum,
+  // sem o acréscimo de fim de semana)" fala de domingo, não dos dois tipos.
+  const antesSemParentese = antes.replace(/\([^()]*\)/g, ' ');
+  const trechoTipo = nomeiaDepois ? depoisProprio : antesSemParentese;
   const nomeiaFds = REGEX_NOITE_FDS.test(trechoTipo);
   const nomeiaComum = REGEX_NOITE_COMUM.test(trechoTipo);
   const conhecidas = perfis.filter((p) => p.noitesNormais !== null);

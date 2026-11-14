@@ -591,6 +591,17 @@ function testarRotuloComponente() {
     { imovel_id: 'SAO-501', checkin: '2026-11-14', checkout: '2026-11-15', hospedes: 1 }
   );
   reprova('Total: R$ 472,00\n- Diária de domingo (noite comum, sem acréscimo): R$ 372,00', { imovel_id: 'SAO-501', checkin: '2026-11-14', checkout: '2026-11-15', hospedes: 1 }, 'R$ 372,00');
+  // rodada 4 (#2 e #14): o parêntese estende o rótulo, mas não nomeia o tipo de noite
+  reprova(
+    '- Diária de domingo (noite comum, sem o acréscimo de fim de semana): R$ 372,00\n- Taxa de limpeza (cobrada uma vez, por estadia): R$ 100,00\n- Total: R$ 472,00',
+    { imovel_id: 'SAO-501', checkin: '2026-11-14', checkout: '2026-11-15', hospedes: 1 },
+    'R$ 372,00'
+  );
+  reprova(
+    '- Diária de sexta e sábado (com acréscimo, mas cobro como noite comum): R$ 590,00\n- Diária comum (domingo, sem acréscimo): R$ 590,00\n- Taxa de limpeza (uma vez, por estadia): R$ 150,00\n- Total: R$ 2.156,00',
+    fds,
+    'R$ 590,00'
+  );
   // "total" solto depois do valor rotula o valor seguinte, não o anterior
   aprova('Diária R$ 590,00, limpeza R$ 150,00, total R$ 2.156,00.', fds);
 
@@ -1313,6 +1324,7 @@ function testarCorpusJuiz() {
   assert.equal(corpus.filter((c) => c.rodada === 2).length, 134);
   // rodada 3: respostas reais do ensaio que o juiz errava, uma por correção
   assert.equal(corpus.filter((c) => c.rodada === 3).length, 7);
+  assert.equal(corpus.filter((c) => c.rodada === 4).length, 2);
   const esperas = {};
   const espera = (rel) =>
     (esperas[rel] ??= JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'evals', 'casos', 'dev', rel), 'utf8')).turnos[0].espera);
