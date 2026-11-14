@@ -2105,6 +2105,21 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   correções vão numa branch nova, `frente-n-textos`, aberta em f015880; o merge na `main` será pelo
   hash da cabeça dela, e a `frente-n` só recebe as correções depois, por merge, para atualizar o
   rascunho. Uma terceira rodada do verificador julga a cabeça nova
+- 14/11 06h23 · N · **correções da rodada 2 em e096681, na branch `frente-n-textos`** (aberta em f015880, com a
+  `main` db78c5c mesclada). Conferido antes de abrir a rodada 3: fora de `docs/` e do README, o que
+  difere de 9d37f9a são só cinco arquivos de `evals/relatorios/`; `docs/rascunho-aberturas.md` não
+  existe nesse hash e 3a6b9d7 não é ancestral dele; os seis blocos Mermaid renderizam. O que a N
+  declara: os dois altos corrigidos com as frases executadas na função (três formas cortadas e três
+  paráfrases que passam, para disponibilidade e para registro); limite 20 reescrito; **limites
+  novos 65 (afirmação de registro em paráfrase) e 66 (concessão em paráfrase: "Vou fazer um precinho
+  especial pra você." passa)**, total de 66; tabela única "Merges de código sem verificador
+  aprovado" no "Como foi feito", com 21 linhas tiradas do log; conferência de valores descrita como
+  a função age (corta valor com "R$", "reais", outra moeda ou centavos; passam número por extenso e
+  número solto). **Rodada 3 do verificador aberta** sobre f015880..e096681 (Opus 5.5, esforço alto),
+  com a mesma barra, e com ordem de executar ele mesmo cada exemplo e de conferir a tabela dos
+  merges nos dois sentidos. **Rascunho da X31 atualizado em ad4dafc**, só na `frente-n`: "os outros
+  61", o limite 46 como "número solto sem marca de moeda nem centavos", e os limites 65 e 66 entre
+  os que quase entraram
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
