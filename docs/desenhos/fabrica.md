@@ -111,6 +111,10 @@ leva a falha do simulador a um caso fixo, que fica vermelho para a frente de pro
 correção. Bloco reprovado no reservado revela o caso, que migra para os casos de
 desenvolvimento, e a frente C escreve um substituto.
 
+Os nós do desenho dão a regra. O gate de sigilo roda, por regra, antes de cada commit e de
+cada push, e a frente I publicou dois commits com o gate reprovando; os merges que entraram
+sem verificador aprovado estão na tabela da seção 4 do "Como foi feito".
+
 ```mermaid
 flowchart TB
   accTitle: Portões e laços da fábrica
