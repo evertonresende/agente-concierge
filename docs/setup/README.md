@@ -22,6 +22,24 @@ contra esse bloco em 14/11.
 | [`hooks/git-sync.sh`](hooks/git-sync.sh) | início de toda sessão Claude: busca o remoto e injeta o estado do git no contexto |
 | [`skills/orquestrar-entrega/SKILL.md`](skills/orquestrar-entrega/SKILL.md) | planejamento e coordenadora: formato do backlog e disciplina da coordenação (versão reduzida; durante a construção valeram só o formato do backlog e a disciplina da coordenadora; a seção "Modo T3 Code" foi escrita depois, em 14/11) |
 
+## MCPs
+
+O único servidor MCP chamado na construção foi o do T3 Code, a ferramenta de orquestração
+das sessões. Ele serviu para:
+
+- abrir e configurar as threads das frentes (modelo e esforço de cada uma);
+- mandar mensagem às frentes e ler o que elas devolveram;
+- delegar tarefa a verificador independente e acompanhar a tarefa;
+- esperar comando de fundo, como a suíte e as rodadas de eval.
+
+Conferido em 14/11 nos registros de sessão: nos 86 registros do Claude Code deste projeto há
+mais de 700 chamadas MCP, todas a esse servidor; os 3 registros do Codex que citam o projeto
+não têm chamada MCP. Nenhum outro servidor MCP foi chamado, e o repositório não tem arquivo
+de configuração de MCP. O que em outro ambiente viria por MCP veio por outro caminho: a
+documentação da Cloudflare por leitura de página, a conta da Cloudflare por `wrangler` e
+pela API com a credencial por referência, e o modelo de outro provedor no simulador por
+linha de comando.
+
 ## O que foi retirado das cópias
 
 O repositório é público. As cópias saíram sem:
