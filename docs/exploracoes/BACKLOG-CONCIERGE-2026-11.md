@@ -2396,6 +2396,14 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   `npm ci` e `session_id` gerado no exemplo. Pela coordenação: `docs/revisoes/seguranca.md`, X37 e P39 a
   P45 no `DECISOES.md` com o item 21 de "mais tempo", fechamento do "Como foi feito", nota nos desenhos,
   `docs/VERIFICACOES.md` (catálogo sem redirecionamento; o que a borda insere) e a linha 17c da M2
+- 14/11 11h14 · decisões · **respostas do Éverton sobre a X37 (X38).** Confirmadas a P39, a P42, a P44
+  e a P45. A P43 continua provisória: ele ainda não decidiu; o erro de console fica declarado como está
+  e a política da página não muda por causa disso. O monitor dos 7 dias está agendado por ele, fora do
+  repositório: todo dia às 9h, de 15/11 a 21/11, `--clientes` e `--entrega` contra `producao`, com
+  aviso a ele se alguma falhar; uma execução dele em 14/11 passou nas duas, com 1 lead na lista. O
+  vídeo está gravado e o e-mail da entrega é com ele. README: seção "Sete dias no ar" pela frente N
+  (b8e23c7), delta lido linha a linha pela coordenação. Coordenação: X38 e as linhas P38, P39 e P42 a
+  P45 no `DECISOES.md`, o item 13 de "mais tempo" e o trecho do monitor no "Como foi feito"
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -2423,8 +2431,8 @@ M2 sem achado determinístico nem de lead errado na H (a primeira rodada oficial
 dela). Meta: 14/11 03h00. Limite: 06h00. Gatilho que já existia: 10h00 com o critério 4 não
 verde, parar e chamar o Éverton.
 
-**Estado em 14/11 10h45. ENTREGA NO AR, com as correções de segurança da X37 publicadas.** `main`
-em fca6d6d mais os textos desta entrada; `producao` na versão 9e8b35d1, publicada da `main` fca6d6d às
+**Estado em 14/11 11h14. ENTREGA NO AR, com as correções de segurança da X37 publicadas.** `main`
+em 0e8de22 mais os registros da X38; código igual ao da fca6d6d; `producao` na versão 9e8b35d1, publicada da `main` fca6d6d às
 10h37, com `ENTREGA OK` (1 lead real, o de teste da X36) e `CLIENTES OK`. **Código do agente:** a
 árvore final 9d37f9a mais os commits de segurança de 14/11 (cabeçalhos da página, catálogo sem seguir
 redirecionamento e com teto, nome de ferramenta, texto do catálogo, `preview_urls` em `dev` e a
@@ -2434,8 +2442,10 @@ novo a suíte (58 arquivos, 1604 testes), duas rodadas do conjunto de desenvolvi
 versionado (104 de 104 nas duas) e uma de sinal antes do merge (104 de 104), a página num navegador e as validações de `producao`; o resto não rodou de novo.
 **Auditoria:** uma passada `quick` da skill `security-audit`, com 1 achado confirmado (corrigido), 2 que
 precisam de validação (limites 24 e 67) e 4 unidades adiadas; registro em `docs/revisoes/seguranca.md`.
-**Decisões:** X37; P39 a P45 provisórias, com a P40 e a P41 já decididas pelo Éverton. **Com o Éverton:** as provisórias, o script da borda bloqueado na página de `producao` (P43),
-o vídeo, o e-mail da entrega e o monitor dos 7 dias. **Regras que seguem:** nenhum POST de sessão nossa
+**Decisões:** X37 e X38; P39 a P45 decididas ou confirmadas pelo Éverton, menos a P43, que continua
+provisória. **Com o Éverton:** a decisão sobre o script da borda bloqueado na página de `producao`
+(P43) e o e-mail da entrega. O vídeo está gravado, e o monitor dos 7 dias está agendado por ele, de
+15/11 a 21/11 (X38). **Regras que seguem:** nenhum POST de sessão nossa
 ao webhook real; contra `producao`, só conversa sem confirmação; todo push passa pelo gate.
 
 **Estado anterior, em 14/11 08h38. ENTREGA NO AR: repositório público desde 07h08 (X35), `producao` com o envio real
@@ -2542,18 +2552,24 @@ O que ele deve saber antes de publicar:
 - Cinco erros da coordenação estão contados na seção 9 do "Como foi feito"; a frente F rodou em
   Fable 5.2 de 13/11 23h28 a 14/11 02h55 por desvio não percebido.
 
-**Lista para o Éverton, em 14/11 10h45 (acréscimos da X37).**
+**Lista para o Éverton, em 14/11 11h14 (X37 e X38). Vale esta; a de 06h49 fica como histórico.**
 
 Decidido por ele em 14/11: a auditoria e as correções no mesmo dia (X37); a correção do achado
 confirmado entra (P41); o gasto do modelo fica como o limite 24, sem pendência nova, e o webhook
 falso de `dev` sem teto fica como limite (P40, os dois como a coordenação decidiu); o gateway
-de `producao` está com a coleta de log desligada (fato conferido por ele).
+de `producao` está com a coleta de log desligada (fato conferido por ele); a P39, a P42, a P44 e a
+P45 confirmadas (X38).
+
+Feito por ele: o vídeo está gravado; o monitor dos 7 dias está agendado, fora do repositório, todo dia
+às 9h, de 15/11 a 21/11, com `--clientes` e `--entrega` contra `producao` e aviso a ele se alguma
+falhar (X38). Os itens 2 e 4 da lista de 06h49 estão fechados.
 
 Falta com ele:
-5. Confirmar ou mudar as decisões provisórias P39, P42, P43, P44 e P45.
-6. Página de `producao`: a borda insere um script de detecção de robôs que a política nova bloqueia,
+5. Página de `producao`: a borda insere um script de detecção de robôs que a política nova bloqueia,
    o que gera um erro de console a cada carga, sem efeito na conversa (P43). Escolher: desligar essa
-   injeção para o hostname na zona, aceitar o erro, ou pedir a política por nonce.
+   injeção para o hostname na zona, aceitar o erro, ou pedir a política por nonce. Em 14/11 ele disse
+   que ainda não decidiu: a P43 continua provisória e nada muda na política até lá (X38).
+6. O e-mail da entrega (item 3 da lista de 06h49).
 
 O que ele deve saber:
 - A explicação ao hóspede quando a confirmação é recusada por data passada é escrita pelo modelo e
