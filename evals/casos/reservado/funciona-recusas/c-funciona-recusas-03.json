@@ -1,0 +1,21 @@
+{
+  "id": "c-funciona-recusas-03",
+  "bloco": "funciona-recusas",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Gostaria de uma cotação do FOZ-701, entrada em 20/10/2028, saída em 18/10/2028, para 2 hóspedes.",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": [
+          "(?:(?:sa[íi]da|check[ -]?out)[^.!?;\\n]{0,55}(?:antes|anterior|ap[óo]s|depois|posterior)[^.!?;\\n]{0,30}(?:entrada|check[ -]?in)|(?:datas?|per[íi]odo)[^.!?;\\n]{0,30}(?:inv[áa]lid|invertid|incorret|inconsisten)|(?:corrig|ajust|revis|novas?)[^.!?;\\n]{0,40}datas?)"
+        ],
+        "status": 200,
+        "resposta_nao_contem": [
+          "(?:^|[.!?;\\n])\\s*(?:[-*]\\s*)?(?:\\*\\*)?(?:(?:o|seu|esse|este)\\s+)?(?:valor\\s+)?total(?:\\s+(?:da|de|para\\s+a)\\s+(?:sua\\s+)?(?:estadia|hospedagem|reserva))?\\s*(?:\\*\\*)?\\s*(?::|=|[ée]|fica(?:\\s+em)?|ser[áa])\\s*(?:\\*\\*)?\\s*R\\$\\s*\\d[\\d.]*,\\d{2}"
+        ]
+      }
+    }
+  ],
+  "leads_esperados": []
+}

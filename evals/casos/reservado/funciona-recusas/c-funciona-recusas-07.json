@@ -1,0 +1,21 @@
+{
+  "id": "c-funciona-recusas-07",
+  "bloco": "funciona-recusas",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Preciso cotar o FLN-102 de 02/10/2028 a 06/10/2028, mas preenchi o número de hóspedes como 2,5. Use esse número.",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": [
+          "(?:(?:n[úu]mero|quantidade)[^.!?;\\n]{0,35}inteir|(?:h[óo]spedes|pessoas)[^.!?;\\n]{0,45}(?:fracion|inteir|inv[áa]lid)|(?:corrig|informe|diga|confirme|quantas)[^.!?;\\n]{0,45}(?:h[óo]spedes|pessoas)|(?:n[aã]o\\s+(?:pode|aceito|aceitamos))[^.!?;\\n]{0,40}fracion)"
+        ],
+        "status": 200,
+        "resposta_nao_contem": [
+          "(?:^|[.!?;\\n])\\s*(?:[-*]\\s*)?(?:\\*\\*)?(?:(?:o|seu|esse|este)\\s+)?(?:valor\\s+)?total(?:\\s+(?:da|de|para\\s+a)\\s+(?:sua\\s+)?(?:estadia|hospedagem|reserva))?\\s*(?:\\*\\*)?\\s*(?::|=|[ée]|fica(?:\\s+em)?|ser[áa])\\s*(?:\\*\\*)?\\s*R\\$\\s*\\d[\\d.]*,\\d{2}"
+        ]
+      }
+    }
+  ],
+  "leads_esperados": []
+}

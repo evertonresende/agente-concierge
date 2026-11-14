@@ -1,0 +1,21 @@
+{
+  "id": "c-funciona-recusas-05",
+  "bloco": "funciona-recusas",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Quero o CGT-901 de 31/04/2028 a 04/05/2028 para duas pessoas.",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": [
+          "(?:31(?:/04|\\s+de\\s+abril)?[^.!?;\\n]{0,45}(?:n[aã]o\\s+existe|inv[áa]lid)|abril[^.!?;\\n]{0,35}(?:30|trinta)\\s+dias|data[^.!?;\\n]{0,35}(?:inv[áa]lid|inexistente|incorreta)|(?:corrig|revis|envie|informe)[^.!?;\\n]{0,40}data)"
+        ],
+        "status": 200,
+        "resposta_nao_contem": [
+          "(?:^|[.!?;\\n])\\s*(?:[-*]\\s*)?(?:\\*\\*)?(?:(?:o|seu|esse|este)\\s+)?(?:valor\\s+)?total(?:\\s+(?:da|de|para\\s+a)\\s+(?:sua\\s+)?(?:estadia|hospedagem|reserva))?\\s*(?:\\*\\*)?\\s*(?::|=|[ée]|fica(?:\\s+em)?|ser[áa])\\s*(?:\\*\\*)?\\s*R\\$\\s*\\d[\\d.]*,\\d{2}"
+        ]
+      }
+    }
+  ],
+  "leads_esperados": []
+}

@@ -1,0 +1,16 @@
+{
+  "id": "c-contrato-01",
+  "bloco": "contrato",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "",
+      "espera": {
+        "handoff": false,
+        "status": 200,
+        "sem_total": true
+      }
+    }
+  ],
+  "leads_esperados": []
+}

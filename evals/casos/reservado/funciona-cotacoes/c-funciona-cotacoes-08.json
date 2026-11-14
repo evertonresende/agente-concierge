@@ -1,0 +1,18 @@
+{
+  "id": "c-funciona-cotacoes-08",
+  "bloco": "funciona-cotacoes",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Estou querendo o FOZ-701 para um fim de semana, mas ainda não decidi qual. Pode pedir o que falta para calcular?",
+      "espera": {
+        "handoff": false,
+        "status": 200,
+        "resposta_nao_contem": [
+          "(?:^|[.!?;\\n])\\s*(?:[-*]\\s*)?(?:\\*\\*)?(?:(?:o|seu|esse|este)\\s+)?(?:valor\\s+)?total(?:\\s+(?:da|de|para\\s+a)\\s+(?:sua\\s+)?(?:estadia|hospedagem|reserva))?\\s*(?:\\*\\*)?\\s*(?::|=|[ée]|fica(?:\\s+em)?|ser[áa])\\s*(?:\\*\\*)?\\s*R\\$\\s*\\d[\\d.]*,\\d{2}"
+        ]
+      }
+    }
+  ],
+  "leads_esperados": []
+}

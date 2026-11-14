@@ -1,0 +1,97 @@
+{
+  "id": "c-contrato-08",
+  "bloco": "contrato",
+  "confirma": false,
+  "turnos": [
+    {
+      "payload": {
+        "message": "Quero informações de hospedagem."
+      },
+      "espera": {
+        "status": 400,
+        "handoff": false
+      }
+    },
+    {
+      "payload": {
+        "session_id": "{{session_id}}"
+      },
+      "espera": {
+        "status": 400,
+        "handoff": false
+      }
+    },
+    {
+      "payload": {
+        "session_id": null,
+        "message": "Preciso consultar o catálogo."
+      },
+      "espera": {
+        "status": 400,
+        "handoff": false
+      }
+    },
+    {
+      "payload": {
+        "session_id": "{{session_id}}",
+        "message": [
+          "Quero informações."
+        ]
+      },
+      "espera": {
+        "status": 400,
+        "handoff": false
+      }
+    },
+    {
+      "payload": {
+        "session_id": 42,
+        "message": "Quero informações."
+      },
+      "espera": {
+        "status": 400,
+        "handoff": false
+      }
+    },
+    {
+      "payload": {
+        "session_id": "{{session_id}}",
+        "message": false
+      },
+      "espera": {
+        "status": 400,
+        "handoff": false
+      }
+    },
+    {
+      "corpo_bruto": "{\"session_id\":\"{{session_id}}\",\"message\":",
+      "espera": {
+        "status": 400,
+        "handoff": false
+      }
+    },
+    {
+      "payload": {
+        "session_id": "",
+        "message": ""
+      },
+      "espera": {
+        "status": 200,
+        "handoff": false,
+        "sem_total": true
+      }
+    },
+    {
+      "mensagem": "Quais são os horários normais de entrada e saída do IMB-801?",
+      "espera": {
+        "handoff": false,
+        "status": 200,
+        "resposta_contem": [
+          "(?:\\b(?:entrada|check[ -]?in)\\b(?:(?!sa[íi]da|check[ -]?out)[^.!?;\\n]){0,35}?(?:\\b15(?::00|h(?:00)?)?(?![\\d:]|\\s*e\\s*(?:meia|trinta))|\\b(?:quinze)\\b(?:\\s+horas)?|\\b(?:3|tr[eê]s)\\s*(?:horas\\s+)?da tarde\\b)|(?:\\b15(?::00|h(?:00)?)?(?![\\d:]|\\s*e\\s*(?:meia|trinta))|\\b(?:quinze)\\b(?:\\s+horas)?|\\b(?:3|tr[eê]s)\\s*(?:horas\\s+)?da tarde\\b)\\s*(?:h(?:oras)?)?\\s*(?:para|na|no|de)\\s+(?:o\\s+|a\\s+)?(?:entrada|check[ -]?in)\\b|(?:\\b15(?::00|h(?:00)?)?(?![\\d:]|\\s*e\\s*(?:meia|trinta))|\\b(?:quinze)\\b(?:\\s+horas)?|\\b(?:3|tr[eê]s)\\s*(?:horas\\s+)?da tarde\\b)\\s*(?:h(?:oras)?)?\\s*[(:–—-]\\s*(?:entrada|check[ -]?in)\\b)",
+          "(?:\\b(?:sa[íi]da|check[ -]?out)\\b(?:(?!entrada|check[ -]?in)[^.!?;\\n]){0,35}?(?:\\b11(?::00|h(?:00)?)?(?![\\d:]|\\s*e\\s*(?:meia|trinta))|\\b(?:onze)\\b(?:\\s+horas)?)|(?:\\b11(?::00|h(?:00)?)?(?![\\d:]|\\s*e\\s*(?:meia|trinta))|\\b(?:onze)\\b(?:\\s+horas)?)\\s*(?:h(?:oras)?)?\\s*(?:para|na|no|de)\\s+(?:o\\s+|a\\s+)?(?:sa[íi]da|check[ -]?out)\\b|(?:\\b11(?::00|h(?:00)?)?(?![\\d:]|\\s*e\\s*(?:meia|trinta))|\\b(?:onze)\\b(?:\\s+horas)?)\\s*(?:h(?:oras)?)?\\s*[(:–—-]\\s*(?:sa[íi]da|check[ -]?out)\\b)"
+        ]
+      }
+    }
+  ],
+  "leads_esperados": []
+}

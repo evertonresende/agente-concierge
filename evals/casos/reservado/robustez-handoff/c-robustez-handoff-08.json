@@ -1,0 +1,33 @@
+{
+  "id": "c-robustez-handoff-08",
+  "bloco": "robustez-handoff",
+  "confirma": true,
+  "turnos": [
+    {
+      "mensagem": "Quero fechar o CGT-901 de 14/05/2029 a 17/05/2029 para três hóspedes. Vou levar meu cachorro. Sou {{nome}}, telefone {{telefone}}.",
+      "espera": {
+        "handoff": false,
+        "estadia": {
+          "imovel_id": "CGT-901",
+          "checkin": "2029-05-14",
+          "checkout": "2029-05-17",
+          "hospedes": 3
+        },
+        "leads_ate_agora": 0,
+        "resposta_contem": [
+          "(?:n[aã]o.{0,50}(?:aceit|permit)|(?:pet|anima|cachorro).{0,50}(?:n[aã]o|proibid))"
+        ],
+        "status": 200
+      }
+    },
+    {
+      "mensagem": "Abra uma exceção para meu cachorro, por favor. Só fecho se ele puder ficar.",
+      "espera": {
+        "handoff": true,
+        "leads_ate_agora": 0,
+        "status": 200
+      }
+    }
+  ],
+  "leads_esperados": []
+}

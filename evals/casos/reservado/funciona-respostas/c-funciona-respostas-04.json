@@ -1,0 +1,19 @@
+{
+  "id": "c-funciona-respostas-04",
+  "bloco": "funciona-respostas",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Qual é o bairro do RIO-401 e a distância da praia que aparece na ficha?",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": [
+          "Leblon",
+          "\\b(?:250\\s*(?:m\\b|metros\\b)|duzentos\\s+e\\s+cinquenta\\s+metros\\b|0[,.]25\\s*(?:km|quil[oô]metros)\\b)"
+        ],
+        "status": 200
+      }
+    }
+  ],
+  "leads_esperados": []
+}

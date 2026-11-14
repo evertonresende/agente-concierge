@@ -1,0 +1,19 @@
+{
+  "id": "c-funciona-respostas-06",
+  "bloco": "funciona-respostas",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Procuro a casa de Foz do Iguaçu. Vocês têm alguma que receba cinco pessoas e aceite cachorro? Diga o nome e o bairro.",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": [
+          "(?:FOZ-701|Casa\\s+Cataratas)",
+          "Vila\\s+Yolanda"
+        ],
+        "status": 200
+      }
+    }
+  ],
+  "leads_esperados": []
+}

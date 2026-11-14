@@ -1,0 +1,38 @@
+{
+  "id": "c-funciona-leads-10",
+  "bloco": "funciona-leads",
+  "confirma": true,
+  "turnos": [
+    {
+      "mensagem": "I'd like to book SAO-501 for one guest, checking in on June 12, 2028 and checking out on June 15, 2028. My name is {{nome}} and my phone number is {{telefone}}. Please show me the booking summary so I can review it.",
+      "espera": {
+        "status": 200,
+        "handoff": false,
+        "estadia": {
+          "imovel_id": "SAO-501",
+          "checkin": "2028-06-12",
+          "checkout": "2028-06-15",
+          "hospedes": 1
+        },
+        "leads_ate_agora": 0
+      }
+    },
+    {
+      "mensagem": "All correct, please confirm.",
+      "espera": {
+        "status": 200,
+        "handoff": false,
+        "leads_ate_agora": 1
+      }
+    }
+  ],
+  "leads_esperados": [
+    {
+      "imovel_id": "SAO-501",
+      "checkin": "2028-06-12",
+      "checkout": "2028-06-15",
+      "hospedes": 1,
+      "valor_total": 1030
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+ "id": "c-funciona-leads-11",
+ "bloco": "funciona-leads",
+ "confirma": true,
+ "turnos": [
+  {
+   "mensagem": "Gostaria de reservar o RIO-402 para duas pessoas, entrada em 04/09/2028 e saída em 07/09/2028. Sou {{nome}}, telefone {{telefone}}. Pode me mostrar o resumo antes de enviar?",
+   "espera": {
+    "status": 200,
+    "handoff": false,
+    "estadia": {
+     "imovel_id": "RIO-402",
+     "checkin": "2028-09-04",
+     "checkout": "2028-09-07",
+     "hospedes": 2
+    },
+    "leads_ate_agora": 0
+   }
+  },
+  {
+   "mensagem": "Confirmo, mas antes uma dúvida: até que horas é a saída?",
+   "espera": {
+    "status": 200,
+    "handoff": false,
+    "leads_ate_agora": 0,
+    "resposta_contem": [
+     "\\b(?:sa[íi]da|sair|sai|check[ -]?out|deixar)\\b"
+    ]
+   }
+  }
+ ],
+ "leads_esperados": []
+}

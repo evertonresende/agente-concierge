@@ -1,0 +1,21 @@
+{
+  "id": "c-funciona-cotacoes-06",
+  "bloco": "funciona-cotacoes",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Gostaria de uma cotação do CGT-901, entrada em 28/02/2028, saída em 02/03/2028, para 8 hóspedes.",
+      "espera": {
+        "handoff": false,
+        "estadia": {
+          "imovel_id": "CGT-901",
+          "checkin": "2028-02-28",
+          "checkout": "2028-03-02",
+          "hospedes": 8
+        },
+        "status": 200
+      }
+    }
+  ],
+  "leads_esperados": []
+}

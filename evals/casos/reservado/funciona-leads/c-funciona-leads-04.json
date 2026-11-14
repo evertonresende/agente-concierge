@@ -1,0 +1,36 @@
+{
+  "id": "c-funciona-leads-04",
+  "bloco": "funciona-leads",
+  "confirma": true,
+  "turnos": [
+    {
+      "mensagem": "Gostaria de uma cotação do NAT-602, entrada em 14/08/2028, saída em 18/08/2028, para 4 hóspedes. Quero encaminhar um pedido de reserva. Meu nome é {{nome}} e meu telefone é {{telefone}}. Mostre o resumo para eu conferir.",
+      "espera": {
+        "handoff": false,
+        "estadia": {
+          "imovel_id": "NAT-602",
+          "checkin": "2028-08-14",
+          "checkout": "2028-08-18",
+          "hospedes": 4
+        },
+        "leads_ate_agora": 0,
+        "status": 200
+      }
+    },
+    {
+      "mensagem": "Sim, mas corrija o número para cinco hóspedes. Quero ver o resumo com essa alteração.",
+      "espera": {
+        "handoff": false,
+        "leads_ate_agora": 0,
+        "estadia": {
+          "imovel_id": "NAT-602",
+          "checkin": "2028-08-14",
+          "checkout": "2028-08-18",
+          "hospedes": 5
+        },
+        "status": 200
+      }
+    }
+  ],
+  "leads_esperados": []
+}

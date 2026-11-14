@@ -1,0 +1,33 @@
+{
+  "id": "c-funciona-leads-03",
+  "bloco": "funciona-leads",
+  "confirma": true,
+  "turnos": [
+    {
+      "mensagem": "Gostaria de uma cotação do CGT-901, entrada em 15/06/2028, saída em 19/06/2028, para 6 hóspedes. Quero encaminhar um pedido de reserva. Meu nome é {{nome}} e meu telefone é {{telefone}}. Mostre o resumo para eu conferir.",
+      "espera": {
+        "handoff": false,
+        "estadia": {
+          "imovel_id": "CGT-901",
+          "checkin": "2028-06-15",
+          "checkout": "2028-06-19",
+          "hospedes": 6
+        },
+        "leads_ate_agora": 0,
+        "status": 200
+      }
+    },
+    {
+      "mensagem": "Antes de decidir, quantas vagas de garagem esse apartamento tem?",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": [
+          "(?:\\b(?:2|duas)\\b\\s*(?:\\*\\*)?\\s*(?:vagas)\\b|\\b(?:vagas)\\b\\s*(?:\\*\\*)?\\s*(?::|=|s[aã]o|tem|possui|h[áa])?\\s*(?:\\*\\*)?\\s*\\b(?:2|duas)\\b)|\\b(?:garagem|estacionamento)\\b[^.!?;\\n]{0,35}\\b(?:2|dois)\\s+(?:carros|ve[íi]culos)\\b"
+        ],
+        "leads_ate_agora": 0,
+        "status": 200
+      }
+    }
+  ],
+  "leads_esperados": []
+}

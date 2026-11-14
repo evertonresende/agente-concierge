@@ -1,0 +1,49 @@
+{
+  "id": "c-contrato-04",
+  "bloco": "contrato",
+  "confirma": false,
+  "turnos": [
+    {
+      "paralelo": [
+        {
+          "mensagem": "Qual é o bairro do IMB-801?",
+          "espera": {
+            "handoff": false,
+            "resposta_contem": [
+              "Praia do Rosa"
+            ],
+            "status": 200
+          }
+        },
+        {
+          "mensagem": "Qual é a distância da praia do CGT-901, em metros?",
+          "espera": {
+            "handoff": false,
+            "resposta_contem": [
+              "\\b(?:100\\s*(?:m\\b|metros\\b)|cem\\s+metros\\b|0[,.]1\\s*(?:km|quil[oô]metros)\\b)"
+            ],
+            "status": 200
+          }
+        }
+      ],
+      "espera_conjunto": {
+        "pelo_menos_um_contem": [
+          "Praia\\s+do\\s+Rosa",
+          "\\b(?:100\\s*(?:m\\b|metros\\b)|cem\\s+metros\\b|0[,.]1\\s*(?:km|quil[oô]metros)\\b)"
+        ]
+      }
+    },
+    {
+      "mensagem": "Quais foram os dois códigos de imóvel sobre os quais perguntei nesta conversa?",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": [
+          "(?:IMB-801|Apartamento\\s+Imbituba\\s+Surf)",
+          "(?:CGT-901|Apartamento\\s+Caragua\\s+Familia)"
+        ],
+        "status": 200
+      }
+    }
+  ],
+  "leads_esperados": []
+}
