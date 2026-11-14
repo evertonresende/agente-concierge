@@ -2323,6 +2323,79 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
 - 14/11 08h50 · entrega · linha do topo do README trocada por ordem do Éverton, para não envelhecer: o lead
   de teste passa a ser "o único lead anterior à avaliação", com a data e a hora (frente N 69cea61,
   merge 92d1d6d). Só essa linha; diferença conferida pela coordenação
+- 14/11 10h01 · segurança · **regras de aprovação das correções de segurança, escritas antes de rodar**
+  (X37; frente V, branch `frente-v`). (1) Merge: só por hash, com os dois verificadores independentes
+  aprovados e o ensaio da coordenação verde (suíte, tipos, gate); se um verificador reprovar um commit,
+  entra só o prefixo aprovado da branch, com ensaio próprio. Limite: código na `main` até 10h40 e deploy
+  de `producao` começado até 11h00; passando disso, as correções ficam como pendência declarada.
+  (2) `dev`, depois do deploy da `main` mesclada: a sonda da página num navegador sem interface tem de
+  mostrar a política presente, o script da página rodando, a moldura de outra origem recusada, zero
+  erro de console e a pergunta fixa "Quais cidades vocês atendem?" respondida com as cidades (é a prova
+  da leitura do catálogo real sem seguir redirecionamento e com o teto); e uma rodada inteira do
+  conjunto de desenvolvimento (104 casos) sem nenhuma conversa em contingência ou com falha do
+  catálogo, e não pior que a pior rodada oficial (102 de 104). Caso reprovado é lido um a um:
+  reprovação ligada a catálogo, página ou nome de ferramenta bloqueia, qualquer que seja a soma.
+  (3) `producao`: antes do deploy, a versão no ar é conferida e guardada para a volta. Depois:
+  `--entrega` (`ENTREGA OK`, com a mesma contagem de leads de antes) e `--clientes` (`CLIENTES OK`), e a
+  sonda da página com a mesma pergunta fixa, que não confirma nada. Medido antes do deploy, só com
+  leitura do HTML servido: em `producao` a borda da Cloudflare insere na página um script de detecção de
+  robôs e, em parte dos pedidos, um link oculto; em `dev` e no endereço padrão do Worker, não. O script
+  e o estilo da própria página saem iguais nos três endereços (mesmo hash). Por isso o único erro de
+  console aceito em `producao` é o bloqueio desse script inserido pela borda. Script da página sem
+  rodar, resposta em contingência, qualquer outro erro de console ou validação reprovada: volta para a
+  versão anterior e aviso ao Éverton
+- 14/11 10h00 · segurança · **correção de registro da coordenação.** A sonda de base da página em
+  `producao`, rodada antes do deploy como "sem conversa", clicava num exemplo da página, e esse clique
+  envia a pergunta: saiu uma cotação do GRM-301 contra `producao`, sem confirmação e sem lead (a
+  decisão 12 permite conversa sem confirmação). A sonda foi corrigida: sem conversa, não clica
+- 14/11 10h06 · segurança · **auditoria com a skill `security-audit` fechada (X37).** Perfil `quick`,
+  sobre a `main` db96f2f, seguindo a skill como está escrita: 4 agentes de reconhecimento, 19 unidades
+  de cobertura, 6 caçadores numa leva, 3 verificadores (um por candidato) e 1 crítico final, todos em
+  Opus 5.5 (X23). Resultado: 1 achado confirmado, de severidade baixa (a confirmação do lead não
+  refazia a regra da data de entrada); 2 que precisam de validação (gasto do modelo sem teto por
+  cliente; webhook falso de `dev` sem teto); nenhum rejeitado. No fim, 23 unidades: 16 cobertas, 3 com
+  candidato e 4 adiadas pelo crítico (o `quick` não roda segunda leva). 62 checagens: 60 por leitura e
+  2 por execução no sandbox. Os dois validadores da skill passam e o estado da rodada é `complete`. A
+  saída fica na pasta padrão da skill, fora do repositório. Código do alvo só rodou num sandbox sem
+  rede, com ambiente vazio, alvo só para leitura e limites de CPU, memória, processos e tempo. Por
+  causa da auditoria, nenhuma chamada a serviço publicado e nenhuma eval. Onde a skill não dizia:
+  orçamento de agentes não definido, e as quatro unidades do crítico registradas como adiadas, que é a
+  recomendação dela para o perfil. Registro: `docs/revisoes/seguranca.md`
+- 14/11 10h28 · segurança · **lote principal das correções na `main`: merge c5817a0 (frentes V e V2,
+  cabeça 905a42d, onze commits).** Código: cabeçalhos de proteção da página (f94a73d, 413d619), catálogo
+  sem seguir redirecionamento e com teto de 1 MiB (8549259), nome de ferramenta com teto e rótulo fixo
+  no log (a60c76b, e8c8158), texto do catálogo sem caracteres invisíveis (932cb81), `preview_urls: false`
+  em `dev` (89de70f). Só teste: a326b9d, f668d6f, 36e31cb, 905a42d. Verificadores independentes: o dos
+  cabeçalhos e do catálogo reprovou por um achado médio de teste (fechado em a326b9d); o do nome, do
+  texto e da configuração aprovou (um baixo corrigido em e8c8158); o da política com o que a borda
+  insere reprovou por um achado alto de teste (36e31cb); o dos ajustes reprovou por um achado alto de
+  teste (905a42d), e o último aprovou. Nenhum achou defeito no código das correções. Ensaio da
+  coordenação na cabeça: 57 arquivos, 1598 testes, tipos sem erro, gate verde, e a mutação de
+  redirecionamento refeita. Antes do merge, a pedido do Éverton: catálogo real conferido por GET sem
+  seguir redirecionamento (73 pedidos em todas as rotas do agente, nenhum 3xx, maior corpo de 593
+  bytes); e `dev` com a cabeça publicada: página no Chromium sem violação da política, com mensagem
+  enviada e respondida, e duas rodadas do conjunto de desenvolvimento, 104 de 104 nas duas (a de
+  sinal, em 413d619, e a do registro, em 36e31cb, com o relatório em `evals/relatorios/`)
+- 14/11 10h31 · producao · **lote principal publicado: versão 3b2ebbd0, da `main` c5817a0 (frente K,
+  10h28).** `--entrega`: `ENVIO: ligado`, `LEADS REAIS: 1`, `ENTREGA OK`. `--clientes`: `CLIENTES OK`.
+  Sonda da página no Chromium: política presente, cotação do exemplo com R$ 2.156,00, moldura de outra
+  origem recusada e um erro de console, o esperado (script da borda bloqueado). A versão 4d457dc2 ficou
+  guardada como alvo da volta e não foi usada
+- 14/11 10h39 · segurança · **achado confirmado corrigido por decisão do Éverton (P41): merge fca6d6d
+  (frente V, e85de28 e 2bbbc63).** A confirmação do lead refaz a L2 com o relógio da sessão: entrada
+  hoje é aceita; data já passada não envia, descarta o resumo e devolve o motivo ao modelo, com
+  `handoff` falso. Dois verificadores independentes aprovaram (a correção e o teste no nível do
+  turno). Ensaio: 58 arquivos, 1604 testes, tipos sem erro, gate verde. `dev` com a correção: 104 de
+  104, sem contingência (relatório em `evals/relatorios/`). Ordem pedida por ele: merge só local às
+  10h33; `producao` às 10h37, versão 9e8b35d1 (`ENTREGA OK` com 1 lead, `CLIENTES OK`, sonda da página
+  igual à anterior); push da `main` às 10h39, com a correção já no ar, porque o teste descreve como
+  reproduzir o defeito. Alvo da volta: 3b2ebbd0; não foi usada
+- 14/11 10h45 · segurança · **textos da X37.** README pela frente N (049d080 e 5dbd827): estado da
+  entrega com os commits de segurança e o que rodou de novo, parágrafo em "Revisões", limites 24, 27 e
+  28 atualizados, limites novos 67 a 70, frase do gateway (log só em `dev`; fato conferido pelo Éverton),
+  `npm ci` e `session_id` gerado no exemplo. Pela coordenação: `docs/revisoes/seguranca.md`, X37 e P39 a
+  P45 no `DECISOES.md` com o item 21 de "mais tempo", fechamento do "Como foi feito", nota nos desenhos,
+  `docs/VERIFICACOES.md` (catálogo sem redirecionamento; o que a borda insere) e a linha 17c da M2
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -2350,7 +2423,22 @@ M2 sem achado determinístico nem de lead errado na H (a primeira rodada oficial
 dela). Meta: 14/11 03h00. Limite: 06h00. Gatilho que já existia: 10h00 com o critério 4 não
 verde, parar e chamar o Éverton.
 
-**Estado em 14/11 08h38. ENTREGA NO AR: repositório público desde 07h08 (X35), `producao` com o envio real
+**Estado em 14/11 10h45. ENTREGA NO AR, com as correções de segurança da X37 publicadas.** `main`
+em fca6d6d mais os textos desta entrada; `producao` na versão 9e8b35d1, publicada da `main` fca6d6d às
+10h37, com `ENTREGA OK` (1 lead real, o de teste da X36) e `CLIENTES OK`. **Código do agente:** a
+árvore final 9d37f9a mais os commits de segurança de 14/11 (cabeçalhos da página, catálogo sem seguir
+redirecionamento e com teto, nome de ferramenta, texto do catálogo, `preview_urls` em `dev` e a
+confirmação que recusa entrada já passada). **Números oficiais:** continuam os da árvore 9d37f9a
+(310 de 312, reservado 110 de 120, simulador 6 de 10, rajada 40 de 40). Sobre as correções rodaram de
+novo a suíte (58 arquivos, 1604 testes), duas rodadas do conjunto de desenvolvimento com relatório
+versionado (104 de 104 nas duas) e uma de sinal antes do merge (104 de 104), a página num navegador e as validações de `producao`; o resto não rodou de novo.
+**Auditoria:** uma passada `quick` da skill `security-audit`, com 1 achado confirmado (corrigido), 2 que
+precisam de validação (limites 24 e 67) e 4 unidades adiadas; registro em `docs/revisoes/seguranca.md`.
+**Decisões:** X37; P39 a P45 provisórias, com a P40 e a P41 já decididas pelo Éverton. **Com o Éverton:** as provisórias, o script da borda bloqueado na página de `producao` (P43),
+o vídeo, o e-mail da entrega e o monitor dos 7 dias. **Regras que seguem:** nenhum POST de sessão nossa
+ao webhook real; contra `producao`, só conversa sem confirmação; todo push passa pelo gate.
+
+**Estado anterior, em 14/11 08h38. ENTREGA NO AR: repositório público desde 07h08 (X35), `producao` com o envio real
 ligado, `main` em e3d10a9 na hora da publicação.** Código do agente igual ao da árvore final
 9d37f9a; depois dela a `main` recebeu documentos, relatórios, o conjunto reservado e uma mudança
 de configuração (a97777b: `ENVIO_LEADS` ligado e `preview_urls: false` em `env.producao`, com o
@@ -2453,6 +2541,30 @@ O que ele deve saber antes de publicar:
   comercial"), cerca de duas horas, refazendo rodadas, reservado e validação (P36).
 - Cinco erros da coordenação estão contados na seção 9 do "Como foi feito"; a frente F rodou em
   Fable 5.2 de 13/11 23h28 a 14/11 02h55 por desvio não percebido.
+
+**Lista para o Éverton, em 14/11 10h45 (acréscimos da X37).**
+
+Decidido por ele em 14/11: a auditoria e as correções no mesmo dia (X37); a correção do achado
+confirmado entra (P41); o gasto do modelo fica como o limite 24, sem pendência nova, e o webhook
+falso de `dev` sem teto fica como limite (P40, os dois como a coordenação decidiu); o gateway
+de `producao` está com a coleta de log desligada (fato conferido por ele).
+
+Falta com ele:
+5. Confirmar ou mudar as decisões provisórias P39, P42, P43, P44 e P45.
+6. Página de `producao`: a borda insere um script de detecção de robôs que a política nova bloqueia,
+   o que gera um erro de console a cada carga, sem efeito na conversa (P43). Escolher: desligar essa
+   injeção para o hostname na zona, aceitar o erro, ou pedir a política por nonce.
+
+O que ele deve saber:
+- A explicação ao hóspede quando a confirmação é recusada por data passada é escrita pelo modelo e
+  não foi medida (limite 70). O código garante que nada é enviado, que o resumo é descartado e que o
+  `handoff` é falso.
+- A auditoria é uma passada parcial: quatro unidades ficaram adiadas e a skill não rodou sobre as
+  correções (item 21 de "mais tempo").
+- A saída completa da skill (ledger, registros e relatórios) está fora do repositório, na pasta
+  padrão dela.
+- A sonda de base em `producao` às 10h00 enviou uma cotação sem confirmação (correção de registro no
+  log desta data).
 
 ## Pré-voo (antes da leva 1)
 

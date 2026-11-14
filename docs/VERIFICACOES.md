@@ -320,6 +320,14 @@ entrega. (Resolvido em 14/11 com o lead de teste da X36: ver a atualização no 
 seção 5.) Se o catálogo muda com o tempo. → Frente L: o monitor diário compara a
 contagem de imóveis.
 
+**Atualização de 14/11/2026 (X37, antes de o agente deixar de seguir redirecionamento).** 73
+GETs diretos, sem seguir redirecionamento, em todas as rotas que o agente usa: `/cidades`, a
+busca com `cidade`, `busca`, `hospedes` e `aceita_pet`, e as 15 fichas por id (também com o id
+em minúsculas). Nenhuma resposta 3xx e nenhum cabeçalho `Location`. O maior corpo tem 593
+bytes; o teto do agente é 1.048.576. A busca sem `cidade` nem `busca` responde 400. Dos 777
+textos lidos em 26 documentos, nenhum tem caractere invisível ou de direção, e nenhum tem
+emoji.
+
 ## Token da Cloudflare
 
 O token da conta autentica: verificado na API em 13/11/2026, estado ativo. É usado
@@ -337,6 +345,12 @@ Feita depois da decisão L23 (produção em subdomínio próprio), só com GET.
 | Registro de DNS do subdomínio de produção | não existe ainda |
 | Bot Fight Mode | **desconhecido**: o token não tem permissão de leitura de bots (erro de autenticação na rota) |
 | Permissão para criar regra de configuração por hostname | **desconhecida**: a leitura da fase de regras falhou sem código claro |
+
+**Atualização de 14/11/2026 (X37), só com leitura do HTML servido.** No hostname de
+produção, a borda insere na página de chat um script de detecção de robôs e, em parte dos
+pedidos, um link oculto com atributo de estilo. No endereço padrão do Worker e em `dev`, não
+insere. O script e o estilo da própria página saem iguais nos três endereços. Consequência
+para a política de conteúdo da página: P43 em `DECISOES.md`.
 
 Passo que resolve os dois desconhecidos: frente K. Se o Bot Fight Mode estiver ligado,
 ela não desliga (vale para o domínio inteiro) e leva ao Éverton; se faltar permissão
