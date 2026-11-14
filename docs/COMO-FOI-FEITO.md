@@ -100,7 +100,7 @@ ela ter veredito.
 |---|---|---|
 | A (Marco 1) | 1, com o conselho (M1) | aprovada com ressalvas; 13 de 20 defeitos plantados pegos; total errado do modelo ao lado do total do código; suíte sem guarda no que F e H iam editar; cotação inválida não derrubava o resumo pendente. Quatro achados corrigidos antes do merge; a coordenadora plantou três defeitos de novo e os três foram pegos. Ver [`revisoes/m1.md`](revisoes/m1.md) |
 | B1 (webhook falso) | 3 | modo gravado que não expirava, atraso que esperava antes de guardar, teste com furos; na terceira, o teste falhava em 3 de 5 rodadas contra `dev` porque desistia do POST antes de o pedido chegar |
-| B2 (runner e casos) | 2 do runner na leva 1, 5 do juiz de preço na leva 2 | **falso verde crítico**: caso pulado pela trava saía do denominador e o `marco1` dava 100% e `EVAL OK` sem rodar a conversa de lead; 20 de 80 casos reprovariam um agente correto; 2 de manipulação rodariam contra `producao`. Na terceira, o juiz novo tinha ficado mais frouxo: aprovava desconto escrito como "cada noite sai por", total errado e política inventada (primeira do juiz). Juiz R2: quatro altos (total sem a limpeza aprovado, resposta real certa reprovada, desconto com valor igual a um componente aprovado, respostas certas em inglês reprovadas). R3: aprovada. R4: a regra do rótulo com parêntese fazia o juiz aceitar qualquer das duas diárias. R5: aprovada; a P31 fechou o ciclo de correção do juiz, e o que sobra fica listado em `evals/README.md` |
+| B2 (runner e casos) | 2 do runner na leva 1, 6 do juiz de preço na leva 2 | **falso verde crítico**: caso pulado pela trava saía do denominador e o `marco1` dava 100% e `EVAL OK` sem rodar a conversa de lead; 20 de 80 casos reprovariam um agente correto; 2 de manipulação rodariam contra `producao`. Na terceira, o juiz novo tinha ficado mais frouxo: aprovava desconto escrito como "cada noite sai por", total errado e política inventada (primeira do juiz). Juiz R2: quatro altos (total sem a limpeza aprovado, resposta real certa reprovada, desconto com valor igual a um componente aprovado, respostas certas em inglês reprovadas). R3: aprovada. R4: a regra do rótulo com parêntese fazia o juiz aceitar qualquer das duas diárias. R5: aprovada; a P31 fechou o ciclo de correção do juiz, e o que sobra fica listado em `evals/README.md`. R6: reprovada; as duas correções de redação faziam aprovar respostas erradas que o juiz anterior reprovava, e o juiz voltou ao estado aprovado na R5 (P34) |
 | D (simulador) | 1 | `SIMULADOR OK` com a ferramenta do hóspede fora do ar; erro do agente derrubava a rodada; juiz de handoff acusava agente certo e deixava passar errado; 10 de 12 casos fixos frágeis |
 | E (datas) | conferência da coordenação | tabela própria de datas em três fusos, sem diferença; o CHECK no runtime achou regressão da L8 (1 de 3 respostas sem a pergunta de quantas pessoas), corrigida e repetida 10 de 10 |
 | F (lead) | 8: aprovada na sexta; a sétima aprovou a regra do nome (P20) e a oitava o "sim" limpo e a P29 | R1: hesitação com dado ("acho que sim, mas somos 3") e o "sim" seguinte enviava o dado antigo. R2: "acho que sim, mas no mês que vem" reexibia o resumo antigo e o sim o enviava, 10 de 10; das 50 confirmações naturais, 15 não enviavam. R3: um "?" em qualquer ponto mantinha o resumo; combinações de `422` e `5xx` somavam 3 e 4 POSTs para a mesma estadia. R4: com outras formas de pontuação, 34 de 106 mensagens mantinham o resumo antigo (virou limite conhecido, P18). R5: um sim com anúncio de dúvida ainda podia enviar o lead (daí a P19). R6: aprovada, com zero envio nesses casos e a confirmação legítima intacta. R7: a regra do nome (P20) aprovada; dois efeitos viraram limites (P28). R8: aprovada; o "sim" limpo pelo caminho do resumo dá o mesmo lead que a confirmação em 28 formas de mensagem e não fura a fila da H |
@@ -257,7 +257,8 @@ reapresenta o resumo; o "sim" seguinte registra.
 
 Rodadas na árvore congelada b5af852, pelo proxy de registro: 100 de 100, 100 de 100 e 98
 de 100. As duas falhas da terceira eram falso vermelho do juiz: 298 de 300, nenhuma falha
-do agente. Como a correção da G reabriu o congelamento, a contagem das três rodadas
+do agente. Julgadas de novo com o juiz de 193d1bf (P34), dão o mesmo resultado. Nas
+rodadas oficiais, falso vermelho do juiz conta como falha na soma do bloco (P34). Como a correção da G reabriu o congelamento, a contagem das três rodadas
 oficiais recomeça na árvore nova; as três de b5af852 ficam registradas.
 
 Resultado das três rodadas: a preencher.
@@ -313,18 +314,27 @@ Resultado das três rodadas: a preencher.
     modelo real achou o que a suíte não acha: o "sim" que reapresentava o resumo em vez de
     registrar (`lead-12`, corrigido pelo "sim" limpo da F), um falso vermelho do juiz no
     `cot-13` e, no último ensaio, outro falso vermelho na contagem elíptica de noites
-    ("3 noites: 1 comum a R$ 590,00 e 2 de sexta e sábado"), corrigido no juiz.
+    ("3 noites: 1 comum a R$ 590,00 e 2 de sexta e sábado"). A correção dele no juiz
+    entrou sem verificador independente e saiu depois (item 15).
 14. **Catálogo fora do ar em `dev` (14/11).** Logo depois de um deploy, 25 turnos seguidos
     saíram em contingência com origem no catálogo, por 95 segundos. Um segundo deploy do
     mesmo código não repetiu; a causa não foi determinada. A P32 diz como uma rodada
     oficial atingida por isso é contada, e cada rodada só começa depois de dois minutos de
     sonda limpa.
-15. **Terceiro falso verde de juiz pego antes de entrar (14/11).** A coordenação devolveu a
+15. **Falso verde de juiz: um devolvido, um que entrou (14/11).** A coordenação devolveu a
     cabeça 799b9c3 da B2: a desculpa nova do caso de cancelamento aprovava 8 de 9 respostas
     erradas escritas para testá-la ("…não informa a política, e se você cancelar não há
     multa"). A correção ficou só numa fronteira de palavra, que era a causa real. Um defeito
     plantado mostrou também que o teste do corpus, afrouxado, deixava passar 19 de 34
-    itens; a B2 fixou a contagem.
+    itens; a B2 fixou a contagem. Mas outro entrou: a correção da contagem depois de "N
+    noites:" (4efb030) foi para a `main` em b5af852 só com a conferência da coordenação, sem
+    verificador independente, e já aprovava linha com os dois tipos de noite e uma diária
+    só. Quem achou foi o verificador da rodada 6 da B2. É o quarto erro da coordenação nesta
+    lista: a bateria dela não tinha essa família de respostas erradas. Conferido depois: as
+    três rodadas registradas de b5af852, julgadas de novo com o juiz de 193d1bf, dão o mesmo
+    resultado (0, 0 e 2 reprovações, as duas já classificadas como falso vermelho), e a
+    leitura do tipo de noite contra o valor não marca nenhuma resposta. O buraco não foi
+    exercitado. Pela P34, o juiz volta a 193d1bf e não é mais corrigido nesta entrega.
 
 ## 10. Quem fez o quê
 
