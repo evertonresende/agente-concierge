@@ -428,3 +428,26 @@ describe("nova tentativa do modelo (L18)", () => {
     expect(saida).toMatchObject({ reply: "Olá!", contingencia: false, handoff: false });
   });
 });
+
+describe("chamadas reais ao modelo (x-chamadas-modelo)", () => {
+  const comChamadas = (texto: string, chamadas: number) => ({ ...diz(texto), uso: { entrada: 1, saida: 1, chamadas } });
+  const erroCom = (chamadas: number) => Object.assign(new Error("500"), { chamadas });
+  const ESTADIA = { imovel_id: "GRM-301", checkin: "15/01/2027", checkout: "18/01/2027", hospedes: 2 };
+
+  it("soma o que o adaptador informa: principal e reserva numa resposta contam 2", async () => {
+    const { turno } = conversa();
+    expect((await turno("oi", roteiro(comChamadas("Olá!", 2)).modelo)).uso.chamadas).toBe(2);
+  });
+
+  it("erro com as chamadas feitas e nova tentativa: soma as duas", async () => {
+    const { turno } = conversa();
+    expect((await turno("oi", roteiro(erroCom(2), comChamadas("Olá!", 1)).modelo)).uso.chamadas).toBe(3);
+  });
+
+  it("modelo que não informa conta 1 por chamada, e a pergunta fechada do rearme também conta", async () => {
+    const { turno } = conversa();
+    await turno("quanto fica?", roteiro(pedeFerramentas(chamar("cotar", ESTADIA)), diz("Fica R$ 2.156,00.")).modelo);
+    await turno("quero fechar, Ana Lima, (11) 98888-0000", roteiro(pedeFerramentas(chamar("montar_resumo", { ...ESTADIA, nome: "Ana Lima", telefone: "(11) 98888-0000" }))).modelo);
+    expect((await turno("tem wifi?", roteiro(diz("Tem wifi."), comChamadas("NÃO", 2)).modelo)).uso.chamadas).toBe(3);
+  });
+});

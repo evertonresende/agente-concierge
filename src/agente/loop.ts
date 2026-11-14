@@ -553,6 +553,15 @@ function perguntaDoRearme(pendente: ResumoPendente, mensagem: string): Mensagem[
 /** Só "NÃO" (sem acento, em qualquer caixa, com ponto final ou não) mantém o resumo. */
 const SO_NAO = /^n(?:ã|a)o\.?$/i;
 
+/**
+ * Chamadas reais ao modelo, como o adaptador informa (principal e reserva): `uso.chamadas`
+ * na resposta, `chamadas` no erro. Sem a informação (tempo esgotado aqui no laço), 1.
+ */
+function chamadasReais(fonte: unknown): number {
+  const n = (fonte as { chamadas?: unknown } | null)?.chamadas;
+  return typeof n === "number" && Number.isInteger(n) && n >= 0 ? n : 1;
+}
+
 /** Sobra de tempo mínima para pedir ao modelo que corrija a própria resposta. */
 const FOLGA_PARA_CORRIGIR_MS = 8_000;
 
@@ -623,8 +632,9 @@ export async function rodarTurno(entrada: EntradaDoTurno): Promise<SaidaDoTurno>
    */
   async function mantemResumo(pendente: ResumoPendente): Promise<boolean> {
     try {
-      uso.chamadas++;
-      const resposta = await comPrazo(entrada.modelo(perguntaDoRearme(pendente, entrada.mensagem), []), entrada.prazo - agora());
+      const resposta = await comPrazo(entrada.modelo(perguntaDoRearme(pendente, entrada.mensagem), []), entrada.prazo - agora())
+        .catch((erro: unknown) => { uso.chamadas += chamadasReais(erro); throw erro; });
+      uso.chamadas += chamadasReais(resposta.uso);
       uso.entrada += resposta.uso.entrada;
       uso.saida += resposta.uso.saida;
       return resposta.chamadas.length === 0 && SO_NAO.test(limpar(resposta.texto).trim());
@@ -699,8 +709,9 @@ export async function rodarTurno(entrada: EntradaDoTurno): Promise<SaidaDoTurno>
   async function chamarModelo(tentativas: number): Promise<RespostaDoModelo> {
     for (let tentativa = 1; ; tentativa++) {
       try {
-        uso.chamadas++;
-        const resposta = await comPrazo(entrada.modelo([sistema, ...entrada.historico, ...visto], definicoes), entrada.prazo - agora());
+        const resposta = await comPrazo(entrada.modelo([sistema, ...entrada.historico, ...visto], definicoes), entrada.prazo - agora())
+          .catch((erro: unknown) => { uso.chamadas += chamadasReais(erro); throw erro; });
+        uso.chamadas += chamadasReais(resposta.uso);
         uso.entrada += resposta.uso.entrada;
         uso.saida += resposta.uso.saida;
         const texto = limpar(resposta.texto);
