@@ -2071,6 +2071,22 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   commits posteriores à cabeça das correções, e o merge da `frente-n` é pelo hash exato da cabeça
   verificada, que não contém o rascunho. Antes de qualquer merge da `frente-n`, conferir que
   `docs/rascunho-aberturas.md` não existe no hash mesclado
+- 14/11 05h49 · N · **correções dos 14 achados do verificador final em f015880** (cabeça das correções, com a
+  `main` 1cf9fb1 mesclada). Conferido pela coordenação antes de abrir a verificação: `src/` igual ao
+  de 9d37f9a; o delta contra a `main` só toca o README e arquivos de `docs/`;
+  `docs/rascunho-aberturas.md` não existe nesse hash; os seis blocos Mermaid renderizam (o diagrama
+  do lead ganhou o estado "conferindo" e passou de 9 para 10 nós). A lista de limites foi a 64 (o
+  64 é o telefone com zero na frente, que a N provou executando a função); fechamento da M2: 14
+  resolvidos, 24 limites, 1 decisão do Éverton, 1 não se aplica, 3 não conferidos de novo.
+  **Segundo verificador aberto** sobre 4a9ece4..f015880 (Opus 5.5, esforço alto), com barra fechada:
+  aprova só com zero crítico, zero alto e zero médio. O merge da `frente-n` espera o fim dele.
+  **Rascunho da X31 entregue em 3a6b9d7**, um commit por cima de f015880 que só cria
+  `docs/rascunho-aberturas.md` (abertura do `DECISOES.md` com 311 palavras; cinco limites primeiro:
+  1, 46, 55, 54 e 6; quase entraram 2, 60 e 24). Li o rascunho: sem item de sigilo e sem promessa
+  acima dos limites; não passou por verificador, porque não entra na `main` antes de o Éverton ler.
+  **Fato para corrigir depois do merge:** o `fabrica.md` fala em "o revisor do reservado" no
+  singular; foram dois, os dois em Claude Opus 5.5 com esforço alto (prompts 17 e 18 de
+  `docs/prompts/03-frentes.md`)
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
