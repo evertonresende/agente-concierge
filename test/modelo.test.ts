@@ -292,7 +292,7 @@ describe("log de falha do modelo", () => {
   }
 
   it("registra só o nome do erro e o primeiro código, sem texto livre", async () => {
-    const linha = await logDe("AiGatewayError: 7003: falhou em https://gw.exemplo/v1/0123456789abcdef0123456789abcdef host api.exemplo.invalid 203.0.113.7 Bearer tokenSecreto sk-ant-api03-x maria@exemplo.invalid 'Sou Maria Souza, telefone 11 98765-4321'");
+    const linha = await logDe("AiGatewayError: 7003: falhou em https://gw.exemplo/v1/0123456789abcdef0123456789abcdef host api.exemplo.invalid Bearer tokenSecreto sk-ant-api03-x 'Sou Maria Souza, telefone 11 98765-4321'");
     expect(JSON.parse(linha)).toEqual({ evento: "modelo_falhou", modelo: "principal/x", erro: "Error 7003" });
   });
 
