@@ -710,6 +710,19 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   merge sobre a `main` limpo (583 testes, tipos, sigilo, `RUNNER OK`, `TRAVA OK`, 98 casos).
   Verificador independente lançado (Opus 5.5, esforço muito alto) e rodada da coordenadora no
   código integrado (I 0b39d9f, F 5adf022, G 22455e4, B2 15cbb00) em curso
+- 13/11 22h09 · I · verificador independente, segunda rodada (0b39d9f): REPROVADO por dois achados médios
+  de poucas linhas. (1) Fim que não bate com o conteúdo passava: `tool_use` declarado sem bloco
+  de ferramenta deixava o texto "vou consultar, um instante" chegar ao hóspede, e bloco de
+  ferramenta com fim `end_turn` rodava a ferramenta sem o reserva. (2) O mesmo id duas vezes na
+  mesma resposta quebrava o pareamento de chamada e resultado. Chance real baixa nos dois. O
+  defeito alto da primeira rodada está fechado para as 22 formas reais de resposta inútil, e o
+  pulo sem gateway faz o que diz. Baixos: contagem de chamadas sem número nos caminhos de
+  falha; log de falha com texto livre do erro; cinco defeitos plantados que a suíte não pega;
+  `principal_pulado` duas vezes no turno; `input: null` rodava a ferramenta. Ensaio do
+  verificador: 618 testes, tipos OK. Lista de correção enviada à I, com as 83 sondas do
+  verificador como critério de saída. Decisão provisória, complemento da P16: no caminho sem
+  gateway a recusa por limite do reserva não é repetida. Risco anotado para o Éverton: sem o
+  gateway de `producao`, todo turno vai ao reserva, que tem limite de 20 pedidos por minuto
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
