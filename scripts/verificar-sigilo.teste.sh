@@ -10,6 +10,8 @@ set -u
 GATE=$(realpath "${1:-$(dirname "$0")/verificar-sigilo.sh}")
 TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
 export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
+AUTOR=$(sed -n 's/^AUTOR="\(.*\)"$/\1/p' "$GATE")   # o único autor que o gate aceita
+[ -n "$AUTOR" ] || { echo "FALHOU: não achei AUTOR no gate"; exit 1; }
 
 HOST=api.zqxwkorp.invalid
 TOKEN=tokzqxwvyk
@@ -24,7 +26,7 @@ novo_repo() { # $1 = caso; $2 = host da CATALOGO_URL (opcional). Entra no reposi
   cd "$base/repo" || exit 1
   git init -q -b main
   git config user.name Teste
-  git config user.email contato@evertonresende.com
+  git config user.email "$AUTOR"
   echo base > a.txt; git add a.txt; git commit -q -m "inicio"
 }
 rodar() { saida=$(bash "$GATE" 2>&1); cod=$?; }
