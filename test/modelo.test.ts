@@ -217,3 +217,32 @@ describe("modelos da Anthropic (formato Messages)", () => {
     expect(chamados.map((c) => c[2])).toEqual([{ gateway: { id: "gw" } }, { gateway: { id: "gw" } }]);
   });
 });
+
+describe("resposta inútil do Haiku vai ao reserva", () => {
+  const HAIKU = "anthropic/claude-haiku-5.5";
+  const RESERVA = "@cf/zai-org/glm-5.3-flash";
+  const inuteis: [string, unknown][] = [
+    ["200 sem conteúdo", { stop_reason: "end_turn", content: [] }],
+    ["max_tokens só com raciocínio", { stop_reason: "max_tokens", content: [{ type: "thinking", thinking: "", signature: "s" }] }],
+    ["max_tokens com texto cortado", { stop_reason: "max_tokens", content: [{ type: "text", text: "O total da estadia fica em" }] }],
+    ["max_tokens no meio de uma ferramenta", { stop_reason: "max_tokens", content: [{ type: "tool_use", id: "toolu_1", name: "cotar", input: { imovel_id: "GR" } }] }],
+    ["erro devolvido como valor", { type: "error", error: { type: "overloaded_error", message: "Overloaded" } }],
+    ["texto fora de JSON", "<html>502 Bad Gateway</html>"],
+    ["fim desconhecido", { stop_reason: "pause_turn", content: [{ type: "text", text: "um momento" }] }],
+  ];
+
+  for (const [nome, bruto] of inuteis) {
+    it(`${nome}: responde o reserva e nada do Haiku chega ao hóspede`, async () => {
+      const chamados: string[] = [];
+      const ai = { run: async (m: string) => { chamados.push(m); return m === HAIKU ? bruto : { choices: [{ message: { content: "do reserva" } }] }; } } as unknown as Ai;
+      const r = await criarModelo(ai, HAIKU, { reserva: RESERVA })([{ role: "user", content: "oi" }], []);
+      expect(r).toMatchObject({ texto: "do reserva", chamadas: [] });
+      expect(chamados).toEqual([HAIKU, RESERVA]);
+    });
+  }
+
+  it("resposta completa com texto e ferramenta continua valendo", () => {
+    expect(lerRespostaAnthropic({ stop_reason: "stop_sequence", content: [{ type: "text", text: "ok" }] }).texto).toBe("ok");
+    expect(lerRespostaAnthropic({ stop_reason: "tool_use", content: [{ type: "tool_use", id: "toolu_1", name: "cotar", input: {} }] }).chamadas).toHaveLength(1);
+  });
+});

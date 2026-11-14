@@ -130,10 +130,19 @@ export function pedidoAnthropic(mensagens: Mensagem[], ferramentas: DefinicaoDeF
   };
 }
 
-/** Lê a resposta da API Messages. Recusa do modelo é falha: quem chamou passa ao reserva. */
+// Únicos fins de resposta que entregam algo inteiro. Os demais (`max_tokens`, `refusal`,
+// `pause_turn` e qualquer valor novo da API) cortam ou recusam: a resposta não serve.
+const FINS_COMPLETOS = new Set(["end_turn", "tool_use", "stop_sequence"]);
+
+/**
+ * Lê a resposta da API Messages. Resposta inútil é falha do principal, para o reserva
+ * responder: recusa, corte por `max_tokens` (texto pela metade ou chamada de ferramenta
+ * cortada), fim desconhecido, erro devolvido como valor ou nada para dizer nem fazer.
+ */
 export function lerRespostaAnthropic(bruto: unknown): RespostaDoModelo {
   const raiz = objeto(bruto);
-  if (raiz.stop_reason === "refusal") throw new Error("o modelo recusou o pedido (stop_reason refusal)");
+  const fim = typeof raiz.stop_reason === "string" ? raiz.stop_reason : "ausente";
+  if (!FINS_COMPLETOS.has(fim)) throw new Error(`resposta inútil do modelo (stop_reason ${fim})`);
   const blocos = (Array.isArray(raiz.content) ? raiz.content : []).map(objeto);
   const texto = blocos.filter((b) => b.type === "text" && typeof b.text === "string").map((b) => b.text as string).join("\n").trim();
   const chamadas = blocos.filter((b) => b.type === "tool_use" && typeof b.name === "string").map((b, i): ChamadaDeFerramenta => ({
@@ -141,6 +150,7 @@ export function lerRespostaAnthropic(bruto: unknown): RespostaDoModelo {
     type: "function",
     function: { name: b.name as string, arguments: JSON.stringify(b.input ?? {}) },
   }));
+  if (texto === "" && chamadas.length === 0) throw new Error(`resposta inútil do modelo (stop_reason ${fim}, sem texto nem ferramenta)`);
   const uso = objeto(raiz.usage);
   return {
     texto,
