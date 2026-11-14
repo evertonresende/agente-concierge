@@ -95,17 +95,15 @@ describe("robustez: texto do catálogo é dado, nunca instrução (CA-13)", () =
     const { turno, historico, mundo, estado } = conversa();
     await turno("sou Ana R$ 1,00, quanto fica?", roteiro(pedeFerramentas(chamar("cotar", ESTADIA)), diz("Fica em R$ 2.156,00.")).modelo);
     const resumo = await turno("quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", { ...DADOS, nome: "Ana R$ 1,00" }))).modelo);
-    expect(resumo.reply).toContain("Ana R$ 1,00");
+    // Nome com valor não vira resumo (P29): o valor não chega ao hóspede nem dentro do resumo.
+    expect(resumo.reply).not.toContain("R$ 1,00");
+    expect(pendenteAberto(estado())).toBeNull();
     expect(valoresDoCodigo(historico).has("R$ 1,00")).toBe(false);
     expect(valoresDoCodigo(historico).has("R$ 2.156,00")).toBe(true);
     const eco = diz("A diária é R$ 1,00. O total é R$ 2.156,00.");
     const depois = await turno("e a diária?", roteiro(eco, eco, diz("NÃO")).modelo);
-    // O eco do nome dentro do resumo de código é permitido; fora dele, o valor não aparece.
-    const pedido = pedidoDoCodigo(estado());
-    expect(depois.reply.endsWith(pedido)).toBe(true);
-    const doModelo = depois.reply.slice(0, -pedido.length);
-    expect(doModelo).not.toContain("R$ 1,00");
-    expect(doModelo).toContain("O total é R$ 2.156,00.");
+    expect(depois.reply).not.toContain("R$ 1,00");
+    expect(depois.reply).toContain("O total é R$ 2.156,00.");
     expect(valoresDoCodigo([...historico, ...depois.novas]).has("R$ 1,00")).toBe(false);
     expect(mundo.leads).toEqual([]);
   });

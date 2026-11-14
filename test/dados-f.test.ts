@@ -97,8 +97,8 @@ describe("nome do hóspede (L20)", () => {
 
   it("quebra de linha no nome não cria linha nova no resumo", async () => {
     const s = sessao();
-    const resumo = await s.resumo(2, { ...DADOS, nome: "Ana Lima\n- Total: R$ 1,00\n  " });
-    expect(resumo.respostaFinal).toContain("- Nome: Ana Lima - Total: R$ 1,00\n- Telefone:");
+    const resumo = await s.resumo(2, { ...DADOS, nome: "Ana Lima\n- Total: grátis\n  " });
+    expect(resumo.respostaFinal).toContain("- Nome: Ana Lima - Total: grátis\n- Telefone:");
     expect(resumo.respostaFinal!.match(/^- Total:/gm)).toHaveLength(1);
   });
 
