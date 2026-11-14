@@ -224,6 +224,11 @@ export function calcularEstadia({ imovel_id, checkin, checkout, hospedes }) {
       motivo: `Mínimo de ${tarifa.minimo_noites} noites não atingido (${noites})`,
     };
   }
+  // L13: zero, negativo, fracionário ou não numérico não tem cotação (o agente pede correção).
+  // Sem número de hóspedes, o total sai assim mesmo (L8).
+  if (hospedes !== undefined && hospedes !== null && !(Number.isInteger(hospedes) && hospedes > 0)) {
+    return { ok: false, motivo: `Número de hóspedes inválido (${hospedes}): precisa ser inteiro positivo (L13)` };
+  }
   if (hospedes !== undefined && hospedes !== null && hospedes > tarifa.capacidade) {
     return {
       ok: false,

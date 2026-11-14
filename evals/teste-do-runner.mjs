@@ -531,6 +531,14 @@ function testarJuizPreco() {
   assert.equal(calcularEstadia({ imovel_id: 'GRM-301', checkin: '2027-01-18', checkout: '2027-01-15' }).ok, false);
   assert.equal(calcularEstadia({ imovel_id: 'GRM-301', checkin: '2027-01-15', checkout: '2027-01-16' }).ok, false);
   assert.equal(calcularEstadia({ imovel_id: 'GRM-301', checkin: '2027-01-15', checkout: '2027-01-18', hospedes: 5 }).ok, false);
+  // L13: hóspedes zero, negativo, fracionário ou não numérico não têm cotação; sem hóspedes, tem (L8)
+  for (const hospedes of [0, -2, 2.5, Number.NaN, '2']) {
+    const r = calcularEstadia({ imovel_id: 'GRM-301', checkin: '2027-01-15', checkout: '2027-01-18', hospedes });
+    assert.equal(r.ok, false, `hospedes=${hospedes}`);
+    assert.match(r.motivo, /L13/);
+  }
+  assert.equal(calcularEstadia({ imovel_id: 'GRM-301', checkin: '2027-01-15', checkout: '2027-01-18' }).ok, true);
+  assert.equal(calcularEstadia({ imovel_id: 'GRM-301', checkin: '2027-01-15', checkout: '2027-01-18', hospedes: 4 }).ok, true);
 
   assert.equal(verificarFormatoMoeda('Total: R$ 2.156,00.').length, 0);
   assert.ok(verificarFormatoMoeda('Total: R$ 2156,00').length > 0);
