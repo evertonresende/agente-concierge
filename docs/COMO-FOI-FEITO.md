@@ -19,7 +19,8 @@ que se mede no fim está marcado como "a preencher".
 6. Um gate de sigilo e de histórico rodou antes de cada commit e de cada push.
 7. O modelo foi escolhido por medição, com a tabela na frente do Éverton.
 
-Estimativa do plano: 29,5 horas de agente, 11 horas de caminho crítico. Prazo de entrega:
+Estimativa do plano: 29,5 horas de agente; caminho crítico de 11 horas de relógio mais 1
+hora de coordenação, 12 horas no total. Prazo de entrega:
 14/11 às 14h.
 
 ## 1. Contrato antes do código
@@ -41,11 +42,12 @@ Estimativa do plano: 29,5 horas de agente, 11 horas de caminho crítico. Prazo d
   nem a resposta do outro. Pergunta e respostas inteiras em [`conselho/`](conselho/). A
   coluna "Origem" do `DECISOES.md` diz onde divergiram.
 - **Lacunas.** O Éverton decidiu 24 lacunas numa rodada (L1 a L24), mais três na abertura
-  da coordenação (L1a, L1b, L17a) e três durante a leva 1 (L5a, L13a, L16a). Em quatro
-  delas ele decidiu diferente da recomendação (L1, L11, L15 e L17). A regra de cada uma
+  da coordenação (L1a, L1b, L17a) e três durante a leva 1 (L5a, L13a, L16a). Ele decidiu
+  diferente da recomendação na L1, na L11 e na L17, e depois no acréscimo da L15, na
+  leva 1. A regra de cada uma
   está no [contrato](CONTRATO.md), seção 10.
 - **Frente não decide produto.** Lacuna nova parava a frente. Enquanto o Éverton estava
-  fora, valeu a recomendação da coordenação como provisória (X15): são as P1 a P18 do
+  fora, valeu a recomendação da coordenação como provisória (X15): são as decisões P do
   `DECISOES.md`, cada uma com o motivo e quem levantou.
 
 ## 2. Frentes, levas e dono por arquivo
@@ -95,9 +97,9 @@ de chegar à `main` ou a `dev`.
 | B2 (runner e casos) | 3 | **falso verde crítico**: caso pulado pela trava saía do denominador e o `marco1` dava 100% e `EVAL OK` sem rodar a conversa de lead; 20 de 80 casos reprovariam um agente correto; 2 de manipulação rodariam contra `producao`. Na terceira, o juiz novo tinha ficado mais frouxo: aprovava desconto escrito como "cada noite sai por", total errado e política inventada |
 | D (simulador) | 1 | `SIMULADOR OK` com a ferramenta do hóspede fora do ar; erro do agente derrubava a rodada; juiz de handoff acusava agente certo e deixava passar errado; 10 de 12 casos fixos frágeis |
 | E (datas) | conferência da coordenação | tabela própria de datas em três fusos, sem diferença; o CHECK no runtime achou regressão da L8 (1 de 3 respostas sem a pergunta de quantas pessoas), corrigida e repetida 10 de 10 |
-| F (lead) | 4, a quinta em curso | R1: hesitação com dado ("acho que sim, mas somos 3") e o "sim" seguinte enviava o dado antigo. R2: "acho que sim, mas no mês que vem" reexibia o resumo antigo e o sim o enviava, 10 de 10; das 50 confirmações naturais, 15 não enviavam. R3: um "?" em qualquer ponto mantinha o resumo; combinações de `422` e `5xx` somavam 3 e 4 POSTs para a mesma estadia. R4: com travessão, reticências ou emoji, 34 de 106 mensagens mantinham o resumo antigo |
+| F (lead) | 5 até este rascunho; estado final a preencher <!-- PREENCHER: rodadas finais do verificador da F --> | R1: hesitação com dado ("acho que sim, mas somos 3") e o "sim" seguinte enviava o dado antigo. R2: "acho que sim, mas no mês que vem" reexibia o resumo antigo e o sim o enviava, 10 de 10; das 50 confirmações naturais, 15 não enviavam. R3: um "?" em qualquer ponto mantinha o resumo; combinações de `422` e `5xx` somavam 3 e 4 POSTs para a mesma estadia. R4: com outras formas de pontuação, 34 de 106 mensagens mantinham o resumo antigo (virou limite conhecido, P18). R5: um sim com anúncio de dúvida ainda podia enviar o lead (daí a P19); em correção |
 | G (robustez) | 2, a terceira depois dos ajustes | R1: o código ligava `handoff` com texto fixo em mensagem comum ("Pode fechar, meu telefone é…", "a 500 m da praia"). R2: as redes por palavra passavam 24 de 80 mensagens comuns para humano ("esse lugar é descontraído?", "não estou pedindo desconto"); a conferência cortava a explicação do acréscimo de sexta e sábado; o lead podia sair com menos pessoas do que o grupo cotado |
-| H (concorrência) | 2 do verificador, 2 conferências da coordenação | **crítico**: a nova tentativa do Worker reenviava a mesma mensagem sem identificador, e um "sim" podia valer duas vezes. A coordenadora achou no runtime real dois defeitos que o vitest não pega: o Worker não subia (constante exportada no módulo de entrada) e todo turno com catálogo caía em contingência (`fetch` chamado como método de objeto). R2: resumo gravado cuja resposta se perdia no caminho podia ser confirmado sem o hóspede ter visto; corpo sem limite (30 MB lidos) |
+| H (concorrência) | 2 do verificador, 2 conferências da coordenação | **crítico**: a nova tentativa do Worker reenviava a mesma mensagem sem identificador, e um "sim" podia valer duas vezes. A coordenadora achou no runtime real dois defeitos que o vitest não pega: o Worker não subia (constante exportada no módulo de entrada) e todo turno com catálogo caía em contingência (`fetch` chamado como método de objeto). R2: resumo gravado cuja resposta se perdia no caminho podia ser confirmado sem o hóspede ter visto; corpo sem limite de tamanho (corrigido pela P12 na branch da H, em verificação) |
 | I (modelo) | 3, aprovada na terceira | R1: resposta `200` inútil do Haiku (vazia, cortada, erro como valor) não ia ao reserva. R2: fim de resposta que não batia com o conteúdo passava, e o mesmo id duas vezes quebrava o pareamento de chamada e resultado. R3: aprovada, sem achado alto nem médio; 7 de 68 defeitos plantados escapam, como seguimento |
 
 Contagens de defeitos plantados pegos pela suíte, por rodada: F 12 de 12, 21 de 25, e na
@@ -243,10 +245,11 @@ Resultado das três rodadas: a preencher.
    terminava em mensagem do assistente, e o Haiku não aceita isso; o reserva respondia
    esses turnos. Causa provada pelo log do gateway e corrigida no adaptador.
 8. **Ensaio com todas as branches (23h14).** Merge limpo, 1299 de 1300 testes. O teste
-   vermelho, da H, mostrou que na combinação um lead saía em vez de esperar a
-   reapresentação do resumo. Bloqueou o merge e voltou para a H.
-9. **Nome do hóspede com instrução (23h14).** O modelo gravou no campo do nome um texto
-   com parênteses e pedido, e o lead saiu assim. Validação do nome pendente com a F.
+   vermelho, da H, bloqueou o merge e voltou para ela. Às 23h31 a H mostrou que o teste
+   estava desatualizado, sem defeito: na combinação sai 1 POST e 1 lead, depois do "sim".
+9. **Validação do nome do hóspede (23h14).** A rodada integrada achou um defeito no campo
+   do nome do lead. Em correção na F; estado final a preencher.
+   <!-- PREENCHER: estado da validação do nome depois da F -->
 
 ## 10. Quem fez o quê
 
