@@ -1114,6 +1114,27 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   chamadas com as 10 sondas da frente I passando; trava de valores só com campos de dinheiro que o
   código escreve no resultado da ferramenta. A rodada integrada mostrou que a API aceita a pergunta
   fechada sem ferramentas. Pendente com a frente: os 2 testes que falham com a F, agora na `main`
+- 14/11 00h11 · G · diagnóstico dos 2 testes que falhavam com a F: ajuste de teste, não defeito. Com a F nova,
+  a mensagem do teste ("I'll bring my mom, is there parking?") passou a ser lida como mudança de dado;
+  o resumo cai, o código pede ao modelo um resumo novo e a pergunta fechada nem é feita. O texto do
+  modelo simulado tinha sido tomado como a reescrita. Nenhum rearme e nenhum envio nesse caminho.
+  Cabeça 34e77e3: mensagem neutra no teste, a F mesclada e um teste do caminho novo; depois de 29ae3aa
+  só mudaram testes. Ensaio da coordenadora sobre a `main`: merge limpo, 1352 testes, tipos sem erro,
+  SIGILO OK. O verificador da terceira rodada segue sobre 29ae3aa
+- 14/11 00h11 · B2 · cabeça única 897e44b: juiz com rótulos de componente em inglês (o `con-10` da rodada
+  integrada), trava de `producao` por negação, `leads_ate_agora` em paralelo, juiz de hóspedes
+  inválidos, contagem dos pedidos sem dados de uso e runner sem seguir redirecionamento. A frente
+  relata que nenhuma das 163 respostas reais ligadas a turno reprova. Ela não adotou "qualquer valor
+  igual a um componente passa", porque reabriria os furos da primeira rodada; o verificador opina.
+  Ensaio da coordenadora: merge limpo, 1069 testes, RUNNER OK, TRAVA OK, CASOS OK, SIGILO OK.
+  Verificador independente, segunda rodada, rodando; é ele que libera o juiz para a prova dos 95%.
+  Falta da frente: mesclar a `main`, mover o `lead-12` e dizer quantos casos rodam contra `producao`
+- 14/11 00h11 · F · P20 (nome do lead): a regra precisa do histórico no contexto da ferramenta, que só a
+  branch da G entrega, e quebra testes em que o hóspede simulado nunca escreve o nome (15 de outras
+  frentes e 123 da própria F). Decidido: a P20 entra depois da G; a F mescla a `origin/frente-g` e
+  trabalha por cima; a F está autorizada a mudar só a mensagem do hóspede simulado nos testes das
+  outras frentes, em commit próprio e neutro (verde sem a regra), e a regra entra no commit seguinte.
+  As sondas antigas dos verificadores usam o nome só no argumento e precisam do nome na mensagem
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
