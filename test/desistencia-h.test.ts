@@ -22,17 +22,22 @@ const DADOS = {
   telefone: "(11) 98888-0000",
 };
 const OUTROS = { ...DADOS, checkin: "22/01/2027", checkout: "25/01/2027", hospedes: 3 };
+/** Turno lento em curso: pergunta pura, que não muda dado do resumo (L10) nem o derruba. */
+const LENTA = "qual o horário do check-in?";
 
 function modelo(vistas: string[]): Modelo {
   return async (mensagens: Mensagem[]) => {
     const ultima = mensagens[mensagens.length - 1]!;
     if (ultima.role === "tool") return diz("Certo.");
+    // Pergunta fechada do rearme (G, P18): a mensagem não muda o pedido, o resumo visto fica.
+    if (mensagens[0]?.role === "system" && mensagens[0].content.includes("aguarda a confirmação do hóspede")) return diz("NÃO");
     vistas.push(ultima.content);
-    await pausa(ultima.content === "lento" ? 250 : 40);
+    await pausa(ultima.content === LENTA ? 250 : 40);
     if (ultima.content === "quero fechar") return pedeFerramentas(chamar("montar_resumo", DADOS));
     if (ultima.content === "quero outras datas") return pedeFerramentas(chamar("montar_resumo", OUTROS));
     if (ultima.content === "sim") return pedeFerramentas(chamar("confirmar_reserva"));
-    return diz(`resposta a ${ultima.content}`);
+    // Sem "?" na resposta, para a pergunta do agente não derrubar o resumo (P18).
+    return diz("O check-in é às 15:00.");
   };
 }
 
@@ -85,7 +90,7 @@ describe("Worker desiste de pedido na fila do objeto (frente H, B2)", () => {
   it("B2: 'quero fechar' abandonado enquanto espera na fila → o turno não roda, nenhum resumo fica gravado e o 'sim' seguinte não envia", async () => {
     const vistas: string[] = [];
     const s = await abrir(vistas);
-    const lento = postChat(s.id, "lento");
+    const lento = postChat(s.id, LENTA);
     await pausa(20);
 
     const r = await (await postChat(s.id, "quero fechar", entregaPerdida(5))).json<{ handoff: boolean }>();
@@ -102,7 +107,7 @@ describe("Worker desiste de pedido na fila do objeto (frente H, B2)", () => {
     const vistas: string[] = [];
     const s = await abrir(vistas);
     await postChat(s.id, "quero fechar");
-    const lento = postChat(s.id, "lento");
+    const lento = postChat(s.id, LENTA);
     await pausa(20);
 
     const r = await (await postChat(s.id, "quero outras datas", entregaPerdida(5))).json<{ handoff: boolean }>();
