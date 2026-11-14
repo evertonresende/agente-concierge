@@ -60,9 +60,10 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 | J | agente-concierge | Página de chat em dois passos: design (canvas) e implementação | passo 1: nada; passo 2: Marco 1 e aprovação do Éverton | baixa | 0,7 + 1 | thread T3 · Fable 5.2 | passo 1 concluído (canvas aprovado pelo Éverton, com dois ajustes); passo 2 entregue (b8991ce) | `frente-j` |
 | M2 | agente-concierge | Revisão de código, segurança e segunda opinião | leva 2 integrada | alta | 1,5 | subagentes Opus 5.5 + segunda opinião do Gemini 4 Argon em esforço alto (X23) | primeira passada rodando desde 13/11 23h22, adiantada pela X24: segurança na `main` atual, código dos módulos estáveis e segunda opinião do Gemini sobre o cálculo; a segunda passada é só o delta, depois da leva 2 | — |
 | L | agente-concierge | Custo por conversa e monitor diário | leva 2 integrada | média | 1 | subagente em worktree · Opus 5.5, esforço médio (X23) | script de custo na `main` desde 13/11 23h47 (eec433a), verificador aprovado; falta o monitor diário, depois que `producao` existir; aberta em 13/11 23h22, adiantada pela X24: só `scripts/custo.mjs`; o monitor diário espera a K | `frente-l` |
-| K | agente-concierge | Produção com o envio real desligado | M2 | alta | 1,5 | thread T3 · Opus 5.5, esforço alto (X23) | gateway de `producao` criado e com o log desligado; `scripts/validar-producao.sh` na branch (33c8316), reprovado pelo verificador por um falso verde com argumentos extras, em correção; rota e primeiro deploy parados à espera do Éverton. Rodando desde 13/11 23h14, adiantada pela X24: só a infraestrutura de `producao` com o envio real desligado; o deploy final espera a M2 | `frente-k` |
+| K | agente-concierge | Produção com o envio real desligado | M2 | alta | 1,5 | thread T3 · Opus 5.5, esforço alto (X23) | gateway de `producao` criado e com o log desligado; `scripts/validar-producao.sh` na branch (33c8316), reprovado pelo verificador por um falso verde com argumentos extras, em correção; `producao` no ar no endereço padrão (3e053cb) e no hostname próprio por rota (P22), envio desligado, zero lead; faltam o teste por agente de usuário, a latência, o limite de taxa e o deploy final. Primeiro deploy autorizado em 14/11 00h07 (X26), só no endereço padrão do Worker e com o envio real desligado; a rota no hostname próprio segue à espera do Éverton. Rodando desde 13/11 23h14, adiantada pela X24: só a infraestrutura de `producao` com o envio real desligado; o deploy final espera a M2 | `frente-k` |
 | N | agente-concierge | Entregáveis de processo | K | alta | 2 | thread T3 · Opus 5.5, esforço alto (X23) | rascunho completo na branch (ede0c12), sem achado de sigilo; reprovado por uma garantia dada como certa antes da hora, em correção; verificação final no fim da leva 2. Aberta em 13/11 23h14, adiantada pela X24: rascunhos do README, do "Como foi feito", dos desenhos e do setup, com marcador no que se preenche no fim | `frente-n` |
-| S | agente-concierge | Gate de sigilo: achados da M2 | M2, primeira passada | alta | 0,5 | subagente em worktree · Opus 5.5, esforço alto (X23) | rodando desde 13/11 23h46: conteúdo do histórico, saída sem trecho do termo, sufixo composto e teste do gate; verificador antes do merge | `frente-gate` |
+| S | agente-concierge | Gate de sigilo: achados da M2 | M2, primeira passada | alta | 0,5 | subagente em worktree · Opus 5.5, esforço alto (X23) | primeira entrega (1d5e406) reprovada pelo verificador em 14/11 00h27 por cinco médios, quatro deles anteriores à frente; em correção na mesma branch; verificador do delta antes do merge | `frente-gate` |
+| T | agente-concierge | Datas sem ano (P21) | G | alta | 0,5 | subagente em worktree · Opus 5.5, esforço alto (X23) | pronta na branch (e53e777, por cima da G em da64da4) em 14/11 00h24; verificador do delta rodando; entra na `main` depois da G | `frente-datas` |
 | — | — | Correções entre leva 2 e 3 | evals | alta | 1,5 | frente dona do arquivo | — | — |
 
 Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `bloqueada` ·
@@ -1099,6 +1100,192 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   `SIGILO OK` no repositório real em 1,2 s, `TESTE DO GATE OK`. Verificador independente rodando, só
   com termos falsos em repositórios descartáveis. Limites declarados pela frente: mensagem de tag
   anotada não é lida; IP e e-mail só no índice
+- 14/11 00h07 · Éverton · X26: a K publica `producao` no endereço padrão do Worker, com o envio real desligado,
+  sem esperar a decisão da rota; nada é escrito na zona. Rota, Bot Fight Mode, exports, nomes dos
+  modelos e P19 ele responde depois. A X25 (três suítes) foi repetida e já estava aplicada
+- 14/11 00h07 · K · "pode" da coordenadora para o primeiro deploy de `producao`, só no endereço padrão: de
+  cópia limpa da `main` na cabeça atual; prova de zero POST refeita nesse commit; segredos por
+  referência; depois `/saude`, um ou dois turnos sem confirmação com chamadas ao modelo maiores que
+  zero e log do Worker sem `principal_pulado` nem `modelo_falhou`, os quatro clientes e `LEADS REAIS: 0`
+  antes e depois. O modo completo (evals contra `producao`) espera a trava por negação do runner e a
+  aprovação do script. O hostname padrão entra no `sigilo-extra` para o gate passar a barrá-lo. A K
+  responde com medição se o endereço padrão serve como URL de entrega e de onde vem o 403 do urllib
+- 14/11 00h07 · G · relatórios das cabeças e2be4dd, 805513c e 29ae3aa recebidos (chegaram depois dos commits):
+  pergunta fechada aceita "não" sem acento, em qualquer caixa e com ponto final; contagem real das
+  chamadas com as 10 sondas da frente I passando; trava de valores só com campos de dinheiro que o
+  código escreve no resultado da ferramenta. A rodada integrada mostrou que a API aceita a pergunta
+  fechada sem ferramentas. Pendente com a frente: os 2 testes que falham com a F, agora na `main`
+- 14/11 00h11 · G · diagnóstico dos 2 testes que falhavam com a F: ajuste de teste, não defeito. Com a F nova,
+  a mensagem do teste ("I'll bring my mom, is there parking?") passou a ser lida como mudança de dado;
+  o resumo cai, o código pede ao modelo um resumo novo e a pergunta fechada nem é feita. O texto do
+  modelo simulado tinha sido tomado como a reescrita. Nenhum rearme e nenhum envio nesse caminho.
+  Cabeça 34e77e3: mensagem neutra no teste, a F mesclada e um teste do caminho novo; depois de 29ae3aa
+  só mudaram testes. Ensaio da coordenadora sobre a `main`: merge limpo, 1352 testes, tipos sem erro,
+  SIGILO OK. O verificador da terceira rodada segue sobre 29ae3aa
+- 14/11 00h11 · B2 · cabeça única 897e44b: juiz com rótulos de componente em inglês (o `con-10` da rodada
+  integrada), trava de `producao` por negação, `leads_ate_agora` em paralelo, juiz de hóspedes
+  inválidos, contagem dos pedidos sem dados de uso e runner sem seguir redirecionamento. A frente
+  relata que nenhuma das 163 respostas reais ligadas a turno reprova. Ela não adotou "qualquer valor
+  igual a um componente passa", porque reabriria os furos da primeira rodada; o verificador opina.
+  Ensaio da coordenadora: merge limpo, 1069 testes, RUNNER OK, TRAVA OK, CASOS OK, SIGILO OK.
+  Verificador independente, segunda rodada, rodando; é ele que libera o juiz para a prova dos 95%.
+  Falta da frente: mesclar a `main`, mover o `lead-12` e dizer quantos casos rodam contra `producao`
+- 14/11 00h11 · F · P20 (nome do lead): a regra precisa do histórico no contexto da ferramenta, que só a
+  branch da G entrega, e quebra testes em que o hóspede simulado nunca escreve o nome (15 de outras
+  frentes e 123 da própria F). Decidido: a P20 entra depois da G; a F mescla a `origin/frente-g` e
+  trabalha por cima; a F está autorizada a mudar só a mensagem do hóspede simulado nos testes das
+  outras frentes, em commit próprio e neutro (verde sem a regra), e a regra entra no commit seguinte.
+  As sondas antigas dos verificadores usam o nome só no argumento e precisam do nome na mensagem
+- 14/11 00h13 · Éverton · X27: enquanto ele não responde, a coordenadora segue a própria recomendação e marca
+  como provisória. Rota de `producao` (P22): rota do Worker no hostname exato, pela API, só depois da
+  validação no endereço padrão; `/saude` com 200 ou a rota é apagada; nada no DNS. Datas sem ano
+  (P21): saída sem ano a mais de 90 noites da entrada não cota, o agente pede as datas de novo.
+  Continuam só com ele: Bot Fight Mode e regra de integridade, limite de gasto, exports, nomes dos
+  modelos e ligar o envio real
+- 14/11 00h13 · K · rota (P22) pedida como passo seguinte ao primeiro deploy, com as condições do Éverton e
+  mais duas: listar antes as rotas da zona e conferir que um novo deploy não apaga a rota criada
+  pela API
+- 14/11 00h13 · T · frente nova para a P21 (datas sem ano), subagente em worktree, branch `frente-datas`, por
+  cima da `origin/frente-g` (a G mexe nos mesmos arquivos e entra antes). Arquivos: `src/nucleo/datas.ts`,
+  `src/agente/ferramentas/pedido.ts` e um teste novo. Verificador antes do merge. Falta um caso de
+  eval para esse caminho, a pedir à B2 depois do veredito do juiz
+- 14/11 00h15 · Éverton · X28: a coordenadora segue a própria recomendação como
+  provisória em tudo, menos ligar o envio real, tornar o repositório público, escrever no DNS ou
+  mexer em segurança da zona, e escolher as sessões dos exports. Medição dele em `dev`: no endereço
+  padrão do Worker, `Python-urllib` e `libwww-perl` levam 403 (erro 1010) e outros dez clientes
+  passam; pesa contra o endereço padrão como URL de entrega
+- 14/11 00h15 · K · dois passos a mais, depois da rota: repetir o teste por agente de usuário nos dois endereços
+  de `producao` (só medir) e pôr o limite de taxa no gateway de `producao` (P23, 300 por minuto)
+- 14/11 00h15 · B2 · cabeça 7f12107: `main` mesclada, `lead-12-troca-hospedes-apos-resumo` movido para o conjunto
+  de desenvolvimento (99 casos), 69 elegíveis contra `producao`, e o autoteste passa a exigir a marca
+  de confirmação em todo caso e pelo menos 60 elegíveis. Nada mudou no juiz desde 897e44b, que é a
+  cabeça em verificação
+- 14/11 00h15 · G · cabeça da64da4, com a `main` mesclada; nada mudou em `src/` desde 29ae3aa, em verificação
+- 14/11 00h15 · provisórias abertas para o Éverton confirmar ou reverter no fim: P11 a P23, e os nomes dos
+  modelos mantidos no "Como foi feito"
+- 14/11 00h21 · K · relatório 6: `producao` NO AR no endereço padrão do Worker, publicada da `main` em 3e053cb,
+  com o envio real desligado. Prova de zero POST refeita nesse commit (6 testes). `/saude` certo;
+  dois turnos sem confirmação com 2 e 3 chamadas ao modelo, log do Worker sem `principal_pulado` nem
+  `modelo_falhou`; `LEADS REAIS: 0` antes e depois; segredos por referência, nenhuma chave de modelo
+  no Worker. No endereço padrão o urllib leva 403: a checagem de integridade ali é da plataforma e não
+  se desliga, então ele não cumpre a L23. Os dois turnos levaram perto de 11 s cada: pedida medição
+  de latência. URLs de pré-visualização ligadas por padrão: a decidir
+- 14/11 00h21 · K · relatório 7: ROTA criada (P22) no hostname exato, pela API, sem curinga; `/saude` no hostname
+  com 200; DNS sem mudança (mesmos 18 registros, curinga e túnel intactos); nenhum domínio
+  personalizado. No hostname os quatro clientes passam, inclusive o urllib, e `LEADS REAIS: 0` antes e
+  depois. Um novo deploy não apaga a rota, desde que a configuração não ganhe `routes`. Falta medir
+  agente por agente (passo A), a latência e pôr o limite de taxa (passo B)
+- 14/11 00h21 · integração · ensaio das três cabeças juntas, fixadas por hash, sobre a `main` (G da64da4, H
+  a58ff5e, B2 7f12107): merge limpo, 1401 testes, tipos sem erro, SIGILO OK. A junta entre a H e a G
+  está verde
+- 14/11 00h22 · Éverton · X29: Bot Fight Mode e checagem de integridade desligados por ele na
+  zona inteira (a K confirma com o urllib no `/saude` do hostname); plano B do endereço autorizado
+  (domínio personalizado só para o hostname, se a rota falhar; hoje desnecessário); exports de todas
+  as sessões do T3, preparados pela N fora do repositório, nada versionado antes de ele olhar de
+  manhã; limite de gasto resolvido por ele. P23 revogada antes de ser aplicada: o passo do limite de
+  taxa saiu da fila da K. Continua só com ele: ligar o envio real e tornar o repositório público
+- 14/11 00h22 · N · tarefa nova: exportar todas as sessões para `~/.cache/agente-concierge/sessoes/`, com índice,
+  fechando os três furos do limpador, gate numa worktree descartável e marca de leitura humana nas
+  sessões com risco de trecho do enunciado. Sem commit
+- 14/11 00h24 · T · P21 pronta na `frente-datas` (e53e777, por cima da G em da64da4): saída sem ano a mais de
+  90 noites da entrada é recusada em `prepararPedido`, sem total e sem handoff, pelas duas
+  ferramentas; `resolverSaida` não mudou. A frente relata 1364 testes e nenhum teste existente
+  alterado. Verificador independente rodando, só o delta `da64da4..e53e777`. Lacunas que a frente
+  apontou: entrada sem ano com saída com ano continua cotando a estadia longa (fora da regra); o
+  modelo real pode chamar a cotação de novo pondo o ano por conta própria, a conferir no ensaio local
+  com o modelo real e num caso de eval novo
+- 14/11 00h25 · G · verificador independente, terceira rodada (29ae3aa; árvores com a G sozinha e com a F em
+  28109d8 mais a G): REPROVADO por um achado, já corrigido depois dessa cabeça: os 2 testes de
+  `foco-g` vermelhos na árvore F mais G (A1, só teste; resolvido em ee30c42, e o ensaio da coordenadora
+  em da64da4 deu 1352 testes). Passou: os 5 altos da rodada 2 corrigidos; 0 de 80 mensagens inocentes
+  ligam handoff; P17 e P18 ao pé da letra; a trava de valores fecha os dois cenários da revisão de
+  segurança e mantém o valor legítimo no turno seguinte, depois de reinício da sessão e com dois
+  imóveis; nenhuma das 121 respostas reais muda; o turno não estoura o orçamento por construção.
+  Médio determinístico (M-1), regressão da correção da trava: quando o resultado da cotação sai da
+  janela de 80 mensagens, o total que o modelo repete é cortado; com resumo pendente a correção é de
+  uma linha (o total do resumo aberto entra nos permitidos) e foi pedida à frente; sem resumo fica
+  como limite da janela (o agente cota de novo). Baixos que viram limite: contagem de chamadas com 1
+  a menos quando o prazo vence no reserva; milhar com espaço; motivo do handoff com falsos positivos
+  quando a ferramenta já foi chamada. O relatório final do verificador ainda fecha os defeitos plantados
+- 14/11 00h27 · S · verificador independente do gate (1d5e406): REPROVADO. Confirmado o que a frente corrigiu
+  (histórico em todos os caminhos; nenhum pedaço de termo na saída em 40 casos; sufixo composto;
+  binário; `SIGILO OK` no repositório real). Reprovam cinco médios: um byte de separador na mensagem
+  de commit antes do termo faz o termo passar (piorou com a correção); linha inválida no arquivo de
+  ambiente faz o shell mostrar a linha e o gate ainda aprova; nome de branch, de tag e de autor não
+  são varridos; branch órfã pula o histórico; falha de leitura engolida no encadeamento aprova. Os
+  quatro últimos já existiam. Baixos e 5 de 16 defeitos plantados que o teste não pega. Correções
+  pedidas à frente. Conferido no ambiente real, sem imprimir valor: nenhuma linha com `export` nem
+  fora do formato, as 5 variáveis de endereço são lidas e o termo da empresa é derivado
+- 14/11 00h27 · K · verificador independente do delta do script (f28ce3e): REPROVADO por um ponto: no modo
+  completo o runner ainda segue redirecionamento e, com 307 ou 308 no `/chat`, manda os POSTs ao
+  endereço do `Location`; o script não se protege sozinho. Correção de duas linhas pedida à K (o
+  `fetch` do runner chamado pelo script com redirecionamento manual); a correção do próprio runner
+  está na branch da B2. Passou: nenhum `PRODUCAO OK` em 46 combinações de argumentos, contagem mínima,
+  quatro clientes sem seguir redirecionamento, só GET no webhook de mentira em 162 cenários, nenhum
+  endereço na saída. Baixos pedidos junto. Informação: 69 casos rodam contra `producao`, antes e
+  depois da trava por negação
+- 14/11 00h28 · N · exports prontos FORA do repositório, em `~/.cache/agente-concierge/sessoes/`, com índice:
+  92 sessões (67 threads do projeto, 23 subagentes e 2 consultas do conselho), 1.878 mensagens, 2,1 MB
+  de Markdown a partir de 217 MB de fonte. Gate com tudo em stage numa worktree descartável: SIGILO OK,
+  sem commit. Os três furos do limpador foram fechados. 43 sessões marcadas para leitura humana
+  obrigatória (planejamento, as que citam o enunciado, as de primeira mensagem longa e as do conselho).
+  Limite que só a leitura pega: trecho copiado do enunciado e nome da empresa escrito de outro jeito.
+  Nada entra em `docs/sessoes/` antes de o Éverton olhar (X29)
+- 14/11 00h29 · Éverton · X30: reserva confirmado, GLM-5.3 Flash, sem "provisório"; nomes dos modelos mantidos
+  no "Como foi feito", com a versão exata de cada um. `docs/revisoes/modelos.md` atualizado pela
+  coordenadora; a frente N preenche o README e a seção dos modelos
+- 14/11 00h37 · Éverton · redação: as linhas de decisão do `DECISOES.md` ficam só com a data, sem hora e sem
+  circunstância dele; as duas entradas deste log sobre a X28 e a X29 foram reescritas do mesmo jeito.
+  O conteúdo das decisões não mudou. Vale daqui em diante para todo registro de decisão
+- 14/11 00h43 · K · relatório 8. Portão passou: `/saude` no hostname próprio com o agente de usuário do
+  `Python-urllib` dá 200. Dos 17 clientes testados, só `Python-urllib` e `libwww-perl` levam 403 (erro
+  1010), e só no endereço padrão do Worker, em GET e em POST. Latência: o evento `turno` do Worker marca
+  2,2 a 4,0 s nas perguntas simples (2 chamadas) e 5,0 a 5,9 s nas cotações (3 chamadas); os cerca de 10 s
+  medidos antes eram a conexão nova da máquina de medição (o cliente tenta IPv6 primeiro e ele não sai),
+  não o agente. Medição de latência daqui em diante força IPv4 ou reusa a conexão. Uma URL de
+  pré-visualização existe em `producao`: P25, desligar pela API. O limite de taxa não chegou a ser aplicado
+- 14/11 00h43 · K · relatório 9: script corrigido em 86c00c1 (o runner não segue redirecionamento no modo
+  completo) e b57b4ee (baixos da segunda verificação); 25 de 25 defeitos plantados pegos pelo autoteste,
+  segundo a frente. Verificador curto do delta f28ce3e..b57b4ee lançado (Opus 5.5, esforço alto)
+- 14/11 00h43 · N · X30 aplicada nos rascunhos (602bfa1): reserva, nomes dos modelos com versão exata, limites 15
+  a 19 e o rascunho de cortes e de mais tempo. Recebeu a convenção de registro e o ajuste do limpador
+  dos exports (dois arquivos com trecho pessoal, trocado por marcador e listado no índice)
+- 14/11 00h43 · H · verificador da rodada 3 (a58ff5e): REPROVADO por dois achados na fila da sessão. B1, alto e
+  determinístico: "quero fechar" e "sim" mandados ao mesmo tempo geram lead de um resumo que o hóspede
+  ainda não tinha recebido. B2: quando o Worker desiste com o pedido ainda na fila do objeto, o resumo
+  gravado depois fica confirmável sem ter sido visto. O resto passou: 20.724 execuções das sequências da
+  P14 pela sessão com 0 violação, reinício do objeto, falha de gravação, corpo do pedido e os achados
+  antigos A0 a A6. Lacuna apontada: P24. Frente corrigindo B1, B2 e P24; depois, verificador do delta.
+  Limites que ficam para o README: nenhum sinal chega ao objeto; corpo acima de 64 KB com resumo pendente
+- 14/11 00h43 · G · cabeça 4515061: correção da M-1 (o total do resumo aberto entra nos valores permitidos; 9
+  linhas em `src/agente/loop.ts`, lidas pela coordenadora). Ensaio por hash sobre a `main`, com a sonda
+  da janela do verificador, em curso. **A ordem da leva 2 muda: a G entra antes da H**, porque uma não
+  depende da outra e o ensaio conjunto não teve conflito
+- 14/11 00h45 · K · P25 aplicada: `previews_enabled: false` no Worker de `producao`, endereço padrão mantido,
+  `/saude` 200 nos dois endereços, `LEADS REAIS: 0`. Correção do relatório 8: não existia URL de
+  pré-visualização (Worker com Durable Object não ganha URL por versão; o endereço já dava 404 antes). O
+  motivo da P25 no `DECISOES.md` foi corrigido: é só proteção
+- 14/11 00h45 · N · cabeça 7a7146c: horas de decisão retiradas do "Como foi feito" (4 ocorrências); limpador dos
+  exports troca frase pessoal por marcador (4 frases em 2 sessões, listadas no índice); exports
+  refeitos fora do repositório: 70 sessões (os subagentes saíam em dobro), 35 para leitura humana;
+  latência, teste de clientes e P25 nos rascunhos, marcados "a confirmar no congelamento"
+- 14/11 00h45 · G · ensaio por hash de 4515061 sobre a `main`: merge limpo, 42 arquivos e 1355 testes verdes,
+  tipos e gate verdes. Sonda da janela do verificador: com resumo aberto o total não é mais cortado
+  (antes, turno 42); sem resumo aberto continua cortado no turno 41 e o agente cota de novo (limite
+  para o README). Faltam os três defeitos plantados que escapavam (P06, P07, P08), em curso
+- 14/11 00h48 · G · **entrou na `main`: merge `--no-ff` de 4515061, main em a8da5d6.** Defeitos plantados de novo
+  sobre a `main` com a G: P06 e P08 pegos (um teste cada), P07 ainda escapa (a resposta à pergunta fechada
+  por chamada de ferramenta não tem teste; o código já trata). Pedido à frente: um commit só de teste.
+  Fora isso a frente está fechada. F e H avisadas para mergear a `main` nova
+- 14/11 00h48 · B2 · verificador da rodada 2 (7f12107): REPROVADO por quatro achados altos no juiz de preço. A1:
+  total sem a limpeza, chamado de total, passa quando vem com "pelas N noites". A2: uma resposta real e
+  certa é reprovada ("já com a taxa de limpeza de R$ X"; 1 em cerca de 800 turnos reais). A3: desconto
+  concedido com valor igual a um componente passa. A4: respostas certas em inglês reprovadas. Médios em
+  dois casos (`lead-05`, `inv-07`). Passaram a trava de `producao`, a carga e os autotestes. Nos cinco
+  registros reais o juiz novo erra uma vez; o da `main` errava de 6 a 11 por registro. Frente corrigindo,
+  com critério fechado para convergir: os dois corpus do verificador viram teste de regressão; zero certa
+  reprovada nos registros reais; zero errada aprovada em A1, A3 e nos casos da rodada 1; formato que o
+  agente nunca escreveu vira limite documentado do juiz. Pedido junto: um caso dev para a P21
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -1111,6 +1298,56 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   isolamento de worktree, sync git e escalação.
 - Hook de início de sessão `git-sync` e a skill de orquestração de entregas (planejamento e
   coordenação).
+
+## Fechamento: congelamento, rodadas oficiais e o que falta (aberto em 14/11 00h21)
+
+**Regra dos hashes.** Daqui em diante, todo ensaio, verificação e merge usa o hash exato, nunca o
+nome da branch. Motivo: `origin/frente-f` e `frente-datas` carregam a branch da G mesclada, e a G
+ainda não tem veredito. Ao receber um veredito, conferir qual hash da F a árvore do verificador
+usou.
+
+**Congelamento da `main` para a prova.** A `main` congela quando tiver, com veredito: H, G, o juiz
+e o runner da B2, o gate da S, a P20 (nome do lead, frente F) e a P21 (datas sem ano, frente T), e
+o conjunto de casos fixo. Meta: 14/11 03h00. Limite: 06h00. Gatilho que já existia: 10h00 com o
+critério 4 não verde, parar e chamar o Éverton.
+
+**Antes da primeira rodada oficial (não conta como rodada).** Ensaio local na árvore congelada, com
+o modelo real em nível alto: o conjunto de desenvolvimento inteiro, a sonda do resumo pendente e o
+bloco de leads de novo, para ver a P20 com o modelo de verdade (nome abreviado, corrigido ou
+puxado do contexto não pode virar laço de recusa). Depois do deploy de `dev`, uma fumaça declarada
+só com `--bloco marco1`.
+
+**O que conta como rodada oficial (X24, item 4).** `node evals/rodar.mjs --alvo "$AGENTE_URL_DEV"
+--conjunto dev`, o conjunto inteiro, sem `--bloco`, contra `dev` publicado do commit congelado, com
+o Haiku 5.5 em nível alto e o juiz aprovado pelo verificador, e com o relatório salvo em
+`evals/relatorios/`. São três, seguidas, sem deploy entre elas. Nenhuma é descartada. O critério é a
+soma por bloco das três, 95% ou mais em cada bloco. Toda falha é classificada no log (agente, juiz
+ou infraestrutura). Se o código de produto ou o juiz mudar depois da primeira, a contagem recomeça
+e as rodadas anteriores ficam registradas como estão.
+
+**Conjunto reservado.** Leitura prévia do agregado na árvore integrada local assim que o juiz for
+aprovado, com o modelo e a configuração já fixos: serve para descobrir cedo se a regra 6 do plano
+de evals vai ser precisa (a frente C revela um caso, ele migra para o conjunto de desenvolvimento e
+ela escreve um substituto). Não é usada para ajustar prompt nem modelo. Leitura final em `dev`,
+depois das três rodadas; limiar de 90%.
+
+**Depois da prova.** Simulador hostil em `dev`; medição final da frente I; custo por conversa de um
+relatório novo (`scripts/custo.mjs`); segunda passada da M2, só o delta; deploy final de `producao`
+e `scripts/validar-producao.sh` completo; textos finais da frente N e verificador de sigilo e de
+fatos; lista para o Éverton.
+
+**Critérios de fechamento ainda abertos** (numeração da tabela de outcomes):
+- 1: `producao` no ar no endereço padrão e no hostname próprio, envio desligado. Falta o deploy
+  final, o `PRODUCAO OK` e o monitor diário da frente L.
+- 2 a 9: dependem das três rodadas oficiais e do critério de integração 3 (frente H).
+- 12: relatórios das rodadas oficiais e do simulador versionados.
+- 13: agregado do reservado; cópia do conjunto para o repositório no commit de entrega.
+- 14: segunda passada da M2 em `docs/revisoes/m2.md`.
+- 15: medição final em `docs/revisoes/modelos.md`.
+- 17 e 19: README com o custo medido; desenhos conferidos no GitHub.
+- 18: `DECISOES.md` ainda não tem as seções de cortes e do que faria com mais tempo.
+- 20: `docs/prompts/` com os prompts das levas 2 e 3; exports de sessão dependem do Éverton.
+- 21 a 24: do Éverton (vídeo, e-mail, repositório público, envio real).
 
 ## Pré-voo (antes da leva 1)
 
@@ -1144,7 +1381,7 @@ mexer na configuração.
 | `src/env.ts` | A | I, que roda junto com a leva 2; outra frente pede à coordenadora | — |
 | `test/apoio.ts` | A | congelado: ninguém altera; apoio novo vai em `test/apoio-<frente>.ts` da própria frente | — |
 | `src/nucleo/dinheiro.ts`, `src/nucleo/preco.ts` | A | — | — |
-| `src/nucleo/datas.ts` | A | E (exceção: a G acrescenta `dataComDia(data, idioma)`, sem tocar no resto) | — |
+| `src/nucleo/datas.ts` | A | E (exceção: a G acrescenta `dataComDia(data, idioma)`, sem tocar no resto) | T (P21: só `resolverSaida` e o que ela usa; em `pedido.ts`, só a recusa nova) |
 | `src/nucleo/telefone.ts`, `src/nucleo/idioma.ts` (detector único de idioma: `idiomaDoHospede(textos): "pt" \| "en"`; G importa) | — | F | — |
 | `src/pagina.ts` | A (mínima) | J (passo 2) | — |
 | `docs/desenhos/pagina-canvas.html` | J (passo 1) | — | — |
