@@ -90,7 +90,7 @@ describe("o sim é validado por código", () => {
   it("pedido de confirmação repetido por código no fim de um turno de pergunta habilita o sim seguinte", async () => {
     const { mundo, cofre, confirma } = await comResumo();
     const pedido = pedidoDeConfirmacaoPendente(cofre, 3, "pt");
-    expect(pedido).toMatch(/GRM-301.*confirmar, responda "sim"/);
+    expect(pedido).toMatch(/GRM-301.*confirmar, responda "sim"/s);
     // No mesmo turno o pedido não sai duas vezes.
     expect(pedidoDeConfirmacaoPendente(cofre, 3, "pt")).toBeUndefined();
     await confirma(4, "sim");
@@ -104,7 +104,7 @@ describe("o sim é validado por código", () => {
     expect(pedidoDeConfirmacaoPendente(vazio, 3, "pt")).toBeUndefined();
     const { cofre } = await comResumo();
     expect(pedidoDeConfirmacaoPendente(cofre, 2, "pt")).toBeUndefined();
-    expect(pedidoDeConfirmacaoPendente(cofre, 3, "en")).toMatch(/GRM-301.*To confirm, reply "yes"/);
+    expect(pedidoDeConfirmacaoPendente(cofre, 3, "en")).toMatch(/GRM-301.*To confirm, reply "yes"/s);
   });
 });
 
@@ -117,11 +117,11 @@ describe("leitura da mensagem diante do resumo pendente", () => {
   const GRM301 = pendente("GRM-301");
 
   for (const mensagem of [
-    "sim", "Sim!", "siiim", "s", "confirmo", "Confirmado.", "pode fechar", "Pode enviar, por favor", "pode mandar", "isso mesmo",
-    "tudo certo", "está tudo certo, pode enviar", "Sim, confirmo.", "Sim, confirmo o resumo.", "Sim, confirmo com as novas datas.",
-    "Sim, confirmo definitivamente.", "Sim, confirmo de novo!", "Sim, confirmo essa segunda reserva também.",
+    "sim", "Sim!", "siiim", "confirmo", "Confirmado.", "pode fechar", "Pode enviar, por favor", "pode mandar", "isso mesmo",
+    "tudo certo", "está tudo certo, pode enviar", "Sim, confirmo.", "Sim, confirmo o resumo.",
+    "Sim, confirmo definitivamente.", "Sim, confirmo de novo!",
     "Sim, pode fechar.", "Sim sim, pode confirmar a reserva", "Confirmo tudo", "certo, confirmo", "perfeito, pode fechar",
-    "Sim, confirmo o GRM-301.", "sim, confirmo os R$ 2.156,00", "Sim, confirmo o GRM-301 por R$ 2.156,00", "com certeza",
+    "com certeza",
     "ok, pode enviar", "Ok, confirmo",
     "Yes, I confirm.", "yes", "Yes, please go ahead", "yes, confirm the booking", "that's correct", "sí",
   ]) {
@@ -184,14 +184,20 @@ describe("leitura da mensagem diante do resumo pendente", () => {
     ["sim, confirmo por R$ 2.000,00", "condicao_de_preco"],
     ["Obrigado, por enquanto não vou fechar ainda.", "outra"],
     ["", "outra"],
-    ["👍", "outra"],
+    // Emoji sozinho repete o pedido com o resumo, sem confirmar nem derrubar (P15).
+    ["👍", "hesitacao"],
     ["2", "outra"],
   ];
   for (const [mensagem, esperado] of naoSao) {
     it(`não é sim (${esperado}): "${mensagem}"`, () => expect(lerConfirmacao(mensagem, GRM301)).toBe(esperado));
   }
 
-  describe("dados repetidos na confirmação (L9, L10): iguais aos do resumo confirmam, diferentes não", () => {
+  // P13: sim com valor junto, mesmo igual ao do resumo, repete o pedido com o resumo.
+  for (const mensagem of ["Sim, confirmo o GRM-301.", "sim, confirmo os R$ 2.156,00", "Sim, confirmo o GRM-301 por R$ 2.156,00"]) {
+    it(`repete o pedido: "${mensagem}"`, () => expect(lerConfirmacao(mensagem, GRM301)).toBe("hesitacao"));
+  }
+
+  describe("dados repetidos na confirmação (L9, L10, P13): iguais aos do resumo repetem o pedido, diferentes derrubam", () => {
     const sao501: Pendente = {
       reserva: { imovel_id: "SAO-501", checkin: "2027-01-15", checkout: "2027-01-17", hospedes: 3, nome: "Ana Lima", telefone: "(11) 98888-0000" },
       totalCentavos: 72000,
@@ -203,13 +209,13 @@ describe("leitura da mensagem diante do resumo pendente", () => {
       "Sim, para 3 pessoas",
       "Sim, confirmo: 2 noites, 3 pessoas, R$ 720,00",
       "Confirmo a reserva de 2027-01-15 a 2027-01-17",
+      "Yes, I confirm the booking for 3 guests from 15/01/2027 to 17/01/2027",
       "Sim, confirmo, sou Ana Lima, telefone 11 98888-0000",
       "Sim, confirmo o telefone +55 (11) 98888-0000",
-      "Sim. Pode fechar?",
-      "Yes, I confirm the booking for 3 guests from 15/01/2027 to 17/01/2027",
     ]) {
-      it(`confirma: "${mensagem}"`, () => expect(lerConfirmacao(mensagem, sao501)).toBe("sim"));
+      it(`repete o pedido: "${mensagem}"`, () => expect(lerConfirmacao(mensagem, sao501)).toBe("hesitacao"));
     }
+    it("sem valor nenhum, confirma: \"Sim. Pode fechar?\"", () => expect(lerConfirmacao("Sim. Pode fechar?", sao501)).toBe("sim"));
 
     const naoConfirmam: [string, string][] = [
       ["Sim, mas de 18 a 20", "outra"],
@@ -232,7 +238,8 @@ describe("leitura da mensagem diante do resumo pendente", () => {
       ["Sim, confirmo, e tem wifi?", "pergunta"],
       ["Sim, confirmo! Tem wifi?", "pergunta"],
       ["Pode fechar a reserva do SAO-501 de 15/01/2027 a 17/01/2027?", "pergunta"],
-      ["Sim, confirmo de 15/01/2027 a 17/01/2027. Dá para entrar mais cedo?", "pergunta"],
+      // "Mais cedo" é sinal de mudança (pode ser outro horário ou outro dia): derruba.
+      ["Sim, confirmo de 15/01/2027 a 17/01/2027. Dá para entrar mais cedo?", "outra"],
       ["Sim, confirmo! Pode fechar a reserva do SAO-501 de 15/01/2027 a 18/01/2027, por favor?", "outra"],
       ["Sim, confirmo por R$ 700,00", "condicao_de_preco"],
     ];
@@ -242,7 +249,7 @@ describe("leitura da mensagem diante do resumo pendente", () => {
   });
 
   it("o id do imóvel só é aceito se for o do resumo pendente", () => {
-    expect(lerConfirmacao("Sim, confirmo o GRM-302.", pendente("GRM-302"))).toBe("sim");
+    expect(lerConfirmacao("Sim, confirmo o GRM-302.", pendente("GRM-302"))).toBe("hesitacao");
     expect(lerConfirmacao("Sim, confirmo o GRM-301.", pendente("GRM-302"))).toBe("outra");
   });
 });
