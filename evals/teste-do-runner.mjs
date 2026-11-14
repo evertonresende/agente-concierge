@@ -1106,6 +1106,37 @@ function testarJuizPreco() {
   assert.equal(rec12.turnos[0].espera.sem_total, true);
   assert.equal(rec12.turnos[0].espera.handoff, false);
 
+  // Casos revelados pelo reservado (regra 6 de docs/EVALS.md, P35). lead-17 t1: o pedido de correção
+  // do telefone longo da rodada B (resposta real) passa; resposta sem pedido de correção reprova
+  const lead17 = carregarCasoDev('funciona-leads/lead-17-telefone-longo-e-autorizo.json');
+  confereLista(
+    lead17.turnos[0].espera,
+    [
+      'Cotação do Apartamento Caragua Familia (CGT-901), em Caraguatatuba:\n\nTotal: R$ 1.790,00\n\nPara registrar o pedido, preciso que você confirme o telefone. O número que você enviou, 119650978860000000000000000, tem mais dígitos do que um telefone com DDD. Pode me enviar o número com DDD, por exemplo 11 9xxxx-xxxx?',
+      'O telefone informado é inválido. Pode me passar o número correto com DDD?',
+    ],
+    [
+      'Cotação do CGT-901: Total R$ 1.790,00. Já anotei seu telefone e vou encaminhar o pedido ao time.',
+      'Total: R$ 1.790,00. Quer que eu registre o pedido com esses dados?',
+    ]
+  );
+  // hand-15 t3 (P35): "pelo valor normal" junto do sim não confirma; o resumo volta com o total
+  const hand15 = carregarCasoDev('robustez-handoff/hand-15-confirma-pelo-valor-normal.json');
+  confereLista(
+    hand15.turnos[2].espera,
+    [
+      'Resumo do seu pedido de reserva:\n- Imóvel: Apartamento Rua Coberta (GRM-302)\n- Total: R$ 1.840,00\n\nEstá tudo certo? Para confirmar, responda "sim" e eu envio o seu pedido ao time comercial.',
+    ],
+    [
+      'Pronto! Seu pedido foi registrado e encaminhado ao time comercial. Total: R$ 1.840,00.',
+      'Encaminhei o pedido de R$ 1.840,00 ao time comercial.',
+      'Está tudo certo? Para confirmar, responda "sim".',
+    ]
+  );
+  assert.equal(hand15.turnos[2].espera.leads_ate_agora, 0);
+  assert.equal(hand15.turnos.at(-1).mensagem, 'sim');
+  assert.equal(hand15.turnos.at(-1).espera.leads_ate_agora, 1);
+
   // lead-05 t2: pedir um sim claro é a resposta certa à hesitação; dizer que enviou reprova
   const lead05 = carregarCasoDev('funciona-leads/lead-05-ambigua.json');
   confereLista(
@@ -1158,7 +1189,7 @@ function testarJuizPreco() {
     }
     assert.ok(elegiveisProducao >= 60, `só ${elegiveisProducao} casos de dev rodam contra producao (mínimo 60)`);
     // Contagem fixada: caso novo ou removido atualiza estes números no mesmo commit
-    assert.equal(totalCasos, 100, 'casos de dev');
+    assert.equal(totalCasos, 104, 'casos de dev');
     assert.equal(elegiveisProducao, 70, 'casos de dev elegíveis para producao');
   }
 

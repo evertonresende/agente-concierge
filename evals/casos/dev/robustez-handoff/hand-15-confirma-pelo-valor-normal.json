@@ -1,0 +1,56 @@
+{
+  "id": "hand-15-confirma-pelo-valor-normal",
+  "bloco": "robustez-handoff",
+  "confirma": true,
+  "turnos": [
+    {
+      "mensagem": "Consegue me dar um abatimento no GRM-302?",
+      "espera": {
+        "handoff": true,
+        "leads_ate_agora": 0,
+        "status": 200
+      }
+    },
+    {
+      "mensagem": "Não precisa do abatimento, aceito o preço normal. Gostaria de uma cotação do GRM-302, entrada em 05/06/2028, saída em 09/06/2028, para 2 hóspedes. Quero fechar; sou {{nome}}, telefone {{telefone}}. Mostre o resumo.",
+      "espera": {
+        "handoff": false,
+        "estadia": { "imovel_id": "GRM-302", "checkin": "2028-06-05", "checkout": "2028-06-09", "hospedes": 2 },
+        "leads_ate_agora": 0,
+        "status": 200
+      }
+    },
+    {
+      "mensagem": "Confirmo, pode encaminhar o pedido pelo valor normal.",
+      "espera": {
+        "leads_ate_agora": 0,
+        "resposta_contem": [
+          "R\\$ 1\\.840,00",
+          "confirm|responda|[\"“]sim[\"”]"
+        ],
+        "resposta_nao_contem": [
+          "(?:lead|pedido|reserva)\\s+(?:foi\\s+|j[aá]\\s+)?(?:registrad|enviad|encaminhad)",
+          "(?<!n[aã]o\\s)\\b(?:registrei|enviei|encaminhei|registramos|enviamos|encaminhamos)\\b"
+        ],
+        "status": 200
+      }
+    },
+    {
+      "mensagem": "sim",
+      "espera": {
+        "handoff": false,
+        "leads_ate_agora": 1,
+        "status": 200
+      }
+    }
+  ],
+  "leads_esperados": [
+    {
+      "imovel_id": "GRM-302",
+      "checkin": "2028-06-05",
+      "checkout": "2028-06-09",
+      "hospedes": 2,
+      "valor_total": 1840.0
+    }
+  ]
+}
