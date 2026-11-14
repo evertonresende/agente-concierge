@@ -3,6 +3,7 @@
 // nunca lança: em qualquer falha devolve a resposta de contingência (contrato L18).
 import { invalidarPendente, lerConfirmacao, mudaDadoDoResumo, type Pendente as ResumoPendente, pedidoDeConfirmacaoPendente, pendenteAberto } from "../lead";
 import type { ChamadaDeFerramenta, Mensagem, Modelo, RespostaDoModelo } from "../modelo";
+import { formatarReais } from "../nucleo/dinheiro";
 import { type Idioma, idiomaDoHospede } from "../nucleo/idioma";
 import { type Argumentos, type Contexto, FERRAMENTAS, type Resultado } from "./ferramentas";
 import { respostaASimAposRegistro } from "./ferramentas/lead";
@@ -612,7 +613,13 @@ export async function rodarTurno(entrada: EntradaDoTurno): Promise<SaidaDoTurno>
     return { reply, handoff: handoff || contingencia, novas, uso, ferramentas: usadas, contingencia };
   };
 
-  const permitidos = () => valoresDoCodigo([...entrada.historico, ...novas]);
+  // O total do resumo aberto no cofre também saiu do código: continua permitido depois que a
+  // cotação que o gerou sai da janela de mensagens da sessão (M-1). Nome e texto livre não.
+  const permitidos = () => {
+    const valores = valoresDoCodigo([...entrada.historico, ...novas]);
+    const pendente = pendenteAberto(contexto.cofre.ler());
+    return pendente ? new Set([...valores, formatarReais(pendente.totalCentavos)]) : valores;
+  };
   // Valor em reais ditado pelo hóspede que nenhuma ferramenta calculou ("desde que o total seja R$ 1.000,00").
   const sinal = () => !focou && (sugereNegociacao(entrada.mensagem) || pedeExcecaoDepoisDaRegra(entrada.mensagem, entrada.historico)
     || valoresInventados(entrada.mensagem, permitidos()).length > 0);
