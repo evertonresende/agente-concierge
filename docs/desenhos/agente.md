@@ -106,7 +106,8 @@ código (`confirmar` em `src/lead.ts`): com o envio desligado, nada é relido e 
 marcador. Com o envio ligado, o código relê a ficha e recalcula o total; se mudou, mostra um
 resumo novo, ainda sem marcador. Se o total não mudou, grava o marcador de envio e só então
 faz o POST. Resposta 201 é a única que vira "registrado". 5xx tem uma nova tentativa;
-422 com campo apontado pede a correção; tempo esgotado ou resultado incerto não se
+422 com campo apontado (na primeira recusa da sessão) derruba o resumo e pede o dado
+corrigido e um resumo novo; tempo esgotado ou resultado incerto não se
 repete; qualquer outro código não registra, passa para humano e bloqueia a estadia já
 na primeira vez. A segunda falha, de qualquer tipo, para a mesma estadia passa para humano e
 bloqueia a estadia: no máximo 2 POSTs sem 201 por estadia.
@@ -142,7 +143,7 @@ stateDiagram-v2
   conferindo --> enviando: total igual, grava o marcador
   enviando --> registrado: 201
   enviando --> enviando: 5xx, uma nova tentativa (L11)
-  enviando --> pendente: 422 com campo, pede correção
+  enviando --> cotado: 422 com campo apontado, o resumo cai, pede o dado e um resumo novo
   enviando --> incerto: tempo esgotado, 2xx diferente de 201
   enviando --> bloqueada: segunda falha da mesma estadia (P14)
   enviando --> bloqueada: outro código de resposta, não registrado (P14)
