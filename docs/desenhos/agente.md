@@ -86,9 +86,10 @@ flowchart TB
   catálogo, e o bloqueio nativo tem limite de 30 s (`docs/VERIFICACOES.md` §1).
 - O texto que vem do catálogo entra na conversa como dado delimitado, nunca como instrução.
 - O total sai pronto da ferramenta de cotação. A conferência retira do texto do modelo
-  valor em reais que nenhuma ferramenta calculou (frente G, na `main`). Ela não cobre
-  número por extenso, e o total repetido sem resumo aberto, depois que a cotação sai da
-  janela de 80 mensagens, fica como limite conhecido (P26).
+  valor com "R$" que nenhuma ferramenta calculou (frente G). Ela não pega número por extenso
+  nem valor sem marca de moeda ("consigo deixar o total em 1500"): esses passam (limites 8 e
+  46 do README). Sem resumo aberto, o total repetido depois que a cotação sai da janela de
+  80 mensagens é cortado, e o agente pede imóvel e datas de novo (P26).
 - Em `dev` o webhook é um falso que replica o contrato do real. O real não recebe nenhum
   POST antes da entrega.
 - Recusa por limite de pedidos vai direto ao reserva e não é repetida (L18). Sem gateway
@@ -184,6 +185,7 @@ stateDiagram-v2
 | Nome do lead só com palavras que o hóspede escreveu (P20) | Pedir o nome quando a ferramenta recusa |
 | A flag `handoff` devolvida na resposta | |
 
-O modelo nunca escreve um total por conta própria: ele recebe o texto pronto da ferramenta,
-e a conferência retira o valor que nenhuma ferramenta calculou (com os limites da seção 1).
-Não existe ferramenta que aceite desconto ou preço informado pelo hóspede.
+O total que o hóspede lê sai pronto da ferramenta. O modelo pode escrever outro valor; a
+conferência retira o valor com "R$" que nenhuma ferramenta calculou, mas não pega número por
+extenso nem valor sem marca de moeda (limites 8 e 46 do README). Não existe ferramenta que
+aceite desconto ou preço informado pelo hóspede, e o valor do lead sai do cálculo do código.
