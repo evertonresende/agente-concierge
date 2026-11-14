@@ -150,6 +150,11 @@ novo_repo u; n=$(printf 'a\nb-%s.txt' "$EMPRESA"); echo x > "$n"; git add -A; gi
 git rm -q -- "$n"; git commit -q -m rm
 rodar; espera_codigo 1; espera_texto "nome de arquivo"; sem_pedaco "$EMPRESA"
 
+caso="v) termo não ASCII no nome de um arquivo"
+novo_repo v; echo "zqxwøæå" > "$AGENTE_CFG/sigilo-extra"
+echo "zqxwøæå" > "zqxwøæå.txt"; git add -A
+rodar; espera_codigo 1; espera_texto "localização omitida"; sem_pedaco "zqxwøæå"
+
 caso="f) repositório limpo"
 novo_repo f
 rodar; espera_codigo 0; [ "$(tail -n 1 <<<"$saida")" = "SIGILO OK" ] || falha "a última linha não é SIGILO OK"

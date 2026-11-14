@@ -86,9 +86,10 @@ relata() { # $1 = rótulo; stdin = localizações (arquivo:linha, commit ou comm
 
 # Lê do git para $tmpd/<arquivo>. Qualquer falha de leitura sai com 2, nunca com
 # SIGILO OK; o código 1 só é aceito do git grep, que o usa para "nada achado".
+# core.quotePath=false: nome não ASCII sai cru, e não em octal, para a máscara casar.
 le() { # $1 = arquivo de saída; o resto = subcomando do git e argumentos
   local arq="$tmpd/$1" st; shift
-  git "$@" > "$arq" 2>/dev/null; st=$?
+  git -c core.quotePath=false "$@" > "$arq" 2>/dev/null; st=$?
   [ "$st" -eq 0 ] || { [ "$st" -eq 1 ] && [ "$1" = grep ]; } \
     || { echo "SIGILO: falha ao ler o repositório (git $1)"; exit 2; }
 }
