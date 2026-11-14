@@ -484,7 +484,10 @@ Nas frentes fora do Claude, o rodapé do commit nomeia a ferramenta e o modelo q
 ajudaram de fato (X9). Autor e committer são sempre os do repositório.
 
 O setup do ambiente do autor que rodou nesta entrega (regras, skills e subagentes) está em
-[`setup/`](setup/).
+[`setup/`](setup/). MCPs: o único servidor chamado foi o do T3 Code, a ferramenta de
+orquestração, para abrir as threads das frentes, mandar mensagem, delegar tarefa a
+verificador e esperar comando de fundo. Nenhum outro MCP foi usado; a conferência nos
+registros de sessão está em [`setup/README.md`](setup/README.md).
 
 ## 11. Fechamento
 
