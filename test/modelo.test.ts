@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { criarModelo, normalizarResposta, parametros } from "../src/modelo";
+import { criarModelo, lerRespostaAnthropic, type Mensagem, normalizarResposta, parametros, pedidoAnthropic } from "../src/modelo";
 
 describe("adaptador do modelo", () => {
   it("lê texto e uso no formato de chat completions", () => {
@@ -113,5 +113,114 @@ describe("modelo reserva", () => {
     await criarModelo(ai, "@cf/openai/gpt-oss-120b")([{ role: "user", content: "oi" }], []);
     expect(chamados.map((c) => c[0])).toEqual(["@cf/openai/gpt-oss-120b", "@cf/deepseek-ai/deepseek-v4.1-flash-1017"]);
     expect(chamados[1]![2]).toEqual({ gateway: { id: "concierge-dev" } });
+  });
+});
+
+describe("recusa por limite (contrato L18)", () => {
+  const limite = () => new Error("AiError: 3021: rate limiting: inference request per min rate reached");
+  const ok = (texto: string) => ({ choices: [{ message: { content: texto } }] });
+
+  it("principal recusa por limite: o reserva responde, 2 chamadas no total", async () => {
+    const chamados: string[] = [];
+    const ai = { run: async (m: string) => { chamados.push(m); if (m === "principal/x") throw limite(); return ok("do reserva"); } } as unknown as Ai;
+    const r = await criarModelo(ai, "principal/x", { reserva: "reserva/y" })([{ role: "user", content: "oi" }], []);
+    expect(r.texto).toBe("do reserva");
+    expect(chamados).toEqual(["principal/x", "reserva/y"]);
+  });
+
+  it("principal e reserva recusam por limite: erro com porLimite, 2 chamadas no total", async () => {
+    const chamados: string[] = [];
+    const ai = { run: async (m: string) => { chamados.push(m); throw limite(); } } as unknown as Ai;
+    const erro = await criarModelo(ai, "principal/x", { reserva: "reserva/y" })([], []).catch((e: unknown) => e);
+    expect(erro).toMatchObject({ porLimite: true });
+    expect(chamados).toHaveLength(2);
+  });
+
+  it("sem reserva, recusa por limite sai com porLimite", async () => {
+    const ai = { run: async () => { throw limite(); } } as unknown as Ai;
+    await expect(criarModelo(ai, "principal/x", {})([], [])).rejects.toMatchObject({ porLimite: true });
+  });
+
+  it("erro de outra natureza segue como antes, sem porLimite", async () => {
+    const ai = { run: async (m: string) => { if (m === "principal/x") throw new Error("fora do ar"); throw new Error("também fora"); } } as unknown as Ai;
+    const erro = await criarModelo(ai, "principal/x", { reserva: "reserva/y" })([], []).catch((e: unknown) => e);
+    expect(erro).toBeInstanceOf(Error);
+    expect(erro).not.toHaveProperty("porLimite");
+    // principal por outro motivo e reserva por limite: o loop ainda pode tentar de novo
+    const ai2 = { run: async (m: string) => { if (m === "principal/x") throw new Error("fora do ar"); throw limite(); } } as unknown as Ai;
+    expect(await criarModelo(ai2, "principal/x", { reserva: "reserva/y" })([], []).catch((e: unknown) => e)).not.toHaveProperty("porLimite");
+  });
+});
+
+describe("modelos da Anthropic (formato Messages)", () => {
+  const ferramenta = { type: "function" as const, function: { name: "cotar", description: "Cota", parameters: { type: "object", properties: { imovel_id: { type: "string" } } } } };
+  const historico: Mensagem[] = [
+    { role: "system", content: "Você é o concierge." },
+    { role: "user", content: "Quanto fica o GRM-301?" },
+    { role: "assistant", content: "", tool_calls: [
+      { id: "toolu_1", type: "function", function: { name: "cotar", arguments: '{"imovel_id":"GRM-301"}' } },
+      { id: "toolu_2", type: "function", function: { name: "cotar", arguments: '{"imovel_id":"GRM-302"}' } },
+    ] },
+    { role: "tool", tool_call_id: "toolu_1", content: '{"total":"R$ 2.156,00"}' },
+    { role: "tool", tool_call_id: "toolu_2", content: '{"total":"R$ 1.330,00"}' },
+  ];
+
+  it("monta o pedido: system à parte, sem temperature, esforço em output_config e ferramentas com input_schema", () => {
+    const p = pedidoAnthropic(historico, [ferramenta], "low");
+    expect(p.system).toBe("Você é o concierge.");
+    expect(p).not.toHaveProperty("temperature");
+    expect(p.output_config).toEqual({ effort: "low" });
+    expect(p.tools).toEqual([{ name: "cotar", description: "Cota", input_schema: ferramenta.function.parameters }]);
+  });
+
+  it("nível de raciocínio ausente ou inválido vira medium", () => {
+    expect(pedidoAnthropic(historico, [], undefined).output_config).toEqual({ effort: "medium" });
+    expect(pedidoAnthropic(historico, [], "").output_config).toEqual({ effort: "medium" });
+    expect(pedidoAnthropic(historico, [], "altíssimo").output_config).toEqual({ effort: "medium" });
+    expect(pedidoAnthropic(historico, [], "high").output_config).toEqual({ effort: "high" });
+  });
+
+  it("devolve todos os resultados de ferramenta do turno numa única mensagem do usuário", () => {
+    const { messages } = pedidoAnthropic(historico, [], undefined) as { messages: { role: string; content: Record<string, unknown>[] }[] };
+    expect(messages.map((m) => m.role)).toEqual(["user", "assistant", "user"]);
+    expect(messages[1]!.content).toEqual([
+      { type: "tool_use", id: "toolu_1", name: "cotar", input: { imovel_id: "GRM-301" } },
+      { type: "tool_use", id: "toolu_2", name: "cotar", input: { imovel_id: "GRM-302" } },
+    ]);
+    expect(messages[2]!.content.map((b) => b.tool_use_id)).toEqual(["toolu_1", "toolu_2"]);
+  });
+
+  it("conteúdo cru do assistente (com raciocínio) volta sem alteração", () => {
+    const blocos = [{ type: "thinking", thinking: "", signature: "sig" }, { type: "tool_use", id: "toolu_9", name: "cotar", input: {} }];
+    const { messages } = pedidoAnthropic([{ role: "user", content: "oi" }, { role: "assistant", content: "", blocos }], [], undefined) as { messages: { content: unknown[] }[] };
+    expect(messages[1]!.content).toBe(blocos);
+  });
+
+  it("lê texto, chamadas e uso; ignora o raciocínio no texto e guarda os blocos", () => {
+    const bruto = {
+      stop_reason: "tool_use",
+      content: [{ type: "thinking", thinking: "", signature: "s" }, { type: "text", text: "Vou cotar." }, { type: "tool_use", id: "toolu_1", name: "cotar", input: { imovel_id: "GRM-301" } }],
+      usage: { input_tokens: 100, cache_read_input_tokens: 20, output_tokens: 30 },
+    };
+    const r = lerRespostaAnthropic(bruto);
+    expect(r.texto).toBe("Vou cotar.");
+    expect(r.chamadas).toEqual([{ id: "toolu_1", type: "function", function: { name: "cotar", arguments: '{"imovel_id":"GRM-301"}' } }]);
+    expect(r.uso).toEqual({ entrada: 120, saida: 30 });
+    expect(r.blocos).toHaveLength(3);
+  });
+
+  it("recusa do Claude (stop_reason refusal) passa ao reserva", async () => {
+    const chamados: unknown[][] = [];
+    const ai = {
+      run: async (...args: unknown[]) => {
+        chamados.push(args);
+        return args[0] === "anthropic/claude-haiku-5.5" ? { stop_reason: "refusal", content: [] } : { choices: [{ message: { content: "do reserva" } }] };
+      },
+    } as unknown as Ai;
+    const r = await criarModelo(ai, "anthropic/claude-haiku-5.5", { reserva: "@cf/zai-org/glm-5.3-flash", gateway: "gw", esforco: "medium" })([{ role: "user", content: "oi" }], [ferramenta]);
+    expect(r.texto).toBe("do reserva");
+    expect(chamados[0]![1]).toMatchObject({ max_tokens: 8000, output_config: { effort: "medium" }, messages: [{ role: "user", content: [{ type: "text", text: "oi" }] }] });
+    expect(chamados[1]![1]).toMatchObject({ messages: [{ role: "user", content: "oi" }], tools: [ferramenta] });
+    expect(chamados.map((c) => c[2])).toEqual([{ gateway: { id: "gw" } }, { gateway: { id: "gw" } }]);
   });
 });

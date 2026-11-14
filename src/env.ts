@@ -8,6 +8,8 @@ export interface Env {
   MODELO?: string;
   /** Modelo de outro fornecedor que assume quando o principal falha. */
   MODELO_RESERVA?: string;
+  /** Nível de raciocínio dos modelos da Anthropic; ausente ou inválido vira `medium`. */
+  MODELO_ESFORCO?: string;
   /** Id do AI Gateway por onde passam as chamadas de modelo. */
   AI_GATEWAY?: string;
   ENVIO_LEADS?: string;
