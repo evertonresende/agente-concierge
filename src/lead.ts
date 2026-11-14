@@ -213,6 +213,11 @@ const PRECO = new RegExp(
     + "|\\b(se|desde que|contanto que|caso|if|unless|provided|as long as)\\b.*\\b(valor|preco|total|price|\\d{3,})",
 );
 const HESITA = /\b(acho|achando|talvez|pode ser|nao sei|sei la|quase|provavel|provavelmente|depende|vou pensar|vou ver|pensando|maybe|i think|i guess|probably|perhaps|not sure|might|kind of|sort of)\b/;
+// As palavras de hesitação e o que só as acompanha ("acho que", "i think so", "ainda"). O que
+// sobrar depois de tirá-las precisa ser nada ou um sim: qualquer outro resto pode ser mudança.
+const HESITA_E_NEUTRAS = new RegExp("\\b(?:(?:acho|achando)(?: que)?|talvez|pode ser|nao sei|sei la|quase|provavel(?:mente)?|depende"
+  + "|vou pensar|vou ver|pensando|maybe|i think(?: so)?|i guess(?: so)?|probably|perhaps|not sure|might|kind of|sort of"
+  + "|ainda|hum+|hm+|ne|eh|ah|well|yet|so)\\b", "g");
 // Só um "ok", "perfeito", "certo" ou "s", mesmo com um "obrigado": o hóspede pode estar
 // apenas acusando o recebimento, ou ter digitado sem querer. Vale como hesitação (P11).
 const FRACA = new RegExp("^(?:(?:ok|okay|ta bom|ta|beleza|blz|bom|legal|show|joia|fine|alright|good|great|k"
@@ -385,7 +390,12 @@ export function lerConfirmacao(mensagem: string, pendente: Pendente, turno?: num
     const pedidoEducado = COMECA_AFIRMANDO.test(limpo) && perguntas.every((p) => PEDIDO_DE_ENVIO.test(p));
     if (!pedidoEducado) return /\d/.test(texto) ? "outra" : "pergunta";
   }
-  if (HESITA.test(limpo) || FRACA.test(limpo)) return "hesitacao";
+  if (HESITA.test(limpo)) {
+    // "acho que sim, mas no mês que vem": a hesitação não pode engolir o resto (L10).
+    const resto = limpo.replace(HESITA_E_NEUTRAS, " ").replace(/\s+/g, " ").trim();
+    return resto === "" || FRACA.test(resto) || SIM.test(resto) ? "hesitacao" : "outra";
+  }
+  if (FRACA.test(limpo)) return "hesitacao";
   if (!SIM.test(limpo)) return "outra";
   // Sim com caractere fora da lista permitida (emoji, ❓, ‽, o ";" grego): não é sim limpo, repete o pedido.
   if (!SO_CARACTERES_COMUNS.test(bruto)) return "hesitacao";

@@ -342,3 +342,25 @@ describe("P13: sim com palavra de referência ou de novidade, sem dado novo", ()
     for (const mensagem of ["sim, na segunda", "sim, entrada segunda-feira", "sim, segunda que vem"]) expect(lerConfirmacao(mensagem, GRM301, 3)).toBe("outra");
   });
 });
+
+describe("B1: a hesitação não engole a mudança; só é hesitação o que, sem as palavras de hesitação, fica vazio ou é sim", () => {
+  const DADOS = { imovel_id: "GRM-301", checkin: "15/01/2027", checkout: "18/01/2027", hospedes: 2, nome: "Ana Lima", telefone: "(11) 98888-0000" };
+  for (const mensagem of ["acho que sim, mas no mês que vem", "talvez, só eu", "pode ser, mas sem o pet", "acho que sim, sobrenome Souza",
+    "acho que sim, mas na semana que vem", "maybe next month", "acho que sim, mas posterga", "talvez, mas é Ana Lima Souza", "não sei, sozinho",
+    "pode ser mais tarde"]) {
+    it(`derruba, e o sim seguinte não envia: "${mensagem}"`, async () => {
+      const mundo = criarMundo();
+      let estado: EstadoLead = ESTADO_INICIAL;
+      const cofre: Cofre = { ler: () => estado, salvar: (e) => { estado = e; } };
+      const ctx = (turno: number, m: string) => criarContexto(mundo, cofre, turno, m);
+      await montarResumo.executar(DADOS, ctx(2, "quero fechar"));
+      expect(lerConfirmacao(mensagem, GRM301, 3)).toBe("outra");
+      await confirmarReserva.executar({}, ctx(3, mensagem));
+      await confirmarReserva.executar({}, ctx(4, "sim"));
+      expect(mundo.leads).toEqual([]);
+    });
+  }
+  for (const mensagem of ["acho que sim", "Acho que sim, talvez pode ser.", "pode ser", "talvez", "não sei ainda", "I think so", "not sure", "acho que sim, ok"]) {
+    it(`continua hesitação: "${mensagem}"`, () => expect(lerConfirmacao(mensagem, GRM301, 3)).toBe("hesitacao"));
+  }
+});
