@@ -1430,6 +1430,16 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   gasta 4 ou mais mensagens, então numa conversa com cotações o nome sai da janela de 80 bem antes de 40
   turnos. **Entrou na `main`: merge `--no-ff` de 8f8fbd5, main em fca00c9** (a `main` não tinha mudado em
   `src/`, `test/` nem `evals/` desde a árvore que o verificador rodou). A H foi avisada para mesclar
+- 14/11 01h34 · coordenadora · deploy de `dev` a partir da `main` 5d1f5f8 (código de fca00c9: G, T e F; versão
+  cdd3ca97). Fumaça `--bloco marco1`: 100%, p50 1,2 s, p95 4,5 s. Bloco `funciona-leads` inteiro pelo
+  proxy de registro (o caminho das rodadas oficiais): 100%, p50 1,6 s, p95 5,7 s, 43 chamadas gravadas,
+  proxy derrubado no fim. Nenhum dos dois conta como rodada
+- 14/11 01h34 · coordenadora · segunda passada da M2 adiantada: revisor de segurança (Opus 5.5, esforço alto)
+  lançado sobre o delta de `src/` desde c6764a0 até a `main` atual, sem a H. Olha o achado 2 da primeira
+  passada (trava de valores), injeção pelos pontos novos (pergunta fechada, chamada focada, textos de
+  recusa), lead sem confirmação por caminho novo, custo por turno e dado pessoal em log. O adendo da H
+  e do juiz vem depois que entrarem. Frente N recebeu a lista do que já pode escrever no presente e
+  dos limites novos (P24 a P28)
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
