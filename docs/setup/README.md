@@ -20,6 +20,8 @@ final fecha na entrega: a preencher.
 | [`skills/design-guidelines/SKILL.md`](skills/design-guidelines/SKILL.md) | frente J, passo 1 |
 | [`agents/code-reviewer.md`](agents/code-reviewer.md) | verificador das frentes A, B1, B2 e D (Claude Opus 5.5) |
 | [`agents/design-reviewer.md`](agents/design-reviewer.md) | frente J, passo 1 |
+| [`hooks/git-sync.sh`](hooks/git-sync.sh) | início de toda sessão Claude: busca o remoto e injeta o estado do git no contexto |
+| [`skills/orquestrar-entrega/SKILL.md`](skills/orquestrar-entrega/SKILL.md) | planejamento e coordenadora: formato do backlog e disciplina da coordenação (versão reduzida; revisão do Éverton: a preencher) |
 
 ## O que foi retirado das cópias
 
@@ -31,8 +33,11 @@ O repositório é público. As cópias saíram sem:
 - nomes de outros projetos e de clientes (trocados por descrição genérica);
 - chaves e e-mails de exemplo (trocados por marcador).
 
-As regras e as skills de design saíram como estão, salvo essas trocas. A skill
-`cloudflare-token` saiu reduzida ao que vale para esta entrega. O `CLAUDE.md` global não
+As regras, as skills de design e o hook saíram como estão, salvo essas trocas. A skill
+`cloudflare-token` saiu reduzida ao que vale para esta entrega. A skill
+`orquestrar-entrega` saiu reduzida ao formato do backlog e à disciplina da coordenadora:
+ela foi escrita para outro orquestrador de sessões, cujos comandos e scripts não rodaram
+aqui, e as medições de outras entregas saíram. O `CLAUDE.md` global não
 foi copiado: o extrato traz só as regras que valeram aqui.
 
 Onde uma regra global e o [`CLAUDE.md`](../../CLAUDE.md) deste repositório divergem, vale
