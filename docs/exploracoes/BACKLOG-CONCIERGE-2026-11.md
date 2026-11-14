@@ -500,6 +500,45 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   de instrução que escapa. Devolvida com o princípio "precisão antes de cobertura": rede de
   código que força handoff só dispara em padrão inequívoco, com bateria negativa de mensagens
   comuns, ou sai. Relatório fora do repositório
+- 13/11 20h45 · F · P13 e P14 entregues (ba10491): 636 testes; `lead-04` e `lead-07` voltam a
+  enviar; sim com valor junto repete o pedido com zero POST; os exemplos da primeira rodada
+  do verificador continuam com zero POST. Quatro leituras da frente aceitas: "resumo novo"
+  exige ter substituído outro resumo da sessão; "segunda" é ordinal só antes de substantivos
+  como reserva e estadia; o código do imóvel do próprio resumo junto do sim repete o pedido;
+  no rearme do fim do turno, palavra de novidade derruba o resumo. Conferido pela
+  coordenadora: ensaio do merge limpo, 636 testes, tipos e gate verdes; no runtime real,
+  `funciona-leads` 86% em duas rodadas e `contrato` 88%, só com `lead-05`, `lead-06` e
+  `con-07`, os três dependentes das ligações da G; 110 turnos sem contingência. Segunda
+  rodada de verificador independente (Opus) em curso; o merge espera o veredito
+- 13/11 21h00 · H · correções da segunda rodada entregues (73558c1): resumo cuja entrega falhou é
+  reapresentado antes de valer um "sim" (marca posta por identificador repetido, por
+  contingência do Worker e por turno que termina depois do prazo); teto da sessão a 50 s, com
+  5 s de folga para o Worker; corpo acima de 64 KB devolve `200` "longa demais" sem ler o
+  resto (P12); tabela de pedidos podada em 20; log do Worker com origem e classe; handoff de
+  contingência no estado; `tratarChat` foi para o arquivo novo `src/chat.ts` (da H). Conferido
+  pela coordenadora: ensaio limpo, 617 testes, tipos e gate verdes; no runtime real, 8.001
+  caracteres, 66 KB e 30 MB devolvem `200` em menos de 120 ms, `session_id` de 60 KB vale,
+  JSON inválido e campo faltando devolvem `400`; blocos `contrato` e `funciona-leads` iguais
+  aos da `main`. Com corpo de 5 MB o cliente local às vezes vê a conexão cair antes de ler o
+  `200` (até 1 MB recebe sempre): aceito. Pendente: a F muda de lugar `textoDoResumo` e passa
+  a devolver o resumo inteiro no pedido de confirmação; a H traz a F para a branch, ajusta o
+  import e a reapresentação sem resumo duplicado, e então roda a terceira rodada de verificador
+- 13/11 21h00 · integração · ensaio de F e G juntas sobre a `main`: merge limpo, tipos verdes, 832 de 835
+  testes. Os 3 que falham são da G (`test/robustez-g.test.ts`) e comparam o texto antigo do
+  pedido de confirmação, que a F trocou pelo resumo inteiro; nenhum é defeito de produto. A G
+  foi avisada para atualizar as expectativas mantendo a intenção. Ordem de entrada: F, H, G
+- 13/11 21h03 · F · segunda rodada do verificador independente (Opus) sobre ba10491: REPROVADO por dois
+  achados médios. Nenhuma sequência enviou dado diferente do último resumo mostrado; o que
+  reprova é a L10: (B1) hesitação junto com mudança sem número ("acho que sim, mas no mês que
+  vem") reexibe o resumo antigo e o sim seguinte o envia, 10 de 10; (B2) o rearme mantém o
+  resumo diante de negação de valor igual ("não são 2 pessoas") e em 19 de 64 mudanças, por
+  um defeito na marcação de valores iguais. Baixos: condição de preço sem `handoff` em formas
+  como "sim, se fizer 2 mil"; "sim, esse pedido" derruba em vez de confirmar; duas
+  confirmações simultâneas (a fila da H resolve); dois defeitos plantados sem teste. Passou:
+  A3 a A6 da primeira rodada, webhook e marcador, textos nos dois idiomas, nenhum teste
+  afrouxado, 21 de 25 defeitos plantados. Das 50 confirmações naturais testadas, 35 enviam;
+  "confirma" derrubava o resumo. Decidido: P15 (formas de confirmação e hesitação pura) e P14
+  reescrita com o teto de envios por reserva. Devolvida; depois, terceira rodada curta
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
