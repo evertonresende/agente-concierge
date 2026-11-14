@@ -1126,9 +1126,11 @@ describe("concorrência endurecida e falhas (frente H)", () => {
     expect(primeiroSim.headers.get("x-chamadas-modelo")).toBe("0");
     const dadoPrimeiroSim = await primeiroSim.json<{ reply: string; handoff: boolean }>();
     expect(dadoPrimeiroSim.handoff).toBe(false);
-    expect(dadoPrimeiroSim.reply).toContain("Resumo do seu pedido de reserva:");
+    expect(dadoPrimeiroSim.reply).toContain("Ainda não enviei este pedido");
+    expect(dadoPrimeiroSim.reply).toContain("O seu pedido de reserva ainda aguarda a sua confirmação.");
+    expect(dadoPrimeiroSim.reply.match(/Resumo do seu pedido de reserva:/g)).toHaveLength(1);
     expect(dadoPrimeiroSim.reply).toContain("Ana Lima");
-    expect(dadoPrimeiroSim.reply).toContain("R$ 2.156,00");
+    expect(dadoPrimeiroSim.reply.match(/R\$ 2\.156,00/g)).toHaveLength(1);
     expect(dadoPrimeiroSim.reply).toMatch(/confirmar, responda "sim"/);
     expect(mundo.leads).toEqual([]);
 
@@ -1372,5 +1374,127 @@ describe("concorrência endurecida e falhas (frente H)", () => {
     expect(logs.length).toBeGreaterThanOrEqual(3);
     expect(logs.join("\n")).not.toMatch(/Ana|Lima|98888|Sou |celular/);
   });
+
+  it("reapresentação após F (P11/P13): confirmações ('isso', 'Sim, confirmo com as novas datas' após troca) reapresentam 1x com 0 POSTs e próximo 'sim' envia 1 lead", async () => {
+    // 1. Confirmação P11 ('isso') com reapresentar posta: reapresenta sem chamar modelo e próximo 'sim' envia 1 lead.
+    const idIsso = `f-p11-isso-${++proxima}`;
+    const mundoIsso = criarMundo();
+    let chamadasIsso = 0;
+    const stubIsso = ambiente.SESSAO.getByName(`sessao:${idIsso}`);
+    await runInDurableObject(stubIsso, (s: Sessao) => {
+      s.dependencias = {
+        modelo: async (mensagens) => {
+          chamadasIsso++;
+          return ultimaDoHospede(mensagens) === "sim"
+            ? pedeFerramentas(chamar("confirmar_reserva"))
+            : pedeFerramentas(chamar("montar_resumo", DADOS));
+        },
+        buscar: mundoIsso.buscar,
+      };
+    });
+    const envPerdeEntrega = comNamespaceRealEnvolvido(async (real, args) => {
+      await real.conversar(...args);
+      throw new Error("entrega perdida");
+    });
+    await postChat(idIsso, "quero fechar", envPerdeEntrega);
+    expect(chamadasIsso).toBe(1);
+
+    const respIsso = await postChat(idIsso, "isso");
+    expect(respIsso.status).toBe(200);
+    expect(chamadasIsso).toBe(1);
+    const dadoIsso = await respIsso.json<{ reply: string; handoff: boolean }>();
+    expect(dadoIsso.handoff).toBe(false);
+    expect(dadoIsso.reply.match(/Resumo do seu pedido de reserva:/g)).toHaveLength(1);
+    expect(dadoIsso.reply.match(/R\$ 2\.156,00/g)).toHaveLength(1);
+    expect(mundoIsso.leads).toEqual([]);
+
+    const marcaPosIsso = await runInDurableObject(stubIsso, (_s, state) =>
+      state.storage.sql.exec<{ valor: string }>("SELECT valor FROM estado WHERE chave = 'reapresentar'").toArray()[0]?.valor ?? null);
+    expect(marcaPosIsso).toBeNull();
+
+    const simPosIsso = await postChat(idIsso, "sim");
+    expect(simPosIsso.status).toBe(200);
+    expect(mundoIsso.leads).toHaveLength(1);
+
+    // 2. P13 com segundo resumo perdido na entrega: 'Sim, confirmo com as novas datas' é lido como sim pela F →
+    // reapresenta sem chamar modelo nem POST → 'sim' seguinte envia 1 lead das datas novas.
+    const idNovas = `f-p13-novas-${++proxima}`;
+    const mundoNovas = criarMundo();
+    let chamadasNovas = 0;
+    const stubNovas = ambiente.SESSAO.getByName(`sessao:${idNovas}`);
+    await runInDurableObject(stubNovas, (s: Sessao) => {
+      s.dependencias = {
+        modelo: async (mensagens) => {
+          chamadasNovas++;
+          const u = ultimaDoHospede(mensagens);
+          if (u === "sim") return pedeFerramentas(chamar("confirmar_reserva"));
+          if (u === "muda saida") return pedeFerramentas(chamar("montar_resumo", { ...DADOS, checkout: "17/01/2027" }));
+          return pedeFerramentas(chamar("montar_resumo", DADOS));
+        },
+        buscar: mundoNovas.buscar,
+      };
+    });
+    await postChat(idNovas, "quero fechar");
+    await postChat(idNovas, "muda saida", envPerdeEntrega);
+    expect(chamadasNovas).toBe(2);
+
+    const respNovas = await postChat(idNovas, "Sim, confirmo com as novas datas");
+    expect(respNovas.status).toBe(200);
+    expect(chamadasNovas).toBe(2);
+    const dadoNovas = await respNovas.json<{ reply: string; handoff: boolean }>();
+    expect(dadoNovas.handoff).toBe(false);
+    expect(dadoNovas.reply.match(/Resumo do seu pedido de reserva:/g)).toHaveLength(1);
+    expect(dadoNovas.reply).toContain("17/01/2027");
+    expect(mundoNovas.leads).toEqual([]);
+
+    const simPosNovas = await postChat(idNovas, "sim");
+    expect(simPosNovas.status).toBe(200);
+    expect(mundoNovas.leads).toMatchObject([{ checkout: "2027-01-17" }]);
+  });
+
+  it("reapresentação após F (P11/P13): 's', 'ok', 'Sim, confirmo o GRM-301' e 'Sim, confirmo com as novas datas' sem resumo novo seguem caminho normal com 0 POSTs e limpam marca", async () => {
+    for (const mensagem of ["s", "ok", "Sim, confirmo o GRM-301", "Sim, confirmo com as novas datas"]) {
+      const id = `f-nao-sim-${++proxima}`;
+      const mundo = criarMundo();
+      let chamadasModelo = 0;
+      const stub = ambiente.SESSAO.getByName(`sessao:${id}`);
+      await runInDurableObject(stub, (s: Sessao) => {
+        s.dependencias = {
+          modelo: async (mensagens) => {
+            chamadasModelo++;
+            const u = ultimaDoHospede(mensagens);
+            if (u === "quero fechar") return pedeFerramentas(chamar("montar_resumo", DADOS));
+            return pedeFerramentas(chamar("confirmar_reserva"));
+          },
+          buscar: mundo.buscar,
+        };
+      });
+
+      const envPerdeEntrega = comNamespaceRealEnvolvido(async (real, args) => {
+        await real.conversar(...args);
+        throw new Error("entrega perdida");
+      });
+      await postChat(id, "quero fechar", envPerdeEntrega);
+      expect(chamadasModelo).toBe(1);
+
+      const resp = await postChat(id, mensagem);
+      expect(resp.status).toBe(200);
+      expect(chamadasModelo).toBe(2);
+      expect(mundo.leads).toEqual([]);
+      const dado = await resp.json<{ reply: string; handoff: boolean }>();
+      expect(dado.handoff).toBe(false);
+      expect(dado.reply.match(/Resumo do seu pedido de reserva:/g)).toHaveLength(1);
+      expect(dado.reply.match(/R\$ 2\.156,00/g)).toHaveLength(1);
+
+      const marca = await runInDurableObject(stub, (_s, state) =>
+        state.storage.sql.exec<{ valor: string }>("SELECT valor FROM estado WHERE chave = 'reapresentar'").toArray()[0]?.valor ?? null);
+      expect(marca).toBeNull();
+
+      const simLimpo = await postChat(id, "sim");
+      expect(simLimpo.status).toBe(200);
+      expect(mundo.leads).toHaveLength(1);
+    }
+  });
 });
+
 

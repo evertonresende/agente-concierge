@@ -1,13 +1,13 @@
 // Uma sessão de conversa = um Durable Object. Guarda o histórico e o estado do lead
 // em SQLite e garante uma mensagem por vez.
 import { DurableObject } from "cloudflare:workers";
-import { textoDoResumo } from "./agente/ferramentas/lead";
 import { CONTINGENCIA, rodarTurno } from "./agente/loop";
 import { criarCatalogo } from "./catalogo";
 import type { Env } from "./env";
 import {
-  apresentarResumo, type Cofre, destinoDosLeads, destinoPermitido, ESTADO_INICIAL, type EstadoLead,
+  type Cofre, destinoDosLeads, destinoPermitido, ESTADO_INICIAL, type EstadoLead,
   lerConfirmacao, pedidoDeConfirmacaoPendente, type Pendente, pendenteAberto, postarLead,
+  textoDoPedidoDeConfirmacao,
 } from "./lead";
 import { criarModelo, type Mensagem, type Modelo } from "./modelo";
 import { dataCivilEmSaoPaulo } from "./nucleo/datas";
@@ -217,7 +217,7 @@ export class Sessao extends DurableObject<Env> {
       const pendentePersistido = estadoInicial.pendente;
       const pendenteAbertoInicial = pendenteAberto(estadoInicial);
 
-      if (deveReapresentar && pendenteAbertoInicial && lerConfirmacao(mensagem, pendenteAbertoInicial) === "sim") {
+      if (deveReapresentar && pendenteAbertoInicial && lerConfirmacao(mensagem, pendenteAbertoInicial, turno) === "sim") {
         let pendenteEmCurso: Pendente | null = pendenteAbertoInicial;
         const cofreLocal: Cofre = {
           ler: () => ({ ...estadoInicial, pendente: pendenteEmCurso }),
@@ -228,19 +228,18 @@ export class Sessao extends DurableObject<Env> {
           ...historicoAtual.filter((m) => m.role === "user").map((m) => m.content),
           mensagem,
         ]);
-        if (pedidoDeConfirmacaoPendente(cofreLocal, turno, idioma) === undefined) {
-          apresentarResumo(
-            cofreLocal,
-            pendenteAbertoInicial.reserva,
-            pendenteAbertoInicial.totalCentavos,
-            turno,
-            pendenteAbertoInicial.nomeDoImovel,
-          );
+        const pedido = pedidoDeConfirmacaoPendente(cofreLocal, turno, idioma);
+        let corpo: string;
+        if (pedido !== undefined) {
+          corpo = pedido;
+        } else {
+          pendenteEmCurso = { ...pendenteAbertoInicial, turno };
+          corpo = textoDoPedidoDeConfirmacao(pendenteEmCurso, idioma);
         }
         const aviso = idioma === "en"
           ? "I have not sent this request yet. To avoid any mistake, please check the request once more."
           : "Ainda não enviei este pedido. Para não haver engano, confira o pedido mais uma vez.";
-        const reply = `${aviso}\n\n${textoDoResumo(pendenteAbertoInicial, idioma)}`;
+        const reply = `${aviso}\n\n${corpo}`;
         const resposta: RespostaDoChat = { reply, handoff: false, uso: SEM_USO };
 
         const estourouWorker = prazoWorker !== undefined && Date.now() >= limiteWorker;
@@ -299,6 +298,7 @@ export class Sessao extends DurableObject<Env> {
       // reinício do objeto; `pendente` só é gravado junto com o histórico na transação do fim
       // do turno, para um resumo não entregue nunca ficar confirmável.
       let pendenteEmCurso: Pendente | null = pendentePersistido;
+      let resumosMostradosEmCurso = estadoInicial.resumosMostrados;
       let turnoAberto = true;
       let falhaExterna: CausaContingencia | null = null;
       let ultimaEtapa: "modelo" | "catalogo" | "lead" | null = null;
@@ -306,14 +306,15 @@ export class Sessao extends DurableObject<Env> {
       const cofre: Cofre = {
         ler: () => {
           const atual = this.ler<EstadoLead>("lead", ESTADO_INICIAL);
-          return { pendente: pendenteEmCurso, envios: atual.envios };
+          return { pendente: pendenteEmCurso, envios: atual.envios, resumosMostrados: resumosMostradosEmCurso };
         },
         salvar: (estado) => {
           if (!turnoAberto) return;
           pendenteEmCurso = estado.pendente;
+          resumosMostradosEmCurso = estado.resumosMostrados;
           const atual = this.ler<EstadoLead>("lead", ESTADO_INICIAL);
           if (JSON.stringify(estado.envios) !== JSON.stringify(atual.envios)) {
-            this.gravar("lead", { pendente: atual.pendente, envios: estado.envios });
+            this.gravar("lead", { ...atual, envios: estado.envios });
           }
         },
       };
@@ -410,6 +411,7 @@ export class Sessao extends DurableObject<Env> {
       const pendenteFinal = contingenciaFinal
         ? (pendenteEmCurso === pendentePersistido ? pendentePersistido : null)
         : pendenteEmCurso;
+      const resumosMostradosFinal = contingenciaFinal ? estadoInicial.resumosMostrados : resumosMostradosEmCurso;
 
       const replyFinal = contingenciaFinal ? CONTINGENCIA : saida.reply;
       const handoffFinal = contingenciaFinal ? true : saida.handoff;
@@ -426,8 +428,15 @@ export class Sessao extends DurableObject<Env> {
         }
         if (handoffFinal) this.gravar("handoff", true);
         const atual = this.ler<EstadoLead>("lead", ESTADO_INICIAL);
-        if (JSON.stringify(pendenteFinal) !== JSON.stringify(atual.pendente)) {
-          this.gravar("lead", { ...atual, pendente: pendenteFinal });
+        if (
+          JSON.stringify(pendenteFinal) !== JSON.stringify(atual.pendente)
+          || resumosMostradosFinal !== atual.resumosMostrados
+        ) {
+          this.gravar("lead", {
+            ...atual,
+            pendente: pendenteFinal,
+            ...(resumosMostradosFinal !== undefined ? { resumosMostrados: resumosMostradosFinal } : {}),
+          });
         }
         if (deveReapresentar && !contingenciaFinal) {
           this.ctx.storage.sql.exec("DELETE FROM estado WHERE chave = 'reapresentar'");
