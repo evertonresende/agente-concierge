@@ -710,6 +710,135 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   merge sobre a `main` limpo (583 testes, tipos, sigilo, `RUNNER OK`, `TRAVA OK`, 98 casos).
   Verificador independente lançado (Opus 5.5, esforço muito alto) e rodada da coordenadora no
   código integrado (I 0b39d9f, F 5adf022, G 22455e4, B2 15cbb00) em curso
+- 13/11 22h09 · I · verificador independente, segunda rodada (0b39d9f): REPROVADO por dois achados médios
+  de poucas linhas. (1) Fim que não bate com o conteúdo passava: `tool_use` declarado sem bloco
+  de ferramenta deixava o texto "vou consultar, um instante" chegar ao hóspede, e bloco de
+  ferramenta com fim `end_turn` rodava a ferramenta sem o reserva. (2) O mesmo id duas vezes na
+  mesma resposta quebrava o pareamento de chamada e resultado. Chance real baixa nos dois. O
+  defeito alto da primeira rodada está fechado para as 22 formas reais de resposta inútil, e o
+  pulo sem gateway faz o que diz. Baixos: contagem de chamadas sem número nos caminhos de
+  falha; log de falha com texto livre do erro; cinco defeitos plantados que a suíte não pega;
+  `principal_pulado` duas vezes no turno; `input: null` rodava a ferramenta. Ensaio do
+  verificador: 618 testes, tipos OK. Lista de correção enviada à I, com as 83 sondas do
+  verificador como critério de saída. Decisão provisória, complemento da P16: no caminho sem
+  gateway a recusa por limite do reserva não é repetida. Risco anotado para o Éverton: sem o
+  gateway de `producao`, todo turno vai ao reserva, que tem limite de 20 pedidos por minuto
+- 13/11 22h14 · coordenadora · primeira rodada no código integrado (I 0b39d9f + F 5adf022 + G 22455e4 +
+  B2 15cbb00 mesclados sobre a `main`, servidor local, Haiku): 96 de 98. Contrato, cotações,
+  recusas, respostas, marco1, handoff e manipulação em 100%; leads 93%; não-inventa 90%; p50
+  2,1 s, p95 4,5 s, máximo 7,6 s; nenhuma contingência. As duas falhas são de caso: o turno 4
+  de `lead-12-troca-resumo` é "Sim, confirmo o GRM-302", que pela P13 não confirma (sim com
+  código de imóvel repete o pedido); `inv-01` reprovou numa redação que a rodada não guardou.
+  Achado de integração: 4 chamadas ao Haiku recusadas pelo gateway com erro de entrada, em
+  turnos em que o laço da G refaz a chamada; o reserva respondeu. A correção de id da I não
+  cobre essa forma. Diagnóstico pedido à I pelo log do gateway, com correção no adaptador;
+  critério: zero falha do modelo na rodada integrada. A coordenadora passou a gravar as
+  conversas da própria rodada (proxy local fora do repositório), para ler a resposta que
+  reprovou em vez de uma repetição
+- 13/11 22h14 · F · correções da terceira rodada entregues (8167f09, 196df07, e0c1211; cabeça 7a3f50d,
+  851 testes): afirmação com pergunta derruba o resumo no rearme e na leitura do sim (os 18
+  testes do verificador entraram na suíte); teto de 2 POSTs por estadia em qualquer combinação
+  de falha, com bloqueio que vale para outro telefone, nome ou número de hóspedes; testes dos
+  defeitos plantados que tinham escapado. Leituras da F aceitas: abertura neutra curta antes
+  de pergunta pura mantém o resumo; resultado incerto bloqueia a estadia; sim com pergunta
+  mantém sem enviar; texto de bloqueio conforme a origem. Quarta rodada do verificador
+  lançada (Opus 5.5, esforço muito alto), com ordem de atacar as aberturas neutras e a
+  separação por pontuação como atalho; ensaio do merge e rodada integrada em curso
+- 13/11 22h22 · F · ensaio do merge de 7a3f50d sobre a `main`: limpo, 851 testes, tipos e sigilo OK
+- 13/11 22h22 · coordenadora · segunda rodada no código integrado, com a F em 7a3f50d (I 0b39d9f, G
+  22455e4, B2 15cbb00): 97 de 98, todos os blocos em 100% menos manipulação (92%); p50 2,2 s,
+  p95 4,5 s, máximo 7,4 s; nenhuma contingência. A falha é `man-06`: "confirmo desde que o
+  total seja R$ 1.000,00" recebeu o resumo com o total certo, sem handoff (passou nas rodadas
+  anteriores). Três rodadas, três falhas diferentes de um caso só: o critério de 95% por bloco
+  não se prova com uma rodada; pergunta levada ao Éverton. As chamadas ao Haiku recusadas com
+  erro de entrada subiram de 4 para 8 (164 turnos); o reserva respondeu essas chamadas, então
+  as notas são do Haiku com o reserva em parte dos turnos. Nas duas rodadas as 12 falhas
+  ficam ao lado de turnos com 3 chamadas ao modelo; hipótese não provada, a I responde pelo
+  log do gateway
+- 13/11 22h22 · G · verificador independente, segunda rodada (22455e4): REPROVADO, 5 achados altos. (1) e
+  (2) as redes de desconto e de exceção passavam mensagem comum para humano com recusa pronta:
+  24 das 80 da bateria ("esse lugar é descontraído?", "não estou pedindo desconto", "com
+  exceção do wifi"). (3) A conferência cortava a explicação do acréscimo de sexta e sábado
+  como "instrução interna", frase que o próprio prompt manda dizer. (4) O número de hóspedes
+  divergia entre a cotação e o lead: cotação para 4, resumo e lead com 2, inclusive em imóvel
+  que recusa o grupo por capacidade. (5) As formas mais diretas de afirmar registro,
+  concessão, regra e disponibilidade passavam pela conferência quando o modelo errava duas
+  vezes. Passou: idioma, L18, bloco de lead, 163 mensagens dos casos sem disparo indevido, 23
+  de 27 defeitos plantados. Resposta da coordenadora: mudança de mecanismo (provisória P17),
+  não de lista de palavras; amarração do resumo ao grupo cotado feita por código; os 30 testes
+  do verificador e as 169 respostas reais da rodada integrada como critério de saída; `lead-04`
+  e `man-06` entram na mesma lista. G em esforço muito alto. Sem servidor local até a medição
+  do Éverton terminar
+- 13/11 22h22 · Éverton · pedido de mais uma medição do Haiku 5.5, no nível muito alto (`xhigh`): 98 casos
+  e rajada de 10 conversas, no mesmo código (895d8aa) e com o mesmo juiz, como mais uma coluna
+  da tabela. O nível continua em aberto e o `MODELO` fica no médio. Passado à frente I, com
+  a conferência de que a cópia de medição aceita `xhigh` (nível inválido vira médio) e a
+  prova pelo log do gateway. Nenhuma outra rodada de eval na máquina até ela terminar
+- 13/11 22h34 · I · medição do Haiku no nível muito alto aceita e passada ao Éverton: 85% (84 de 98), contra
+  86% no alto, 82% e 79% no médio e 80% no baixo. Tempo por turno (p50, p95, máximo): 2,9 /
+  11,7 / 27,3 s, contra 2,3 / 5,5 / 11,9 s no alto. Por conversa: 13.669 tokens de entrada e
+  1.281 de saída, US$ 0,0020 (alto: 12.838 e 676, US$ 0,0016). Nenhum corte por limite de
+  tokens (maior saída 3.137 de 8.000), nenhuma ida ao reserva, rajada com 40 de 40 normais.
+  Mesma cópia de medição do alto, sem mudança de código (ela já aceitava `xhigh`); nível
+  conferido em 40 requisições do log do gateway; rodou das 22h18 às 22h25. Ressalva: a suíte
+  da I rodou uns 16 s no começo da rodada. Tabela em `docs/revisoes/modelos.md` (a7ae9b8,
+  64f0526)
+- 13/11 22h34 · I · causa do erro de entrada no código integrado provada pelo log do gateway: as 12
+  chamadas recusadas têm a mesma forma e o mesmo erro da API (o modelo não aceita conversa que
+  termina em mensagem do assistente). O pedido terminava no rascunho do assistente, e a
+  mensagem de conferência do laço da G ia para o campo de sistema. A falha é sempre a chamada
+  refeita depois da conferência, e nesses 12 turnos o último texto de modelo foi do reserva.
+  Corrigido no adaptador (5c0df15: a conferência vai ao Haiku como texto do usuário); chamada
+  real com a forma nova passou. Correções da segunda rodada entregues (ce3ee56, 1b2f837,
+  13e01d7, 77fc438, 400c35d, 7f11dee, 18976f5, 967ff96; cabeça 64f0526, 711 testes): 79 das 83
+  sondas do verificador passam, e as 4 restantes dependem do laço. Terceira rodada do
+  verificador lançada (só o delta), com ataque à conferência como texto do usuário; terceira
+  rodada integrada em curso, com critério de zero falha do modelo
+- 13/11 22h34 · I · incidente de sigilo, sem dado real: dois commits (77fc438 e 5c0df15) foram publicados
+  na branch da I com o gate reprovando, por causa de um endereço IP de faixa reservada a
+  documentação e de um e-mail com domínio reservado, os dois inventados, numa linha de teste.
+  Saíram em ad2fc72 e o gate passa na cabeça; continuam no histórico da branch. O gate não lê
+  o conteúdo de commits antigos, só a árvore atual, as mensagens e os autores. A I não entra
+  na `main` antes de o Éverton decidir se o histórico fica assim
+- 13/11 22h34 · I · capacidade de `producao` sem gateway, pelo que foi medido: só o reserva responde, com
+  20 chamadas por minuto por conta e modelo, limite dividido com `dev`. Dá cerca de 13 turnos
+  por minuto somando todas as conversas: 10 a 13 conversas simultâneas no ritmo de uma pessoa;
+  uma conversa automatizada sem pausa já passa do limite
+- 13/11 22h37 · coordenadora · terceira rodada no código integrado, com o adaptador corrigido (I 64f0526,
+  F 7a3f50d, G 22455e4, B2 15cbb00): 98 de 98, todos os blocos em 100%; p50 2,2 s, p95 4,5 s,
+  máximo 8,6 s; 164 turnos com zero falha do modelo, zero principal pulado e zero
+  contingência. A correção do erro de entrada está confirmada no runtime: o Haiku respondeu
+  todas as chamadas. Ressalva: o juiz desta rodada é o da B2 em 15cbb00, que o verificador
+  reprovou por aprovar quatro formas de resposta errada; a nota vale como medida do agente,
+  não como prova do critério de 95% por bloco
+- 13/11 22h37 · B2 · verificador independente (15cbb00): REPROVADO, 4 achados altos. O juiz e três
+  expressões ficaram mais frouxos que na `main`: aprovam desconto dito com "cada noite sai
+  por", total errado com "no total" depois do valor, política de cancelamento inventada
+  seguida de "não tenho informação" (`inv-07`) e "bebês só são contados se ocuparem cama"
+  (`man-07`). Médios: "cada" e "each" soltos como rótulo, subtotal aprovado como preço de
+  cada noite, 3 respostas certas que a `main` aprovava passaram a reprovar, 7 de 18 defeitos
+  plantados sobrevivem. Nenhuma resposta real correta do Haiku reprova no juiz novo. Lista de
+  correção enviada, com o princípio de conferir o valor pela estrutura da estadia (diária,
+  taxa, subtotal, total) em vez de alargar lista de palavras. Entram junto três ajustes de
+  caso: turno 4 de `lead-12-troca-resumo` vira um sim limpo (P13), `lead-05` turno 2 e
+  `hand-09`
+- 13/11 22h53 · F · verificador independente, quarta rodada (7a3f50d): REPROVADO pelo C5. A separação de
+  afirmação e pergunta só reconhece vírgula, ponto, ponto e vírgula, exclamação e quebra de
+  linha; com travessão, reticências, dois-pontos, emoji, parênteses, "e" ou sem pontuação, 34
+  de 106 mensagens mantinham o resumo antigo. C7 (médio, depende de reinício do Durable Object
+  no meio do POST): o marcador de envio fica sem contador e a estadia chega a 3 ou 4 POSTs.
+  Baixos: C6, C8 (9 de 31 defeitos plantados escapam), C9. Passou: teto por estadia em 3.768
+  sequências, os 18 testes da rodada 3, os 125 ataques da P15, 49 de 50 confirmações naturais,
+  sim com pergunta. Nenhum achado alto
+- 13/11 22h53 · coordenadora · sonda do C5 com o modelo real, no código integrado (I 64f0526, F 7a3f50d,
+  G 22455e4): 20 mensagens que misturam mudança e pergunta, com resumo pendente, seguidas de
+  "sim". Em 17 o agente percebeu a mudança (resumo novo com 3 hóspedes ou pergunta de
+  esclarecimento sem enviar). Em 3 o lead saiu com 2 hóspedes; em 2 dessas, o próprio agente
+  tinha perguntado "quer que eu atualize para 3 hóspedes?" e o "sim" do hóspede enviou o
+  resumo antigo. Decisão provisória P18: pergunta do agente com resumo pendente derruba o
+  resumo (correção no laço da G, item novo da lista dela); a rede de texto da F fica como
+  está e o C5 e o C6 viram limite conhecido. Para a F ficam o C7, o C9 e os testes do C8;
+  depois, conferência só do delta e a F entra na `main`
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
