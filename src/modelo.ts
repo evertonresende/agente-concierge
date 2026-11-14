@@ -337,14 +337,20 @@ export function criarModelo(ai: Ai, modelo: string | undefined, opcoes: OpcoesDo
     }
   };
 
+  const turnosRegistrados = new WeakSet<Mensagem>();
   return async (mensagens, ferramentas) => {
     if (!modelo) throw comChamadas(new Error("MODELO não configurado"), 0);
     if (!opcoes.reserva) return contado(comMarcaDeLimite(chamar(modelo, mensagens, ferramentas), true), 1);
     // Modelo de terceiro sem gateway sempre falha (erro 2021 em cerca de 2,8 s, medido em
     // dev): nem tenta, o reserva responde direto. Decisão provisória da coordenação.
     if (ehAnthropic(modelo) && !opcoes.gateway) {
-      // Um registro por turno: a primeira chamada do turno termina na mensagem do hóspede.
-      if (mensagens.at(-1)?.role === "user") console.warn(JSON.stringify({ evento: "principal_pulado", modelo, motivo: "sem AI_GATEWAY" }));
+      // Um registro por turno: a mensagem do hóspede que abre o turno é registrada uma vez,
+      // mesmo quando o loop repete a primeira chamada com a mesma mensagem.
+      const ultima = mensagens.at(-1);
+      if (ultima?.role === "user" && !turnosRegistrados.has(ultima)) {
+        turnosRegistrados.add(ultima);
+        console.warn(JSON.stringify({ evento: "principal_pulado", modelo, motivo: "sem AI_GATEWAY" }));
+      }
       return contado(comMarcaDeLimite(chamar(opcoes.reserva, mensagens, ferramentas), false), 1);
     }
     let principalPorLimite: boolean;

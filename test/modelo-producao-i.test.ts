@@ -43,6 +43,18 @@ describe("producao sem gateway para o Haiku", () => {
     expect(linhas.join("\n")).toContain("sem AI_GATEWAY");
   });
 
+  it("principal_pulado sai uma vez por turno, também quando o loop repete a primeira chamada", async () => {
+    const aviso = vi.spyOn(console, "warn").mockImplementation(() => {});
+    let n = 0;
+    const ai = { run: async () => (++n === 1 ? { choices: [{ message: { content: "" } }] } : { choices: [{ message: { content: "Resposta do reserva." } }] }) } as unknown as Ai;
+    const saida = await turno(ai);
+    const linhas = aviso.mock.calls.map((c) => String(c[0])).filter((l) => l.includes("principal_pulado"));
+    aviso.mockRestore();
+    expect(n).toBe(2);
+    expect(saida.reply).toBe("Resposta do reserva.");
+    expect(linhas).toHaveLength(1);
+  });
+
   it("sem gateway, uso.chamadas conta só a chamada real ao reserva", async () => {
     const { ai } = aiDeProducao(true);
     const r = await criarModelo(ai, HAIKU, { reserva: RESERVA })([{ role: "user", content: "oi" }], []);
