@@ -1662,6 +1662,23 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   do catálogo das 02h04 não se repetiu num deploy que muda código). Fumaça declarada do `marco1`: 100%.
   **Primeira rodada oficial iniciada**, pelo proxy de registro. F e B2 preparam um commit cada, só de
   teste e só de documentação, para depois das três rodadas
+- 14/11 02h55 · G · **correção do registro: o veredito final do verificador da rodada 4 é REPROVADO**, não
+  aprovado. Erro da coordenação: o relatório foi lido às 02h44, antes de o verificador terminar, quando
+  a primeira linha dizia aprovado; ele achou o ponto abaixo depois e regravou o arquivo às 02h49, e a G
+  já tinha sido mesclada (b0b8e73) e a `main` congelada (b5af852). Daqui em diante, veredito só vale
+  quando a tarefa do verificador termina. O achado (R1): com resumo visto e "sim", se o modelo manda no
+  mesmo lote 16 ou mais chamadas, um `cotar` com datas novas ou um `montar_resumo` com dado novo, e a
+  confirmação, o teto corta o `cotar` ou o `montar_resumo`, que antes derrubava a confirmação pendente,
+  e a confirmação, isenta do teto, envia o resumo antigo. No pai, 0 POST nos quatro cenários; na cabeça,
+  1. O lead que sai é o resumo que o hóspede viu e confirmou com "sim" limpo, então não é lead errado, e
+  o verificador diz que a coordenação pode reclassificar; mas a barra dizia que o teto não abre caminho
+  no lead, e é desvio determinístico de uma trava que existia. Decisão: corrigir, não reclassificar.
+  Pedido à G: se o teto cortou um `cotar` ou um `montar_resumo` do lote, a confirmação do lote também
+  não roda. Depois, verificador curto, merge, novo congelamento e a contagem das rodadas recomeça (a
+  regra das rodadas já prevê). O resto da barra passou (itens 1 a 4 e 6 a 9). A rodada que está em
+  curso na árvore b5af852 termina e fica registrada, fora da contagem se a correção entrar; as outras
+  duas rodam nessa mesma árvore enquanto a correção é feita e verificada, para haver um conjunto
+  completo de três caso a correção não feche
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -1689,12 +1706,12 @@ M2 sem achado determinístico nem de lead errado na H (a primeira rodada oficial
 dela). Meta: 14/11 03h00. Limite: 06h00. Gatilho que já existia: 10h00 com o critério 4 não
 verde, parar e chamar o Éverton.
 
-**Estado do congelamento em 14/11 02h52. CONGELADA em b5af852.** Na `main`: G (com a P30), T (P21), F (P20,
-"sim" limpo e P29), H (fila da sessão e P24), B2 (juiz, casos e trava do runner), o script da K e o
-gate da S. A segunda passada da M2 fechou sem achado que bloqueie. `dev` publicado desse commit, com a
-sonda de pós-deploy limpa e a fumaça do `marco1` em 100%. Rodadas oficiais em curso. Daqui até o fim
-das três rodadas, nada que mude o comportamento do agente ou o juiz entra na `main`; commit só de
-teste ou só de documentação espera o fim delas.
+**Estado do congelamento em 14/11 02h55. Congelamento de b5af852 REABERTO para uma correção.** Na `main`: G
+(com a P30), T (P21), F (P20, "sim" limpo e P29), H (fila da sessão e P24), B2 (juiz, casos e trava do
+runner), o script da K e o gate da S. O verificador da P30 fechou em REPROVADO por um ponto do caminho
+do lead (confirmação que roda quando o teto corta o `cotar` ou o `montar_resumo` do mesmo lote); a G
+está corrigindo. Quando a correção tiver veredito e entrar, a `main` congela de novo, `dev` é
+republicado e a contagem das três rodadas recomeça. As rodadas na árvore b5af852 ficam registradas.
 
 **Plano B, decisão do Éverton (perguntado em 14/11).** Um ciclo de correção e verificação leva
 cerca de 85 minutos; cabem dois até as 06h00. Se a H ou o juiz não fecharem nesse prazo, a escolha
