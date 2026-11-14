@@ -168,7 +168,8 @@ O custo das duas primeiras está declarado como limite no [README](../README.md)
 
 - Escrito pela frente C, em outro provedor (GPT-6 Astra), lendo só o contrato e o plano de
   evals, sem ver os casos de desenvolvimento: 60 casos, 13 com confirmação.
-- Fica em `~/.config/agente-concierge/reservado/`, fora de toda worktree, até a entrega.
+- Ficou em `~/.config/agente-concierge/reservado/`, fora de toda worktree, até a entrega de
+  14/11. Agora está em [`evals/casos/reservado/`](../evals/casos/reservado/).
 - O runner força `--so-agregado` nesse conjunto: sai só o acerto por bloco, sem id, sem
   mensagem e sem resposta.
 - A frente C foi avisada das classes de defeito de expectativa achadas nos casos de

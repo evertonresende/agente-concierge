@@ -13,7 +13,7 @@ despacha frentes em worktrees, confere cada entrega com ensaio de merge, suíte,
 CHECK no runtime real, pede um verificador independente e, por regra, só então faz o
 merge (os merges que entraram sem verificador aprovado estão numa tabela do "Como foi
 feito", seção 4). O
-conjunto reservado fica fora do repositório e só devolve o agregado. Uma segunda sessão de
+conjunto reservado ficou fora do repositório até a entrega de 14/11 e só devolve o agregado. Uma segunda sessão de
 IA, revisora do Éverton e fora da cadeia da coordenadora, lê o repositório e os relatórios
 e devolve os achados a ele, que viram itens do backlog. A frente K pede ao Éverton a ordem
 para ligar o envio real de leads, e só ele a dá.
