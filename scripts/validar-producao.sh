@@ -8,9 +8,11 @@
 #                 só com o veredito do runner e um mínimo de casos executados. Os extras
 #                 aceitos são só os três acima, repassados ao runner.
 #   --so-leitura  só o GET no webhook real → LEADS REAIS: <n>
+#                 Exige zero lead real antes e depois: depois da entrega, use --entrega.
 #   --clientes    um turno sem confirmação no POST /chat com curl, Python requests,
 #                 Python urllib e fetch do Node, cada um com o agente de usuário padrão
-#                 → CLIENTES OK
+#                 → CLIENTES OK. Confere só ambiente=producao, não o envio: a mensagem é
+#                 fixa e não confirma nada, então não gera lead.
 #   --entrega     /saude com o envio ligado e LEADS REAIS; reprova se o envio estiver
 #                 desligado. Não manda nenhuma conversa.
 #   --autoteste   confere as funções do script, sem rede → AUTOTESTE OK
@@ -20,13 +22,14 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 exec python3 -I - "$@" <<'PY'
-import json, os, re, subprocess, sys, tempfile, urllib.error, urllib.parse, urllib.request, uuid
+import json, os, re, shutil, socket, subprocess, threading, sys, tempfile, urllib.error, urllib.parse, urllib.request, uuid
 
 MODOS = {"--so-leitura", "--clientes", "--entrega", "--autoteste"}
 MENSAGEM = "Olá! Em quais cidades vocês têm imóveis?"
 VARIAVEIS = ("CATALOGO_URL", "LEADS_URL", "AMBIENTE", "MODELO", "ENVIO_LEADS")
 CONHECIDOS = {"producao", "dev", "real", "falso", "ligado", "desligado", None}
 TEMPO_S = 60
+TEMPO_DO_RUNNER_S = 2 * 3600
 EXTRAS_ACEITOS = {"--paralelo", "--pausa-ms", "--timeout-ms"}
 # Em 14/11, 69 dos 98 casos do conjunto dev rodam fora de dev (os outros 29 a trava recusa).
 # ponytail: piso fixo; se a B2 remarcar muitos casos como só-dev, ajustar aqui.
@@ -58,6 +61,19 @@ def url_leads(catalogo_url):
     return urllib.parse.urlunsplit(partes._replace(path="/".join(segmentos)))
 
 
+def enderecos_ip(host):
+    try:
+        return {info[4][0] for info in socket.getaddrinfo(host, None)}
+    except OSError:
+        return set()
+
+
+def exigir_ferramentas(*nomes):
+    faltando = [nome for nome in nomes if shutil.which(nome) is None]
+    if faltando:
+        raise Falha("falta a ferramenta: " + ", ".join(faltando))
+
+
 class Limpador:
     """Tira da saída qualquer endereço, inclusive os que vêm em texto de terceiros."""
 
@@ -69,11 +85,12 @@ class Limpador:
                 host = urllib.parse.urlsplit(valor).hostname
                 if host:
                     segredos.add(host)
+                    segredos.update(enderecos_ip(host))
         self.segredos = sorted(segredos, key=len, reverse=True)
 
     def __call__(self, texto):
         for segredo in self.segredos:
-            texto = texto.replace(segredo, "<oculto>")
+            texto = re.sub(re.escape(segredo), "<oculto>", texto, flags=re.IGNORECASE)
         return re.sub(r"https?://\S+", "<url>", texto)
 
 
@@ -180,7 +197,7 @@ def chat_curl(url):
         with open(os.open(config, os.O_WRONLY | os.O_CREAT, 0o600), "w") as arquivo:
             arquivo.write(f'url = "{url}"\n')
         processo = subprocess.run(
-            ["curl", "-sS", "--max-time", str(TEMPO_S), "--config", config, "-H", "Content-Type: application/json",
+            ["curl", "-q", "-sS", "--max-time", str(TEMPO_S), "--config", config, "-H", "Content-Type: application/json",
              "--data-binary", "@-", "-o", saida, "-w", "%{http_code} %{content_type}"],
             input=json.dumps(corpo_do_chat("curl")).encode(), capture_output=True)
         if processo.returncode != 0:
@@ -191,7 +208,10 @@ def chat_curl(url):
 
 
 def chat_requests(url):
-    import requests
+    try:
+        import requests
+    except ImportError:
+        raise Falha("falta a ferramenta: requests (Python)") from None
     try:
         resposta = requests.post(url, json=corpo_do_chat("requests"), timeout=TEMPO_S, allow_redirects=False)
     except Exception as erro:
@@ -223,8 +243,11 @@ try {
 
 def chat_node(url):
     ambiente = {"PATH": os.environ.get("PATH", ""), "ALVO_CHAT": url, "CORPO_CHAT": json.dumps(corpo_do_chat("node"))}
-    processo = subprocess.run(["node", "--input-type=module", "-e", NODE_FETCH], env=ambiente,
-                              capture_output=True, timeout=TEMPO_S + 10)
+    try:
+        processo = subprocess.run(["node", "--input-type=module", "-e", NODE_FETCH], env=ambiente,
+                                  capture_output=True, timeout=TEMPO_S + 10)
+    except subprocess.TimeoutExpired:
+        raise Falha("sem resposta (tempo esgotado)") from None
     try:
         dado = json.loads(processo.stdout)
     except ValueError:
@@ -267,11 +290,16 @@ def rodar_evals(agente, extras, limpar):
                     ARGS_EVAL=json.dumps(["--conjunto", "dev", "--sem-relatorio", *extras]))
     processo = subprocess.Popen(["node", "--input-type=module", "-e", NODE_RUNNER], env=ambiente,
                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, errors="replace")
+    relogio = threading.Timer(TEMPO_DO_RUNNER_S, processo.kill)  # morto, sai com código negativo e reprova
+    relogio.start()
     linhas = []
-    for linha in processo.stdout:
-        linhas.append(linha.rstrip("\n"))
-        print(limpar(linhas[-1]), flush=True)
-    return processo.wait(), linhas
+    try:
+        for linha in processo.stdout:
+            linhas.append(linha.rstrip("\n"))
+            print(limpar(linhas[-1]), flush=True)
+        return processo.wait(), linhas
+    finally:
+        relogio.cancel()
 
 
 def leads_reais(url):
@@ -281,6 +309,7 @@ def leads_reais(url):
 
 
 def modo_completo(agente, leads, extras, limpar):
+    exigir_ferramentas("node")
     exigir_saude(agente, "desligado")
     print("ENVIO: desligado")
     if leads_reais(leads) != 0:
@@ -295,6 +324,7 @@ def modo_completo(agente, leads, extras, limpar):
 
 
 def modo_clientes(agente):
+    exigir_ferramentas("curl", "node")
     dado = ler_saude(agente)
     if not isinstance(dado, dict) or dado.get("ambiente") != "producao":
         raise Falha("/saude não mostra ambiente producao; nenhuma conversa enviada")
@@ -356,6 +386,8 @@ def autoteste():
     limpar = Limpador(["https://agente.exemplo.invalid", catalogo])
     assert limpar("falhou em agente.exemplo.invalid e api.exemplo.invalid") == "falhou em <oculto> e <oculto>"
     assert limpar("veja http://qualquer.invalid/x") == "veja <url>"
+    assert limpar("HOST=AGENTE.EXEMPLO.INVALID") == "HOST=<oculto>"
+    assert Limpador(["http://127.0.0.1:1"])("ip 127.0.0.1") == "ip <oculto>"
     assert avaliar_chat(200, "application/json", '{"reply": "Oi", "handoff": false}') is None
     assert "1010" in avaliar_chat(403, "text/html", "<html>error code: 1010</html>")
     assert "bloqueio" in avaliar_chat(200, "text/html", "<html>desafio</html>")
