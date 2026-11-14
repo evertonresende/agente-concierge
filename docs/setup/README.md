@@ -20,7 +20,7 @@ contra esse bloco em 14/11.
 | [`agents/code-reviewer.md`](agents/code-reviewer.md) | verificador das frentes A, B1, B2 e D (Claude Opus 5.5) |
 | [`agents/design-reviewer.md`](agents/design-reviewer.md) | frente J, passo 1 |
 | [`hooks/git-sync.sh`](hooks/git-sync.sh) | início de toda sessão Claude: busca o remoto e injeta o estado do git no contexto |
-| [`skills/orquestrar-entrega/SKILL.md`](skills/orquestrar-entrega/SKILL.md) | planejamento e coordenadora: formato do backlog e disciplina da coordenação (versão reduzida; revisão do Éverton: a preencher) |
+| [`skills/orquestrar-entrega/SKILL.md`](skills/orquestrar-entrega/SKILL.md) | planejamento e coordenadora: formato do backlog e disciplina da coordenação (versão reduzida; durante a construção valeram só o formato do backlog e a disciplina da coordenadora; a seção "Modo T3 Code" foi escrita depois, em 14/11) |
 
 ## O que foi retirado das cópias
 
@@ -36,7 +36,10 @@ As regras, as skills de design e o hook saíram como estão, salvo essas trocas.
 `cloudflare-token` saiu reduzida ao que vale para esta entrega. A skill
 `orquestrar-entrega` saiu reduzida ao formato do backlog e à disciplina da coordenadora:
 ela foi escrita para outro orquestrador de sessões, cujos comandos e scripts não rodaram
-aqui, e as medições de outras entregas saíram. O `CLAUDE.md` global não
+aqui, e as medições de outras entregas saíram. Durante a construção valeram só o formato do
+backlog e a disciplina da coordenadora. A seção "Modo T3 Code", no fim da cópia, foi escrita
+depois, em 14/11, a partir do que esta entrega mostrou; ela não existia enquanto as frentes
+rodavam. O `CLAUDE.md` global não
 foi copiado: o extrato traz só as regras que valeram aqui.
 
 Onde uma regra global e o [`CLAUDE.md`](../../CLAUDE.md) deste repositório divergem, vale

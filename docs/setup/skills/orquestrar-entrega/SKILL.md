@@ -6,17 +6,21 @@ description: Playbook para entrega grande em DUAS sessões separadas — (1) Dis
 <!--
   Cópia reduzida para docs/setup/ (entrega do agente concierge).
 
-  A skill original foi escrita para outro orquestrador de sessões. Nesta entrega valeram
-  só o formato do backlog e a disciplina da coordenadora (docs/prompts/01-planejamento.md
-  e 02-coordenadora.md dizem isso); os comandos daquele orquestrador e os scripts da skill
-  não rodaram. Saíram: os comandos e scripts do outro orquestrador (abrir e fechar abas,
-  watchdog, sucessão automática, ajuste da janela de contexto), as medições de outros
-  projetos e nomes de outras entregas. As frentes desta entrega rodaram como threads do
-  T3 Code ou como subagentes em worktree.
--->
-<!-- PREENCHER: revisão do Éverton desta cópia -->
+  A skill original foi escrita para outro orquestrador de sessões, o Orca. Durante a
+  construção desta entrega valeram só o formato do backlog e a disciplina da coordenadora
+  (docs/prompts/01-planejamento.md e 02-coordenadora.md dizem isso); os comandos daquele
+  orquestrador e os scripts da skill não rodaram. Saíram desta cópia: os comandos e
+  scripts do outro orquestrador (abrir e fechar abas, watchdog, sucessão automática,
+  ajuste da janela de contexto), as medições de outros projetos e nomes de outras
+  entregas. As frentes desta entrega rodaram como threads do T3 Code ou como subagentes
+  em worktree.
 
-> Cópia reduzida da skill do ambiente do autor. Revisão do Éverton: a preencher.
+  Em 14/11/2026, depois da construção, a skill ganhou um modo para o T3 Code, escrito a
+  partir do que esta entrega mostrou. A seção "Modo T3 Code", no fim deste arquivo, é
+  essa adaptação. Ela não existia enquanto as frentes rodavam.
+-->
+
+> Cópia reduzida da skill do ambiente do autor. A seção "Modo T3 Code" foi escrita em 14/11/2026, depois da construção.
 
 # Orquestrar entrega grande
 
@@ -168,3 +172,95 @@ Proponha a próxima leva (dependências, prioridade, checagem de overlap) → ge
 prontos → despache → ingira os relatórios → verifique (CHECKs do backlog e verificador
 independente) → atualize o backlog → mergeie `--no-ff` → rode as suítes → repita. Toda
 decisão e todo resultado vira uma linha no log do backlog.
+
+## Modo T3 Code
+
+Como este playbook roda quando o orquestrador de sessões é o T3 Code, e não o Orca.
+Escrito em 14/11/2026, depois da construção desta entrega, coordenada no T3 (versão 0.1.9
+do `t3`). Só entra aqui o que foi conferido na ajuda do comando ou visto acontecer. O que não
+foi testado no T3 está na última seção, dito como tal.
+
+### O que vale e o que não vale
+
+- **Vale inteiro:** as duas sessões separadas (Discovery e Coordenadora), o formato do
+  backlog, a regra-zero da coordenadora, a checagem de sobreposição de arquivos antes de
+  cada leva, o verificador independente antes do merge, o merge `--no-ff` e os critérios
+  com `CHECK` e `ESPERA`.
+- **Não vale:** os comandos `orca` e os scripts da skill original. Eles foram escritos
+  para o Orca.
+- **Troca de vocabulário:** sessão é *thread*; o repositório registrado é um *projeto*.
+
+### Comandos
+
+| Ação | Comando |
+|:---|:---|
+| Abrir frente longa, com worktree própria | `t3 thread start --worktree <base> --branch <frente> --title "<frente>" <projeto> -` (o prompt entra pela entrada padrão) |
+| Escolher o modelo da frente | acrescente `--provider <id> --model <slug>`; sem eles vale o padrão do projeto |
+| Mandar mensagem a uma thread | `t3 thread send <thread> -` |
+| Ler estado e últimas mensagens | `t3 thread show <thread> --messages <N> --json` |
+| Listar as threads do projeto | `t3 thread list --project <caminho> --json` |
+
+- `<projeto>` é o id do projeto ou um caminho dentro dele, como `.`.
+- `--worktree <base>` cria uma worktree nova a partir de uma branch, tag ou commit. Sem
+  ele, a thread roda na pasta do projeto e escreve no mesmo checkout das outras.
+- `t3 thread send` para uma thread ocupada não interrompe nada: a mensagem vira o próximo
+  turno dela.
+- `--wait`, em `start` e em `send`, espera a rodada terminar. Sai com 1 se a rodada falhou
+  e com 2 se a thread ficou esperando uma resposta.
+- Se `t3 thread start` falhar, a coordenadora entrega o prompt pronto para o usuário colar
+  numa thread nova.
+
+### Frente pequena ou frente longa
+
+- **Frente pequena** (um passe, diff limitado): subagente com worktree isolada, dentro da
+  própria sessão da coordenadora. Peça veredito e caminhos, nunca o diff.
+- **Frente longa** (precisa de servidor local, vai durar várias levas, outras dependem
+  dela): thread nova do T3, com `--worktree`.
+- Tarefa delegada pela coordenadora dentro da sessão dela não aparece em
+  `t3 thread list`. Quem acompanha de fora lê a thread da coordenadora.
+
+### Branch e merge
+
+- Dê sempre `--branch`. O T3 pode gerar o nome da branch sozinho (`t3/<slug>`), e um nome
+  gerado não diz qual é a frente.
+- Verificador e merge usam o **hash** que a frente relatou, nunca o nome da branch. A
+  frente pode ter commitado de novo depois do relatório.
+
+### Como os relatórios circulam
+
+- A frente manda o relatório para a thread da coordenadora pela ferramenta de envio entre
+  threads (`t3_thread_send`, quando existe na sessão) e deixa o mesmo texto como última
+  mensagem. Sem a ferramenta, a coordenadora lê com `t3 thread show`.
+- O relatório chega à coordenadora como um turno novo. Se ela estiver ocupada, entra na
+  fila.
+- O relatório da frente é ponto de partida, não prova: os `CHECK` do backlog e o
+  verificador independente continuam valendo.
+
+### O que para a coordenadora
+
+- **Pedido de permissão recusado na interface.** Ela para e não repete o comando. Se o
+  usuário vai sair, combine antes o modo de permissão da thread.
+- **Coordenadora ociosa.** Thread em estado `completed` só volta a rodar com mensagem nova:
+  relatório de frente ou mensagem do usuário. Se a frente terminar sem mandar relatório, a
+  coordenadora não fica sabendo.
+- **Pergunta ao usuário no meio do texto.** Sem `--wait`, ela só aparece para quem lê a
+  última mensagem. Em modo autônomo, a regra continua: lacuna nova vira decisão provisória
+  registrada, e só o irreversível espera o usuário.
+
+### Carga da máquina
+
+- Todas as threads dividem a mesma máquina. Antes de uma leva pesada, confira carga e
+  memória.
+- Fixe no prompt da coordenadora um teto de frentes vivas (esta entrega usou 5)
+  e uma rodada pesada por vez (suíte completa, evals). Sem teto, a falta de memória derruba
+  várias sessões de uma vez; o que está commitado sobrevive.
+
+### Não testado no T3
+
+- **Watchdog e ressurreição da coordenadora:** os scripts são do Orca. No T3 não há
+  equivalente testado.
+- **Sucessão da coordenadora e escada de contexto:** as medições da skill original são
+  do Orca. No T3 o caminho que resta é manual: backlog commitado e pushado, thread nova com
+  o prompt da coordenadora.
+- **Handoff automático da Discovery:** não foi usado. A Discovery termina emitindo o
+  prompt, e a coordenadora nasce de `t3 thread start` ou de prompt colado.
