@@ -280,8 +280,10 @@ pela conversa gravada:
   sai errada num parêntese, e o modelo se corrige no meio da resposta (limite 56).
 
 Latência por turno nas três rodadas: p50 de 2,9 a 3,0 s, p95 de 5,9 a 6,2 s, máximo de
-13,8 s. A telemetria do Worker nas três rodadas e nas leituras do reservado não tem
-contingência nem falha do catálogo.
+13,8 s. No log do Worker de `dev`, em contagem exata, as três janelas têm 185, 182 e 182
+eventos de turno, nenhum com contingência, nenhum com origem no catálogo e nenhum outro tipo
+de evento (registro "telemetria das rodadas oficiais" do log do backlog, 14/11). As leituras
+do reservado também não têm contingência nem falha do catálogo.
 
 Rajada na árvore final, em `dev`: 10 sessões simultâneas de 4 turnos, sem confirmação. Os 40
 turnos voltaram com status 200, sem 429, 5xx, contingência ou resposta vazia; p50 3,0 s, p95
