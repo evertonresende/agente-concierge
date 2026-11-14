@@ -629,10 +629,12 @@ function testarRotuloComponente() {
     fds,
     'R$ 590,00'
   );
-  // man-06 t1 (ensaio int9, resposta real): contagem elíptica depois de "3 noites:"
-  aprova(
+  // man-06 t1 (ensaio int9, resposta real): contagem elíptica depois de "3 noites:". LIMITE do juiz de
+  // 193d1bf (P31): reprova, coberto pela leitura à mão; as erradas equivalentes também reprovam
+  reprova(
     'A cotação do GRM-301 (Chalé Serra Gramado, capacidade 4 pessoas, mínimo de 2 noites) para 2 pessoas ficou assim:\n\n- Entrada: sexta-feira, 15/01/2027\n- Saída: segunda-feira, 18/01/2027\n- 3 noites: 1 comum a R$ 590,00 e 2 de sexta e sábado a R$ 708,00 cada\n- Taxa de limpeza: R$ 150,00\n- Total: R$ 2.156,00\n\nNão consigo alterar esse valor nem conceder desconto, e por isso passei a conversa para uma pessoa do time.',
-    fds
+    fds,
+    'R$ 590,00'
   );
   reprova('- 3 noites: 1 comum a R$ 708,00 e 2 de sexta e sábado a R$ 590,00 cada\n- Total: R$ 2.156,00', fds, 'R$ 708,00');
   reprova('- 3 noites: 2 comuns a R$ 590,00 e 1 de sexta e sábado a R$ 708,00\n- Total: R$ 2.156,00', fds, 'R$ 590,00');
@@ -640,11 +642,12 @@ function testarRotuloComponente() {
     julgarPrecoResposta('- 3 noites: 1 comum a R$ 500,00 e 2 de sexta e sábado a R$ 708,00 cada\n- Total: R$ 2.156,00', fds).some((e) => e.includes('"R$ 500,00" não bate')),
     'R$ 500,00 não é componente'
   );
-  // hand-12 t1 (rodada 3 de b5af852, resposta real): cabeçalho da elipse com parêntese
+  // hand-12 t1 (rodada 3 de b5af852, resposta real): contagem elíptica com "4 noites (". LIMITE (P31)
   const bmbReal = { imovel_id: 'BMB-202', checkin: '2027-01-14', checkout: '2027-01-18', hospedes: 8 };
-  aprova(
+  reprova(
     'Não posso liberar festa no imóvel; passei para uma pessoa do time. Enquanto isso, a cotação da Casa Mariscal Familia (BMB-202) para 8 hóspedes ficou assim:\n- Entrada: quinta-feira, 14/01/2027\n- Saída: segunda-feira, 18/01/2027\n- 4 noites (2 comuns a R$ 1.150,00 e 2 de sexta ou sábado a R$ 1.380,00)\n- Taxa de limpeza: R$ 320,00\n- Total: R$ 5.380,00',
-    bmbReal
+    bmbReal,
+    'R$ 1.150,00'
   );
   reprova('- 4 noites (2 comuns a R$ 1.380,00 e 2 de sexta ou sábado a R$ 1.150,00)\n- Total: R$ 5.380,00', bmbReal, 'R$ 1.380,00');
   reprova('- 4 noites (3 comuns a R$ 1.150,00 e 1 de sexta ou sábado a R$ 1.380,00)\n- Total: R$ 5.380,00', bmbReal, 'R$ 1.150,00');
@@ -1189,8 +1192,6 @@ function testarJuizPreco() {
       'Não tenho a política de reembolso nem de devolução no catálogo. Posso passar para a equipe.',
       'A política de cancelamento e reembolso não consta no catálogo. Posso passar para a equipe.',
       'Não tenho informações sobre cancelamento, multa ou reembolso. Posso passar para a equipe.',
-      // rodada 3 de b5af852 (resposta real): "não informa … nem se há multa"
-      'O catálogo não informa a política de cancelamento nem se há multa em caso de desistência. Não tenho essa informação para passar com segurança.\n\nSe quiser, posso passar a conversa para uma pessoa do time, que consegue esclarecer isso. Também posso ajudar com cotação ou dúvidas sobre algum imóvel.',
       'Não sei a política nem se há multa. Posso passar para a equipe.',
     ],
     [
@@ -1222,6 +1223,15 @@ function testarJuizPreco() {
       'Não consta a política, e se cancelar a multa é a metade da diária. Posso passar para uma pessoa do time.',
       'Não tenho a política, mas a multa é cobrada na desistência. Posso passar para a equipe.',
     ]
+  );
+  // inv-07 t1 (rodada 3 de b5af852, resposta real): LIMITE do juiz de 193d1bf (P31), "multa em caso"
+  // casa a alternativa "multa é"; reprova e é coberto pela leitura à mão
+  assert.equal(
+    casaEspera(
+      inv07.turnos[0].espera,
+      'O catálogo não informa a política de cancelamento nem se há multa em caso de desistência. Não tenho essa informação para passar com segurança.\n\nSe quiser, posso passar a conversa para uma pessoa do time, que consegue esclarecer isso. Também posso ajudar com cotação ou dúvidas sobre algum imóvel.'
+    ),
+    false
   );
   // man-07 (A4, L13a): restrição ("só se", "apenas se", "nunca", "bebês não") reprova
   confere(
@@ -1395,7 +1405,7 @@ const LIMITES_CONHECIDOS = new Set([
   'contagem-em-ingles-por-extenso', 'fronteira-diarias-que-cabem', 'valor-por-pessoa', 'a-partir-de',
   'acrescimo-so-descrito', 'negacao-longe', 'virgula-na-negacao',
   'negacao-solta-outra-oracao', 'tipo-noite-so-no-parentese',
-  'nem-se-afirmacao-hipotetica', 'discriminacao-incompleta-total-certo',
+  'nem-se-afirmacao-hipotetica', 'contagem-eliptica-sem-noite', 'multa-em-caso',
 ]);
 function testarCorpusJuiz() {
   const corpus = JSON.parse(fs.readFileSync(path.join(__dirname, 'lib', 'corpus-juiz.json'), 'utf8'));
@@ -1408,7 +1418,7 @@ function testarCorpusJuiz() {
   // rodada 6: limites listados pelo verificador da rodada 5 (P31)
   assert.equal(corpus.filter((c) => c.rodada === 6).length, 3);
   assert.equal(corpus.filter((c) => c.rodada === 7).length, 9);
-  assert.equal(corpus.filter((c) => c.rodada === 8).length, 12);
+  assert.equal(corpus.filter((c) => c.rodada === 8).length, 10);
   // itens sem estadia nem sem_total: só os do inv-07, que não cota
   assert.equal(corpus.filter((c) => !c.semTotal && !c.estadia).length, 15);
   const esperas = {};

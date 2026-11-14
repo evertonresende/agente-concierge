@@ -101,12 +101,6 @@ const REGEX_NEGACAO_DEPOIS = /^\s*(?:n[aã]o|is\s+not|isn'?t|not)(?!\p{L})/iu;
 // "2 Friday/Saturday nights") ou depois dos dois-pontos ("Noites: 2").
 const REGEX_CONTAGEM =
   /(?<!\p{L})(\d+|uma?|dois|duas|tr[eê]s|quatro|cinco)\s+(?:[\p{L}/-]+\s+)?(?:noites?|nights?|weeknights?)(?!\p{L})|(?<!\p{L})(?:noites?|nights?)\s*:\s*(\d+)(?!\d)/giu;
-// Contagem elíptica, sem repetir "noite", numa frase que abre com a contagem total seguida
-// de ":", "(", vírgula ou travessão ("3 noites: 1 comum a R$ 590,00 e 2 de sexta e sábado a
-// R$ 708,00 cada", "4 noites (2 comuns a R$ 1.150,00 e 2 de sexta ou sábado a R$ 1.380,00)").
-const REGEX_CONTAGEM_ELIPTICA =
-  /(?<!\p{L})(\d+|uma?|dois|duas|tr[eê]s|quatro|cinco)\s+(?:comu(?:m|ns)|de\s+(?:sexta|s[aá]bado|fim\s+de\s+semana)|regular|weekday|weekend|friday(?:\/saturday)?)(?!\p{L})/giu;
-const REGEX_CABECALHO_NOITES = /(?<!\p{L})(?:noites?|nights?)\s*[:(,—–-]/iu;
 const NUMEROS = { um: 1, uma: 1, dois: 2, duas: 2, tres: 3, 'três': 3, quatro: 4, cinco: 5 };
 
 const REGEX_SO_CONECTOR = /^[\s(]*(?:de|a|por|at|of)?\s*$/iu;
@@ -152,17 +146,11 @@ function ateProximoValor(depois) {
   return m ? depois.slice(0, m.index) : depois;
 }
 
-function ultimaContagem(trecho, comElipse = false) {
+function ultimaContagem(trecho) {
   let n = null;
-  let posicao = -1;
-  const regexes = comElipse ? [REGEX_CONTAGEM, REGEX_CONTAGEM_ELIPTICA] : [REGEX_CONTAGEM];
-  for (const regex of regexes) {
-    for (const m of trecho.matchAll(regex)) {
-      if (m.index < posicao) continue;
-      const bruto = (m[1] || m[2]).toLowerCase();
-      n = /^\d+$/.test(bruto) ? Number(bruto) : NUMEROS[bruto];
-      posicao = m.index;
-    }
+  for (const m of trecho.matchAll(REGEX_CONTAGEM)) {
+    const bruto = (m[1] || m[2]).toLowerCase();
+    n = /^\d+$/.test(bruto) ? Number(bruto) : NUMEROS[bruto];
   }
   return n;
 }
@@ -307,8 +295,7 @@ export function motivoNaoComponente(texto, valor, perfis, contexto = {}) {
   if (conhecidas.length === 0) return null;
 
   // Contagem de noites ao lado do valor ("2 noites, de R$ 590,00 cada", "pelas 2 noites").
-  const elipse = REGEX_CABECALHO_NOITES.test(texto.slice(frase.ini, valor.indice));
-  const n = ultimaContagem(antes, elipse) ?? (anexo ? ultimaContagem(depois) : null);
+  const n = ultimaContagem(antes) ?? (anexo ? ultimaContagem(depois) : null);
   if (n !== null && !conhecidas.some((p) => cabeNaContagem(p, valor.centavos, n, porNoite))) {
     return `não corresponde a ${n} noite(s) da estadia`;
   }
