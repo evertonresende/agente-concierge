@@ -252,6 +252,27 @@ describe("rearme passa pela pergunta fechada ao modelo (item 10, complemento da 
     expect(c.mundo.leads).toEqual([]);
   });
 
+  it("dado que a F lê como mudado (\"bring my mom\"): sem pergunta fechada, a conferência pede o resumo novo, e o sim envia o grupo novo", async () => {
+    const c = await comResumo();
+    const r = roteiro(diz("There is 1 parking spot."), pedeFerramentas(chamar("montar_resumo", { ...ESTADIA, ...PESSOA, hospedes: 3 })));
+    await c.turno("I'll bring my mom, is there parking?", r.modelo);
+    expect(r.recebidas.some((m) => m[0]!.content.includes("Responda só SIM ou NÃO"))).toBe(false);
+    expect(r.recebidas[1]!.at(-1)!.content).toContain("deixou de valer");
+    expect(c.estado().pendente?.reserva.hospedes).toBe(3);
+    await c.turno("yes", roteiro(pedeFerramentas(chamar("confirmar_reserva"))).modelo);
+    expect(c.mundo.leads.map((l) => l.hospedes)).toEqual([3]);
+  });
+
+  it("dado que a F lê como mudado, e o modelo só reescreve o texto: o resumo cai e o sim não envia nada", async () => {
+    const c = await comResumo();
+    const r = roteiro(diz("There is 1 parking spot."), diz("There is 1 parking spot, and your mom counts as a guest."));
+    const t2 = await c.turno("I'll bring my mom, is there parking?", r.modelo);
+    expect(t2.reply).toBe("There is 1 parking spot, and your mom counts as a guest.");
+    expect(c.estado().pendente).toBeNull();
+    await c.turno("yes", roteiro(pedeFerramentas(chamar("confirmar_reserva")), diz("How many guests in total?")).modelo);
+    expect(c.mundo.leads).toEqual([]);
+  });
+
   it("(e) com conferência e correção no turno, a pergunta fechada sai uma vez só", async () => {
     const c = await comResumo();
     const errado = diz("Tem wifi. Pronto, seu pedido foi registrado!");
