@@ -10,7 +10,15 @@
 # Termo que o Éverton mandar liberar (por exemplo, a URL pública no README) vai, um
 # por linha, em ~/.config/agente-concierge/sigilo-liberados.
 #
-# A saída mostra só arquivo:linha, nunca o trecho encontrado.
+# A saída mostra só arquivo:linha, commit ou commit:arquivo, nunca o trecho encontrado.
+# Arquivo binário é lido como texto (-a). Teste: scripts/verificar-sigilo.teste.sh.
+#
+# Limites conhecidos (o que este gate NÃO pega):
+# - IPv6: só endereços IPv4 são procurados.
+# - IP e e-mail só no índice, não no conteúdo de commits antigos. Com -a, um binário
+#   novo pode dar falso positivo nessas duas varreduras (falha do lado seguro).
+# - Reescrita de histórico com `git reset` seguido de `git push --force`: o reflog só
+#   registra amend, rebase e squash pelo nome, e só o HEAD desta worktree.
 set -u
 cd "$(git rev-parse --show-toplevel)" || exit 2
 
@@ -58,14 +66,14 @@ relata() { # $1 = rótulo; stdin = localizações (arquivo:linha, commit ou comm
 }
 
 # 1. Conteúdo do índice (o que já está versionado + o que está em stage).
-git grep --cached -I -n -i -F -f "$fixos" -- . 2>/dev/null | cut -d: -f1,2 \
+git grep --cached -a -n -i -F -f "$fixos" -- . 2>/dev/null | cut -d: -f1,2 \
   | relata "termo proibido (domínio, token, empresa ou nome de máquina)"
 
-git grep --cached -I -n -o -E '\b([0-9]{1,3}\.){3}[0-9]{1,3}\b' -- . 2>/dev/null \
+git grep --cached -a -n -o -E '\b([0-9]{1,3}\.){3}[0-9]{1,3}\b' -- . 2>/dev/null \
   | grep -v -E ':(127\.0\.0\.1|0\.0\.0\.0)$' | cut -d: -f1,2 \
   | relata "endereço IP"
 
-git grep --cached -I -n -o -E '[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}' -- . 2>/dev/null \
+git grep --cached -a -n -o -E '[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}' -- . 2>/dev/null \
   | grep -v -F ":$AUTOR" | cut -d: -f1,2 \
   | relata "e-mail que não é o do autor"
 
