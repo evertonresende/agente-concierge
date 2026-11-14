@@ -7,6 +7,7 @@ import {
   type Cofre, ESTADO_INICIAL, type EstadoLead, lerConfirmacao, type Pendente, pedidoDeConfirmacaoPendente,
 } from "../src/lead";
 import { criarContexto, criarMundo } from "./apoio";
+import { queroFechar } from "./apoio-f";
 
 const DADOS = { imovel_id: "GRM-301", checkin: "15/01/2027", checkout: "18/01/2027", hospedes: 2, nome: "Ana Lima", telefone: "(11) 98888-0000" };
 
@@ -15,7 +16,7 @@ async function comResumo() {
   const mundo = criarMundo();
   let estado: EstadoLead = ESTADO_INICIAL;
   const cofre: Cofre = { ler: () => estado, salvar: (e) => { estado = e; } };
-  const resumo = await montarResumo.executar(DADOS, criarContexto(mundo, cofre, 2, "quero fechar"));
+  const resumo = await montarResumo.executar(DADOS, criarContexto(mundo, cofre, 2, queroFechar(DADOS)));
   expect(resumo.respostaFinal).toContain("R$ 2.156,00");
   const confirma = (turno: number, mensagem: string) => confirmarReserva.executar({}, criarContexto(mundo, cofre, turno, mensagem));
   return { mundo, cofre, confirma, estado: () => estado };
