@@ -1565,6 +1565,17 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   "João Paulo II" e "Carlos Jr." aceitos; os oito roteiros de nome da P20 seguem iguais (sete leads com
   o nome exato; o roteiro em inglês com data em formato americano continua sem cotar, limite já
   conhecido); as quatro sondas da P21 recusam sem valor
+- 14/11 02h23 · M2 · parte 2 da segunda passada: nenhum achado crítico ou alto; um médio e cinco baixos, em
+  `docs/revisoes/m2.md`. Na frente H, nenhum caminho gera lead sem resumo visto, duplicado ou diferente
+  do resumo, incluindo as duas ordens que o verificador não tinha medido (20 de 20 rodadas); o
+  identificador do pedido não é escolhido pelo cliente; o limite de 64 KB vale antes de ler o corpo; os
+  logs novos não guardam dado pessoal. Itens 8, 13, 14 e 15 da primeira passada fechados. O médio é o
+  item 7, ainda aberto: a trava de `producao` do runner depende do que o caso declara; pedido à B2 um
+  commit para a trava olhar também as mensagens (bloqueia ligar o envio real, não a entrega). Os baixos
+  ficam como limite no README: fila sem teto de quantidade, histórico sem poda, corpo lento sem marcar a
+  sessão, contingência depois do lead quando o Worker desiste com o "sim" em curso, cabeçalhos de uso.
+  **A porta da primeira rodada oficial pela M2 está aberta.** A B2 já tinha no remoto as duas correções
+  do juiz (fb29d43, o parêntese não nomeia o tipo de noite; 026eb25, vírgula colada na negação)
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
