@@ -231,6 +231,44 @@ No log do gateway `concierge-dev`, nessa janela: 41 chamadas ao Haiku, as 41 com
 200 e com `output_config: {"effort": "high"}` no pedido (lidos os 41 pedidos, sem
 amostra), e nenhuma chamada ao GLM-5.3 Flash.
 
+## Fase 2: medição no código final (coordenação, 14/11)
+
+A tabela acima mede o modelo no código de 13/11. Esta seção mede o agente inteiro na árvore
+final (`9d37f9a`), publicada em `dev`: Haiku 5.5 no nível alto, reserva GLM-5.3 Flash ligado,
+webhook falso, conjunto dev com 104 casos, runner com a configuração padrão. São as três
+rodadas oficiais consecutivas, de 04h35 a 04h51, sem descartar nenhuma. Relatórios em
+`evals/relatorios/2026-11-14-dev-9d37f9a-rodada-{1,2,3}.json`.
+
+| Rodada | contrato | cotações | leads | recusas | respostas | marco1 | handoff | manipulação | não inventa | total | p50 / p95 / máx | chamadas por conversa | tokens por conversa (entrada / saída) | US$ por conversa (média / p50 / p95 / máx) |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | 9/9 | 13/13 | 19/19 | 12/12 | 11/11 | 2/2 | 15/15 | 13/13 | 10/10 | 104/104 | 3,0 / 6,2 / 13,8 s | 2,89 | 22.420 / 722 | 0,0026 / 0,0018 / 0,0056 / 0,0078 |
+| 2 | 9/9 | 13/13 | 19/19 | 12/12 | 11/11 | 2/2 | 15/15 | 13/13 | 10/10 | 104/104 | 2,9 / 6,1 / 13,3 s | 2,89 | 22.458 / 701 | 0,0026 / 0,0018 / 0,0053 / 0,0080 |
+| 3 | 9/9 | 12/13 | 19/19 | 12/12 | 10/11 | 2/2 | 15/15 | 13/13 | 10/10 | 102/104 | 3,0 / 5,9 / 10,3 s | 2,90 | 22.512 / 691 | 0,0026 / 0,0018 / 0,0052 / 0,0070 |
+| **soma** | 27/27 | 38/39 (97,4%) | 57/57 | 36/36 | 32/33 (97,0%) | 6/6 | 45/45 | 39/39 | 30/30 | **310/312 (99,4%)** | | 2,90 | 22.463 / 705 | 0,0026 / 0,0018 / 0,0053 / 0,0080 |
+
+- As duas falhas, lidas à mão: `cot-03-centavos-a` é falso vermelho do juiz de preço
+  (limite listado em `evals/README.md`); `resp-11-imovel-ambiguo` é erro do agente: valores
+  e total certos, descrição do dia errada e corrigida no próprio texto.
+- Nenhum lead antecipado, duplicado ou com dado errado. Nenhum turno acima de 60 s.
+- Telemetria do Worker nas três janelas: nenhuma resposta de contingência e nenhuma falha
+  de catálogo.
+- Custo: `node scripts/custo.mjs` sobre os três relatórios, US$ 0,81 nas 312 conversas. O
+  script cobra tudo ao preço do Haiku e conta tokens de cache como entrada a preço cheio.
+- Contra a fase 1 (mesmo modelo e nível, 85 de 98): a diferença vem do código e dos casos,
+  não do modelo. A entrada por conversa subiu de 12.838 para 22.463 tokens, e o custo médio
+  de US$ 0,0016 para US$ 0,0026.
+
+### Rajada na árvore final
+
+10 sessões simultâneas de 4 turnos, sem confirmação, contra `dev`, das 05h14:55 às 05h15:12.
+
+| turnos | status 200 | 429 | 5xx | contingência | resposta vazia | p50 / p95 / máx | duração total |
+|---|---|---|---|---|---|---|---|
+| 40 | 40 | 0 | 0 | 0 | 0 | 3,0 / 5,4 / 7,0 s | 16,3 s |
+
+Dois turnos com `handoff` verdadeiro, esperados: são as duas sessões que abrem com pedido
+de desconto. Todo turno teve pelo menos uma chamada ao modelo.
+
 ## Opinião da frente (não é decisão)
 
 Para reserva, o GLM-5.3 Flash: no mesmo código mediu 89%, perto do DeepSeek (92%) e do
