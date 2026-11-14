@@ -60,8 +60,8 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 | J | agente-concierge | Página de chat em dois passos: design (canvas) e implementação | passo 1: nada; passo 2: Marco 1 e aprovação do Éverton | baixa | 0,7 + 1 | thread T3 · Fable 5.2 | passo 1 concluído (canvas aprovado pelo Éverton, com dois ajustes); passo 2 entregue (b8991ce) | `frente-j` |
 | M2 | agente-concierge | Revisão de código, segurança e segunda opinião | leva 2 integrada | alta | 1,5 | subagentes Opus 5.5 + segunda opinião do Gemini 4 Argon em esforço alto (X23) | primeira passada rodando desde 13/11 23h22, adiantada pela X24: segurança na `main` atual, código dos módulos estáveis e segunda opinião do Gemini sobre o cálculo; a segunda passada é só o delta, depois da leva 2 | — |
 | L | agente-concierge | Custo por conversa e monitor diário | leva 2 integrada | média | 1 | subagente em worktree · Opus 5.5, esforço médio (X23) | script de custo na `main` desde 13/11 23h47 (eec433a), verificador aprovado; falta o monitor diário, depois que `producao` existir; aberta em 13/11 23h22, adiantada pela X24: só `scripts/custo.mjs`; o monitor diário espera a K | `frente-l` |
-| K | agente-concierge | Produção com o envio real desligado | M2 | alta | 1,5 | thread T3 · Opus 5.5, esforço alto (X23) | gateway de `producao` criado e com o log desligado; `scripts/validar-producao.sh` na branch (33c8316), em verificação; rota e primeiro deploy parados à espera do Éverton. Rodando desde 13/11 23h14, adiantada pela X24: só a infraestrutura de `producao` com o envio real desligado; o deploy final espera a M2 | `frente-k` |
-| N | agente-concierge | Entregáveis de processo | K | alta | 2 | thread T3 · Opus 5.5, esforço alto (X23) | rascunho completo na branch (ede0c12), em verificação de sigilo e de fatos; parada até o fim da leva 2. Aberta em 13/11 23h14, adiantada pela X24: rascunhos do README, do "Como foi feito", dos desenhos e do setup, com marcador no que se preenche no fim | `frente-n` |
+| K | agente-concierge | Produção com o envio real desligado | M2 | alta | 1,5 | thread T3 · Opus 5.5, esforço alto (X23) | gateway de `producao` criado e com o log desligado; `scripts/validar-producao.sh` na branch (33c8316), reprovado pelo verificador por um falso verde com argumentos extras, em correção; rota e primeiro deploy parados à espera do Éverton. Rodando desde 13/11 23h14, adiantada pela X24: só a infraestrutura de `producao` com o envio real desligado; o deploy final espera a M2 | `frente-k` |
+| N | agente-concierge | Entregáveis de processo | K | alta | 2 | thread T3 · Opus 5.5, esforço alto (X23) | rascunho completo na branch (ede0c12), sem achado de sigilo; reprovado por uma garantia dada como certa antes da hora, em correção; verificação final no fim da leva 2. Aberta em 13/11 23h14, adiantada pela X24: rascunhos do README, do "Como foi feito", dos desenhos e do setup, com marcador no que se preenche no fim | `frente-n` |
 | S | agente-concierge | Gate de sigilo: achados da M2 | M2, primeira passada | alta | 0,5 | subagente em worktree · Opus 5.5, esforço alto (X23) | rodando desde 13/11 23h46: conteúdo do histórico, saída sem trecho do termo, sufixo composto e teste do gate; verificador antes do merge | `frente-gate` |
 | — | — | Correções entre leva 2 e 3 | evals | alta | 1,5 | frente dona do arquivo | — | — |
 
@@ -1012,6 +1012,28 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   repositório) passou a ter três vagas; as frentes não mudam nada no jeito de chamar. Medido na hora:
   8 GB disponíveis, pressão de memória zero, carga 5,9 em 8 núcleos. A coordenadora olha a pressão a
   cada relatório
+- 13/11 23h54 · G · cabeça 29ae3aa na `frente-g`: exceção da hesitação (2b16462), desempate do motivo
+  (1e998dd), pergunta fechada antes do rearme (e2be4dd), merge da `main`, contagem real das chamadas
+  (805513c) e a trava de valores da revisão de segurança (29ae3aa). A frente relata 1049 testes na
+  branch. Verificador independente, terceira rodada, rodando sobre a G sozinha e sobre a F com a G.
+  Ensaio de todas as branches juntas (I 433439c, F 28109d8, G 29ae3aa, H, B2 3b37fa0): merge limpo,
+  tipos sem erro, SIGILO OK, mas 2 testes da G falham (`test/foco-g.test.ts`, pergunta fechada com
+  resposta inesperada: a resposta do turno sai com o texto da pergunta fechada). Isolado por pares: a
+  G sozinha, com a I e com a B2 passa; com a F nova falha. Pedido à G: mesclar a F, dizer se é defeito
+  real ou ordem do modelo simulado, e corrigir. Rodada integrada com o modelo real em nível alto
+  (98 casos e a sonda do resumo pendente) rodando na árvore das cinco branches
+- 13/11 23h54 · K · verificador independente do `scripts/validar-producao.sh` (33c8316): REPROVADO. Passou: só
+  GET no servidor que fingia o webhook, nos 5 modos e em 30 cenários de falha; a trava decide pelo
+  ambiente que o `/saude` devolve; nenhum endereço em argumento de processo. Reprova um falso verde:
+  com argumentos extras repassados ao runner (`-h`, `--listar`, `--bloco`, `--alvo`) sai `PRODUCAO OK`
+  sem nenhuma conversa. Médio: um 307 ou 308 no `/chat` é seguido com POST e corpo, no script e no
+  runner. Correções pedidas à K; a parte do runner foi para a B2
+- 13/11 23h54 · N · verificador independente dos rascunhos (ede0c12): REPROVADO por uma afirmação, não por
+  sigilo: o README dá como garantida a trava de valores, que a revisão de segurança furou e a G ainda
+  está corrigindo. Nenhum endereço, e-mail, máquina, conta, token ou domínio achado; quase 60 números
+  batem com a fonte. Baixos: restos de outras entregas nas cópias do setup, cenário de ataque em três
+  trechos, dados vencidos. Regra passada à frente: garantia só no presente se já está na `main` e
+  verificada. Correções pedidas; a verificação final roda no fim, com tudo preenchido
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
