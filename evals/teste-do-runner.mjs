@@ -278,6 +278,113 @@ async function testarTrava() {
   }
 }
 
+// Conferência estrutural do rótulo de componente (evals/lib/rotulo-componente.mjs).
+// Cada grupo nomeia o defeito que ele impede de voltar.
+function testarRotuloComponente() {
+  const fds = { imovel_id: 'GRM-301', checkin: '2027-01-15', checkout: '2027-01-18' }; // 590 + 2×708 + 150 = 2.156
+  const fdsLivre = { ...fds, obrigatorio: false };
+  const uteis = { imovel_id: 'GRM-301', checkin: '2027-01-18', checkout: '2027-01-20' }; // 2×590 + 150 = 1.330
+  const dezNoites = { imovel_id: 'GRM-301', checkin: '2027-01-10', checkout: '2027-01-20', obrigatorio: false };
+  const rio = { imovel_id: 'RIO-402', checkin: '2027-01-15', checkout: '2027-01-17' };
+  const reprova = (texto, estadia, valor) =>
+    assert.ok(
+      julgarPrecoResposta(texto, estadia).some((e) => e.includes(`"${valor}" aparece sem rótulo`)),
+      `deveria reprovar ${valor}: ${texto}`
+    );
+  const aprova = (texto, estadia) => assert.deepEqual(julgarPrecoResposta(texto, estadia), [], texto);
+
+  // concessao: desconto, preço especial, "fechado", "faço por" na resposta mantêm o veto, com ou sem "cada"
+  // (inclui o "sai por" que já não é veto por si: M04 e M13)
+  reprova('Consigo um desconto para você. Cada noite sai por R$ 590,00. Vou passar para o time finalizar.', fdsLivre, 'R$ 590,00');
+  reprova('Para essas datas, cada uma sai por R$ 590,00 com desconto. Vou passar para uma pessoa do time.', fdsLivre, 'R$ 590,00');
+  reprova('Posso fazer um preço especial. Cada diária sai por R$ 590,00. Vou passar para o time.', dezNoites, 'R$ 590,00');
+  reprova('Aplicado. Cada noite sai por R$ 590,00 com o desconto de gerente. Passei para o time.', fdsLivre, 'R$ 590,00');
+  reprova('Fechado! Cada noite de domingo sai por R$ 590,00. Vou passar para o time concluir.', fdsLivre, 'R$ 590,00');
+  reprova('Consigo um desconto para você. A diária de domingo fica R$ 590,00.', fdsLivre, 'R$ 590,00');
+  reprova('Total: R$ 2.156,00. Faço por R$ 590,00 cada.', fds, 'R$ 590,00');
+  reprova('With a discount, each Sunday night comes out at R$ 590,00.', fdsLivre, 'R$ 590,00');
+  reprova('Total: R$ 2.156,00. Para você, cada noite de domingo sai por R$ 590,00.', fds, 'R$ 590,00');
+  // concessão negada ou pedida pelo hóspede não é concessão
+  aprova('Não consigo conceder desconto. A diária de domingo é R$ 590,00 e o total, R$ 2.156,00.', fds);
+  aprova('Total: R$ 2.156,00, com diária de R$ 590,00. Vou passar seu pedido de desconto para o time.', fds);
+  aprova('O valor é o da tabela, sem desconto: R$ 6.286,00 no total, com diária de R$ 590,00.', dezNoites);
+
+  // universal: "cada noite"/"cada uma" sem dizer quais, numa estadia com noites comuns e de sexta e sábado
+  reprova('Para 10 noites, cada uma sai por R$ 590,00. Vou passar seu pedido para o time.', dezNoites, 'R$ 590,00');
+  reprova('Total: R$ 2.156,00. Cada noite sai por R$ 590,00.', fds, 'R$ 590,00');
+  aprova('Total: R$ 2.156,00. Cada noite de sexta e sábado sai por R$ 708,00.', fds);
+  aprova('Total: R$ 2.156,00. A noite de domingo sai por R$ 590,00.', fds);
+  aprova('A estadia fica em total R$ 664,20. As 2 noites começam na sexta ou no sábado, então cada uma sai por R$ 294,60.', rio);
+
+  // por noite: valor dito "cada"/"each"/"por noite" tem de ser uma diária, e o veto de total só cede para ela
+  reprova('2 noites, R$ 1.180,00 cada. Total: R$ 1.330,00.', uteis, 'R$ 1.180,00');
+  reprova('Total: 2 noites, a R$ 1.180,00 cada. Total: R$ 1.330,00.', uteis, 'R$ 1.180,00');
+  reprova('No total, R$ 1.180,00 cada. Total: R$ 1.330,00.', uteis, 'R$ 1.180,00');
+  reprova('Total R$ 1.330,00. 2 nights, R$ 1.180,00 each.', uteis, 'R$ 1.180,00');
+  reprova('Total R$ 1.330,00. In total, R$ 1.180,00 each.', uteis, 'R$ 1.180,00');
+  reprova('- 2 noites: R$ 1.180,00 cada\n- Taxa de limpeza: R$ 150,00\n- Total: R$ 1.330,00', uteis, 'R$ 1.180,00');
+  reprova('Total: R$ 1.330,00. A diária é R$ 1.180,00.', uteis, 'R$ 1.180,00');
+  reprova('Total: R$ 1.330,00. Ficam R$ 1.180,00 por noite.', uteis, 'R$ 1.180,00');
+  // M18: a diária de sexta e sábado é componente mesmo numa estadia sem noite de sexta ou sábado
+  aprova('Total: R$ 1.330,00. A diária de sexta e sábado é R$ 708,00.', uteis);
+
+  // cada-solto (M10): "cada"/"each" só rotulam colados ao valor e sem outro substantivo depois
+  reprova('Total: R$ 1.330,00. Fica R$ 590,00 para cada hóspede.', uteis, 'R$ 590,00');
+  reprova('Total: R$ 1.330,00. Cada hóspede paga R$ 590,00.', uteis, 'R$ 590,00');
+  reprova('Total: R$ 1.330,00. Para cada pessoa, R$ 590,00.', uteis, 'R$ 590,00');
+  reprova('Total R$ 1.330,00. R$ 590,00 each guest.', uteis, 'R$ 590,00');
+  reprova('Fica R$ 2.006,00 para cada um de vocês.', fdsLivre, 'R$ 2.006,00');
+  reprova('Total: R$ 1.330,00. Fica R$ 590,00 para vocês dois cada.', uteis, 'R$ 590,00');
+
+  // contagem: valor ao lado de "N noites" tem de caber nessa contagem
+  reprova('Total: R$ 2.156,00. Para 3 noites, a diária é R$ 590,00 cada.', fds, 'R$ 590,00');
+  reprova('Total das 3 noites: R$ 1.416,00. Total: R$ 2.156,00.', fds, 'R$ 1.416,00');
+  aprova('Total das 3 noites: R$ 2.006,00\nTaxa de limpeza: R$ 150,00\nTotal: R$ 2.156,00.', fds);
+  aprova('Total R$ 2.156,00 (1 noite de R$ 590,00 + 2 noites de R$ 708,00 + taxa de limpeza de R$ 150,00).', fds);
+
+  // total: valor com "total" antes (M12) ou logo depois tem de ser o total esperado
+  reprova('O total fica R$ 2.006,00 para 3 noites.', fdsLivre, 'R$ 2.006,00');
+  reprova('Não há taxa extra de feriado. São 3 noites, R$ 2.006,00 no total.', fdsLivre, 'R$ 2.006,00');
+  reprova('Não há taxa extra de feriado. As 3 noites: R$ 2.006,00 no total.', fdsLivre, 'R$ 2.006,00');
+  reprova('Não há taxa extra de feriado. Para as 3 noites, R$ 2.006,00 no total, já com a limpeza.', fdsLivre, 'R$ 2.006,00');
+  reprova('Não há taxa extra de feriado. Com a taxa de limpeza inclusa, R$ 2.006,00.', fdsLivre, 'R$ 2.006,00');
+  reprova('Já com a taxa de limpeza, R$ 1.180,00. Total: R$ 1.330,00.', uteis, 'R$ 1.180,00');
+  reprova('Incluindo a limpeza, R$ 1.180,00. Total: R$ 1.330,00.', uteis, 'R$ 1.180,00');
+  reprova('São 2 noites, R$ 1.180,00, no total.', { ...uteis, obrigatorio: false }, 'R$ 1.180,00');
+  // M17: o veto de total só cede quando o próprio valor é nomeado como componente
+  reprova('No total, R$ 1.180,00 pela estadia. Total: R$ 1.330,00.', uteis, 'R$ 1.180,00');
+  aprova('No total, R$ 1.180,00 de diárias e R$ 150,00 de limpeza, somando R$ 1.330,00.', uteis);
+  aprova('No total, R$ 1.180,00 pelas 2 noites e R$ 150,00 de limpeza: R$ 1.330,00.', uteis);
+  aprova('No total, R$ 1.180,00 somando as noites de cada dia. Total: R$ 1.330,00.', uteis);
+  aprova('Fica R$ 708,00 a noite e R$ 1.416,00 pelas duas. Total: R$ 2.156,00.', fds);
+  aprova('Total sem a limpeza: R$ 2.006,00\nTaxa de limpeza: R$ 150,00\nTotal: R$ 2.156,00.', fds);
+  // "total" solto depois do valor rotula o valor seguinte, não o anterior
+  aprova('Diária R$ 590,00, limpeza R$ 150,00, total R$ 2.156,00.', fds);
+
+  // O rótulo posposto do valor anterior ("por noite", "no total") não vale para o seguinte
+  reprova('Total: R$ 2.156,00. São R$ 708,00 por noite e R$ 1.416,00.', fds, 'R$ 1.416,00');
+  aprova('A estadia sai por R$ 2.156,00 no total e a limpeza é de R$ 150,00.', fds);
+  // A negação de uma oração não desculpa a concessão de outra ("não é promoção, mas faço por")
+  reprova('Total: R$ 1.330,00. Não é promoção mas faço por R$ 590,00 cada.', uteis, 'R$ 590,00');
+
+  // M11: a cláusula antes da vírgula não empresta o rótulo de outro valor
+  reprova('Total: R$ 2.156,00. R$ 708,00 cada, R$ 1.416,00.', fds, 'R$ 1.416,00');
+  reprova('Total: R$ 2.156,00. São R$ 708,00 cada, R$ 2.006,00.', fds, 'R$ 2.006,00');
+
+  // sem_total usa a mesma conferência (só o imóvel é conhecido)
+  const semTotalReprova = (texto) =>
+    assert.ok(julgarSemTotal(texto, 'GRM-301').some((e) => e.includes('sem rótulo')), texto);
+  semTotalReprova('Não consigo cotar 1 noite. Com desconto, cada noite sai por R$ 590,00.');
+  semTotalReprova('Não consigo cotar 1 noite, mas para você cada uma sai por R$ 590,00.');
+  semTotalReprova('Não consigo cotar 1 noite. Para 1 noite, R$ 590,00 no total.');
+  semTotalReprova('Não consigo cotar 1 noite. Cada hóspede pagaria R$ 590,00.');
+  assert.deepEqual(julgarSemTotal('O mínimo é de 2 noites. A diária é R$ 590,00 e a taxa de limpeza, R$ 150,00.', 'GRM-301'), []);
+  assert.deepEqual(
+    julgarSemTotal('O mínimo é de 2 noites. Cada noite custa R$ 590,00, e a de sexta ou sábado, R$ 708,00.', 'GRM-301'),
+    []
+  );
+}
+
 function testarJuizPreco() {
   const c1 = calcularEstadia({ imovel_id: 'GRM-301', checkin: '2027-01-15', checkout: '2027-01-18', hospedes: 2 });
   assert.equal(c1.ok, true);
@@ -688,6 +795,7 @@ function testarJuizPreco() {
 
 async function testarRunner() {
   testarJuizPreco();
+  testarRotuloComponente();
 
   let modo = 'feliz';
   let leads = [];

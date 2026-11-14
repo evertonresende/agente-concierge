@@ -2,6 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { componenteIdentificado, respostaConcedePreco } from './rotulo-componente.mjs';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TARIFAS = JSON.parse(
   fs.readFileSync(path.join(__dirname, 'tarifas.json'), 'utf8')
@@ -266,9 +268,6 @@ export function calcularEstadia({ imovel_id, checkin, checkout, hospedes }) {
   };
 }
 
-const REGEX_TERMO_COMPONENTE =
-  /\b(?:di[aá]rias?|noites?|hospedagem|sub-?total|limpeza|taxa(?:\s+de\s+limpeza)?|fim\s+de\s+semana|fds|(?:\d+|uma?)\s+norma(?:l|is)|sexta(?:-feira)?|s[aá]bado|domingo|segunda(?:-feira)?|ter[cç]a(?:-feira)?|quarta(?:-feira)?|quinta(?:-feira)?|dias?\s+[uú]te(?:l|is)|semana|unit[aá]ri[oa]|por\s+noite|cada|daily|night(?:s|ly)?|each|rate(?:s)?|weekend|weekday(?:s)?|cleaning|fee)\b/i;
-
 function temPrefixoR$(texto, indice) {
   const antes = texto.slice(Math.max(0, indice - 10), indice);
   return /R\$\s*$/i.test(antes);
@@ -367,96 +366,6 @@ export function extrairValoresCentavos(texto) {
   return valores;
 }
 
-function extrairClausulaAoRedor(texto, indice, tamanho, { pararEmVirgula = true } = {}) {
-  let ini = indice;
-  while (ini > 0) {
-    const ch = texto[ini - 1];
-    if (ch === '\n' || ch === ';' || ch === '!' || ch === '?') break;
-    if (ch === '.' && !(/\d/.test(texto[ini - 2] || '') && /\d/.test(texto[ini] || ''))) break;
-    if (pararEmVirgula && ch === ',' && !/\d{2}/.test(texto.slice(ini, ini + 2))) break;
-    ini--;
-  }
-
-  let fim = indice + tamanho;
-  while (fim < texto.length) {
-    const ch = texto[fim];
-    if (ch === '\n' || ch === ';' || ch === '!' || ch === '?') break;
-    if (ch === '.' && !(/\d/.test(texto[fim - 1] || '') && /\d/.test(texto[fim + 1] || ''))) break;
-    if (ch === ',' && !/\d{2}/.test(texto.slice(fim + 1, fim + 3))) break;
-    fim++;
-  }
-
-  return {
-    antes: texto.slice(ini, indice),
-    depois: texto.slice(indice + tamanho, fim),
-  };
-}
-
-// Rótulo que vem DEPOIS de um valor ("R$ 708,00 cada") pertence a ele, não ao valor seguinte.
-const REGEX_ROTULO_POSPOSTO =
-  /^\s*(?:cada\s+(?:uma?|noite|di[aá]ria)|cada|each(?:\s+night)?|(?:por|per|a)\s+noite|per\s+night|nightly)\b/i;
-
-/**
- * Isola o trecho desde a ocorrência anterior de "R$ ..." (se houver), descartando o
- * rótulo posposto daquele valor anterior.
- */
-function cortarAposValorAnterior(antes) {
-  const reAnterior = /R\$\s*(?:[1-9]\d{0,2}(?:\.\d{3})*|0),\d{2}/g;
-  let fimAnterior = 0;
-  let mAnt;
-  while ((mAnt = reAnterior.exec(antes)) !== null) {
-    fimAnterior = mAnt.index + mAnt[0].length;
-  }
-  if (fimAnterior === 0) return antes;
-  return antes.slice(fimAnterior).replace(REGEX_ROTULO_POSPOSTO, '');
-}
-
-// Subtotal disfarçado de desconto/oferta ou de total geral da estadia.
-// "cada uma sai por R$ 294,60" é preço por noite, não oferta.
-const REGEX_OFERTA =
-  /(?:fa[cç]o|fecho|fechamos|(?<!\bcada(?:\s+(?:uma?|noite|di[aá]ria))?\s+)sai)\s+por|desconto\s+(?:de|para)|com\s+desconto/i;
-const REGEX_TOTAL = /(?<!\bsub)\btotal\b(?!\s+(?:das?|de)\s+(?:di[aá]rias?|noites?|hospedagem))/i;
-
-function subtotalNomeadoComoComponente(texto, valorObj) {
-  const { antes, depois } = extrairClausulaAoRedor(texto, valorObj.indice, valorObj.texto.length);
-  const antesSemValorAnterior = cortarAposValorAnterior(antes);
-
-  const idxParen = antesSemValorAnterior.lastIndexOf('(');
-  const trechoAposParen = idxParen >= 0 ? antesSemValorAnterior.slice(idxParen + 1) : antesSemValorAnterior;
-  const prefixoOferta =
-    idxParen >= 0 && trechoAposParen.trim() === ''
-      ? antesSemValorAnterior.slice(0, idxParen)
-      : trechoAposParen;
-
-  if (REGEX_OFERTA.test(prefixoOferta) || REGEX_TOTAL.test(prefixoOferta)) return false;
-
-  const mProx = /R\$\s*(?:[1-9]\d{0,2}(?:\.\d{3})*|0),\d{2}/.exec(depois);
-  const depoisAteProx = mProx ? depois.slice(0, mProx.index) : depois;
-
-  const trechoContextoAntes =
-    idxParen >= 0 && !REGEX_TERMO_COMPONENTE.test(trechoAposParen)
-      ? antesSemValorAnterior
-      : trechoAposParen;
-
-  // Valor logo depois da vírgula, só com conector ("2 noites, de R$ 590,00 cada";
-  // "1 noite (sexta), R$ 372,00"): o rótulo está na cláusula anterior da mesma frase.
-  // "2 noites, fica R$ 590,00" não estende e continua reprovando.
-  let antesDaVirgula = '';
-  if (/^\s*(?:de|a|por)?\s*$/i.test(antesSemValorAnterior)) {
-    const { antes: antesFrase } = extrairClausulaAoRedor(texto, valorObj.indice, valorObj.texto.length, {
-      pararEmVirgula: false,
-    });
-    antesDaVirgula = cortarAposValorAnterior(antesFrase);
-    // O veto vale também para a cláusula anterior ("Com desconto, 2 noites, R$ 1.180,00";
-    // "Total para 2 noites, R$ 1.180,00"). O de total cede só quando o valor traz rótulo
-    // de preço por noite logo depois ("No total são 2 noites, de R$ 590,00 cada").
-    if (REGEX_OFERTA.test(antesDaVirgula)) return false;
-    if (REGEX_TOTAL.test(antesDaVirgula) && !REGEX_ROTULO_POSPOSTO.test(depoisAteProx)) return false;
-  }
-
-  return REGEX_TERMO_COMPONENTE.test(`${trechoContextoAntes} ${antesDaVirgula} ${depoisAteProx}`);
-}
-
 /**
  * Juiz determinístico de preço para uma resposta (CA-05):
  * - Confere o total calculado pela regra do contrato §3 em centavos inteiros.
@@ -470,6 +379,7 @@ export function julgarPrecoResposta(texto, estadiasInput, opcoes = {}) {
   const erros = [];
   const totaisOuTolerados = new Set();
   const componentesPermitidos = new Set();
+  const perfis = [];
 
   const valoresTolerados = Array.isArray(opcoes.valoresTolerados) ? opcoes.valoresTolerados : [];
   for (const vt of valoresTolerados) {
@@ -500,6 +410,13 @@ export function julgarPrecoResposta(texto, estadiasInput, opcoes = {}) {
     componentesPermitidos.add(calc.subtotalFdsCentavos);
     componentesPermitidos.add(calc.subtotalNoitesCentavos);
     componentesPermitidos.add(calc.taxaLimpezaCentavos);
+    perfis.push({
+      diaria: calc.diariaCentavos,
+      diariaFds: calc.diariaFdsCentavos,
+      limpeza: calc.taxaLimpezaCentavos,
+      noitesNormais: calc.noitesNormais,
+      noitesFds: calc.noitesFds,
+    });
 
     if (calc.noites <= 31) {
       for (let k = 0; k <= calc.noitesNormais; k++) {
@@ -513,10 +430,11 @@ export function julgarPrecoResposta(texto, estadiasInput, opcoes = {}) {
   }
 
   const encontrados = extrairValoresCentavos(texto);
+  const contexto = { concede: respostaConcedePreco(texto) };
   for (const v of encontrados) {
     if (totaisOuTolerados.has(v.centavos)) continue;
     if (componentesPermitidos.has(v.centavos)) {
-      if (!subtotalNomeadoComoComponente(texto, v)) {
+      if (!componenteIdentificado(texto, v, perfis, contexto)) {
         erros.push(`Valor "${v.texto}" aparece sem rótulo de componente (diária/taxa)`);
       }
       continue;
@@ -539,6 +457,7 @@ export function julgarSemTotal(texto, imovelId = null, valoresTolerados = []) {
   const erros = [];
   const tolerados = new Set();
   const componentes = new Set();
+  const perfis = [];
 
   if (Array.isArray(valoresTolerados)) {
     for (const vt of valoresTolerados) {
@@ -558,13 +477,21 @@ export function julgarSemTotal(texto, imovelId = null, valoresTolerados = []) {
     componentes.add(tarifa.diaria_centavos);
     componentes.add(Math.trunc((120 * tarifa.diaria_centavos + 50) / 100));
     componentes.add(tarifa.taxa_limpeza_centavos);
+    perfis.push({
+      diaria: tarifa.diaria_centavos,
+      diariaFds: Math.trunc((120 * tarifa.diaria_centavos + 50) / 100),
+      limpeza: tarifa.taxa_limpeza_centavos,
+      noitesNormais: null,
+      noitesFds: null,
+    });
   }
 
   const valores = extrairValoresCentavos(texto);
+  const contexto = { concede: respostaConcedePreco(texto) };
   for (const v of valores) {
     if (tolerados.has(v.centavos)) continue;
     if (componentes.has(v.centavos)) {
-      if (!subtotalNomeadoComoComponente(texto, v)) {
+      if (!componenteIdentificado(texto, v, perfis, contexto)) {
         erros.push(`não deveria citar valor em R$ sem rótulo de componente (${v.texto})`);
       }
       continue;
