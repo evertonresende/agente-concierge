@@ -49,6 +49,16 @@ interface CausaContingencia {
   erro: string;
 }
 
+/**
+ * Fatos do envio ao webhook: marcador por reserva, POSTs sem 201 e bloqueio por estadia (L11,
+ * P14). Valem na hora em que a F os grava, mesmo que o turno termine em contingência ou o
+ * objeto reinicie antes do fim do turno; o resto de `EstadoLead` segue o turno.
+ */
+function fatosDoEnvio(estado: EstadoLead): Pick<EstadoLead, "envios" | "postsSemRegistro" | "estadiasBloqueadas"> {
+  const { envios, postsSemRegistro, estadiasBloqueadas } = estado;
+  return { envios, ...(postsSemRegistro && { postsSemRegistro }), ...(estadiasBloqueadas && { estadiasBloqueadas }) };
+}
+
 export function nomeDoErro(erro: unknown): string {
   if (erro instanceof Error) {
     return erro.name && erro.name !== "Error" ? erro.name : (erro.constructor?.name || erro.name || "Error");
@@ -273,7 +283,7 @@ export class Sessao extends DurableObject<Env> {
           this.ctx.storage.sql.exec("INSERT INTO historico (mensagem) VALUES (?)", JSON.stringify({ role: "user", content: mensagem }));
           this.ctx.storage.sql.exec("INSERT INTO historico (mensagem) VALUES (?)", JSON.stringify({ role: "assistant", content: reply }));
           const atual = this.ler<EstadoLead>("lead", ESTADO_INICIAL);
-          this.gravar("lead", { ...estadoEmCurso, envios: atual.envios });
+          this.gravar("lead", { ...estadoEmCurso, ...fatosDoEnvio(atual) });
           this.ctx.storage.sql.exec("DELETE FROM estado WHERE chave = 'reapresentar'");
           if (idPedido) this.gravarPedido(idPedido, resposta);
         });
@@ -294,9 +304,9 @@ export class Sessao extends DurableObject<Env> {
         return resposta;
       }
 
-      // `envios` (marcador "enviando" etc.) é gravado na hora antes do POST para sobreviver a
-      // reinício do objeto; o restante de `EstadoLead` só é gravado junto com o histórico na
-      // transação do fim do turno, preservando por inteiro qualquer campo adicionado pela F.
+      // Os fatos do envio (`fatosDoEnvio`: marcador "enviando", contagem e bloqueio da P14) são
+      // gravados na hora para sobreviver a reinício e a contingência; o restante de `EstadoLead`
+      // só é gravado junto com o histórico na transação do fim do turno, por inteiro.
       let estadoEmCurso: EstadoLead = estadoInicial;
       let turnoAberto = true;
       let falhaExterna: CausaContingencia | null = null;
@@ -305,14 +315,14 @@ export class Sessao extends DurableObject<Env> {
       const cofre: Cofre = {
         ler: () => {
           const atual = this.ler<EstadoLead>("lead", ESTADO_INICIAL);
-          return { ...estadoEmCurso, envios: atual.envios };
+          return { ...estadoEmCurso, ...fatosDoEnvio(atual) };
         },
         salvar: (estado) => {
           if (!turnoAberto) return;
           estadoEmCurso = estado;
           const atual = this.ler<EstadoLead>("lead", ESTADO_INICIAL);
-          if (JSON.stringify(estado.envios) !== JSON.stringify(atual.envios)) {
-            this.gravar("lead", { ...atual, envios: estado.envios });
+          if (JSON.stringify(fatosDoEnvio(estado)) !== JSON.stringify(fatosDoEnvio(atual))) {
+            this.gravar("lead", { ...atual, ...fatosDoEnvio(estado) });
           }
         },
       };
@@ -424,10 +434,10 @@ export class Sessao extends DurableObject<Env> {
         const estadoFinal: EstadoLead = contingenciaFinal
           ? {
               ...estadoInicial,
-              envios: atual.envios,
+              ...fatosDoEnvio(atual),
               pendente: estadoEmCurso.pendente === estadoInicial.pendente ? estadoInicial.pendente : null,
             }
-          : { ...estadoEmCurso, envios: atual.envios };
+          : { ...estadoEmCurso, ...fatosDoEnvio(atual) };
         if (JSON.stringify(estadoFinal) !== JSON.stringify(atual)) {
           this.gravar("lead", estadoFinal);
         }
