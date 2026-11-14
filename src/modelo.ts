@@ -291,6 +291,24 @@ async function comMarcaDeLimite(tentativa: Promise<RespostaDoModelo>, anteriorPo
 }
 
 /**
+ * Chamadas reais feitas até aqui, para o loop somar: `resposta.uso.chamadas` no sucesso,
+ * `erro.chamadas` na falha.
+ */
+function comChamadas(erro: unknown, chamadas: number): unknown {
+  if (erro instanceof Error) Object.assign(erro, { chamadas });
+  return erro;
+}
+
+async function contado(tentativa: Promise<RespostaDoModelo>, chamadas: number): Promise<RespostaDoModelo> {
+  try {
+    const r = await tentativa;
+    return { ...r, uso: { ...r.uso, chamadas } };
+  } catch (erro) {
+    throw comChamadas(erro, chamadas);
+  }
+}
+
+/**
  * Sem `opcoes`, lê `AI_GATEWAY`, `MODELO_RESERVA` e `MODELO_ESFORCO` do ambiente do Worker. Com reserva
  * configurado, o principal tem prazo próprio; se ele lançar ou passar do prazo, o
  * reserva responde a mesma chamada. Sem reserva, o erro sobe para o loop (contrato L18).
@@ -313,23 +331,22 @@ export function criarModelo(ai: Ai, modelo: string | undefined, opcoes: OpcoesDo
   };
 
   return async (mensagens, ferramentas) => {
-    if (!modelo) throw new Error("MODELO não configurado");
-    const contar = (r: RespostaDoModelo, chamadas: number): RespostaDoModelo => ({ ...r, uso: { ...r.uso, chamadas } });
-    if (!opcoes.reserva) return contar(await comMarcaDeLimite(chamar(modelo, mensagens, ferramentas), true), 1);
+    if (!modelo) throw comChamadas(new Error("MODELO não configurado"), 0);
+    if (!opcoes.reserva) return contado(comMarcaDeLimite(chamar(modelo, mensagens, ferramentas), true), 1);
     // Modelo de terceiro sem gateway sempre falha (erro 2021 em cerca de 2,8 s, medido em
     // dev): nem tenta, o reserva responde direto. Decisão provisória da coordenação.
     if (ehAnthropic(modelo) && !opcoes.gateway) {
       // Um registro por turno: a primeira chamada do turno termina na mensagem do hóspede.
       if (mensagens.at(-1)?.role === "user") console.warn(JSON.stringify({ evento: "principal_pulado", modelo, motivo: "sem AI_GATEWAY" }));
-      return contar(await comMarcaDeLimite(chamar(opcoes.reserva, mensagens, ferramentas), false), 1);
+      return contado(comMarcaDeLimite(chamar(opcoes.reserva, mensagens, ferramentas), false), 1);
     }
     let principalPorLimite: boolean;
     try {
-      return contar(await comLimite(chamar(modelo, mensagens, ferramentas), opcoes.tempoDoPrincipalMs ?? TEMPO_DO_PRINCIPAL_MS), 1);
+      return await contado(comLimite(chamar(modelo, mensagens, ferramentas), opcoes.tempoDoPrincipalMs ?? TEMPO_DO_PRINCIPAL_MS), 1);
     } catch (erro) {
       if (erro instanceof TempoDoPrincipal) registrarFalha(modelo, erro);
       principalPorLimite = ehErroDeLimite(erro);
     }
-    return contar(await comMarcaDeLimite(chamar(opcoes.reserva, mensagens, ferramentas), principalPorLimite), 2);
+    return contado(comMarcaDeLimite(chamar(opcoes.reserva, mensagens, ferramentas), principalPorLimite), 2);
   };
 }

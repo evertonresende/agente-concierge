@@ -365,3 +365,15 @@ describe("o mesmo id duas vezes na mesma resposta", () => {
     expect(resultados).toEqual([[usos[0], "r1"], [usos[1], "r2"]]);
   });
 });
+
+describe("chamadas reais no erro", () => {
+  const falha = (m: string) => new Error(`${m} fora do ar`);
+  it("o erro informa quantas chamadas reais houve", async () => {
+    const dois = { run: async (m: string) => { throw falha(m); } } as unknown as Ai;
+    expect(await criarModelo(dois, "principal/x", { reserva: "reserva/y" })([], []).catch((e: unknown) => e)).toMatchObject({ chamadas: 2 });
+    expect(await criarModelo(dois, "principal/x", {})([], []).catch((e: unknown) => e)).toMatchObject({ chamadas: 1 });
+    const limite = { run: async () => { throw new Error("AiError: 3021: rate limiting"); } } as unknown as Ai;
+    expect(await criarModelo(limite, "principal/x", { reserva: "reserva/y" })([], []).catch((e: unknown) => e)).toMatchObject({ porLimite: true, chamadas: 2 });
+    expect(await criarModelo(dois, undefined, {})([], []).catch((e: unknown) => e)).toMatchObject({ chamadas: 0 });
+  });
+});
