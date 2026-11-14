@@ -2176,13 +2176,14 @@ Só ele faz, nesta ordem sugerida:
    `scripts/validar-producao.sh --entrega`, e escolher por onde chega o aviso de falha.
 
 Ele confirma ou reverte:
-- Todas as provisórias, P1 a P38 (a P23 já foi revogada por ele). As desta madrugada: P32 (catálogo
+- Todas as provisórias, P1 a P38 (a P23 já foi revogada por ele). As de 14/11: P32 (catálogo
   fora do ar em rodada oficial), P33 (regra do reservado), P34 (juiz volta ao estado aprovado), P35
   (formas novas de confirmação), P36 (simulador: nada reabre a `main`), P37 (duas passadas em
   `producao`), P38 (monitor), e a correção do texto da P25.
-- A pergunta "tira": nos prompts versionados, duas frases sobre a disponibilidade dele foram
-  omitidas e marcadas. As frases de circunstância que restam em X15, no `DECISOES.md` e neste log
-  continuam como estão até ele dizer.
+- A pergunta "tira", aplicada como provisória pela convenção que ele deu em 14/11 (decisão só com
+  a data, sem circunstância pessoal): nos prompts versionados, duas frases sobre a disponibilidade
+  dele foram omitidas e marcadas; a X15 foi reescrita em commit novo, como a X28 e a X29; e a frente
+  N tira as duas frases que o verificador achou nos textos dela. O histórico não foi reescrito.
 - O plano B perguntado em 14/11 não foi preciso: a H e o juiz fecharam por verificador.
 
 Números que ele precisa saber sem abrir relatório:
