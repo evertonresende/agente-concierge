@@ -277,15 +277,19 @@ function comLimite<T>(promessa: Promise<T>, ms: number): Promise<T> {
   return Promise.race([promessa, limite]).finally(() => clearTimeout(relogio));
 }
 
+// Nomes de erro que podem ir ao log; qualquer outro sai como ErroDesconhecido.
+const NOMES_DE_ERRO = new Set(["Error", "TypeError", "AiError", "AiGatewayError", "InferenceUpstreamError", "RespostaInutil", "TempoDoPrincipal", "RecusaPorLimite"]);
+
 /**
- * Só o nome do modelo, o nome do erro e o primeiro código numérico da mensagem (ex.:
- * `AiGatewayError 7003`). Nenhum texto livre: um erro que ecoasse nome ou telefone do
- * pedido feriria o contrato L22, e endereço ou identificador de conta não entra.
+ * Só o nome do modelo, o nome do erro (lista fechada) e o código. O código só vem da
+ * posição de código, o número logo depois do nome do erro (`AiError: 3021: …`), nunca de
+ * dígitos soltos da mensagem, que podem ser telefone ou endereço ecoado do pedido
+ * (contrato L22).
  */
 function registrarFalha(modelo: string, erro: unknown): void {
-  const nome = erro instanceof Error ? erro.name : typeof erro;
-  const codigo = (erro instanceof Error ? erro.message : String(erro)).match(/\b\d{3,4}\b/)?.[0];
-  console.warn(JSON.stringify({ evento: "modelo_falhou", modelo, erro: codigo ? `${nome} ${codigo}` : nome }));
+  const nome = erro instanceof Error && NOMES_DE_ERRO.has(erro.name) ? erro.name : "ErroDesconhecido";
+  const codigo = (erro instanceof Error ? erro.message : "").match(/^[A-Za-z]{1,40}Error: ?(\d{3,4})(?!\d)/)?.[1];
+  console.warn(JSON.stringify({ evento: "modelo_falhou", modelo, erro: [nome, codigo].filter(Boolean).join(" ") }));
 }
 
 /** Se a última tentativa recusou por limite e a anterior também, o erro sai como `RecusaPorLimite`. */
