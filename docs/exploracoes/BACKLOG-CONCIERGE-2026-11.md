@@ -60,7 +60,7 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 | J | agente-concierge | Página de chat em dois passos: design (canvas) e implementação | passo 1: nada; passo 2: Marco 1 e aprovação do Éverton | baixa | 0,7 + 1 | thread T3 · Fable 5.2 | passo 1 concluído (canvas aprovado pelo Éverton, com dois ajustes); passo 2 entregue (b8991ce) | `frente-j` |
 | M2 | agente-concierge | Revisão de código, segurança e segunda opinião | leva 2 integrada | alta | 1,5 | subagentes Opus 5.5 + segunda opinião do Gemini 4 Argon em esforço alto (X23) | primeira passada rodando desde 13/11 23h22, adiantada pela X24: segurança na `main` atual, código dos módulos estáveis e segunda opinião do Gemini sobre o cálculo; a segunda passada é só o delta, depois da leva 2 | — |
 | L | agente-concierge | Custo por conversa e monitor diário | leva 2 integrada | média | 1 | subagente em worktree · Opus 5.5, esforço médio (X23) | script de custo na `main` desde 13/11 23h47 (eec433a), verificador aprovado; falta o monitor diário, depois que `producao` existir; aberta em 13/11 23h22, adiantada pela X24: só `scripts/custo.mjs`; o monitor diário espera a K | `frente-l` |
-| K | agente-concierge | Produção com o envio real desligado | M2 | alta | 1,5 | thread T3 · Opus 5.5, esforço alto (X23) | gateway de `producao` criado e com o log desligado; `scripts/validar-producao.sh` na branch (33c8316), reprovado pelo verificador por um falso verde com argumentos extras, em correção; primeiro deploy autorizado em 14/11 00h07 (X26), só no endereço padrão do Worker e com o envio real desligado; a rota no hostname próprio segue à espera do Éverton. Rodando desde 13/11 23h14, adiantada pela X24: só a infraestrutura de `producao` com o envio real desligado; o deploy final espera a M2 | `frente-k` |
+| K | agente-concierge | Produção com o envio real desligado | M2 | alta | 1,5 | thread T3 · Opus 5.5, esforço alto (X23) | gateway de `producao` criado e com o log desligado; `scripts/validar-producao.sh` na branch (33c8316), reprovado pelo verificador por um falso verde com argumentos extras, em correção; `producao` no ar no endereço padrão (3e053cb) e no hostname próprio por rota (P22), envio desligado, zero lead; faltam o teste por agente de usuário, a latência, o limite de taxa e o deploy final. Primeiro deploy autorizado em 14/11 00h07 (X26), só no endereço padrão do Worker e com o envio real desligado; a rota no hostname próprio segue à espera do Éverton. Rodando desde 13/11 23h14, adiantada pela X24: só a infraestrutura de `producao` com o envio real desligado; o deploy final espera a M2 | `frente-k` |
 | N | agente-concierge | Entregáveis de processo | K | alta | 2 | thread T3 · Opus 5.5, esforço alto (X23) | rascunho completo na branch (ede0c12), sem achado de sigilo; reprovado por uma garantia dada como certa antes da hora, em correção; verificação final no fim da leva 2. Aberta em 13/11 23h14, adiantada pela X24: rascunhos do README, do "Como foi feito", dos desenhos e do setup, com marcador no que se preenche no fim | `frente-n` |
 | S | agente-concierge | Gate de sigilo: achados da M2 | M2, primeira passada | alta | 0,5 | subagente em worktree · Opus 5.5, esforço alto (X23) | rodando desde 13/11 23h46: conteúdo do histórico, saída sem trecho do termo, sufixo composto e teste do gate; verificador antes do merge | `frente-gate` |
 | T | agente-concierge | Datas sem ano (P21) | G | alta | 0,5 | subagente em worktree · Opus 5.5, esforço alto (X23) | rodando desde 14/11 00h13: saída sem ano a mais de 90 noites da entrada não cota; por cima da branch da G; verificador antes do merge | `frente-datas` |
@@ -1163,6 +1163,21 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
 - 14/11 00h15 · G · cabeça da64da4, com a `main` mesclada; nada mudou em `src/` desde 29ae3aa, em verificação
 - 14/11 00h15 · provisórias abertas para o Éverton confirmar ou reverter no fim: P11 a P23, e os nomes dos
   modelos mantidos no "Como foi feito"
+- 14/11 00h21 · K · relatório 6: `producao` NO AR no endereço padrão do Worker, publicada da `main` em 3e053cb,
+  com o envio real desligado. Prova de zero POST refeita nesse commit (6 testes). `/saude` certo;
+  dois turnos sem confirmação com 2 e 3 chamadas ao modelo, log do Worker sem `principal_pulado` nem
+  `modelo_falhou`; `LEADS REAIS: 0` antes e depois; segredos por referência, nenhuma chave de modelo
+  no Worker. No endereço padrão o urllib leva 403: a checagem de integridade ali é da plataforma e não
+  se desliga, então ele não cumpre a L23. Os dois turnos levaram perto de 11 s cada: pedida medição
+  de latência. URLs de pré-visualização ligadas por padrão: a decidir
+- 14/11 00h21 · K · relatório 7: ROTA criada (P22) no hostname exato, pela API, sem curinga; `/saude` no hostname
+  com 200; DNS sem mudança (mesmos 18 registros, curinga e túnel intactos); nenhum domínio
+  personalizado. No hostname os quatro clientes passam, inclusive o urllib, e `LEADS REAIS: 0` antes e
+  depois. Um novo deploy não apaga a rota, desde que a configuração não ganhe `routes`. Falta medir
+  agente por agente (passo A), a latência e pôr o limite de taxa (passo B)
+- 14/11 00h21 · integração · ensaio das três cabeças juntas, fixadas por hash, sobre a `main` (G da64da4, H
+  a58ff5e, B2 7f12107): merge limpo, 1401 testes, tipos sem erro, SIGILO OK. A junta entre a H e a G
+  está verde
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -1175,6 +1190,56 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   isolamento de worktree, sync git e escalação.
 - Hook de início de sessão `git-sync` e a skill de orquestração de entregas (planejamento e
   coordenação).
+
+## Fechamento: congelamento, rodadas oficiais e o que falta (aberto em 14/11 00h21)
+
+**Regra dos hashes.** Daqui em diante, todo ensaio, verificação e merge usa o hash exato, nunca o
+nome da branch. Motivo: `origin/frente-f` e `frente-datas` carregam a branch da G mesclada, e a G
+ainda não tem veredito. Ao receber um veredito, conferir qual hash da F a árvore do verificador
+usou.
+
+**Congelamento da `main` para a prova.** A `main` congela quando tiver, com veredito: H, G, o juiz
+e o runner da B2, o gate da S, a P20 (nome do lead, frente F) e a P21 (datas sem ano, frente T), e
+o conjunto de casos fixo. Meta: 14/11 03h00. Limite: 06h00. Gatilho que já existia: 10h00 com o
+critério 4 não verde, parar e chamar o Éverton.
+
+**Antes da primeira rodada oficial (não conta como rodada).** Ensaio local na árvore congelada, com
+o modelo real em nível alto: o conjunto de desenvolvimento inteiro, a sonda do resumo pendente e o
+bloco de leads de novo, para ver a P20 com o modelo de verdade (nome abreviado, corrigido ou
+puxado do contexto não pode virar laço de recusa). Depois do deploy de `dev`, uma fumaça declarada
+só com `--bloco marco1`.
+
+**O que conta como rodada oficial (X24, item 4).** `node evals/rodar.mjs --alvo "$AGENTE_URL_DEV"
+--conjunto dev`, o conjunto inteiro, sem `--bloco`, contra `dev` publicado do commit congelado, com
+o Haiku 5.5 em nível alto e o juiz aprovado pelo verificador, e com o relatório salvo em
+`evals/relatorios/`. São três, seguidas, sem deploy entre elas. Nenhuma é descartada. O critério é a
+soma por bloco das três, 95% ou mais em cada bloco. Toda falha é classificada no log (agente, juiz
+ou infraestrutura). Se o código de produto ou o juiz mudar depois da primeira, a contagem recomeça
+e as rodadas anteriores ficam registradas como estão.
+
+**Conjunto reservado.** Leitura prévia do agregado na árvore integrada local assim que o juiz for
+aprovado, com o modelo e a configuração já fixos: serve para descobrir cedo se a regra 6 do plano
+de evals vai ser precisa (a frente C revela um caso, ele migra para o conjunto de desenvolvimento e
+ela escreve um substituto). Não é usada para ajustar prompt nem modelo. Leitura final em `dev`,
+depois das três rodadas; limiar de 90%.
+
+**Depois da prova.** Simulador hostil em `dev`; medição final da frente I; custo por conversa de um
+relatório novo (`scripts/custo.mjs`); segunda passada da M2, só o delta; deploy final de `producao`
+e `scripts/validar-producao.sh` completo; textos finais da frente N e verificador de sigilo e de
+fatos; lista para o Éverton.
+
+**Critérios de fechamento ainda abertos** (numeração da tabela de outcomes):
+- 1: `producao` no ar no endereço padrão e no hostname próprio, envio desligado. Falta o deploy
+  final, o `PRODUCAO OK` e o monitor diário da frente L.
+- 2 a 9: dependem das três rodadas oficiais e do critério de integração 3 (frente H).
+- 12: relatórios das rodadas oficiais e do simulador versionados.
+- 13: agregado do reservado; cópia do conjunto para o repositório no commit de entrega.
+- 14: segunda passada da M2 em `docs/revisoes/m2.md`.
+- 15: medição final em `docs/revisoes/modelos.md`.
+- 17 e 19: README com o custo medido; desenhos conferidos no GitHub.
+- 18: `DECISOES.md` ainda não tem as seções de cortes e do que faria com mais tempo.
+- 20: `docs/prompts/` com os prompts das levas 2 e 3; exports de sessão dependem do Éverton.
+- 21 a 24: do Éverton (vídeo, e-mail, repositório público, envio real).
 
 ## Pré-voo (antes da leva 1)
 
