@@ -159,9 +159,11 @@ HTTP, e isso não se desliga (X28). No teste da frente K, `Python-urllib` e `lib
 levam 403 no endereço padrão, em POST e em GET, e passam no hostname próprio; os outros
 15 clientes testados passam nos dois. As URLs de pré-visualização do Worker de `producao`
 estão desligadas (P25). É só proteção: a plataforma não gera URL por versão para Worker com
-Durable Object, então nenhuma existia. O ajuste não sobrevive a deploy: o deploy religa as
-URLs de pré-visualização, e a frente K reaplica o ajuste pela API e confere por leitura
-depois de cada deploy de `producao`, também no deploy da entrega.
+Durable Object, então nenhuma existia. Até caac4c5, o procedimento foi reaplicar o ajuste
+pela API e conferir por leitura depois de cada deploy de `producao`: sem `preview_urls` no
+`wrangler.jsonc`, o deploy religava as URLs de pré-visualização. Desde caac4c5 a
+configuração traz `preview_urls: false` em `env.producao`, e no deploy com o envio ligado a
+pré-visualização veio desligada sem reaplicar pela API (conferido por leitura).
 
 O webhook real não recebe nenhum POST antes da entrega, nem como teste. A validação é por
 composição:
