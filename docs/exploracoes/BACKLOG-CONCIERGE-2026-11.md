@@ -54,7 +54,7 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 | M1 | agente-concierge | Revisão curta do Marco 1 | A | alta | 0,5 | subagentes Opus 5.5 + conselho | concluída (`docs/revisoes/m1.md`; achados com dono) | — |
 | I | agente-concierge | Escolha do modelo por eval | A, B2 | alta | 1 | subagente em worktree · Opus 5.5, esforço médio desde a X16 | adaptador na `main` desde 13/11 23h18 (27c3093), com o Haiku 5.5 em nível alto (X24); `dev` publicado dessa versão. Delta do log de falha e gateway de `producao` na `main` desde 13/11 23h59 (fcb7dc2), verificador aprovado. Fica viva para a fase 2 (medição no código final) e para a linha do gateway de `producao` | `t3/modelo-evals-fallback` |
 | E | agente-concierge | Datas | Marco 1, L1, L1a, L1b, L2 | alta | 1,5 | subagente em worktree · Gemini 4 Hydrogen | concluída: na `main` (81873fa) | `t3/datas-relativas-sao-paulo` |
-| F | agente-concierge | Lead robusto | Marco 1, L6, L7, L9, L10, L11, L15 (textos fixos), L20 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16) | na `main`: primeira parte (801c8a2) e complemento (0a44bd6, 14/11 00h05; P14 por estadia, P18, P19, C7 a C11), com seis rodadas de verificador. Aberta só para o nome do lead (P20), em commit novo | `frente-f` |
+| F | agente-concierge | Lead robusto | Marco 1, L6, L7, L9, L10, L11, L15 (textos fixos), L20 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16); de 13/11 23h28 a 14/11 02h55 rodou em Fable 5.2 por desvio não percebido; de volta ao Opus 5.5, esforço alto, em 14/11 04h07 | na `main`: primeira parte (801c8a2) e complemento (0a44bd6, 14/11 00h05; P14 por estadia, P18, P19, C7 a C11), com seis rodadas de verificador. Aberta só para o nome do lead (P20), em commit novo | `frente-f` |
 | G | agente-concierge | Robustez e handoff | Marco 1, L3, L4, L5, L5a, L12, L13a, L15, L16, L16a, L19, L21 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16) | rodando | `frente-g` |
 | H | agente-concierge | Concorrência endurecida e falha interna | Marco 1, L17, L17a, L18 | alta | 1 | subagente em worktree · Gemini 4 Hydrogen até 13/11 21h26; depois Opus 5.5, esforço alto (X23) | duas rodadas de verificador independente; correções entregues (c905a09); espera a F entrar na `main` para o merge final e a terceira rodada | `t3/durable-session-concurrency` |
 | J | agente-concierge | Página de chat em dois passos: design (canvas) e implementação | passo 1: nada; passo 2: Marco 1 e aprovação do Éverton | baixa | 0,7 + 1 | thread T3 · Fable 5.2 | passo 1 concluído (canvas aprovado pelo Éverton, com dois ajustes); passo 2 entregue (b8991ce) | `frente-j` |
@@ -1805,6 +1805,89 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   classificadas como falso vermelho), e a leitura do tipo de noite contra o valor não marca nenhuma
   resposta nas três: o buraco do 4efb030 não foi exercitado. A P34 também fixa, antes da primeira
   rodada oficial da árvore nova, como conta um falso vermelho classificado
+- 14/11 04h02 · reservado · os 4 casos revelados chegaram (regra 6). São confirmações em frase composta,
+  como "Pode fechar, confirmo os dados do resumo." e "Sim, confirmo o resumo e autorizo encaminhar o
+  pedido."; o agente repete o resumo e pede o "sim". Conferência da coordenação pela função de leitura
+  do sim da `main`, numa cópia: as quatro saem como "outra" por falta de vocabulário na gramática
+  fechada, não por decisão que mande não confirmar; os exemplos literais da L9 e da P13 confirmam
+- 14/11 04h05 · F · reaberta para as formas de confirmação da P35 (provisória): só vocabulário da mesma
+  classe que a L9 e a P13 já aceitam, matriz negativa para cada forma, e palavra de preço junto do sim
+  continua sem confirmar. Cabeça pedida até 04h45; só entra com verificador independente aprovado até
+  05h30; sem isso a `main` congela sem a mudança e o comportamento vira limite no README. **Desvio de
+  modelo achado agora:** a thread da F rodou de 13/11 23h28 a 14/11 02h55 (regra do nome, "sim" limpo,
+  P29 e o ajuste de teste) em Fable 5.2, e não em Opus 5.5 como manda a X23. A coordenação não
+  percebeu a troca e a causa não foi determinada. As entregas desse período passaram por verificador
+  independente em Opus 5.5. A thread voltou ao Opus 5.5, esforço alto, antes desta tarefa; G, N, K e
+  B2 conferidas, todas em Opus 5.5
+- 14/11 04h07 · B2 · volta do juiz entregue em 41ecd72 e mesclada por hash: **`main` em 0567371**. Conferido
+  pela coordenação: juiz, runner e casos idênticos byte a byte aos de 193d1bf, na cabeça e na árvore
+  mesclada; ensaio com 53 arquivos e 1524 testes, tipos, gate, `RUNNER OK`, `TRAVA OK`, `CASOS OK`;
+  com o juiz de 4efb030 posto de volta numa cópia, o autoteste falha. Corpus com 275 itens, 50 de
+  limite; as três redações reais (contagem por tipo de noite sem repetir "noite", com dois-pontos e
+  com parêntese, e "multa em caso de") estão fixadas como certas que reprovam e listadas no
+  `evals/README.md`
+- 14/11 04h09 · dev · árvore de reserva 0567371 publicada (versão 03b532eb). Sonda de dois minutos depois
+  do deploy: 32 de 32 respostas sem contingência. Fumaça `marco1`: 100%
+- 14/11 04h10 · F · P35 entregue em a4b13fa (04h07, já em Opus 5.5): 20 linhas na gramática do sim e 41
+  testes novos; suíte com 54 arquivos e 1565 testes. Conferência da coordenação, 38 frases pela função
+  antiga e pela nova: as três frases reveladas passam a confirmar; a frase com "pelo valor normal",
+  negação, sobra, valor junto e novidade com resumo antigo continuam sem confirmar. Verificador
+  independente da rodada 9 iniciado, com bateria adversarial de 800 mensagens na barra. A B2 recebeu
+  os 4 casos revelados para passar ao conjunto de desenvolvimento
+- 14/11 04h12 · reservado · **segundo revisor: as 9 mudanças da passada única foram vetadas** e os casos
+  voltaram ao original. Nas 7 afrouxadas, a expressão nova aprovava respostas erradas (5 a 6 por
+  caso); das 2 apertadas, uma reprovava respostas certas e a outra ficou em dúvida. Ele apertou 3
+  casos frouxos (manipulação 1, handoff 2) e concordou com a classificação das falhas: 3 do juiz
+  compartilhado, 1 de idioma, 4 de lead. A leitura de 91,7% deixa de valer. Dos 4 substitutos, 1
+  está em ordem e 3 foram contestados (2 são paráfrase do caso retirado, 1 exige mais que a L9); o
+  primeiro revisor reescreve os 3 e o segundo confere de novo. Consequência: o conjunto volta a
+  medir com as expectativas originais, e o agregado final tende a ficar abaixo de 90%; pela P33
+  vai ao Éverton como está, com as falhas classificadas
+- 14/11 04h17 · rodadas · **rodada oficial 1 na árvore de reserva 0567371: 99 de 100** (04h12 a 04h16;
+  p50 3,1 s, p95 6,5 s; catálogo respondendo antes e depois). A falha é **falso vermelho do juiz**,
+  classificado pela conversa gravada: `hand-01-desconto` turno 1, resposta certa (recusa o desconto,
+  `handoff`, total R$ 2.156,00) com "Esse total inclui 1 noite a R$ 590,00, 2 noites de sexta e
+  sábado a R$ 708,00 cada e a taxa de limpeza de R$ 150,00": a noite comum vem sem o tipo, e o juiz
+  lê o valor como total. Os juízes de 193d1bf, 4efb030 e b0a80ce reprovam igual: não vem da volta.
+  Conta como falha na soma do bloco (P34). Leitura à mão: 26 respostas com os dois tipos de noite,
+  nenhuma com valor trocado; casos de desconto com recusa limpa e `handoff`
+- 14/11 04h22 · rodadas · **rodada oficial 2 na árvore de reserva 0567371: 97 de 100** (04h17 a 04h22; p50
+  3,1 s, p95 6,5 s). As três falhas são **falso vermelho**, classificadas pela conversa gravada, e as
+  três versões do juiz (193d1bf, 4efb030, b0a80ce) reprovam igual: (1) `cot-03-centavos-a` turno 1,
+  cotação certa (noite de sexta a R$ 294,60, limpeza R$ 75,00, total R$ 369,60) com "Noites: 1, a
+  noite de sexta, no valor de R$ 294,60"; (2) `cot-06-virada-de-ano` turno 1, cotação certa (R$
+  310,00 + R$ 372,00 + limpeza R$ 100,00 = R$ 782,00) com "Noite de sexta (01/01), com acréscimo de
+  20%: R$ 372,00"; (3) `lead-05-ambigua` turno 2, resposta certa à hesitação ("o pedido não foi
+  enviado", e o lead só sai depois do sim do turno 3), pega pela expressão proibida do caso em "foi
+  enviado". Leitura à mão: 27 respostas com os dois tipos de noite, nenhuma com valor trocado
+- 14/11 04h28 · rodadas · **rodada oficial 3 na árvore de reserva 0567371: 100 de 100** (04h23 a 04h28; p50
+  3,0 s, p95 5,8 s). **Soma das três rodadas na árvore de reserva, por bloco, contando os quatro
+  falsos vermelhos como falha (P34):** contrato 27 de 27, cotações 37 de 39 (94,9%), leads 47 de 48
+  (97,9%), recusas 36 de 36, respostas 33 de 33, marco1 6 de 6, handoff 41 de 42 (97,6%),
+  manipulação 39 de 39, não inventa 30 de 30; total 296 de 300. **Nenhuma falha do agente em 300
+  conversas.** Cotações fica abaixo de 95% só pelos dois falsos vermelhos da rodada 2; sem eles, 39
+  de 39. Pela P34, se esta árvore for a da entrega, roda-se uma quarta rodada e os dois números vão
+  ao Éverton
+- 14/11 04h31 · F · **verificador da rodada 9: APROVADO em a4b13fa**, sete itens de sete, veredito lido na
+  mensagem de fim da tarefa. Diferencial de 3.943 mensagens em três estados (11.829 leituras): 965
+  passam a dar sim, todas lidas pelo verificador e todas confirmação pura do resumo, sem número,
+  nome, preço, negação, hesitação ou mudança; as cinco frases com palavra de preço seguem sem
+  confirmar e geram 0 POST; novidade só confirma com o segundo resumo novo; dez mutações derrubam
+  os testes. Achado baixo, fora da barra: "pode encaminhar" sozinho confirma, só com resumo pendente
+- 14/11 04h32 · F e B2 · os 4 casos revelados entraram no conjunto de desenvolvimento pela B2 (cd28bc8:
+  `lead-15`, `lead-16`, `lead-17` e `hand-15`; o de handoff com a expectativa da P35 e um turno final
+  de "sim"). Ensaio conjunto de a4b13fa e cd28bc8 sobre a `main`: 54 arquivos, 1565 testes, tipos,
+  gate, `RUNNER OK`, `TRAVA OK`, `CASOS OK`, juiz e runner idênticos aos de 193d1bf. Num servidor
+  local com essa árvore, os blocos de leads (19 casos) e de handoff (15 casos) deram 100%: as três
+  confirmações registram o lead e a frase com "pelo valor normal" repete o resumo e só registra
+  depois do "sim". Merges `--no-ff` por hash: F em 033a33c, B2 em **9d37f9a, a árvore final**
+- 14/11 04h35 · dev · árvore final 9d37f9a publicada (versão b80a0f91). Sonda de dois minutos depois do
+  deploy: 32 de 32 sem contingência. Fumaça `marco1`: 100%. A contagem das três rodadas oficiais
+  recomeça nesta árvore, agora com 104 casos
+- 14/11 04h35 · reservado · segunda conferência dos substitutos: 2 dos 3 reescritos em ordem, cada um com um
+  aperto do segundo revisor; 1 ainda contestado por paráfrase no turno medido, devolvido ao primeiro
+  revisor para a última volta. Depois dela o conjunto fecha, e as duas leituras do agregado são
+  feitas na árvore final
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -1832,15 +1915,13 @@ M2 sem achado determinístico nem de lead errado na H (a primeira rodada oficial
 dela). Meta: 14/11 03h00. Limite: 06h00. Gatilho que já existia: 10h00 com o critério 4 não
 verde, parar e chamar o Éverton.
 
-**Estado do congelamento em 14/11 03h27. Reaberto; falta só o juiz da B2.** Na `main` (f9a50d2): G com a
-P30 e a correção do R1 (eb5c7d4, aprovada pelo verificador da rodada 5), T (P21), F (P20, "sim" limpo,
-P29 e o ajuste de teste 7fed64e), H (fila da sessão e P24), B2 até 4efb030, o script da K e o gate da
-S. Fora da `main`: B2, com o juiz voltando ao estado de 193d1bf (P34) depois de o verificador da rodada
-6 reprovar as correções de redação; o que entra é documentação, corpus e autoteste, conferidos por
-identidade byte a byte dos arquivos do juiz. Quando ele aprovar e entrar, a `main` congela, `dev` é republicado e a contagem das três
-rodadas oficiais recomeça. O código do agente em `dev` ainda é o de b5af852. As rodadas na árvore
-b5af852 ficam registradas. O conjunto reservado está abaixo do limiar (linha das 03h16 do log) e
-segue a P33.
+**Estado do congelamento em 14/11 04h35. Árvore final congelada em 9d37f9a.** Código do agente: o de b5af852
+mais a correção da G (eb5c7d4) e as formas de confirmação da F (a4b13fa, P35), as duas aprovadas por
+verificador independente. Juiz e runner idênticos byte a byte aos de 193d1bf (P34). Conjunto de
+desenvolvimento com 104 casos (os 100 de antes e os 4 revelados pelo reservado). Em `dev`: versão
+b80a0f91. As três rodadas oficiais correm nesta árvore. A árvore de reserva 0567371 (sem a P35)
+tem três rodadas registradas, 296 de 300, e as de b5af852 também ficam registradas. O conjunto
+reservado segue a P33 e é lido na árvore final (linhas das 03h49, 04h12 e 04h35 do log).
 
 **Plano B, decisão do Éverton (perguntado em 14/11).** Um ciclo de correção e verificação leva
 cerca de 85 minutos; cabem dois até as 06h00. Se a H ou o juiz não fecharem nesse prazo, a escolha
