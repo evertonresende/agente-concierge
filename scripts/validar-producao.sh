@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 # Valida o ambiente `producao` sem nenhum POST ao webhook real (docs/VERIFICACOES.md §5).
 #
-# Uso: scripts/validar-producao.sh [modo] [argumentos extras do runner de evals]
+# Uso: scripts/validar-producao.sh [modo] [--paralelo N] [--pausa-ms N] [--timeout-ms N]
 #   (sem modo)    /saude (secrets presentes, ambiente producao, destino real, envio
-#                 desligado), LEADS REAIS antes e depois, e o conjunto dev sem os casos de
-#                 confirmação (a trava do runner os recusa fora de dev) → PRODUCAO OK
+#                 desligado), LEADS REAIS antes e depois, e o conjunto dev inteiro sem os
+#                 casos de confirmação (a trava do runner os recusa fora de dev) → PRODUCAO OK
+#                 só com o veredito do runner e um mínimo de casos executados. Os extras
+#                 aceitos são só os três acima, repassados ao runner.
 #   --so-leitura  só o GET no webhook real → LEADS REAIS: <n>
 #   --clientes    um turno sem confirmação no POST /chat com curl, Python requests,
 #                 Python urllib e fetch do Node, cada um com o agente de usuário padrão
@@ -25,6 +27,10 @@ MENSAGEM = "Olá! Em quais cidades vocês têm imóveis?"
 VARIAVEIS = ("CATALOGO_URL", "LEADS_URL", "AMBIENTE", "MODELO", "ENVIO_LEADS")
 CONHECIDOS = {"producao", "dev", "real", "falso", "ligado", "desligado", None}
 TEMPO_S = 60
+EXTRAS_ACEITOS = {"--paralelo", "--pausa-ms", "--timeout-ms"}
+# Em 14/11, 69 dos 98 casos do conjunto dev rodam fora de dev (os outros 29 a trava recusa).
+# ponytail: piso fixo; se a B2 remarcar muitos casos como só-dev, ajustar aqui.
+MINIMO_DE_CASOS = 60
 
 
 class Falha(Exception):
@@ -224,15 +230,36 @@ await import(pathToFileURL(process.env.RUNNER_EVAL).href);
 """
 
 
+def validar_extras(extras):
+    """Só opções que não trocam o alvo, o conjunto nem os casos, cada uma com valor inteiro."""
+    if len(extras) % 2:
+        raise Falha("argumentos extras incompletos (cada opção leva um valor)")
+    for opcao, valor in zip(extras[::2], extras[1::2]):
+        if opcao not in EXTRAS_ACEITOS or not valor.isdigit():
+            raise Falha(f"argumento extra não aceito: {opcao} (aceitos: {', '.join(sorted(EXTRAS_ACEITOS))})")
+
+
+def veredito_das_evals(codigo, linhas):
+    """None quando o runner rodou o conjunto dev sem reprovar; senão o motivo."""
+    executados = sum(1 for linha in linhas if linha.startswith(("[PASSOU] ", "[FALHOU] ")))
+    if codigo not in (0, 2) or not any(linha in ("EVAL OK", "EVAL PARCIAL") for linha in linhas):
+        return f"evals do conjunto dev reprovaram (runner saiu com {codigo})"
+    if executados < MINIMO_DE_CASOS:
+        return f"só {executados} caso(s) executado(s); o mínimo é {MINIMO_DE_CASOS}"
+    return None
+
+
 def rodar_evals(agente, extras, limpar):
     ambiente = {chave: os.environ[chave] for chave in ("PATH", "HOME", "LANG") if chave in os.environ}
     ambiente.update(ALVO_EVAL=agente, RUNNER_EVAL=os.path.abspath("evals/rodar.mjs"),
                     ARGS_EVAL=json.dumps(["--conjunto", "dev", "--sem-relatorio", *extras]))
     processo = subprocess.Popen(["node", "--input-type=module", "-e", NODE_RUNNER], env=ambiente,
                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, errors="replace")
+    linhas = []
     for linha in processo.stdout:
-        print(limpar(linha.rstrip("\n")), flush=True)
-    return processo.wait()
+        linhas.append(linha.rstrip("\n"))
+        print(limpar(linhas[-1]), flush=True)
+    return processo.wait(), linhas
 
 
 def leads_reais(url):
@@ -246,10 +273,10 @@ def modo_completo(agente, leads, extras, limpar):
     print("ENVIO: desligado")
     if leads_reais(leads) != 0:
         raise Falha("já existe lead no webhook real antes das evals")
-    codigo = rodar_evals(agente, extras, limpar)
+    motivo = veredito_das_evals(*rodar_evals(agente, extras, limpar))
     depois = leads_reais(leads)
-    if codigo not in (0, 2):
-        raise Falha(f"evals do conjunto dev reprovaram (runner saiu com {codigo})")
+    if motivo:
+        raise Falha(motivo)
     if depois != 0:
         raise Falha("as evals deixaram lead no webhook real")
     print("PRODUCAO OK")
@@ -322,6 +349,22 @@ def autoteste():
     assert "bloqueio" in avaliar_chat(200, "text/html", "<html>desafio</html>")
     assert avaliar_chat(200, "application/json", '{"reply": 1}') == "JSON sem reply e handoff"
     assert avaliar_chat(530, "text/html", "x") == "HTTP 530"
+    validar_extras(["--paralelo", "2", "--pausa-ms", "0"])
+    for extras in (["--alvo", "x"], ["-h"], ["--listar"], ["--bloco", "marco1"], ["--conjunto", "dev"],
+                   ["--paralelo"], ["--paralelo", "x"], ["--relatorio", "1"]):
+        try:
+            validar_extras(extras)
+            raise AssertionError(extras)
+        except Falha:
+            pass
+    passou = ["[PASSOU] b/c"] * MINIMO_DE_CASOS
+    assert veredito_das_evals(2, passou + ["EVAL PARCIAL"]) is None
+    assert veredito_das_evals(0, passou[:-1] + ["[FALHOU] b/d — x", "EVAL OK"]) is None
+    assert veredito_das_evals(1, passou + ["EVAL REPROVADO"])
+    assert veredito_das_evals(2, ["TRAVA: nenhum caso elegível", "EVAL PARCIAL"])
+    assert veredito_das_evals(0, ["CASOS OK"])
+    assert veredito_das_evals(2, passou[:-1] + ["EVAL PARCIAL"])
+    assert veredito_das_evals(3, passou + ["EVAL PARCIAL"])
     print("AUTOTESTE OK")
 
 
@@ -332,6 +375,7 @@ def principal(argumentos):
         return autoteste()
     if modo and extras:
         raise Falha(f"{modo} não aceita argumentos extras")
+    validar_extras(extras)
     ambiente = ler_env(os.environ.get("AGENTE_ENV") or os.path.expanduser("~/.config/agente-concierge/env"))
     faltando = [nome for nome in ("AGENTE_URL_PRODUCAO", "CATALOGO_URL") if not ambiente.get(nome)]
     if faltando:
