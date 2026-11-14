@@ -1440,6 +1440,30 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   recusa), lead sem confirmação por caminho novo, custo por turno e dado pessoal em log. O adendo da H
   e do juiz vem depois que entrarem. Frente N recebeu a lista do que já pode escrever no presente e
   dos limites novos (P24 a P28)
+- 14/11 01h45 · H · correção do B6 em 578434d e teste do `handoff` em 15645d0; cabeça 38ae72f, já em cima da
+  `main` com a F (1468 testes, tipos e gate novo verdes, segundo a frente). O B7 não foi feito (não era
+  trivial): fica como limite. Verificador da rodada 5 lançado (Opus 5.5, esforço alto), barra fechada de
+  sete itens: os dois cenários do B6, nenhuma contingência indevida para pedido legítimo, regressão do
+  que já passou com as sondas ajustadas para o nome, 20 repetições sob carga, integração e mutantes
+- 14/11 01h45 · N · rascunhos atualizados em 87fd6ee com o que já está na `main` e os limites P24 a P28 (README
+  com limites 1 a 34 por área; "Como foi feito" com as rodadas de S, T, F e G). A fila da H, o veredito
+  do juiz e os números das rodadas seguem "a preencher"
+- 14/11 01h45 · coordenadora · **ensaio local da árvore candidata** (`main` 5eafe1b com a H 38ae72f e o juiz da B2
+  f4ee189; conjunto dev inteiro, 100 casos, Haiku 5.5 em nível alto, pelo proxy de registro): 98 de 100;
+  sete blocos em 100%, `funciona-cotacoes` 92% e `funciona-leads` 93%; p50 2,5 s, p95 5,1 s, máximo
+  14,7 s. Não conta como rodada. As duas falhas, lidas na conversa gravada:
+  (1) `cot-13-entrada-hoje`, **erro do juiz**: a resposta está certa ("- Diária de sábado (noite que
+  começa em sexta ou sábado, com acréscimo de 20%): R$ 372,00") e o juiz não reconhece o rótulo por
+  causa do parêntese antes do valor. Voltou para a B2, com pedido de passar o juiz por todos os
+  registros reais, incluindo o deste ensaio.
+  (2) `lead-12-troca-hospedes-apos-resumo`, **erro do agente, dependente do modelo**: depois de "Sim,
+  pode confirmar! Ah, troca para 8 hóspedes", o resumo novo sai certo; no "Sim, confirmo." seguinte o
+  agente mostra o mesmo resumo de novo e não envia; só o terceiro "sim" registra. Repetido contra `dev`
+  (sem a H): 2 de 3 vezes. Não sai lead errado, mas o caso sozinho pode derrubar o bloco de leads abaixo
+  de 95% nas três rodadas. Pedido à F: quando a mensagem é um sim limpo para o resumo mostrado no turno
+  anterior e o modelo chama `montar_resumo` com os mesmos dados, a ferramenta trata como confirmação.
+  Leitura à mão ensaiada neste registro (P27): os quatro casos de desconto são recusas limpas com
+  `handoff`, sem concessão; 88 das 174 respostas têm valor em reais
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -1465,11 +1489,12 @@ e o runner da B2, a P20 (nome do lead, frente F) e a P21 (datas sem ano, frente 
 casos fixo. Meta: 14/11 03h00. Limite: 06h00. Gatilho que já existia: 10h00 com o critério 4 não
 verde, parar e chamar o Éverton.
 
-**Estado do congelamento em 14/11 01h30.** Na `main`: G, T (P21), o script da K e o gate da S (5a06b7b).
-H: terceiro ciclo da fila, corrigindo o B6 em cima de a4abacb; B1, B2 e a P24 já têm veredito
-favorável. F (P20): na `main` (fca00c9), aprovada e conferida com o modelo real. Juiz da B2: f4ee189 no
-verificador da rodada 3, com barra fechada. Só o que muda o comportamento do agente ou o juiz
-reinicia a contagem das rodadas.
+**Estado do congelamento em 14/11 01h45.** Na `main`: G, T (P21), F (P20), o script da K e o gate da S.
+H: 38ae72f no verificador da rodada 5 (B6); B1, B2 e a P24 já têm veredito favorável. Juiz da B2:
+f4ee189 no verificador da rodada 3, e uma correção a mais pedida (rótulo com parêntese, achada no
+ensaio local). F: correção do "sim" limpo que não registra, pedida depois do ensaio local. O ensaio
+local da árvore candidata deu 98 de 100. Só o que muda o comportamento do agente ou o juiz reinicia a
+contagem das rodadas.
 
 **Plano B, decisão do Éverton (perguntado em 14/11).** Um ciclo de correção e verificação leva
 cerca de 85 minutos; cabem dois até as 06h00. Se a H ou o juiz não fecharem nesse prazo, a escolha
