@@ -246,13 +246,14 @@ const PODE = "(?:pode(?: sim)?(?: (?:fechar|enviar|mandar|confirmar|registrar|re
   + "(?: (?:o|esse|este) pedido| (?:a|essa|esta) reserva| the (?:request|booking))?";
 // 4. Dados do próprio resumo repetidos pelo hóspede. Só chegam aqui como marca os que o
 //    código conferiu e são iguais aos do resumo (ver `marcarDadosIguais`).
-const MARCA = "oimovel|ototal|asdatas|oshospedes|asnoites|onome|otelefone";
+const MARCA = "oimovel|ototal|asdatas|oshospedes|asnoites|onome|otelefone|odia|omes";
 const LIGA = "de|do|da|no|na|em|para|pra|pro|com|por|pelo|e|o|a|os|as|sou|of|for|at|in|with|on|and|the"
   + "|imovel|property|valor|total|nome|telefone|name|phone|datas|dates";
 const DADOS = `(?: (?:(?:${LIGA}) ){0,3}(?:${MARCA}))*`;
 const CORTESIA = "por favor|pfv|obrigad[oa]|obg|valeu|please|thanks|thank you|tambem|definitivamente|agora|ja|mesmo|entao|too|also|now|ok|okay"
   // Referência ao resumo mostrado, que não muda nada (P13).
-  + "|com (?:esses|estes|os) dados|with (?:these|those|the) details";
+  + "|com (?:esses|estes|os) dados|with (?:these|those|the) details|(?:esse|este) (?:pedido|resumo)|(?:essa|esta) reserva"
+  + "|(?:esses|estes) dados|(?:this|that) (?:request|booking|summary)";
 const AFIRMA_OU_CONFIRMA = `(?:${AFIRMA}|${CONFIRMA})`;
 const FRASE = `(?:${AFIRMA_OU_CONFIRMA}|${PODE})${DADOS}`;
 // Interjeição positiva na frente do sim (P15): "tá ótimo, confirma", "show, pode mandar".
@@ -304,11 +305,33 @@ function marcarDadosIguais(texto: string, pendente: Pendente): string {
       (interpretarData(entrada) === r.checkin && interpretarData(saida) === r.checkout ? " asdatas " : trecho))
     .replace(new RegExp(`(?<![a-z0-9])${nome}(?![a-z0-9])`, "g"), " onome ")
     .replace(/\+?\d[\d\s().-]{6,}\d/g, (trecho) => (normalizarTelefone(trecho) === normalizarTelefone(r.telefone) ? " otelefone " : trecho))
-    .replace(/(\d+)\s*(?:hospedes?|pessoas?|adultos?|guests?|people|persons?)\b/g, (trecho, n: string) =>
-      (Number(n) === r.hospedes ? " oshospedes " : trecho))
-    .replace(/(\d+)\s*(?:noites?|nights?|diarias?)\b/g, (trecho, n: string) =>
-      (Number(n) === diasEntre(r.checkin, r.checkout) ? " asnoites " : trecho));
+    .replace(new RegExp(`(?<![a-z0-9])(\\d+|${NUMEROS})\\s*(?:hospedes?|pessoas?|adultos?|guests?|people|persons?)\\b`, "g"), (trecho, n: string) =>
+      (numero(n) === r.hospedes ? " oshospedes " : trecho))
+    .replace(new RegExp(`(?<![a-z0-9])(\\d+|${NUMEROS})\\s*(?:noites?|nights?|diarias?)\\b`, "g"), (trecho, n: string) =>
+      (numero(n) === diasEntre(r.checkin, r.checkout) ? " asnoites " : trecho))
+    // Dia da semana e mês da entrada ou da saída, por extenso ("sim, sexta", "sim, janeiro").
+    .replace(DIA_DA_SEMANA, (trecho, dia: string) =>
+      ([indiceDiaDaSemana(r.checkin), indiceDiaDaSemana(r.checkout)].includes(indiceDoDia(dia)) ? " odia " : trecho))
+    .replace(MES, (trecho, mes: string) =>
+      ([Number(r.checkin.slice(5, 7)), Number(r.checkout.slice(5, 7))].includes(indiceDoMes(mes)) ? " omes " : trecho));
 }
+
+const NUMEROS_POR_EXTENSO: Record<string, number> = {
+  um: 1, uma: 1, dois: 2, duas: 2, tres: 3, quatro: 4, cinco: 5, seis: 6, sete: 7, oito: 8, nove: 9, dez: 10,
+  one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
+};
+const NUMEROS = Object.keys(NUMEROS_POR_EXTENSO).join("|");
+const numero = (n: string) => NUMEROS_POR_EXTENSO[n] ?? Number(n);
+const DIAS = [["domingo", "sunday"], ["segunda", "monday"], ["terca", "tuesday"], ["quarta", "wednesday"], ["quinta", "thursday"],
+  ["sexta", "friday"], ["sabado", "saturday"]];
+// "Segunda reserva" é ordinal, não dia (P13): fica de fora.
+const DIA_DA_SEMANA = new RegExp(`(?<![a-z0-9])(${DIAS.flat().join("|")})(?:\\s*-?\\s*feira)?(?![a-z0-9])`
+  + "(?!\\s+(?:reserva|estadia|hospedagem|opcao|pedido|cotacao|resumo|vez)(?![a-z0-9]))", "g");
+const indiceDoDia = (dia: string) => DIAS.findIndex((nomes) => nomes.includes(dia));
+const MESES = ["janeiro|january", "fevereiro|february", "marco|march", "abril|april", "maio|may", "junho|june", "julho|july",
+  "agosto|august", "setembro|september", "outubro|october", "novembro|november", "dezembro|december"];
+const MES = new RegExp(`(?<![a-z0-9])(${MESES.join("|")})(?![a-z0-9])`, "g");
+const indiceDoMes = (mes: string) => MESES.findIndex((nomes) => nomes.split("|").includes(mes)) + 1;
 
 // Pedido explícito de mudança, ou dado novo dito em palavras (nome, número de pessoas).
 // Sinais de que a mensagem pode mudar um dado do resumo. A regra é negar por padrão: a

@@ -347,8 +347,13 @@ describe("P13: sim com palavra de referência ou de novidade, sem dado novo", ()
     });
   }
 
-  it("\"segunda\" como data continua sendo data: derruba", () => {
-    for (const mensagem of ["sim, na segunda", "sim, entrada segunda-feira", "sim, segunda que vem"]) expect(lerConfirmacao(mensagem, GRM301, 3)).toBe("outra");
+  it("\"segunda\" como data continua sendo data: derruba quando não é dia do resumo, repete quando é", () => {
+    const quartaASexta: Pendente = { ...GRM301, reserva: { ...GRM301.reserva, checkin: "2027-01-20", checkout: "2027-01-22" } };
+    for (const mensagem of ["sim, na segunda", "sim, entrada segunda-feira", "sim, segunda que vem"]) {
+      expect(lerConfirmacao(mensagem, quartaASexta, 3)).toBe("outra");
+    }
+    // No GRM-301 a saída é numa segunda-feira: valor igual, repete o pedido.
+    expect(lerConfirmacao("sim, na segunda", GRM301, 3)).toBe("hesitacao");
   });
 });
 
@@ -391,4 +396,17 @@ describe("P15: formas de confirmação", () => {
     it(`repete o pedido com o resumo, sem derrubar: "${mensagem}"`, () => expect(lerConfirmacao(mensagem, GRM301, 3)).toBe("hesitacao"));
   }
   it("\"confirma?\" continua pergunta", () => expect(lerConfirmacao("confirma?", GRM301, 3)).toBe("pergunta"));
+});
+
+describe("B4: referência confirma; valor por extenso igual repete o pedido, diferente derruba", () => {
+  for (const mensagem of ["sim, esse pedido", "sim, esse resumo", "sim, essa reserva", "sim, esses dados"]) {
+    it(`sim: "${mensagem}"`, () => expect(lerConfirmacao(mensagem, GRM301, 3)).toBe("sim"));
+  }
+  // Resumo GRM-301: entrada sexta-feira 15/01/2027, saída segunda-feira 18/01/2027, 2 hóspedes, 3 noites.
+  for (const mensagem of ["sim, dois hóspedes", "sim, duas pessoas", "sim, sexta", "sim, sexta-feira", "sim, janeiro", "sim, três noites", "sim, segunda-feira"]) {
+    it(`repete o pedido: "${mensagem}"`, () => expect(lerConfirmacao(mensagem, GRM301, 3)).toBe("hesitacao"));
+  }
+  for (const mensagem of ["sim, três hóspedes", "sim, sábado", "sim, fevereiro", "sim, duas noites"]) {
+    it(`derruba: "${mensagem}"`, () => expect(lerConfirmacao(mensagem, GRM301, 3)).toBe("outra"));
+  }
 });
