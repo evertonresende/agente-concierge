@@ -185,7 +185,9 @@ Custo medido no código final: a preencher.
 Critérios (`docs/EVALS.md`): 95% ou mais por bloco no conjunto de desenvolvimento, 90% ou
 mais no agregado do reservado, zero lead sem confirmação, zero lead duplicado, p95 de até
 20 s e nenhuma resposta acima de 60 s. A prova dos 95% são três rodadas seguidas em `dev`,
-com o critério na soma por bloco (X24).
+com o critério na soma por bloco (X24). Falso vermelho do juiz conta como falha na soma do
+bloco; se um bloco só fecha 95% sem os falsos vermelhos classificados, roda-se mais uma
+rodada e os dois números, com e sem eles, vão ao Éverton, que escolhe qual vale (P34).
 
 Latência medida pela frente K em `producao`, no registro de cada turno do Worker: 2,2 a
 4,0 s nas perguntas simples (2 chamadas ao modelo) e 5,0 a 5,9 s nas cotações (3
@@ -316,13 +318,15 @@ verificadores das frentes, no log do backlog.
 
 **Ferramentas de verificação**
 
-30. **Juiz de preço dos evals.** Reconhece pela forma da frase, não pelo sentido. A lista
-    dos formatos que ele erra está em `evals/README.md` (na `main`, 12 respostas certas
-    que reprovam e 9 erradas que aprovam; mais duas entram no próximo merge, a preencher). Em
-    compensação, as rodadas oficiais passam por um proxy local que só grava as conversas;
+30. **Juiz de preço dos evals.** Reconhece pela forma da frase, não pelo sentido. Pela P34
+    ele volta ao estado de 193d1bf, o último aprovado por verificador independente, e não é
+    mais corrigido nesta entrega. Redação certa que ele reprova entra na lista de
+    `evals/README.md`; entre elas, a contagem por tipo de noite sem repetir "noite" depois
+    de "N noites" (com dois-pontos e com parêntese) e "multa em caso de" no caso de
+    cancelamento. Lista final depois da volta do juiz: a preencher. Em compensação, as rodadas oficiais passam por um proxy local que só grava as conversas;
     nos quatro casos de desconto, toda resposta das rodadas oficiais é lida à mão, e a
     leitura confere também o tipo de noite contra a diária (P27, P31).
-    <!-- PREENCHER: contagem da lista do juiz depois do commit de documentação da B2 -->
+    <!-- PREENCHER: lista de limites do juiz depois que a volta a 193d1bf entrar na main (P34) -->
 31. **Simulador.** O juiz de handoff do simulador não enxerga gatilho que o modelo do
     hóspede inventa; reprovação de handoff no simulador se lê à mão. O resultado também é
     lido no relatório, não só na linha final.
