@@ -1149,7 +1149,7 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   cima da `origin/frente-g` (a G mexe nos mesmos arquivos e entra antes). Arquivos: `src/nucleo/datas.ts`,
   `src/agente/ferramentas/pedido.ts` e um teste novo. Verificador antes do merge. Falta um caso de
   eval para esse caminho, a pedir à B2 depois do veredito do juiz
-- 14/11 00h15 · Éverton · X28: sem energia, só pelo celular. A coordenadora segue a própria recomendação como
+- 14/11 00h15 · Éverton · X28: a coordenadora segue a própria recomendação como
   provisória em tudo, menos ligar o envio real, tornar o repositório público, escrever no DNS ou
   mexer em segurança da zona, e escolher as sessões dos exports. Medição dele em `dev`: no endereço
   padrão do Worker, `Python-urllib` e `libwww-perl` levam 403 (erro 1010) e outros dez clientes
@@ -1178,7 +1178,7 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
 - 14/11 00h21 · integração · ensaio das três cabeças juntas, fixadas por hash, sobre a `main` (G da64da4, H
   a58ff5e, B2 7f12107): merge limpo, 1401 testes, tipos sem erro, SIGILO OK. A junta entre a H e a G
   está verde
-- 14/11 00h22 · Éverton · X29, pelo celular: Bot Fight Mode e checagem de integridade desligados por ele na
+- 14/11 00h22 · Éverton · X29: Bot Fight Mode e checagem de integridade desligados por ele na
   zona inteira (a K confirma com o urllib no `/saude` do hostname); plano B do endereço autorizado
   (domínio personalizado só para o hostname, se a rota falhar; hoje desnecessário); exports de todas
   as sessões do T3, preparados pela N fora do repositório, nada versionado antes de ele olhar de
@@ -1234,6 +1234,9 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
 - 14/11 00h29 · Éverton · X30: reserva confirmado, GLM-5.3 Flash, sem "provisório"; nomes dos modelos mantidos
   no "Como foi feito", com a versão exata de cada um. `docs/revisoes/modelos.md` atualizado pela
   coordenadora; a frente N preenche o README e a seção dos modelos
+- 14/11 00h37 · Éverton · redação: as linhas de decisão do `DECISOES.md` ficam só com a data, sem hora e sem
+  circunstância dele; as duas entradas deste log sobre a X28 e a X29 foram reescritas do mesmo jeito.
+  O conteúdo das decisões não mudou. Vale daqui em diante para todo registro de decisão
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
