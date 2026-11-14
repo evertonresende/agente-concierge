@@ -714,6 +714,8 @@ async function enviarChat(alvo, corpoTexto, timeoutMs) {
       usoEntrada: 0,
       usoSaida: 0,
       chamadasModelo: 0,
+      // Sem resposta não há cabeçalho de uso: o custo desse pedido não é medido (não é zero).
+      semUso: true,
       dados: null,
     };
   }
@@ -740,6 +742,7 @@ async function enviarChat(alvo, corpoTexto, timeoutMs) {
     usoEntrada: numHeader('x-uso-entrada'),
     usoSaida: numHeader('x-uso-saida'),
     chamadasModelo: numHeader('x-chamadas-modelo'),
+    semUso: ['x-uso-entrada', 'x-uso-saida', 'x-chamadas-modelo'].some((h) => res.headers.get(h) === null),
     dados,
     erroJson,
   };
@@ -1020,6 +1023,7 @@ async function executarCaso({ caso, indice, args, ehDev, leadsUrlDev, runId, tel
   let usoEntrada = 0;
   let usoSaida = 0;
   let chamadasModelo = 0;
+  let pedidosSemUso = 0;
   let violacaoLead = false;
 
   const prepararCorpo = (turno, sessionId) => {
@@ -1098,6 +1102,7 @@ async function executarCaso({ caso, indice, args, ehDev, leadsUrlDev, runId, tel
           usoEntrada += item.resp.usoEntrada;
           usoSaida += item.resp.usoSaida;
           chamadasModelo += item.resp.chamadasModelo;
+          if (item.resp.semUso) pedidosSemUso++;
           falhas.push(
             ...avaliarRespostaTurno(
               item.resp,
@@ -1138,6 +1143,7 @@ async function executarCaso({ caso, indice, args, ehDev, leadsUrlDev, runId, tel
         usoEntrada += resp.usoEntrada;
         usoSaida += resp.usoSaida;
         chamadasModelo += resp.chamadasModelo;
+        if (resp.semUso) pedidosSemUso++;
         falhas.push(
           ...avaliarRespostaTurno(
             resp,
@@ -1184,6 +1190,7 @@ async function executarCaso({ caso, indice, args, ehDev, leadsUrlDev, runId, tel
     usoEntrada,
     usoSaida,
     chamadasModelo,
+    pedidosSemUso,
     violacaoLead,
   };
 }

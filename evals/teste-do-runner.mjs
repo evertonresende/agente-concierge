@@ -372,6 +372,54 @@ async function testarTrava() {
       await agenteM4.fechar();
     }
 
+    // 9. Uso no relatório: pedido sem cabeçalho de uso ou sem resposta é contado em
+    // pedidos_sem_uso (o uso registrado é um mínimo), e não some como zero.
+    const agenteUso = await iniciarServidorMock(async (req, res) => {
+      if (req.method === 'GET' && req.url === '/saude') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, ambiente: 'producao', leads_destino: 'real', envio_leads: 'desligado' }));
+        return;
+      }
+      const { message } = JSON.parse(await lerCorpo(req));
+      if (/derruba/.test(message)) {
+        req.socket.destroy();
+        return;
+      }
+      const cab = { 'Content-Type': 'application/json' };
+      if (/com uso/.test(message)) Object.assign(cab, { 'x-uso-entrada': '400', 'x-uso-saida': '100', 'x-chamadas-modelo': '2' });
+      res.writeHead(200, cab);
+      res.end(JSON.stringify({ reply: 'Certo.', handoff: false }));
+    });
+    const tmpUsoDir = fs.mkdtempSync(path.join(os.tmpdir(), 'trava-uso-'));
+    const relUso = path.join(tmpUsoDir, 'rel.json');
+    try {
+      const bUso = path.join(tmpUsoDir, 'casos', 'contrato');
+      fs.mkdirSync(bUso, { recursive: true });
+      fs.writeFileSync(
+        path.join(bUso, 'uso.json'),
+        JSON.stringify({
+          id: 'uso-sem-cabecalho',
+          bloco: 'contrato',
+          confirma: false,
+          turnos: [
+            { mensagem: 'Pergunta com uso.', espera: { handoff: false } },
+            { mensagem: 'Pergunta sem cabeçalho.', espera: { handoff: false } },
+            { mensagem: 'Pergunta que derruba.' },
+          ],
+        })
+      );
+      await rodarCli(['--alvo', agenteUso.url, '--conjunto', 'reservado', '--relatorio', relUso], {
+        RESERVADO_DIR: path.join(tmpUsoDir, 'casos'),
+      });
+      const rel = JSON.parse(fs.readFileSync(relUso, 'utf8'));
+      assert.equal(rel.uso.entrada_total, 400);
+      assert.equal(rel.uso.chamadas_modelo_total, 2);
+      assert.equal(rel.uso.pedidos_sem_uso_total, 2, 'resposta sem x-uso-* e conexão derrubada não têm uso medido');
+    } finally {
+      fs.rmSync(tmpUsoDir, { recursive: true, force: true });
+      await agenteUso.fechar();
+    }
+
     console.log('TRAVA OK');
   } finally {
     fs.rmSync(tmpRel, { force: true });
