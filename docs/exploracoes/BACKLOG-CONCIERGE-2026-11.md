@@ -1761,6 +1761,31 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   verificador com 421 avaliações e nenhuma aprovada; ensaio do merge com 53 arquivos e 1524 testes.
   Com o commit novo da B2, o delta de 4efb030 até a cabeça vai a um verificador independente antes do
   merge
+- 14/11 03h38 · B2 · cabeça nova b0a80ce: o `inv-07` volta à desculpa única e ganha a fronteira depois de
+  "é" (`[eé](?![a-zà-ú])`, porque o `\b` do JavaScript não trata "é" como letra); o teste do corpus
+  fixa em 15 os itens sem estadia; limites novos listados no `evals/README.md`. Sondas da coordenação
+  na cabeça: as nove erradas reprovam, as duas respostas reais aprovam, o caso difere da `main` só na
+  fronteira, onze registros só com as duas reprovações antigas, 421 erradas do verificador sem
+  nenhuma aprovada. Ensaio do merge: 53 arquivos, 1524 testes, tipos, gate, `RUNNER OK`, `TRAVA OK`,
+  `CASOS OK`. Verificador independente da rodada 6 iniciado no delta de 4efb030 a b0a80ce; o merge
+  espera a mensagem de fim dele
+- 14/11 03h49 · reservado · **diagnóstico do revisor no papel da frente C, só contagens.** 60 casos.
+  Conferência às cegas, gravada antes da primeira rodada: 58 conformes, 2 frouxos. Rodada A, com as
+  expectativas originais: 85% (51 de 60). Falhas da rodada A e da leitura 2 somadas, 21 ocorrências em
+  14 casos: 9 por redação reprovada pelo verificador do próprio caso (7 casos), 2 por falso vermelho
+  do juiz compartilhado (2 casos), 10 por erro real e repetido do agente (5 casos), nenhuma de
+  infraestrutura. **Nenhum lead sem confirmação, duplicado ou diferente do resumo.** Erro real: em 4
+  casos (3 de leads, 1 de handoff) o hóspede confirma de um jeito que a L9 e a P13 aceitam e o agente
+  repete o resumo sem enviar; em 1 caso de contrato, o idioma do hóspede (L15), que acertou na
+  terceira observação. Passada única: 9 casos mudados (7 afrouxados, 2 apertados), cada um com a
+  cláusula citada. Rodada B, com os casos corrigidos, uma leitura só: 91,7% (55 de 60)
+- 14/11 03h54 · reservado · decisões da coordenação sobre o diagnóstico: (1) **regra 6 de `docs/EVALS.md`
+  para os 4 casos de lead não registrado**: são revelados para a correção do agente, migram para o
+  conjunto de desenvolvimento e ganham substitutos que ninguém mais vê; (2) os falsos vermelhos do
+  juiz compartilhado e o caso de idioma não são revelados e contam como falha (P31); (3) segundo
+  revisor iniciado, com veto caso a caso sobre as 9 mudanças; ele pode apertar caso frouxo e nunca
+  afrouxar, relê a classificação das falhas e confere os substitutos. O número final continua sendo
+  a soma de duas leituras do agregado na árvore congelada
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
