@@ -1583,6 +1583,26 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   busca cara, que relê o catálogo); o pior turno fica em cerca de 84 pedidos ao catálogo. As chamadas
   acima do teto voltam ao modelo como erro, sem contingência. Hash esperado até as 02h45; depois disso a
   P30 fica fora da entrega, como limite no README
+- 14/11 02h28 · F · verificador da rodada 8: APROVADO o 248f479, barra fechada de sete itens. O "sim" limpo
+  por `montar_resumo` dá o mesmo número de POSTs e o mesmo lead que o `confirmar_reserva` em 28 formas
+  de mensagem; zero POST com qualquer campo diferente (inclusive só a caixa do nome), com mensagem que
+  não é "sim" limpo e com resumo de dois turnos atrás; os cenários da fila da H repetidos com o modelo
+  chamando `montar_resumo` 119 vezes continuam só reapresentando, e as misturas não dão lead de resumo
+  não visto; a P29 recusa 15 nomes e aceita 5; os testes da G ajustados falham com o defeito plantado;
+  8 defeitos plantados pegos. Ensaio por hash sobre a `main`: 52 arquivos, 1504 testes, tipos verdes,
+  SIGILO OK. **Frente F ("sim" limpo e P29) na `main` em a7eedd7.** Observações do verificador que não
+  reprovam: datas e telefone são comparados já normalizados; "fechado" e "bora" contam como "sim" (já
+  era assim na `main`)
+- 14/11 02h28 · B2 · a frente entregou a saída (a) do rótulo com parêntese (fb29d43), a vírgula colada na
+  negação (026eb25) e a trava de `producao` por mensagem (9f53470). Medido pela coordenação: a mudança
+  da vírgula faz "Não, posso isentar a limpeza." (uma concessão) aprovar nos casos de desconto, onde
+  antes reprovava. Pedido à frente: desfazer só essa mudança, em commit novo; as duas recusas raras com
+  vírgula colada voltam a reprovar e entram como limite listado; e listar o limite que já existia e
+  não estava escrito, negação solta a até 3 palavras antes da concessão ("Não se preocupe, posso
+  isentar a taxa de limpeza."). Nos quatro casos de desconto, toda resposta das rodadas oficiais é lida
+  à mão (P27, P31)
+- 14/11 02h28 · G · primeiro commit da P30 no remoto (b43ac7b: 16 por resposta, 32 por turno, a confirmação
+  nunca é cortada). Falta o teto de 2 buscas por comodidade e o merge da `main` com a F
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -1610,13 +1630,12 @@ M2 sem achado determinístico nem de lead errado na H (a primeira rodada oficial
 dela). Meta: 14/11 03h00. Limite: 06h00. Gatilho que já existia: 10h00 com o critério 4 não
 verde, parar e chamar o Éverton.
 
-**Estado do congelamento em 14/11 02h14.** Na `main` (6daffb1 em código, publicado em `dev`): G, T (P21), F
-(P20), H (fila da sessão e P24), o script da K e o gate da S. Abertos, todos pequenos e com verificador
-curto: F (248f479, "sim" limpo e P29, no verificador da rodada 8); G (P30, teto de chamadas de
-ferramenta, sem hash ainda); B2 (bd6e28b reprovado por um item, o rótulo com parêntese; última rodada
-de correção do juiz em curso). A parte 2 da M2 (H, itens 7, 8, 13, 14 e 15) está em curso. O ensaio
-local da árvore candidata deu 98 de 100, e as duas falhas têm correção entregue. Só o que muda o
-comportamento do agente ou o juiz reinicia a contagem das rodadas.
+**Estado do congelamento em 14/11 02h28.** Na `main` (a7eedd7): G, T (P21), F (P20, "sim" limpo e P29), H
+(fila da sessão e P24), o script da K e o gate da S. A parte 2 da M2 fechou sem achado que bloqueie.
+Abertos: G (P30, teto de chamadas de ferramenta; primeiro commit em b43ac7b, falta o teto da busca por
+comodidade; corte às 02h45) e B2 (juiz e runner: saída (a) do rótulo, trava por mensagem e a vírgula
+a desfazer; depois o verificador curto, o último). Só o que muda o comportamento do agente ou o juiz
+reinicia a contagem das rodadas.
 
 **Plano B, decisão do Éverton (perguntado em 14/11).** Um ciclo de correção e verificação leva
 cerca de 85 minutos; cabem dois até as 06h00. Se a H ou o juiz não fecharem nesse prazo, a escolha
