@@ -304,10 +304,12 @@ Escolhas técnicas que decorrem das verificações em `docs/VERIFICACOES.md`.
 11. **Exports de sessão.** Ficaram fora desta entrega (X33): pedem leitura humana antes de
     publicar. Com mais tempo, essa leitura e um detector de trecho copiado do enunciado,
     para ela cair só nas sessões marcadas.
-12. **Juiz de decisão (X11).** A condição da X11 não se cumpriu: nas três rodadas oficiais,
-    handoff deu 45 de 45 e leads 57 de 57, e o juiz de decisão não entrou. Com mais tempo,
-    medir um segundo modelo como juiz nesses dois pontos mesmo assim: o conjunto reservado
-    deu 15 de 16 em handoff, e a confirmação tem dois limites conhecidos (54 e 55 do README).
+12. **Juiz de decisão (X11).** O juiz de decisão não foi medido. A falha de confirmação que o
+    conjunto reservado achou foi corrigida em código (P35), e o handoff ficou com a chamada
+    focada ao modelo (P17). Na árvore final, as três rodadas oficiais deram handoff 45 de 45
+    e leads 57 de 57, e o conjunto reservado deu handoff 15 de 16 e leads 16 de 16. Com mais
+    tempo, medir um segundo modelo como juiz nesses dois pontos; a confirmação ainda tem
+    dois limites conhecidos (54 e 55 do README).
 
 13. **Juiz de preço que lê o valor, não a frase.** Cada remendo de redação abriu outro
     buraco, e o juiz parou no último estado aprovado (P31, P34). Com mais tempo, o juiz

@@ -2313,7 +2313,13 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   tempo", a P37 e a P10 dizem o que aconteceu depois; nas duas P a decisão ficou como foi escrita.
   (6) README: a lista traz os 66 limites; o estado final do reservado (53 iguais aos originais, 3
   apertados, 4 substitutos, nenhum afrouxado; as 9 mudanças vetadas voltaram ao original); e o que
-  entrou na `main` depois da árvore final 9d37f9a, com o commit publicado em `producao` (a97777b)
+  entrou na `main` depois da árvore final 9d37f9a, com o commit publicado em `producao` (a97777b). **Correção depois do primeiro push:** o item 12 de "mais tempo" dizia que a condição da X11
+  não se cumpriu, o que é leitura e não fato (as primeiras leituras do reservado tiveram falha de
+  confirmação, corrigida pela P35). Passou a dizer só o que o registro prova: o juiz de decisão não
+  foi medido, o que foi corrigido em código e os números da árvore final. **Alcance da conferência
+  dos MCPs:** registros do Claude Code e do Codex; os arquivos do Gemini que citam o projeto foram
+  só passados em revista, sem chamada de ferramenta à vista. As 69 leituras de página foram todas
+  à documentação da Cloudflare
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -2341,7 +2347,7 @@ M2 sem achado determinístico nem de lead errado na H (a primeira rodada oficial
 dela). Meta: 14/11 03h00. Limite: 06h00. Gatilho que já existia: 10h00 com o critério 4 não
 verde, parar e chamar o Éverton.
 
-**Estado em 14/11 07h35. ENTREGA NO AR: repositório público desde 07h08 (X35), `producao` com o envio real
+**Estado em 14/11 08h38. ENTREGA NO AR: repositório público desde 07h08 (X35), `producao` com o envio real
 ligado, `main` em e3d10a9 na hora da publicação.** Código do agente igual ao da árvore final
 9d37f9a; depois dela a `main` recebeu documentos, relatórios, o conjunto reservado e uma mudança
 de configuração (a97777b: `ENVIO_LEADS` ligado e `preview_urls: false` em `env.producao`, com o
@@ -2352,7 +2358,9 @@ zero lead real até 07h26 e, desde então, 1 lead real: o de teste que o Éverto
 com `201` e os sete campos iguais aos do resumo; `--entrega` dá `LEADS REAIS: 1`. **Na `main`:** README, "Como foi feito", desenhos (renderizam no
 GitHub), setup com a skill adaptada ao T3 Code (X34), fechamento da M2, abertura do `DECISOES.md`
 com cortes e mais tempo, `docs/prompts/`, conjunto reservado com o diagnóstico. Nenhum marcador
-aberto. **Decisões:** P1 a P38 confirmadas (X33), menos a P23. **Só com o Éverton:** o vídeo, o
+aberto. **Depois da publicação entraram só textos:** a X36 e os últimos retoques pedidos pelo Éverton
+(lead de teste no topo do README, MCPs, desenho da fábrica, pares de leituras do reservado,
+condicionais do `DECISOES.md`). **Decisões:** P1 a P38 confirmadas (X33), menos a P23. **Só com o Éverton:** o vídeo, o
 e-mail da entrega e agendar o monitor dos 7 dias (P38). **Regra que segue:** nenhum outro POST de
 sessão nossa ao webhook real (o lead de teste da X36 foi a única exceção, já usada); contra `producao`, só conversa sem confirmação; todo push passa
 pelo gate, porque agora é publicação.
