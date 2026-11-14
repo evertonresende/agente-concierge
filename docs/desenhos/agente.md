@@ -19,8 +19,8 @@ sem ter sido visto), e o "sim"
 repetido logo depois de um registro recebe um texto fixo. Fora disso, o laço chama o modelo (o principal e, se ele falhar ou recusar por
 limite, o reserva). Se o modelo pede ferramentas, o código confere a chamada, executa,
 grava o resultado e volta ao modelo, até 6 voltas e com teto de chamadas (P30). Quando o modelo responde em texto, o
-código confere o texto, pede uma correção se achar problema, retira o que não pode
-chegar ao hóspede e acrescenta o total e o pedido de confirmação gerados por código. A
+código confere o texto, pede uma correção se achar problema, retira o que reconhece como
+proibido (por forma da frase, com os limites 8, 20, 46 e 65 do README) e acrescenta o total e o pedido de confirmação gerados por código. A
 sessão grava histórico e estado e o Worker devolve `reply` e `handoff`. Qualquer falha
 vira o aviso de contingência com `handoff: true`, nunca erro 500.
 
@@ -44,7 +44,7 @@ flowchart TB
     C{"O modelo pediu<br/>ferramentas?"}
     B["Conferência da chamada<br/>imóvel não escolhido (L21)<br/>grupo menor que o cotado (L13a)<br/>sinal de desconto: chamada focada (P17)"]
     X["Conferência do texto<br/>valor sem ferramenta, concessão,<br/>registro sem 201, disponibilidade"]
-    FE["Fechamento por código<br/>retira frase barrada, anexa o total,<br/>pergunta do agente derruba o resumo (P18),<br/>pedido de confirmação fixo"]
+    FE["Fechamento por código<br/>retira a frase que a conferência reconhece,<br/>anexa o total,<br/>pergunta do agente derruba o resumo (P18),<br/>pedido de confirmação fixo"]
     S[("SQLite da sessão<br/>histórico · rascunho da reserva · estado do lead<br/>marcador de envio · flag de handoff")]
     F --> Q
     Q -->|"não"| J
