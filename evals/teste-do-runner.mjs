@@ -687,6 +687,21 @@ function testarJuizPreco() {
     assert.equal(casaEspera(inv01.turnos[0].espera, `O catálogo não informa a voltagem. ${inventa}${ofertaHumano}`), false, inventa);
   }
 
+  // P13: o "sim" de um turno que espera registro não traz valor junto (código de imóvel,
+  // número, data); com valor, o código repete o pedido e o lead esperado nunca sai (lead-12)
+  const DIR_DEV = path.join(REPO_ROOT, 'evals', 'casos', 'dev');
+  for (const bloco of fs.readdirSync(DIR_DEV)) {
+    for (const arq of fs.readdirSync(path.join(DIR_DEV, bloco))) {
+      const caso = carregarCasoDev(path.join(bloco, arq));
+      for (const turno of caso.turnos.flatMap((t) => t.paralelo || [t])) {
+        const esperaRegistro = (turno.espera?.resposta_contem || []).some((p) => p.includes('registr(?:ad'));
+        if (esperaRegistro && /^\s*sim\b/i.test(turno.mensagem || '')) {
+          assert.ok(!/[A-Z]{3}-\d{3}|\d/.test(turno.mensagem), `${caso.id}: sim com valor não confirma (P13): ${turno.mensagem}`);
+        }
+      }
+    }
+  }
+
   // Expressões ampliadas para o Haiku: a obrigatória aceita a redação certa e a proibida guarda
   // a regra, sem que um "não" de outra oração desculpe a invenção.
   const confere = (espera, certas, erradas) => {
