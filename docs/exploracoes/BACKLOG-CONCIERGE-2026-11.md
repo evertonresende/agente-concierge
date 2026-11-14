@@ -1715,6 +1715,33 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   rodada 3: casos de desconto limpos; 29 respostas com os dois tipos de noite, nenhuma trocada. As duas
   redações foram devolvidas à B2: como a contagem recomeça de qualquer jeito pela correção da G, o juiz
   é corrigido antes do novo congelamento, com os onze registros reais como critério
+- 14/11 03h10 · G · **verificador da rodada 5: APROVADO em eb5c7d4**, com o veredito lido só na mensagem de
+  fim da tarefa. Achado único, baixo e do lado seguro (A1): a marca que segura a confirmação liga pelo
+  nome da ferramenta cortada, então três lotes em que o `cotar` ou o `montar_resumo` cortado não
+  mudaria a reserva passam de 1 POST para 0 naquele turno; o hóspede confirma de novo no turno
+  seguinte. Vai para o README como limite. Merge `--no-ff` por hash na `main`: f9d4f85
+- 14/11 03h12 · F · ajuste só de teste (7fed64e) mesclado por hash: f9a50d2. Conferido pela coordenação
+  com a suíte (53 arquivos, 1524 testes) e um defeito plantado numa cópia descartável (reapresentação
+  gravando o estado sem os campos desconhecidos): o teste falha com `expected undefined to be 7`
+- 14/11 03h13 · B2 · as duas redações da rodada 3 corrigidas, cabeça 799b9c3, por cima de 4281cf7
+  (documentação e corpus): 3ab5f3f, o cabeçalho da contagem elíptica aceita parêntese, vírgula e
+  travessão; 799b9c3, a desculpa do `inv-07` aceita "nem se", "ou se" e "e se" na mesma oração negada.
+  Relato da frente: onze registros reais sem resposta certa nova reprovada, corpus com 265 itens. Não
+  entra pelo relato: ensaio por hash, sondas da coordenação e verificador independente antes do merge
+- 14/11 03h13 · N · rascunhos atualizados em 6d40b1d (limites novos do README, "Como foi feito",
+  `docs/agente.md` e desenhos); parada até os números finais
+- 14/11 03h16 · reservado · **primeiras leituras do agregado do conjunto reservado, em `dev`, árvore
+  b5af852, juiz 4efb030: 83% (terminada às 03h11) e 80% (03h12 a 03h16). REPROVADO nas duas; o limiar é
+  90%.** Por bloco, leitura 1 e leitura 2: contrato 75% e 75%; cotações 100% e 75%; leads 62% e 62%;
+  recusas 100% e 100%; respostas 85% e 85%; handoff 75% e 75%; manipulação 85% e 100%; não inventa 85%
+  e 71%. Telemetria do Worker nas duas janelas, só contagens: zero contingência e zero falha com
+  origem no catálogo (o mesmo filtro acha as 25 da rajada das 02h04); a diferença entre as leituras é
+  variação do agente num conjunto pequeno, não infraestrutura. Desvio da coordenação: a leitura 2
+  passou pelo proxy de gravação, contra a regra de não gravar leitura do reservado. O registro não
+  foi lido pela coordenação e foi movido para uma pasta privada fora do rascunho, que só o papel da
+  frente C abre. A sessão original da frente C rodou em outro provedor, que saiu da entrega (X23): o
+  diagnóstico vai para um revisor novo em Claude Opus 5.5 nesse papel, pelas regras da P33
+  (provisória, em `DECISOES.md`), escritas antes de alguém ver quais casos falharam
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -1742,12 +1769,14 @@ M2 sem achado determinístico nem de lead errado na H (a primeira rodada oficial
 dela). Meta: 14/11 03h00. Limite: 06h00. Gatilho que já existia: 10h00 com o critério 4 não
 verde, parar e chamar o Éverton.
 
-**Estado do congelamento em 14/11 02h55. Congelamento de b5af852 REABERTO para uma correção.** Na `main`: G
-(com a P30), T (P21), F (P20, "sim" limpo e P29), H (fila da sessão e P24), B2 (juiz, casos e trava do
-runner), o script da K e o gate da S. O verificador da P30 fechou em REPROVADO por um ponto do caminho
-do lead (confirmação que roda quando o teto corta o `cotar` ou o `montar_resumo` do mesmo lote); a G
-está corrigindo. Quando a correção tiver veredito e entrar, a `main` congela de novo, `dev` é
-republicado e a contagem das três rodadas recomeça. As rodadas na árvore b5af852 ficam registradas.
+**Estado do congelamento em 14/11 03h27. Reaberto; falta só o juiz da B2.** Na `main` (f9a50d2): G com a
+P30 e a correção do R1 (eb5c7d4, aprovada pelo verificador da rodada 5), T (P21), F (P20, "sim" limpo,
+P29 e o ajuste de teste 7fed64e), H (fila da sessão e P24), B2 até 4efb030, o script da K e o gate da
+S. Fora da `main`: B2 799b9c3 (documentação, corpus e as duas redações da rodada 3), em ensaio e no
+verificador. Quando ele aprovar e entrar, a `main` congela, `dev` é republicado e a contagem das três
+rodadas oficiais recomeça. O código do agente em `dev` ainda é o de b5af852. As rodadas na árvore
+b5af852 ficam registradas. O conjunto reservado está abaixo do limiar (linha das 03h16 do log) e
+segue a P33.
 
 **Plano B, decisão do Éverton (perguntado em 14/11).** Um ciclo de correção e verificação leva
 cerca de 85 minutos; cabem dois até as 06h00. Se a H ou o juiz não fecharem nesse prazo, a escolha
