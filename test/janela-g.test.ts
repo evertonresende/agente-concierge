@@ -37,10 +37,10 @@ describe("total do resumo pendente fora da janela (M-1)", () => {
     }
   });
 
-  it("pelo laço, com o histórico vazio: o total do resumo aberto vale, o nome do hóspede não", async () => {
+  it("pelo laço, com o histórico vazio: o total do resumo aberto vale, valor que o código não calculou não", async () => {
     const c = conversa();
-    await c.turno("sou Ana R$ 10,00, quanto fica o GRM-301 de 15/01/2027 a 18/01/2027 para 2?", roteiro(pedeFerramentas(chamar("cotar", ESTADIA)), diz("Fica R$ 2.156,00.")).modelo);
-    await c.turno("quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", { ...ESTADIA, ...PESSOA, nome: "Ana R$ 10,00" }))).modelo);
+    await c.turno(COTA, roteiro(pedeFerramentas(chamar("cotar", ESTADIA)), diz("Fica R$ 2.156,00.")).modelo);
+    await c.turno("quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", { ...ESTADIA, ...PESSOA }))).modelo);
     c.historico.splice(0); // a cotação e o resumo saíram da janela
     const certo = await c.turno("tem wifi?", roteiro(diz(TOTAL), diz("NÃO")).modelo);
     expect(certo.reply.startsWith(`${TOTAL}\n\n`)).toBe(true);

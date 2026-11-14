@@ -29,7 +29,7 @@
       }
     },
     {
-      "mensagem": "Sim, confirmo o GRM-302.",
+      "mensagem": "Sim, confirmo.",
       "espera": {
         "handoff": false,
         "resposta_contem": ["registr(?:ad|ei|amos)|encaminh(?:ad|ei|amos)|envi(?:ad|ei|amos)"]

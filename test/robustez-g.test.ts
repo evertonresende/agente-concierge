@@ -95,17 +95,15 @@ describe("robustez: texto do catálogo é dado, nunca instrução (CA-13)", () =
     const { turno, historico, mundo, estado } = conversa();
     await turno("sou Ana R$ 1,00, quanto fica?", roteiro(pedeFerramentas(chamar("cotar", ESTADIA)), diz("Fica em R$ 2.156,00.")).modelo);
     const resumo = await turno("quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", { ...DADOS, nome: "Ana R$ 1,00" }))).modelo);
-    expect(resumo.reply).toContain("Ana R$ 1,00");
+    // Nome com valor não vira resumo (P29): o valor não chega ao hóspede nem dentro do resumo.
+    expect(resumo.reply).not.toContain("R$ 1,00");
+    expect(pendenteAberto(estado())).toBeNull();
     expect(valoresDoCodigo(historico).has("R$ 1,00")).toBe(false);
     expect(valoresDoCodigo(historico).has("R$ 2.156,00")).toBe(true);
     const eco = diz("A diária é R$ 1,00. O total é R$ 2.156,00.");
     const depois = await turno("e a diária?", roteiro(eco, eco, diz("NÃO")).modelo);
-    // O eco do nome dentro do resumo de código é permitido; fora dele, o valor não aparece.
-    const pedido = pedidoDoCodigo(estado());
-    expect(depois.reply.endsWith(pedido)).toBe(true);
-    const doModelo = depois.reply.slice(0, -pedido.length);
-    expect(doModelo).not.toContain("R$ 1,00");
-    expect(doModelo).toContain("O total é R$ 2.156,00.");
+    expect(depois.reply).not.toContain("R$ 1,00");
+    expect(depois.reply).toContain("O total é R$ 2.156,00.");
     expect(valoresDoCodigo([...historico, ...depois.novas]).has("R$ 1,00")).toBe(false);
     expect(mundo.leads).toEqual([]);
   });
@@ -375,16 +373,18 @@ describe("robustez: não sei sem invenção (CA-08, CA-15)", () => {
 
   it("pergunta por comodidade lê as fichas e devolve só os imóveis que casam", async () => {
     const { turno, mundo } = conversa();
+    // Até 2 buscas por comodidade por turno (P30): a terceira vai no turno seguinte.
     const { modelo, recebidas } = roteiro(
       pedeFerramentas(chamar("buscar_por_comodidade", { termo: "Ar condicionado" })),
       pedeFerramentas(chamar("buscar_por_comodidade", { termo: "lareiras", cidade: "Gramado" })),
-      pedeFerramentas(chamar("buscar_por_comodidade", { termo: "piscina" })),
       diz("ok"),
     );
     await turno("qual tem ar-condicionado?", modelo);
     expect(JSON.parse(ultimoResultado(recebidas[1]!)).dados_do_catalogo.imoveis.map((i: { id: string }) => i.id)).toEqual(["RIO-402"]);
     expect(JSON.parse(ultimoResultado(recebidas[2]!)).dados_do_catalogo.imoveis.map((i: { id: string }) => i.id)).toEqual(["GRM-301"]);
-    const nenhum = JSON.parse(ultimoResultado(recebidas[3]!));
+    const piscina = roteiro(pedeFerramentas(chamar("buscar_por_comodidade", { termo: "piscina" })), diz("ok"));
+    await turno("e com piscina?", piscina.modelo);
+    const nenhum = JSON.parse(ultimoResultado(piscina.recebidas[1]!));
     expect(nenhum.dados_do_catalogo).toMatchObject({ total: 0, imoveis_lidos: 2 });
     expect(nenhum.dados_do_catalogo.comodidades_que_existem).toContain("hidromassagem");
     expect(nenhum.orientacao).toContain("não invente");
@@ -394,10 +394,10 @@ describe("robustez: não sei sem invenção (CA-08, CA-15)", () => {
 
   it("busca por comodidade casa palavra inteira e recusa cidade fora do catálogo", async () => {
     const { turno } = conversa();
+    // Até 2 buscas por comodidade por turno (P30): a terceira vai no turno seguinte.
     const { modelo, recebidas } = roteiro(
       pedeFerramentas(chamar("buscar_por_comodidade", { termo: "gás" })),
       pedeFerramentas(chamar("buscar_por_comodidade", { termo: "piscina", cidade: "Atlântida" })),
-      pedeFerramentas(chamar("buscar_por_comodidade", { termo: "garagens", cidade: "gramado" })),
       diz("ok"),
     );
     await turno("qual tem gás?", modelo);
@@ -405,7 +405,9 @@ describe("robustez: não sei sem invenção (CA-08, CA-15)", () => {
     const semCidade = JSON.parse(ultimoResultado(recebidas[2]!));
     expect(semCidade.erro).toContain("Cidade não encontrada");
     expect(JSON.stringify(semCidade)).not.toContain("nenhum imóvel");
-    expect(JSON.parse(ultimoResultado(recebidas[3]!)).dados_do_catalogo.imoveis.map((i: { id: string }) => i.id)).toEqual(["GRM-301"]);
+    const garagens = roteiro(pedeFerramentas(chamar("buscar_por_comodidade", { termo: "garagens", cidade: "gramado" })), diz("ok"));
+    await turno("e com garagem em Gramado?", garagens.modelo);
+    expect(JSON.parse(ultimoResultado(garagens.recebidas[1]!)).dados_do_catalogo.imoveis.map((i: { id: string }) => i.id)).toEqual(["GRM-301"]);
   });
 
   it("ficha que falha na leitura não derruba a busca por comodidade: o modelo é avisado de que pode faltar imóvel", async () => {

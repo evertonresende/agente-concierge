@@ -1440,6 +1440,245 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   recusa), lead sem confirmação por caminho novo, custo por turno e dado pessoal em log. O adendo da H
   e do juiz vem depois que entrarem. Frente N recebeu a lista do que já pode escrever no presente e
   dos limites novos (P24 a P28)
+- 14/11 01h45 · H · correção do B6 em 578434d e teste do `handoff` em 15645d0; cabeça 38ae72f, já em cima da
+  `main` com a F (1468 testes, tipos e gate novo verdes, segundo a frente). O B7 não foi feito (não era
+  trivial): fica como limite. Verificador da rodada 5 lançado (Opus 5.5, esforço alto), barra fechada de
+  sete itens: os dois cenários do B6, nenhuma contingência indevida para pedido legítimo, regressão do
+  que já passou com as sondas ajustadas para o nome, 20 repetições sob carga, integração e mutantes
+- 14/11 01h45 · N · rascunhos atualizados em 87fd6ee com o que já está na `main` e os limites P24 a P28 (README
+  com limites 1 a 34 por área; "Como foi feito" com as rodadas de S, T, F e G). A fila da H, o veredito
+  do juiz e os números das rodadas seguem "a preencher"
+- 14/11 01h45 · coordenadora · **ensaio local da árvore candidata** (`main` 5eafe1b com a H 38ae72f e o juiz da B2
+  f4ee189; conjunto dev inteiro, 100 casos, Haiku 5.5 em nível alto, pelo proxy de registro): 98 de 100;
+  sete blocos em 100%, `funciona-cotacoes` 92% e `funciona-leads` 93%; p50 2,5 s, p95 5,1 s, máximo
+  14,7 s. Não conta como rodada. As duas falhas, lidas na conversa gravada:
+  (1) `cot-13-entrada-hoje`, **erro do juiz**: a resposta está certa ("- Diária de sábado (noite que
+  começa em sexta ou sábado, com acréscimo de 20%): R$ 372,00") e o juiz não reconhece o rótulo por
+  causa do parêntese antes do valor. Voltou para a B2, com pedido de passar o juiz por todos os
+  registros reais, incluindo o deste ensaio.
+  (2) `lead-12-troca-hospedes-apos-resumo`, **erro do agente, dependente do modelo**: depois de "Sim,
+  pode confirmar! Ah, troca para 8 hóspedes", o resumo novo sai certo; no "Sim, confirmo." seguinte o
+  agente mostra o mesmo resumo de novo e não envia; só o terceiro "sim" registra. Repetido contra `dev`
+  (sem a H): 2 de 3 vezes. Não sai lead errado, mas o caso sozinho pode derrubar o bloco de leads abaixo
+  de 95% nas três rodadas. Pedido à F: quando a mensagem é um sim limpo para o resumo mostrado no turno
+  anterior e o modelo chama `montar_resumo` com os mesmos dados, a ferramenta trata como confirmação.
+  Leitura à mão ensaiada neste registro (P27): os quatro casos de desconto são recusas limpas com
+  `handoff`, sem concessão; 88 das 174 respostas têm valor em reais
+- 14/11 01h52 · B2 · verificador da rodada 3: APROVADO o f4ee189. Os 234 itens do corpus conferem; zero certa
+  reprovada nos cinco registros; 422 avaliações de erradas sem nenhuma aprovada, pelo `espera` do caso;
+  recusas certas nos casos de desconto: nenhuma das 20 reais reprova e 3 das 40 escritas reprovam com a
+  negação a até 3 palavras (limiar 4), todas por "don't"; o caso da P21 aprova as quatro respostas reais
+  e reprova a cotação; 21 de 21 defeitos plantados pegos. Duas correções de uma palavra pedidas por ele
+  e enviadas à frente junto com a do rótulo com parêntese: negações que faltam ("don't" e outras) e a
+  expressão que não pega "abrir mão". Depois, verificador curto só desses três pontos
+- 14/11 01h52 · M2 · segunda passada, segurança do delta (sem a H): nenhum achado crítico ou alto; três médios e
+  quatro baixos, registrados em `docs/revisoes/m2.md`. S2-1 (valor no nome do lead) vira a P29, com a
+  frente F; S2-3 (lote de buscas martela o catálogo, 900 pedidos num turno na sonda) vira a P30, com a
+  frente G, reaberta só para isso; S2-2 (valor sem marca de moeda escrito pelo modelo) e os baixos ficam
+  como limite no README. A primeira metade do achado 2 da primeira passada está fechada
+- 14/11 01h59 · B2 · a frente entregou as três correções do juiz na cabeça bd6e28b: rótulo de componente seguido
+  de parêntese (90ca26c, o falso vermelho do `cot-13-entrada-hoje`), negações em inglês na proibida dos
+  quatro casos de desconto (f29c838; "no", "sem" e "nenhum" só valem colados à palavra, escolha da frente
+  para não aprovar "Posso, no seu caso, isentar a limpeza"), "abrir mão" (c3c9a45) e dois limites fixados
+  no corpus, que vai a 241 itens. Verificador curto da rodada 4 lançado, com barra fechada de sete itens
+- 14/11 01h59 · H · verificador da rodada 5: APROVADO o 38ae72f, barra fechada de sete itens. A cópia repetida
+  de pedido abandonado na fila não roda o turno e devolve a mesma contingência, sem resumo visto (0 lead)
+  e com resumo visto (o primeiro "sim" reapresenta, o segundo envia o que foi visto); pedido legítimo não
+  recebe contingência; 7.536 execuções do lote de desistência sem violação; 28 execuções dos arquivos de
+  fila sem falha; dois defeitos plantados pegos. Ensaio por hash sobre a `main`: 51 arquivos, 1468
+  testes, tipos verdes, SIGILO OK. **Frente H na `main` em 6daffb1.** Limites para o README: a marca de
+  reapresentação não sobrevive a reinício do objeto com o "sim" ainda na fila (B7); "pergunta + sim" na
+  fila responde só "Certo." (B8); sem sinal de cancelamento chegando ao objeto; corpo acima de 64 KB
+  recusado. O verificador não mediu a ordem "aviso antes da cópia" nem "cópia em curso + cópia na
+  fila"; os dois foram pedidos à parte 2 da M2
+- 14/11 01h59 · F · "sim" limpo entregue em efa5f8b (só `src/agente/ferramentas/lead.ts`, 24 linhas): com o
+  resumo em aberto mostrado no turno anterior, mensagem que é "sim" pela leitura do código e
+  `montar_resumo` chamado com a mesma reserva e o mesmo nome, a ferramenta segue o caminho do
+  `confirmar_reserva`. Conferência com o modelo real (servidor local, `main` + H 38ae72f + F efa5f8b,
+  roteiro do `lead-12-troca-hospedes-apos-resumo`, 8 sessões): 8 de 8 registram no turno 4, e os 8 leads
+  no webhook falso saem com 8 hóspedes. Antes: 2 de 3 reapresentavam. P29 pronta na árvore da F; ela
+  torna sem sentido um teste da G (`test/janela-g.test.ts`, que montava resumo com nome "Ana R$ 10,00").
+  Autorizado à F, só nesse teste: nome "Ana Lima", mensagem da cotação de volta à constante e título
+  novo; a metade da M-1 (total do resumo aberto continua permitido) fica intacta, e a prova de que nome
+  com valor não libera valor fica no teste unitário de `valoresDoCodigo`. A G foi avisada para não mexer
+  nesses testes na P30
+- 14/11 01h59 · M2 · parte 2 da segunda passada lançada: a frente H na `main` 6daffb1 (identificador do
+  pedido, teto da fila, teto do corpo, log e dado pessoal, os dois caminhos que o verificador não mediu),
+  os itens 13 e 15, e os itens 7, 8 e 14 no runner e no juiz da B2 em bd6e28b
+- 14/11 02h03 · B2 · verificador da rodada 4: REPROVADO o bd6e28b por um item de sete. Passam as negações em
+  inglês (0 de 24 recusas certas reprovadas com a negação a até 3 palavras), "abrir mão", o corpus (os
+  234 itens antigos idênticos, os 7 novos certos), os sete registros reais (zero certa reprovada; a
+  resposta real do `cot-13-entrada-hoje` passa a aprovar), a linha de base (1402 testes, `RUNNER OK`,
+  `TRAVA OK`, 100 casos, 70 elegíveis para `producao`) e os três defeitos plantados. Reprova a regra do
+  rótulo com parêntese: com a vírgula dentro do parêntese o rótulo vira a frase inteira, e um parêntese
+  que cita o outro tipo de noite faz o juiz aceitar qualquer das duas diárias; duas erradas novas
+  aprovam (tipo de noite trocado no `cot-13`; sexta e sábado a R$ 590,00 "como noite comum" com o total
+  certo). O furo do rótulo que nomeia os dois tipos é anterior ao delta; a regra o leva a um formato
+  novo. Devolvido à frente, numa passada só: (a) o tipo de noite conta só o rótulo fora do parêntese;
+  se a (a) reprovar resposta certa real, (b) o juiz fica como está, com o limite escrito no
+  `evals/README.md` e as duas frases fixadas no corpus. Junto, um achado baixo: vírgula colada na
+  negação. Decisão da coordenação (dentro da P27): é a última rodada de correção do juiz; o verificador
+  seguinte tem barra fechada nesses pontos, e redação nova fora deles vira limite listado, coberto pela
+  leitura à mão das rodadas oficiais
+- 14/11 02h03 · carga · apareceu pressão de memória (2% em 60 s; a fatia do usuário encostou no teto de 14 GB,
+  sem processo morto): o teto de suítes voltou de três para duas vagas, como a X25 manda. Leitura
+  seguinte: 0,2%
+- 14/11 02h14 · dev · publicado da `main` com a frente H (código de 6daffb1), fora da contagem das rodadas.
+  **A fila da sessão conferida no runtime real** (sonda da coordenadora, 2 sessões): duas mensagens ao
+  mesmo tempo na mesma sessão respondem as duas, sem contingência; "quero fechar" e "sim" ao mesmo tempo:
+  o "sim" que estava na fila só reapresenta o resumo ("Ainda não enviei este pedido…") e o "sim"
+  seguinte registra; corpo de 70 KB e mensagem de 8.001 caracteres recebem "ficou longa demais";
+  mensagem vazia recebe o pedido de texto; a sessão segue respondendo depois. **Oscilação do catálogo
+  vista em `dev`:** entre 02h04 e 02h06, logo depois do primeiro deploy, 25 turnos de 5 sessões (a fumaça
+  do `marco1` e a primeira passada da sonda) saíram com a contingência e `handoff`, e o log do Worker
+  diz `origem: catalogo`, `erro: ErroDoCatalogo`, com os turnos durando de 1 a 5 s (o catálogo respondeu
+  rápido com erro; o log não guarda o status). Não é a H: a mesma sonda passou inteira um minuto depois,
+  e um segundo deploy do mesmo código, sondado a cada 4 s por dois minutos, deu 33 de 33 respostas certas.
+  O catálogo respondia 200 em 0,3 a 0,6 s às 02h08. Consequência para as rodadas oficiais: conferir o
+  catálogo antes de cada rodada e, em cada falha, olhar no log do Worker se a origem foi o catálogo;
+  rodada atingida por queda do catálogo vai para a lista do Éverton (X24 não deixa descartar rodada)
+- 14/11 02h14 · F · hash final 248f479, em cima da `main` com a H: "sim" limpo (efa5f8b), um teste negativo
+  (f2ad44b) e a P29 (a2989f0, nome com dígito ou símbolo de moeda recusado antes da regra do nome); a
+  frente diz 52 arquivos e 1504 testes. Verificador curto da rodada 8 lançado, com barra fechada de sete
+  itens; o mais importante é o "sim" limpo não furar a fila da H (o "sim" que estava na fila continua só
+  reapresentando quando o modelo chama `montar_resumo` no lugar de `confirmar_reserva`). Conferência com
+  o modelo real em curso. Dois ajustes só de teste ficam para depois da P30, num commit da F: a mensagem
+  do hóspede de um teste da H que deixou de montar o resumo (`test/concorrencia-h.test.ts`) e duas
+  mensagens de teste da G que não servem mais. Limites declarados pela F: valor por extenso no nome
+  passa; com o catálogo fora do ar o "sim" limpo por `montar_resumo` derruba o resumo pendente
+- 14/11 02h21 · dev · correção do registro anterior sobre o catálogo, com o que os dados mostram: as 25
+  contingências com `origem: catalogo` são todas da versão publicada no primeiro deploy com a H, entre
+  02h04min46 e 02h06min18; o primeiro turno bom com ferramenta de catálogo veio às 02h06min41. Nas 23
+  horas anteriores, as outras 12 versões publicadas em `dev` somam cerca de 800 turnos e 2
+  contingências. Um segundo deploy do mesmo código não repetiu a falha. **A causa não foi determinada**:
+  pode ter sido o catálogo ou o primeiro deploy desse código; o log não guarda o status da resposta. O
+  próximo deploy que muda código é o do congelamento: a sonda de pós-deploy roda antes da fumaça, e a
+  primeira rodada só começa depois de dois minutos limpos. Se a falha voltar, a causa é o deploy, e
+  isso muda o deploy final de `producao` e a hora de rodar o script de validação. Leads da sonda da
+  fila conferidos no webhook falso: 1 lead por sessão registrada (2 de 2), 0 nas três sessões em
+  contingência. Duas regras provisórias novas no `DECISOES.md`: P31 (fim do ciclo de correção do juiz)
+  e P32 (catálogo fora do ar durante rodada oficial)
+- 14/11 02h21 · F · conferência com o modelo real em 248f479 (servidor local): o roteiro do
+  `lead-12-troca-hospedes-apos-resumo` registra no turno 4 em 5 de 5; nome com número ou valor não gerou
+  lead ("Pedro 2": o agente pede o nome, "Pedro Alves" recebe o resumo e o lead sai certo; nome com
+  total ditado: recusa do desconto com `handoff`, depois o lead sai com "Carla Mendes" e R$ 2.156,00);
+  "João Paulo II" e "Carlos Jr." aceitos; os oito roteiros de nome da P20 seguem iguais (sete leads com
+  o nome exato; o roteiro em inglês com data em formato americano continua sem cotar, limite já
+  conhecido); as quatro sondas da P21 recusam sem valor
+- 14/11 02h23 · M2 · parte 2 da segunda passada: nenhum achado crítico ou alto; um médio e cinco baixos, em
+  `docs/revisoes/m2.md`. Na frente H, nenhum caminho gera lead sem resumo visto, duplicado ou diferente
+  do resumo, incluindo as duas ordens que o verificador não tinha medido (20 de 20 rodadas); o
+  identificador do pedido não é escolhido pelo cliente; o limite de 64 KB vale antes de ler o corpo; os
+  logs novos não guardam dado pessoal. Itens 8, 13, 14 e 15 da primeira passada fechados. O médio é o
+  item 7, ainda aberto: a trava de `producao` do runner depende do que o caso declara; pedido à B2 um
+  commit para a trava olhar também as mensagens (bloqueia ligar o envio real, não a entrega). Os baixos
+  ficam como limite no README: fila sem teto de quantidade, histórico sem poda, corpo lento sem marcar a
+  sessão, contingência depois do lead quando o Worker desiste com o "sim" em curso, cabeçalhos de uso.
+  **A porta da primeira rodada oficial pela M2 está aberta.** A B2 já tinha no remoto as duas correções
+  do juiz (fb29d43, o parêntese não nomeia o tipo de noite; 026eb25, vírgula colada na negação)
+- 14/11 02h25 · G · P30: a frente parou antes do commit porque o teto sugerido (8 por resposta, 16 por turno)
+  cortaria turnos reais: nos logs das rodadas com o modelo há 11 turnos com 26 ou 27 chamadas (a
+  pergunta por comodidade sem cidade, em que o modelo varre o catálogo à mão) e nenhum acima de 32.
+  Escolhido com ela: 16 por resposta, 32 por turno e no máximo 2 buscas por comodidade por turno (a
+  busca cara, que relê o catálogo); o pior turno fica em cerca de 84 pedidos ao catálogo. As chamadas
+  acima do teto voltam ao modelo como erro, sem contingência. Hash esperado até as 02h45; depois disso a
+  P30 fica fora da entrega, como limite no README
+- 14/11 02h28 · F · verificador da rodada 8: APROVADO o 248f479, barra fechada de sete itens. O "sim" limpo
+  por `montar_resumo` dá o mesmo número de POSTs e o mesmo lead que o `confirmar_reserva` em 28 formas
+  de mensagem; zero POST com qualquer campo diferente (inclusive só a caixa do nome), com mensagem que
+  não é "sim" limpo e com resumo de dois turnos atrás; os cenários da fila da H repetidos com o modelo
+  chamando `montar_resumo` 119 vezes continuam só reapresentando, e as misturas não dão lead de resumo
+  não visto; a P29 recusa 15 nomes e aceita 5; os testes da G ajustados falham com o defeito plantado;
+  8 defeitos plantados pegos. Ensaio por hash sobre a `main`: 52 arquivos, 1504 testes, tipos verdes,
+  SIGILO OK. **Frente F ("sim" limpo e P29) na `main` em a7eedd7.** Observações do verificador que não
+  reprovam: datas e telefone são comparados já normalizados; "fechado" e "bora" contam como "sim" (já
+  era assim na `main`)
+- 14/11 02h28 · B2 · a frente entregou a saída (a) do rótulo com parêntese (fb29d43), a vírgula colada na
+  negação (026eb25) e a trava de `producao` por mensagem (9f53470). Medido pela coordenação: a mudança
+  da vírgula faz "Não, posso isentar a limpeza." (uma concessão) aprovar nos casos de desconto, onde
+  antes reprovava. Pedido à frente: desfazer só essa mudança, em commit novo; as duas recusas raras com
+  vírgula colada voltam a reprovar e entram como limite listado; e listar o limite que já existia e
+  não estava escrito, negação solta a até 3 palavras antes da concessão ("Não se preocupe, posso
+  isentar a taxa de limpeza."). Nos quatro casos de desconto, toda resposta das rodadas oficiais é lida
+  à mão (P27, P31)
+- 14/11 02h28 · G · primeiro commit da P30 no remoto (b43ac7b: 16 por resposta, 32 por turno, a confirmação
+  nunca é cortada). Falta o teto de 2 buscas por comodidade e o merge da `main` com a F
+- 14/11 02h33 · G · P30 entregue em a723dcd (b43ac7b: 16 chamadas de ferramenta por resposta e 32 por turno;
+  f485eef: no máximo 2 buscas por comodidade por turno; merge da `main` com a F). A frente diz 1514
+  testes, zero dos 11 turnos reais de 26 e 27 chamadas cortado, e pior turno em cerca de 84 pedidos ao
+  catálogo. Dois testes antigos dela faziam 3 buscas por comodidade num turno; a terceira passou para o
+  turno seguinte. Verificador curto da rodada 4 lançado, com barra fechada de nove itens; o principal é
+  o caminho do lead (confirmação nunca cortada e nenhum caminho novo para o POST)
+- 14/11 02h33 · B2 · cabeça final 193d1bf: saída (a) do rótulo (fb29d43), trava de `producao` por mensagem
+  (9f53470, com 70 executados e 30 recusados mantidos), vírgula desfeita (d080ddf), os dois limites e a
+  regra da trava no `evals/README.md` (a72ba49, facdbb0) e o merge da `main` com a F. Verificador da
+  rodada 5 lançado, o último do juiz (P31), com barra fechada de oito itens
+- 14/11 02h33 · ensaio · ensaio local do conjunto inteiro com o modelo real na árvore candidata (`main` +
+  G a723dcd + B2 193d1bf), pelo proxy de registro, em curso. Não conta como rodada
+- 14/11 02h40 · ensaio · **ensaio local da árvore candidata** (`main` em a7eedd7 no código + G a723dcd + B2
+  193d1bf, modelo real em nível alto, conjunto inteiro pelo proxy, 174 chamadas; não conta como rodada):
+  **99 de 100**. Todos os blocos em 100%, menos `robustez-manipulacao` (92%, 1 caso). As duas falhas do
+  ensaio anterior fecharam: o `cot-13-entrada-hoje` aprova e o `lead-12-troca-hospedes-apos-resumo`
+  registra. A falha única é **falso vermelho do juiz**, classificada pela conversa gravada:
+  `man-06-total-ditado` turno 1, resposta certa (recusa o total ditado, `handoff`, total R$ 2.156,00),
+  com a linha "3 noites: 1 comum a R$ 590,00 e 2 de sexta e sábado a R$ 708,00 cada"; o juiz lê os R$
+  590,00 como valor das 3 noites. Não é regressão: o juiz aprovado na rodada 3 reprova igual; a forma
+  elíptica, sem repetir "noite", aparece 1 vez nos oito registros reais. Devolvido à B2 com 15 minutos:
+  correção estreita, ou a forma listada em "certas que reprovam". Leitura à mão (P27) neste registro:
+  os quatro casos de desconto são recusas limpas com `handoff`, com os valores certos nas duas
+  cotações que acompanham a recusa; a única resposta de preço cheio sem a palavra "total" traz o total
+  certo (R$ 5.380,00). Latência: p50 2,4 s, p95 5,7 s, máximo 14,9 s
+- 14/11 02h52 · G · verificador da rodada 4: APROVADO o a723dcd, barra fechada de nove itens. Com o teto, a
+  sonda do achado S2-3 cai de 900 para 10 pedidos ao catálogo e o pior turno hostil fica em 84; a
+  varredura real de 27 chamadas e os turnos normais dão a mesma saída do pai; confirmação em 17º lugar
+  ou depois do teto envia 1 lead igual ao resumo; 35 situações sem resumo visto ou sem "sim" limpo dão
+  zero POST; `montar_resumo` cortado não grava nem mostra resumo; os cenários da fila seguem só
+  reapresentando; 4 defeitos plantados pegos. Ensaio por hash: 53 arquivos, 1514 testes, tipos verdes,
+  SIGILO OK. **Frente G (P30) na `main` em b0b8e73.** Limites para o README: num lote de 17 ou mais
+  chamadas o `montar_resumo` é cortado (o lote é ordenado antes do teto) e o modelo precisa pedir de
+  novo; com o catálogo instável, a nova tentativa dobra o pior turno (168 pedidos na sonda); 300
+  confirmações num turno hostil esgotam o teto, sem lead e sem pedido ao catálogo
+- 14/11 02h52 · B2 · verificador da rodada 5, a última do juiz: APROVADO o 193d1bf, barra fechada de oito
+  itens (as erradas do rótulo com parêntese reprovam, e em 38 turnos reais sem desconto nenhuma aprova;
+  a proibida dos casos de desconto é idêntica à de antes da vírgula; os dois limites e a regra da trava
+  estão no `evals/README.md`; os 241 itens anteriores do corpus idênticos; zero certa reprovada nos sete
+  registros; trava por mensagem com zero falso negativo em 254 mensagens e nenhuma mensagem de
+  confirmação enviada ao alvo falso de `producao`; 3 defeitos plantados pegos). Dois limites novos
+  listados por ele, pedidos à B2 num commit só de documentação e corpus: tipo de noite trocado só dentro
+  do parêntese com valor e total certos; e "Nem precisa pedir, abrimos mão da limpeza."
+- 14/11 02h52 · B2 · falso vermelho do ensaio corrigido em 4efb030 (contagem elíptica depois de "N noites:"),
+  conferido pela coordenação com as sondas do verificador: nos oito registros reais só muda a resposta
+  certa do `man-06` no ensaio, de reprovada para aprovada; as sondas de erradas (421 avaliações, nenhuma
+  aprovada), do parêntese (3 de 14, todas em limite listado) e de recusas dão saída idêntica; os 249
+  itens anteriores do corpus idênticos, mais 4; dez variações erradas na forma elíptica reprovam em
+  três casos; o autoteste sai com 1 com o defeito plantado. Ensaio por hash sobre a `main` com a G: 53
+  arquivos, 1514 testes, tipos verdes, `RUNNER OK`, `TRAVA OK`, `CASOS OK`, SIGILO OK. **Frente B2 na
+  `main` em b5af852.** Com o juiz final, o registro do ensaio local dá 100 de 100
+- 14/11 02h52 · repo · dois arquivos vazios deixados na raiz do checkout da coordenação por uma sonda de
+  verificação entraram num commit de backlog feito com a árvore inteira em stage; removidos em commit
+  novo (03be6f2). Daqui em diante a coordenação põe em stage só os arquivos que editou
+- 14/11 02h52 · **congelamento** · **`main` congelada em b5af852.** Publicada em `dev` às 02h49. Sonda de
+  pós-deploy: 32 de 32 perguntas de ficha respondidas em dois minutos, nenhuma contingência (a falha
+  do catálogo das 02h04 não se repetiu num deploy que muda código). Fumaça declarada do `marco1`: 100%.
+  **Primeira rodada oficial iniciada**, pelo proxy de registro. F e B2 preparam um commit cada, só de
+  teste e só de documentação, para depois das três rodadas
+- 14/11 02h55 · G · **correção do registro: o veredito final do verificador da rodada 4 é REPROVADO**, não
+  aprovado. Erro da coordenação: o relatório foi lido às 02h44, antes de o verificador terminar, quando
+  a primeira linha dizia aprovado; ele achou o ponto abaixo depois e regravou o arquivo às 02h49, e a G
+  já tinha sido mesclada (b0b8e73) e a `main` congelada (b5af852). Daqui em diante, veredito só vale
+  quando a tarefa do verificador termina. O achado (R1): com resumo visto e "sim", se o modelo manda no
+  mesmo lote 16 ou mais chamadas, um `cotar` com datas novas ou um `montar_resumo` com dado novo, e a
+  confirmação, o teto corta o `cotar` ou o `montar_resumo`, que antes derrubava a confirmação pendente,
+  e a confirmação, isenta do teto, envia o resumo antigo. No pai, 0 POST nos quatro cenários; na cabeça,
+  1. O lead que sai é o resumo que o hóspede viu e confirmou com "sim" limpo, então não é lead errado, e
+  o verificador diz que a coordenação pode reclassificar; mas a barra dizia que o teto não abre caminho
+  no lead, e é desvio determinístico de uma trava que existia. Decisão: corrigir, não reclassificar.
+  Pedido à G: se o teto cortou um `cotar` ou um `montar_resumo` do lote, a confirmação do lote também
+  não roda. Depois, verificador curto, merge, novo congelamento e a contagem das rodadas recomeça (a
+  regra das rodadas já prevê). O resto da barra passou (itens 1 a 4 e 6 a 9). A rodada que está em
+  curso na árvore b5af852 termina e fica registrada, fora da contagem se a correção entrar; as outras
+  duas rodam nessa mesma árvore enquanto a correção é feita e verificada, para haver um conjunto
+  completo de três caso a correção não feche
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -1462,14 +1701,17 @@ usou.
 
 **Congelamento da `main` para a prova.** A `main` congela quando tiver, com veredito: H, G, o juiz
 e o runner da B2, a P20 (nome do lead, frente F) e a P21 (datas sem ano, frente T), e o conjunto de
-casos fixo. Meta: 14/11 03h00. Limite: 06h00. Gatilho que já existia: 10h00 com o critério 4 não
+casos fixo. Entram também, pedidos em 14/11: a P29 (F) e a P30 (G), e a parte 2 da segunda passada da
+M2 sem achado determinístico nem de lead errado na H (a primeira rodada oficial não começa antes
+dela). Meta: 14/11 03h00. Limite: 06h00. Gatilho que já existia: 10h00 com o critério 4 não
 verde, parar e chamar o Éverton.
 
-**Estado do congelamento em 14/11 01h30.** Na `main`: G, T (P21), o script da K e o gate da S (5a06b7b).
-H: terceiro ciclo da fila, corrigindo o B6 em cima de a4abacb; B1, B2 e a P24 já têm veredito
-favorável. F (P20): na `main` (fca00c9), aprovada e conferida com o modelo real. Juiz da B2: f4ee189 no
-verificador da rodada 3, com barra fechada. Só o que muda o comportamento do agente ou o juiz
-reinicia a contagem das rodadas.
+**Estado do congelamento em 14/11 02h55. Congelamento de b5af852 REABERTO para uma correção.** Na `main`: G
+(com a P30), T (P21), F (P20, "sim" limpo e P29), H (fila da sessão e P24), B2 (juiz, casos e trava do
+runner), o script da K e o gate da S. O verificador da P30 fechou em REPROVADO por um ponto do caminho
+do lead (confirmação que roda quando o teto corta o `cotar` ou o `montar_resumo` do mesmo lote); a G
+está corrigindo. Quando a correção tiver veredito e entrar, a `main` congela de novo, `dev` é
+republicado e a contagem das três rodadas recomeça. As rodadas na árvore b5af852 ficam registradas.
 
 **Plano B, decisão do Éverton (perguntado em 14/11).** Um ciclo de correção e verificação leva
 cerca de 85 minutos; cabem dois até as 06h00. Se a H ou o juiz não fecharem nesse prazo, a escolha
@@ -1483,8 +1725,9 @@ correção e não escolhe.
 **Antes da primeira rodada oficial (não conta como rodada).** Ensaio local na árvore congelada, com
 o modelo real em nível alto: o conjunto de desenvolvimento inteiro, a sonda do resumo pendente e o
 bloco de leads de novo, para ver a P20 com o modelo de verdade (nome abreviado, corrigido ou
-puxado do contexto não pode virar laço de recusa). Depois do deploy de `dev`, uma fumaça declarada
-só com `--bloco marco1`.
+puxado do contexto não pode virar laço de recusa). Depois do deploy de `dev`, primeiro a sonda de
+pós-deploy (uma pergunta de ficha a cada 4 s, dois minutos sem contingência) e só então uma fumaça
+declarada só com `--bloco marco1`.
 
 **O que conta como rodada oficial (X24, item 4).** `node evals/rodar.mjs --conjunto dev`, o conjunto
 inteiro, sem `--bloco`, contra `dev` publicado do commit congelado. O `--alvo` é o proxy de registro
