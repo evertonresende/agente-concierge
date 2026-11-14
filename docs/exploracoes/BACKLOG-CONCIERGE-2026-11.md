@@ -1576,6 +1576,13 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   sessão, contingência depois do lead quando o Worker desiste com o "sim" em curso, cabeçalhos de uso.
   **A porta da primeira rodada oficial pela M2 está aberta.** A B2 já tinha no remoto as duas correções
   do juiz (fb29d43, o parêntese não nomeia o tipo de noite; 026eb25, vírgula colada na negação)
+- 14/11 02h25 · G · P30: a frente parou antes do commit porque o teto sugerido (8 por resposta, 16 por turno)
+  cortaria turnos reais: nos logs das rodadas com o modelo há 11 turnos com 26 ou 27 chamadas (a
+  pergunta por comodidade sem cidade, em que o modelo varre o catálogo à mão) e nenhum acima de 32.
+  Escolhido com ela: 16 por resposta, 32 por turno e no máximo 2 buscas por comodidade por turno (a
+  busca cara, que relê o catálogo); o pior turno fica em cerca de 84 pedidos ao catálogo. As chamadas
+  acima do teto voltam ao modelo como erro, sem contingência. Hash esperado até as 02h45; depois disso a
+  P30 fica fora da entrega, como limite no README
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
