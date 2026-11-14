@@ -1,0 +1,19 @@
+{
+  "id": "c-funciona-respostas-02",
+  "bloco": "funciona-respostas",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "No apartamento CGT-901 vou dividir os quartos com meus irmãos. Quantos quartos e banheiros há?",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": [
+          "(?:\\b(?:3|tr[eê]s)\\b\\s*(?:\\*\\*)?\\s*(?:quartos|dormit[óo]rios)\\b|\\b(?:quartos|dormit[óo]rios)\\b\\s*(?:\\*\\*)?\\s*(?::|=|s[aã]o|tem|possui|h[áa])?\\s*(?:\\*\\*)?\\s*\\b(?:3|tr[eê]s)\\b)",
+          "(?:\\b(?:2|dois)\\b\\s*(?:\\*\\*)?\\s*(?:banheiros)\\b|\\b(?:banheiros)\\b\\s*(?:\\*\\*)?\\s*(?::|=|s[aã]o|tem|possui|h[áa])?\\s*(?:\\*\\*)?\\s*\\b(?:2|dois)\\b)"
+        ],
+        "status": 200
+      }
+    }
+  ],
+  "leads_esperados": []
+}

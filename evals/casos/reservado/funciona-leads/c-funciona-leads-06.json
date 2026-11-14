@@ -1,0 +1,47 @@
+{
+  "id": "c-funciona-leads-06",
+  "bloco": "funciona-leads",
+  "confirma": true,
+  "turnos": [
+    {
+      "mensagem": "Gostaria de uma cotação do RIO-401, entrada em 20/11/2028, saída em 24/11/2028, para 2 hóspedes. Quero encaminhar um pedido de reserva. Meu nome é {{nome}} e meu telefone é {{telefone_estrangeiro}}. Mostre o resumo para eu conferir.",
+      "espera": {
+        "handoff": false,
+        "estadia": {
+          "imovel_id": "RIO-401",
+          "checkin": "2028-11-20",
+          "checkout": "2028-11-24",
+          "hospedes": 2
+        },
+        "leads_ate_agora": 0,
+        "status": 200
+      }
+    },
+    {
+      "mensagem": "Confirmo o resumo.",
+      "espera": {
+        "handoff": false,
+        "leads_ate_agora": 1,
+        "status": 200
+      }
+    },
+    {
+      "mensagem": "Fiquei em dúvida se minha mensagem chegou. Confirmo novamente esse mesmo pedido.",
+      "espera": {
+        "handoff": false,
+        "leads_ate_agora": 1,
+        "status": 200
+      }
+    }
+  ],
+  "leads_esperados": [
+    {
+      "imovel_id": "RIO-401",
+      "checkin": "2028-11-20",
+      "checkout": "2028-11-24",
+      "hospedes": 2,
+      "valor_total": 4180.0,
+      "formato_telefone": "estrangeiro"
+    }
+  ]
+}

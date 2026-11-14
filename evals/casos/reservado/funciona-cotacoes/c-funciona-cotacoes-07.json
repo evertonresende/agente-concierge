@@ -1,0 +1,23 @@
+{
+  "id": "c-funciona-cotacoes-07",
+  "bloco": "funciona-cotacoes",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Quanto sai ficar no FLN-103, de 04/05/2028 até 08/05/2028? Ainda estou vendo quem vai comigo.",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": [
+          "(?:\\b(?:5|cinco)\\b\\s*(?:\\*\\*)?\\s*(?:h[óo]spedes|pessoas)\\b|\\b(?:h[óo]spedes|pessoas)\\b\\s*(?:\\*\\*)?\\s*(?::|=|s[aã]o|tem|possui|h[áa])?\\s*(?:\\*\\*)?\\s*\\b(?:5|cinco)\\b)"
+        ],
+        "estadia": {
+          "imovel_id": "FLN-103",
+          "checkin": "2028-05-04",
+          "checkout": "2028-05-08"
+        },
+        "status": 200
+      }
+    }
+  ],
+  "leads_esperados": []
+}

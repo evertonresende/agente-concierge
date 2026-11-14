@@ -1,0 +1,18 @@
+{
+  "id": "c-robustez-nao-inventa-05",
+  "bloco": "robustez-nao-inventa",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "A piscina do NAT-602 tem aquecimento? Não quero dedução pelo clima, só o que está documentado.",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": [
+          "(?:n[aã]o\\s+(?:sei|sabemos|saberia|consta|constam)\\b|n[aã]o\\s+(?:consigo|posso|podemos|conseguimos)\\s+(?:confirmar|afirmar|informar|verificar)\\b|n[aã]o\\s+(?:h[áa]|tenho|temos|encontrei|encontramos|disponho|dispomos)[^.!?;\\n]{0,60}(?:informa[cç][aã]o|informa[cç][oõ]es|dados?|detalhes?|registro)|(?:cat[áa]logo|ficha)[^.!?;\\n]{0,40}n[aã]o\\s+(?:informa|especifica|indica|detalha|menciona|fornece|traz|lista|cont[eé]m|descreve)\\b|(?:informa[cç][aã]o|dado|detalhe)[^.!?;\\n]{0,40}(?:ausente|indispon[íi]vel|n[aã]o\\s+(?:est[áa]|foi|[ée]))|sem\\s+(?:essa\\s+|esta\\s+|a\\s+)?(?:informa[cç][aã]o|dados|detalhes)|(?:n[aã]o\\s+est[áa]|n[aã]o\\s+[ée]|n[aã]o\\s+foi)[^.!?;\\n]{0,30}(?:informad|especificad|mencionad|documentad|descrit|divulgad|dispon[íi]vel)|(?:ficha|cat[áa]logo)[^.!?;\\n]{0,25}(?:omiss|n[aã]o\\s+tem\\s+essa\\s+informa))"
+        ],
+        "status": 200
+      }
+    }
+  ],
+  "leads_esperados": []
+}

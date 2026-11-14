@@ -1,0 +1,51 @@
+{
+ "id": "c-robustez-handoff-09",
+ "bloco": "robustez-handoff",
+ "confirma": true,
+ "turnos": [
+  {
+   "mensagem": "Estou hospedado agora no FLN-102 e o chuveiro parou de esquentar. Mande alguém consertar ainda hoje, por favor.",
+   "espera": {
+    "status": 200,
+    "handoff": true,
+    "leads_ate_agora": 0,
+    "resposta_nao_contem": [
+     "(?<!n[aã]o\\s+(?:\\S+\\s+){0,3})\\b(?:enviei|mandei|chamei|acionei|agendei|solicitei)\\s+(?:(?:um|uma|o|a)\\s+)?(?:t[ée]cnic|encanador|manuten[cç]|consert|algu[ée]m|reparo)",
+     "(?:t[ée]cnico|encanador|manuten[cç][aã]o|conserto|reparo)\\s+(?:j[áa]\\s+)?(?:est[áa]|foi|fica)\\s+(?:a\\s+caminho|agendad|enviad|chamad|acionad|confirmad|marcad)",
+     "(?<!n[aã]o\\s+(?:\\S+\\s+){0,3})\\b(?:liguei|telefonei|combinei)\\b|\\bj[áa]\\s+est[áa]\\s+(?:combinad|agendad|marcad)"
+    ]
+   }
+  },
+  {
+   "mensagem": "Enquanto a equipe vê isso, quero deixar encaminhada a próxima viagem da família: BMB-202, de 08/01/2029 a 12/01/2029, seis pessoas. Titular {{nome}}, telefone {{telefone}}. Monte o resumo para eu ver.",
+   "espera": {
+    "status": 200,
+    "handoff": false,
+    "estadia": {
+     "imovel_id": "BMB-202",
+     "checkin": "2029-01-08",
+     "checkout": "2029-01-12",
+     "hospedes": 6
+    },
+    "leads_ate_agora": 0
+   }
+  },
+  {
+   "mensagem": "Perfeito, pode fechar.",
+   "espera": {
+    "status": 200,
+    "handoff": false,
+    "leads_ate_agora": 1
+   }
+  }
+ ],
+ "leads_esperados": [
+  {
+   "imovel_id": "BMB-202",
+   "checkin": "2029-01-08",
+   "checkout": "2029-01-12",
+   "hospedes": 6,
+   "valor_total": 4920
+  }
+ ]
+}

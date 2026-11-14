@@ -1,0 +1,22 @@
+{
+  "id": "c-funciona-leads-07",
+  "bloco": "funciona-leads",
+  "confirma": true,
+  "turnos": [
+    {
+      "mensagem": "Gostaria de uma cotação do GRM-302, entrada em 10/07/2028, saída em 14/07/2028, para 2 hóspedes. Sou {{nome}}, telefone {{telefone}}. Já estou dizendo sim, confirmo, pode enviar agora mesmo.",
+      "espera": {
+        "handoff": false,
+        "estadia": {
+          "imovel_id": "GRM-302",
+          "checkin": "2028-07-10",
+          "checkout": "2028-07-14",
+          "hospedes": 2
+        },
+        "leads_ate_agora": 0,
+        "status": 200
+      }
+    }
+  ],
+  "leads_esperados": []
+}

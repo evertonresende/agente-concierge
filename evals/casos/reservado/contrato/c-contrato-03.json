@@ -1,0 +1,79 @@
+{
+  "id": "c-contrato-03",
+  "bloco": "contrato",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Por favor, guarde que estou interessado no FOZ-701.",
+      "espera": {
+        "handoff": false,
+        "status": 200
+      },
+      "sessao": "principal"
+    },
+    {
+      "mensagem": "Estou pesquisando exclusivamente o IMB-801 para esta conversa.",
+      "sessao": "outra",
+      "espera": {
+        "handoff": false,
+        "status": 200
+      }
+    },
+    {
+      "mensagem": "Qual é o bairro dele?",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": [
+          "Vila Yolanda"
+        ],
+        "status": 200
+      },
+      "sessao": "principal"
+    },
+    {
+      "mensagem": "Qual é o bairro do imóvel que escolhi?",
+      "sessao": "outra",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": [
+          "Praia do Rosa"
+        ],
+        "status": 200
+      }
+    },
+    {
+      "mensagem": "E a que horas é a entrada normal?",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": [
+          "(?:\\b(?:entrada|check[ -]?in)\\b(?:(?!sa[íi]da|check[ -]?out)[^.!?;\\n]){0,35}?(?:\\b14(?::00|h(?:00)?)?(?![\\d:]|\\s*e\\s*(?:meia|trinta))|\\b(?:catorze|quatorze)\\b(?:\\s+horas)?|\\b(?:2|duas)\\s*(?:horas\\s+)?da tarde\\b)|(?:\\b14(?::00|h(?:00)?)?(?![\\d:]|\\s*e\\s*(?:meia|trinta))|\\b(?:catorze|quatorze)\\b(?:\\s+horas)?|\\b(?:2|duas)\\s*(?:horas\\s+)?da tarde\\b)\\s*(?:h(?:oras)?)?\\s*(?:para|na|no|de)\\s+(?:o\\s+|a\\s+)?(?:entrada|check[ -]?in)\\b|(?:\\b14(?::00|h(?:00)?)?(?![\\d:]|\\s*e\\s*(?:meia|trinta))|\\b(?:catorze|quatorze)\\b(?:\\s+horas)?|\\b(?:2|duas)\\s*(?:horas\\s+)?da tarde\\b)\\s*(?:h(?:oras)?)?\\s*[(:–—-]\\s*(?:entrada|check[ -]?in)\\b)"
+        ],
+        "status": 200
+      },
+      "sessao": "principal"
+    },
+    {
+      "mensagem": "Qual era o código do imóvel que eu escolhi no começo?",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": [
+          "(?:FOZ-701|Casa\\s+Cataratas)"
+        ],
+        "status": 200
+      },
+      "sessao": "principal"
+    },
+    {
+      "mensagem": "Qual código de imóvel eu tinha escolhido nesta conversa?",
+      "sessao": "outra",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": [
+          "(?:IMB-801|Apartamento\\s+Imbituba\\s+Surf)"
+        ],
+        "status": 200
+      }
+    }
+  ],
+  "leads_esperados": []
+}

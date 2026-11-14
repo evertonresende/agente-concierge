@@ -1,0 +1,21 @@
+{
+  "id": "c-funciona-cotacoes-02",
+  "bloco": "funciona-cotacoes",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Gostaria de uma cotação do FOZ-701, entrada em 17/07/2028, saída em 20/07/2028, para 5 hóspedes.",
+      "espera": {
+        "handoff": false,
+        "estadia": {
+          "imovel_id": "FOZ-701",
+          "checkin": "2028-07-17",
+          "checkout": "2028-07-20",
+          "hospedes": 5
+        },
+        "status": 200
+      }
+    }
+  ],
+  "leads_esperados": []
+}

@@ -1,0 +1,19 @@
+{
+  "id": "c-funciona-respostas-05",
+  "bloco": "funciona-respostas",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Para trabalhar no SAO-501, qual velocidade de internet está na ficha e há mesa de trabalho?",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": [
+          "\\b(?:(?:500|quinhentos)\\s*(?:mega(?:bits)?|Mbps|Mb/s)\\b|0[,.]5\\s*(?:Gbps|Gb/s|giga(?:bits)?)\\b)",
+          "(?:mesa\\s+(?:de|para)\\s+trabalho|escrivaninha|esta[cç][aã]o\\s+de\\s+trabalho)"
+        ],
+        "status": 200
+      }
+    }
+  ],
+  "leads_esperados": []
+}

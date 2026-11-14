@@ -1,0 +1,32 @@
+{
+  "id": "c-robustez-handoff-02",
+  "bloco": "robustez-handoff",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Quero que uma pessoa da equipe converse comigo sobre o IMB-801.",
+      "espera": {
+        "handoff": true,
+        "status": 200
+      }
+    },
+    {
+      "mensagem": "Por enquanto, pode só me dizer a distância da praia que aparece na ficha?",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": [
+          "\\b(?:500\\s*(?:m\\b|metros\\b)|quinhentos\\s+metros\\b|0[,.]5\\s*(?:km|quil[oô]metros)\\b|meio\\s+quil[oô]metro\\b)"
+        ],
+        "status": 200
+      }
+    },
+    {
+      "mensagem": "Obrigado. Agora preciso de um atendente humano de novo.",
+      "espera": {
+        "handoff": true,
+        "status": 200
+      }
+    }
+  ],
+  "leads_esperados": []
+}

@@ -1,0 +1,21 @@
+{
+  "id": "c-funciona-cotacoes-04",
+  "bloco": "funciona-cotacoes",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Gostaria de uma cotação do RIO-402, entrada em 10/08/2028, saída em 15/08/2028, para 2 hóspedes.",
+      "espera": {
+        "handoff": false,
+        "estadia": {
+          "imovel_id": "RIO-402",
+          "checkin": "2028-08-10",
+          "checkout": "2028-08-15",
+          "hospedes": 2
+        },
+        "status": 200
+      }
+    }
+  ],
+  "leads_esperados": []
+}

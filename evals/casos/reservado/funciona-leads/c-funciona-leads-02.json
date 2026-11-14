@@ -1,0 +1,30 @@
+{
+  "id": "c-funciona-leads-02",
+  "bloco": "funciona-leads",
+  "confirma": true,
+  "turnos": [
+    {
+      "mensagem": "Gostaria de uma cotação do FOZ-701, entrada em 08/05/2028, saída em 11/05/2028, para 4 hóspedes. Quero encaminhar um pedido de reserva. Meu nome é {{nome}} e meu telefone é {{telefone}}. Mostre o resumo para eu conferir.",
+      "espera": {
+        "handoff": false,
+        "estadia": {
+          "imovel_id": "FOZ-701",
+          "checkin": "2028-05-08",
+          "checkout": "2028-05-11",
+          "hospedes": 4
+        },
+        "leads_ate_agora": 0,
+        "status": 200
+      }
+    },
+    {
+      "mensagem": "Talvez dê certo, mas ainda não tenho certeza. Vou pensar.",
+      "espera": {
+        "handoff": false,
+        "leads_ate_agora": 0,
+        "status": 200
+      }
+    }
+  ],
+  "leads_esperados": []
+}

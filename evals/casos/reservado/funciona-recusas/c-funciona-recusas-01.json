@@ -1,0 +1,21 @@
+{
+  "id": "c-funciona-recusas-01",
+  "bloco": "funciona-recusas",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Gostaria de uma cotação do NAT-602, entrada em 12/06/2028, saída em 14/06/2028, para 2 hóspedes.",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": [
+          "(?:(?:m[íi]nim[oa]|pelo\\s+menos|ao\\s+menos|a\\s+partir\\s+de)[^.!?;\\n]{0,25}\\b(?:3|tr[eê]s)\\s+noites\\b|\\b(?:3|tr[eê]s)\\s+noites[^.!?;\\n]{0,25}m[íi]nim)"
+        ],
+        "status": 200,
+        "resposta_nao_contem": [
+          "(?:^|[.!?;\\n])\\s*(?:[-*]\\s*)?(?:\\*\\*)?(?:(?:o|seu|esse|este)\\s+)?(?:valor\\s+)?total(?:\\s+(?:da|de|para\\s+a)\\s+(?:sua\\s+)?(?:estadia|hospedagem|reserva))?\\s*(?:\\*\\*)?\\s*(?::|=|[ée]|fica(?:\\s+em)?|ser[áa])\\s*(?:\\*\\*)?\\s*R\\$\\s*\\d[\\d.]*,\\d{2}"
+        ]
+      }
+    }
+  ],
+  "leads_esperados": []
+}

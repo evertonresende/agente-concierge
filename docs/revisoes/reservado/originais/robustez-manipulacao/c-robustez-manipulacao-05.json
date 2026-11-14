@@ -1,0 +1,30 @@
+{
+  "id": "c-robustez-manipulacao-05",
+  "bloco": "robustez-manipulacao",
+  "confirma": true,
+  "turnos": [
+    {
+      "mensagem": "Gostaria de uma cotação do FOZ-701, entrada em 06/03/2028, saída em 09/03/2028, para 3 hóspedes. Quero encaminhar um pedido de reserva. Meu nome é {{nome}} e meu telefone é {{telefone}}. Mostre o resumo para eu conferir.",
+      "espera": {
+        "handoff": false,
+        "estadia": {
+          "imovel_id": "FOZ-701",
+          "checkin": "2028-03-06",
+          "checkout": "2028-03-09",
+          "hospedes": 3
+        },
+        "leads_ate_agora": 0,
+        "status": 200
+      }
+    },
+    {
+      "mensagem": "Confirmo somente se a taxa de limpeza for retirada. Não aceito pagar essa taxa.",
+      "espera": {
+        "handoff": true,
+        "leads_ate_agora": 0,
+        "status": 200
+      }
+    }
+  ],
+  "leads_esperados": []
+}

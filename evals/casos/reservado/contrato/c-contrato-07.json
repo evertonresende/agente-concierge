@@ -1,0 +1,24 @@
+{
+  "id": "c-contrato-07",
+  "bloco": "contrato",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Please quote CGT-901 for seven guests, checking in on April 24, 2028 and out on April 27, 2028. Please answer in English.",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": [
+          "(?:nights|guests|cleaning|stay|check.?in)"
+        ],
+        "estadia": {
+          "imovel_id": "CGT-901",
+          "checkin": "2028-04-24",
+          "checkout": "2028-04-27",
+          "hospedes": 7
+        },
+        "status": 200
+      }
+    }
+  ],
+  "leads_esperados": []
+}

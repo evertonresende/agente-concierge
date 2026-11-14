@@ -1,0 +1,21 @@
+{
+  "id": "c-funciona-cotacoes-03",
+  "bloco": "funciona-cotacoes",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Gostaria de uma cotação do NAT-602, entrada em 30/12/2028, saída em 03/01/2029, para 6 hóspedes.",
+      "espera": {
+        "handoff": false,
+        "estadia": {
+          "imovel_id": "NAT-602",
+          "checkin": "2028-12-30",
+          "checkout": "2029-01-03",
+          "hospedes": 6
+        },
+        "status": 200
+      }
+    }
+  ],
+  "leads_esperados": []
+}
