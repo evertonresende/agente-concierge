@@ -45,9 +45,9 @@ flowchart TB
 
   FR["Frente<br/>só os seus arquivos"]
   VER["Verificador independente<br/>sondas próprias · defeitos plantados"]
-  RES[("Conjunto reservado<br/>fora do repositório")]
+  RES[("Conjunto reservado<br/>fora do repositório até a entrega;<br/>copiado para ele em 14/11")]
   GATE["Gate de sigilo e de histórico<br/>antes de cada commit e de cada push"]
-  K["K · produção<br/>envio real desligado"]
+  K["K · produção<br/>envio real ligado em 14/11,<br/>por ordem do Éverton"]
 
   EV -->|"prompt de planejamento"| PLAN
   P3 -->|"lacunas, recomendação e divergências"| EV
@@ -200,7 +200,7 @@ flowchart LR
     direction TB
     M2["M2 · código, segurança,<br/>segunda opinião"]
     L["L · custo por conversa"]
-    K["K · produção, envio desligado"]
+    K["K · produção<br/>envio ligado em 14/11, por ordem do Éverton"]
     N["N · README, decisões, desenhos, roteiro do vídeo"]
     RR["Agregado do reservado"]
   end
