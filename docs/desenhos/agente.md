@@ -12,12 +12,15 @@ de 80 mensagens, 8.000 caracteres por mensagem e 64 KB de corpo.
 Texto alternativo: o hóspede manda `session_id` e `message` ao Worker. O Worker valida o
 corpo e entrega a mensagem ao Durable Object daquela sessão, que a põe numa fila de uma
 mensagem por vez. Dois atalhos respondem por código, sem modelo: o "sim" com a marca de
-reapresentar (depois de uma resposta fora do turno, P24) mostra o resumo de novo, e o "sim"
+reapresentar mostra o resumo de novo (a marca é gravada com resumo aberto quando o Worker
+responde fora do turno, P24; quando o pedido chega repetido ou desiste; quando a sessão
+responde a contingência; e quando o resumo foi criado depois de a mensagem chegar, ainda
+sem ter sido visto), e o "sim"
 repetido logo depois de um registro recebe um texto fixo. Fora disso, o laço chama o modelo (o principal e, se ele falhar ou recusar por
 limite, o reserva). Se o modelo pede ferramentas, o código confere a chamada, executa,
 grava o resultado e volta ao modelo, até 6 voltas e com teto de chamadas (P30). Quando o modelo responde em texto, o
-código confere o texto, pede uma correção se achar problema, retira o que não pode
-chegar ao hóspede e acrescenta o total e o pedido de confirmação gerados por código. A
+código confere o texto, pede uma correção se achar problema, retira o que reconhece como
+proibido (por forma da frase, com os limites 8, 20, 46, 65 e 66 do README) e acrescenta o total e o pedido de confirmação gerados por código. A
 sessão grava histórico e estado e o Worker devolve `reply` e `handoff`. Qualquer falha
 vira o aviso de contingência com `handoff: true`, nunca erro 500.
 
@@ -35,13 +38,13 @@ flowchart TB
   subgraph DO["Durable Object: um por session_id"]
     direction TB
     F["Fila em memória<br/>uma mensagem por vez, na ordem de chegada"]
-    Q{"Sim com a marca de reapresentar?<br/>(resposta fora do turno, P24)"}
+    Q{"Sim com a marca de reapresentar?<br/>(resposta fora do turno, pedido repetido,<br/>contingência ou resumo ainda não visto)"}
     J{"Sim repetido logo depois<br/>de um registro?"}
     L["Laço de ferramentas<br/>até 6 voltas, 45 s de trabalho externo<br/>até 16 chamadas por resposta, 32 por turno (P30)"]
     C{"O modelo pediu<br/>ferramentas?"}
     B["Conferência da chamada<br/>imóvel não escolhido (L21)<br/>grupo menor que o cotado (L13a)<br/>sinal de desconto: chamada focada (P17)"]
     X["Conferência do texto<br/>valor sem ferramenta, concessão,<br/>registro sem 201, disponibilidade"]
-    FE["Fechamento por código<br/>retira frase barrada, anexa o total,<br/>pergunta do agente derruba o resumo (P18),<br/>pedido de confirmação fixo"]
+    FE["Fechamento por código<br/>retira a frase que a conferência reconhece,<br/>anexa o total,<br/>pergunta do agente derruba o resumo (P18),<br/>pedido de confirmação fixo"]
     S[("SQLite da sessão<br/>histórico · rascunho da reserva · estado do lead<br/>marcador de envio · flag de handoff")]
     F --> Q
     Q -->|"não"| J
@@ -89,11 +92,13 @@ flowchart TB
 
 - A fila existe porque o objeto intercala outro pedido enquanto espera o modelo ou o
   catálogo, e o bloqueio nativo tem limite de 30 s (`docs/VERIFICACOES.md` §1).
-- O texto que vem do catálogo entra na conversa como dado delimitado, nunca como instrução.
+- O texto que vem do catálogo é saneado (uma linha por campo, até 300 caracteres, sem "$")
+  e entra na conversa como dado delimitado, com o aviso de que não é instrução. Não há
+  filtro de instrução no código: não obedecer é do modelo, pelo prompt (limite 61 do README).
 - O total sai pronto da ferramenta de cotação. A conferência retira do texto do modelo
-  valor com "R$" que nenhuma ferramenta calculou (frente G). Ela não pega número por extenso
-  nem valor sem marca de moeda ("consigo deixar o total em 1500"): esses passam (limites 8 e
-  46 do README). Sem resumo aberto, o total repetido depois que a cotação sai da janela de
+  valor em dinheiro que nenhuma ferramenta calculou, com "R$", "reais", outra moeda ou
+  centavos (frente G). Número por extenso e número solto sem marca nem centavos ("consigo
+  deixar o total em 1500") passam (limites 8 e 46 do README). Sem resumo aberto, o total repetido depois que a cotação sai da janela de
   80 mensagens é cortado, e o agente pede imóvel e datas de novo (P26).
 - Em `dev` o webhook é um falso que replica o contrato do real. O real não recebe nenhum
   POST antes da entrega.
@@ -171,8 +176,11 @@ stateDiagram-v2
   segundo envio; marcador sem resultado conta como incerto.
 - Estadia bloqueada não gera novo POST, mesmo com outro nome, telefone ou número de
   hóspedes. Outra estadia segue o fluxo normal (P14).
-- O agente só diz que registrou depois de um `201`; falha nunca vira "registrado". Lead
-  registrado é pedido encaminhado, não reserva garantida.
+- Só o código escreve o texto de registro, e só depois de um `201`; falha nunca vira
+  "registrado" no estado do lead. A conferência corta a afirmação de registro do modelo nas
+  formas que reconhece ("Seu pedido foi registrado.", "Enviei o seu pedido", "Sua reserva
+  está confirmada!"); paráfrase como "O time comercial já recebeu o seu pedido." passa
+  (limite 65 do README). Lead registrado é pedido encaminhado, não reserva garantida.
 - O que acontece depois de uma falha e como começa uma segunda reserva eram lacunas
   abertas no esboço; foram decididas: L11 e P14 para a falha, L7 para a segunda reserva.
 
@@ -191,6 +199,7 @@ stateDiagram-v2
 | A flag `handoff` devolvida na resposta | |
 
 O total que o hóspede lê sai pronto da ferramenta. O modelo pode escrever outro valor; a
-conferência retira o valor com "R$" que nenhuma ferramenta calculou, mas não pega número por
-extenso nem valor sem marca de moeda (limites 8 e 46 do README). Não existe ferramenta que
+conferência retira valor em dinheiro que nenhuma ferramenta calculou (com "R$", "reais",
+outra moeda ou centavos), mas não pega número por extenso nem número solto sem marca nem
+centavos (limites 8 e 46 do README). Não existe ferramenta que
 aceite desconto ou preço informado pelo hóspede, e o valor do lead sai do cálculo do código.

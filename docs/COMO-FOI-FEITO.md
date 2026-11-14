@@ -13,9 +13,8 @@ depende do fim da entrega está marcado como "a preencher".
 3. Uma sessão coordenadora despachou frentes paralelas, cada uma na sua worktree e só nos
    seus arquivos. Ela não editou código de produto.
 4. Por regra, antes de cada merge, um verificador independente leu o diff, mandou sondas e
-   plantou defeitos para ver se a suíte pegava. Exceções registradas: a frente E e o commit
-   4efb030 do juiz entraram só com a conferência da coordenação, ajustes só de teste também,
-   e a P30 entrou pelo relatório lido antes do fim da rodada 4 da G (seções 4 e 9).
+   plantou defeitos para ver se a suíte pegava. Os merges de código que entraram sem
+   verificador aprovado estão numa tabela só, na seção 4.
 5. Um conjunto de evals reservado, escrito por outro provedor, ficou fora do repositório.
    Quem corrige o agente só vê o agregado; a exceção são os 4 casos revelados pela regra 6
    de `docs/EVALS.md`, que saíram do conjunto (seção 5).
@@ -90,10 +89,8 @@ hora de coordenação, 12 horas no total. Prazo de entrega:
 ## 4. Verificador independente antes do merge
 
 Por regra, cada entrega passou por um subagente verificador (Claude Opus 5.5) que não
-escreveu o código. Exceções que o log registra: a frente E teve só a conferência da
-coordenação; o commit 4efb030 do juiz e os ajustes só de teste (como f9a50d2) entraram com
-a conferência da coordenação, sem verificador; e a P30 da G foi mesclada pelo relatório
-lido antes do fim da rodada 4, que depois reprovou (seção 9, itens 10 e 15). Ele lê o diff, monta sondas próprias numa cópia e planta defeitos, um por vez,
+escreveu o código. As exceções estão na tabela "Merges de código sem verificador aprovado",
+mais abaixo nesta seção. Ele lê o diff, monta sondas próprias numa cópia e planta defeitos, um por vez,
 para ver quantos a suíte da frente pega. Reprovação devolve a frente com a lista; a
 correção entra como commit novo. As reprovações abaixo são o que o processo pegou antes
 de chegar à `main` ou a `dev`.
@@ -118,8 +115,38 @@ ela ter veredito.
 | T (datas sem ano, P21) | 1 | aprovada: 82.102 casos comparados com a árvore anterior; só mudaram as saídas sem ano a mais de 90 noites, que passaram a ser recusadas; 11 de 12 defeitos plantados pegos |
 | K (validação de `producao`) | 3, aprovada na terceira | R1: falso verde, `PRODUCAO OK` sem nenhuma conversa quando o script recebia argumentos extras; um redirecionamento no `/chat` era seguido com POST e corpo. R2: no modo completo, o runner ainda seguia o redirecionamento. R3: aprovada |
 | L (custo) | 1, aprovada | só achados baixos; as contas batem com um programa à parte em frações exatas |
-| N (estes textos) | 1 até aqui | R1: reprovada por uma afirmação, a trava de valores dada como garantida quando a G ainda a corrigia. O verificador final dos textos roda depois dos números finais: a preencher <!-- PREENCHER: verificador final da frente N --> |
+| N (estes textos) | veja o log | R1: reprovada por uma afirmação, a trava de valores dada como garantida quando a G ainda a corrigia. O verificador final dos textos reprovou duas vezes em 14/11, sem número de resultado errado em nenhuma: rodada 1 sobre 4a9ece4, com 4 altos, 7 médios e 3 baixos; rodada 2 sobre f015880, com 2 altos, 3 médios e 6 baixos. As rodadas seguintes e o resultado estão no log do backlog |
 | I (modelo) | 3, aprovada na terceira | R1: resposta `200` inútil do Haiku (vazia, cortada, erro como valor) não ia ao reserva. R2: fim de resposta que não batia com o conteúdo passava, e o mesmo id duas vezes quebrava o pareamento de chamada e resultado. R3: aprovada, sem achado alto nem médio; 7 de 68 defeitos plantados escapam, como seguimento |
+
+### Merges de código sem verificador aprovado
+
+Lista tirada do log do backlog, merge a merge, entre os que mudam código, testes, evals ou
+scripts. Os demais merges de código da `main` tiveram verificador independente aprovado, ou
+aprovado com ressalvas, antes de entrar.
+
+| Merge | Frente | Log | O que houve no lugar do verificador |
+|---|---|---|---|
+| 2759766 | B2, passo 1 | 13/11 16h30 | conferido pela coordenadora e mesclado para liberar C e D |
+| e4712ef, 320eb63 | B1, segunda e terceira rodadas | 13/11 16h47 | a terceira mexeu só no teste e os furos menores ficaram aceitos; o log não registra veredito de verificador para elas |
+| f55d1a9 | A, último commit | 13/11 17h44 | contexto das ferramentas com a mensagem do turno e a data de hoje; o log não registra verificador |
+| 6c090d0 | D | 13/11 18h16 | reprovado às 17h21; as correções entraram depois de ensaio de merge, sem nova rodada |
+| 56cc12c | F, passo 1 | 13/11 18h20 | a verificação da trava foi adiada às 18h32 para uma rodada só com a G, depois do merge |
+| 75fdeb8 | J, passo 2 | 13/11 18h20 | o log não registra verificador |
+| 036daf1 | B2, seguimento | 13/11, depois da conferência das 18h24 | o segundo verificador do passo 2 devolveu as falhas para um commit de seguimento "sem nova rodada de verificador" |
+| 81873fa | E | 13/11 18h53 | só a conferência da coordenação |
+| fce21b7 | B2, opção `--pausa-ms` | 13/11 19h26 | conferido pela coordenação |
+| 801c8a2 | F, restante | 13/11 19h34 | dentro da verificação adiada às 18h32; as rodadas da F vieram depois do merge |
+| 249ef34 | B2, casos ajustados | 13/11 20h10 | conferido pela coordenação |
+| a8da5d6 | G | 14/11 00h48 | a rodada 3 reprovou por um achado só de teste; a correção dele e a do M-1 (9 linhas) foram lidas pela coordenação, sem nova rodada |
+| eb12f04 | G, teste do P07 | 14/11 00h59 | só teste |
+| 1a9b8d5 | T, baixos | 14/11 00h59 | baixos do verificador aprovado, sem nova rodada; em `src/` muda uma frase |
+| 0e68247 | T, apoio de teste | 14/11 01h16 | uma linha de teste |
+| 5a06b7b | S | 14/11 01h30 | a rodada 2 reprovou; a correção foi conferida pela coordenação com as sondas do verificador |
+| b0b8e73 | G, P30 | 14/11 02h52 | mesclada pelo relatório lido antes do fim; o veredito final reprovou (R1), e só a correção eb5c7d4 teve verificador aprovado |
+| b5af852 | B2, juiz (4efb030) | 14/11 02h52 | conferido pela coordenação com as sondas do verificador, sem verificador; o buraco que ele deixou foi achado depois (seção 9, item 15) |
+| f9a50d2 | F, ajuste só de teste | 14/11 03h12 | conferido com a suíte e um defeito plantado |
+| 0567371 | B2, volta do juiz | 14/11 04h07 | conferência byte a byte com 193d1bf, o último estado aprovado |
+| 9d37f9a | B2, quatro casos revelados | 14/11 04h32 | ensaio conjunto com a F; o log não registra verificador para os casos |
 
 Contagens de defeitos plantados pegos pela suíte, por rodada: F 12 de 12, 21 de 25, e na
 quarta 22 de 31; G 30 de 33 e 23 de 27; H 7 de 9 (conferência) e 16 de 22; I 15 de 19.
@@ -422,7 +449,7 @@ canal do aviso ficaram com o Éverton.
 | Provedor e modelo | O que fez | Fase |
 |---|---|---|
 | Claude Fable 5.2 | coordenadora do começo ao fim; frentes A (produto até o Marco 1) e J (design e página); começo das frentes F e G; a frente F de novo de 13/11 23h28 a 14/11 02h55 (regra do nome, "sim" limpo e P29), por um desvio de modelo, contra a X23, que a coordenação não percebeu e cuja causa não foi determinada | leva 1 e leva 2 até a X16 nas frentes; as entregas da F do desvio passaram por verificador em Opus 5.5 |
-| Claude Opus 5.5 | verificadores independentes e subagentes de revisão desde a leva 1; frentes I, K, L e N; F (fora do desvio citado acima) e G depois da X16; B2 e H depois da X23; S e T, como subagentes em worktree; o revisor do reservado no papel da frente C (P33) | toda a entrega; a partir da X23, o único modelo das frentes e dos verificadores, com esforço médio, alto ou muito alto conforme a tarefa |
+| Claude Opus 5.5 | verificadores independentes e subagentes de revisão desde a leva 1; frentes I, K, L e N; F (fora do desvio citado acima) e G depois da X16; B2 e H depois da X23; S e T, como subagentes em worktree; os dois revisores do reservado no papel da frente C (P33), com esforço alto | toda a entrega; a partir da X23, o único modelo das frentes e dos verificadores, com esforço médio, alto ou muito alto conforme a tarefa |
 | Gemini 4 Hydrogen | frentes B2 (runner e casos), D (simulador), E (datas) e H (concorrência); conselho às cegas das lacunas e do Marco 1 | leva 1 e leva 2, até a X23 |
 | Gemini 3.8 Flash (`gemini-3.8-flash-low`) | o hóspede simulado do simulador hostil (padrão de `evals/simulador/hospede-cli.mjs`) | rodadas ao vivo do simulador |
 | Gemini 4 Argon | segunda opinião da revisão final (M2) | leva 3; desde a X23 é a única segunda opinião de outro provedor |
