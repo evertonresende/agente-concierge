@@ -76,10 +76,13 @@ const ABRE_MAO = /(?:\b(?:sem|without|nao quero|nao preciso de|nao precisa de|di
 /** "Já sei que não tem desconto": afirma que não há. Com "?" na mesma oração ("não tem desconto?"), é pergunta. */
 const SABE_QUE_NAO_HA = /\b(?:nao\s+(?:tem|ha|existe|trabalh\w+\s+com|oferec\w+)|there(?:'s| is) no|you don't (?:have|offer))\s+(?:(?:o|a|de|um|uma|nenhum|nenhuma|any)\s+)?$/;
 
+// Só a palavra inteira: "descontraído" e "descontado do cartão" não são desconto.
+const PALAVRA_INTEIRA_DE_DESCONTO = /\b(?:descontos?|descontinhos?|descontao|cupom|cupons|cupon|promocao|promocoes|promo|abatimentos?|discounts?|coupons?|promotions?)\b(?!\s+fiscal)/g;
+
 /** A mensagem fala em desconto, cupom ou promoção, sem ser para abrir mão dele ("sem desconto então"). */
-export function mencionaDesconto(mensagem: string): boolean {
+export function mencionaDesconto(mensagem: string, palavra: RegExp = PALAVRA_DE_DESCONTO): boolean {
   const limpa = normalizar(mensagem);
-  return [...limpa.matchAll(PALAVRA_DE_DESCONTO)].some((achado) => {
+  return [...limpa.matchAll(palavra)].some((achado) => {
     const antes = limpa.slice(Math.max(0, achado.index - 30), achado.index);
     if (ABRE_MAO.test(antes)) return false;
     const resto = limpa.slice(achado.index).split(/[.,;!\n]/)[0]!;
@@ -175,8 +178,10 @@ export function decidirHandoff(motivo: string | undefined, mensagem: string, his
   // hasOwn: "constructor" e afins não são motivos da tabela.
   const linha = motivo && Object.hasOwn(MATRIZ, motivo) ? MATRIZ[motivo] : undefined;
   if (!linha) return true;
-  // Palavra da mensagem não troca o motivo escolhido pelo modelo (P17): desconto dentro de
-  // manipulação (L16a) chega aqui como desconto_ou_negociacao, pela instrução da ferramenta.
+  // O modelo já decidiu passar: pedido de desconto, com a palavra inteira, define o motivo
+  // como desconto, mesmo embrulhado em manipulação (L5a, L16a). A palavra só escolhe o
+  // motivo; sem esta chamada ela não liga nada (P17).
+  if (mencionaDesconto(mensagem, PALAVRA_INTEIRA_DE_DESCONTO)) return true;
   const insiste = PEDE_EXCECAO.test(normalizar(mensagem));
   // Exceção ou insistência só existe depois da regra explicada ou com pedido explícito:
   // "posso fazer festa?" na primeira vez é conflito, não insistência.
