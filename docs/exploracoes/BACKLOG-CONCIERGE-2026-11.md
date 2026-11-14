@@ -539,6 +539,14 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   afrouxado, 21 de 25 defeitos plantados. Das 50 confirmações naturais testadas, 35 enviam;
   "confirma" derrubava o resumo. Decidido: P15 (formas de confirmação e hesitação pura) e P14
   reescrita com o teto de envios por reserva. Devolvida; depois, terceira rodada curta
+- 13/11 21h07 · Éverton · X22: modelo principal Claude Haiku 5.5 com raciocínio em nível médio; o
+  `MODELO` pode ser fixado. Reserva em aberto até a tabela do GLM-5.3 Flash e do DeepSeek 4.1
+  no mesmo código; reserva provisório GLM-5.3 Flash. Frente I: código do Haiku e do
+  `porLimite` na branch com o `MODELO` fixado em `dev`, sem esperar as rodadas com pausa
+  (commit feito na cópia temporária e enviado direto para a branch remota, para não recarregar
+  o servidor da rodada do DeepSeek). Entra na `main` logo depois da conferência, para os CHECKs
+  das outras frentes já rodarem no modelo escolhido. Gateway de `producao` e chave nele:
+  esperam ordem do Éverton
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
