@@ -60,8 +60,8 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 | J | agente-concierge | Página de chat em dois passos: design (canvas) e implementação | passo 1: nada; passo 2: Marco 1 e aprovação do Éverton | baixa | 0,7 + 1 | thread T3 · Fable 5.2 | passo 1 concluído (canvas aprovado pelo Éverton, com dois ajustes); passo 2 entregue (b8991ce) | `frente-j` |
 | M2 | agente-concierge | Revisão de código, segurança e segunda opinião | leva 2 integrada | alta | 1,5 | subagentes Opus 5.5 + segunda opinião do Gemini 4 Argon em esforço alto (X23) | pendente | — |
 | L | agente-concierge | Custo por conversa e monitor diário | leva 2 integrada | média | 1 | subagente em worktree · Opus 5.5 (X23; antes prevista para o Gemini 4 Hydrogen) | pendente | — |
-| K | agente-concierge | Produção com o envio real desligado | M2 | alta | 1,5 | thread T3 · Opus 5.5, esforço conforme a dificuldade (X23) | pendente | — |
-| N | agente-concierge | Entregáveis de processo | K | alta | 2 | thread T3 · Opus 5.5, esforço conforme a dificuldade (X23) | pendente | — |
+| K | agente-concierge | Produção com o envio real desligado | M2 | alta | 1,5 | thread T3 · Opus 5.5, esforço alto (X23) | rodando desde 13/11 23h14, adiantada pela X24: só a infraestrutura de `producao` com o envio real desligado; o deploy final espera a M2 | `frente-k` |
+| N | agente-concierge | Entregáveis de processo | K | alta | 2 | thread T3 · Opus 5.5, esforço alto (X23) | rodando desde 13/11 23h14, adiantada pela X24: rascunhos do README, do "Como foi feito", dos desenhos e do setup, com marcador no que se preenche no fim | `frente-n` |
 | — | — | Correções entre leva 2 e 3 | evals | alta | 1,5 | frente dona do arquivo | — | — |
 
 Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `bloqueada` ·
@@ -870,6 +870,29 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   nível alto, muito alto descartado, reserva em aberto; adiantar K (infraestrutura), N
   (rascunhos), M2 (módulos estáveis) e L (custo) sem esperar a leva 2 inteira. Passado à I:
   fixar o nível alto na configuração de `dev` e de `producao`
+- 13/11 23h14 · coordenadora · rodada integrada com a cabeça nova da G (I 64f0526, F 0e6a29c, G 3e10551, B2
+  15cbb00): 97 de 98, p95 de 4,4 s, zero falha do modelo. A falha é o `lead-05`, prevista
+  pela G (hesitação seguida de pergunta do agente derrubava o resumo); o ajuste da hesitação
+  fecha. Sonda da P18 de novo: em 8 de 20 o agente remontou o resumo com o dado novo no mesmo
+  turno, mas ainda saiu lead com dado antigo quando o agente, em dúvida, afirmou em vez de
+  perguntar ("se quiser, eu atualizo o resumo com 3 hóspedes" seguido do resumo antigo e do
+  "sim"). Complemento da P18, provisório: o resumo só é repetido se o modelo responder "não"
+  a uma pergunta fechada do código sobre mudança possível; item novo na lista da G. Achado
+  para a F: o modelo gravou no campo do nome um texto com parênteses e instrução ("Pedro (se
+  puder, me diga também o sobrenome)") e o lead saiu assim; validação do nome fica para depois
+  da entrada da F na `main`
+- 13/11 23h14 · coordenadora · primeiro ensaio com TODAS as branches juntas sobre a `main` (I 64f0526, F
+  0e6a29c, G 3e10551, H c905a09, B2 15cbb00): merge limpo, tipos e sigilo OK, suíte com 1299
+  de 1300. O teste vermelho é da H ("item 1b"): na combinação, a segunda passagem depois de
+  uma falha do objeto envia o lead em vez de segurar para reapresentar. Bloqueia; passado à
+  H, que foi retomada em sessão nova no Opus 5.5 (esforço alto), já mesclando a F nova
+- 13/11 23h14 · K e N · abertas por ordem do Éverton (X24), antes de a leva 2 fechar. K: diagnóstico do
+  erro 530 de `producao` só por leitura, gateway `concierge-producao` com a chave por
+  referência, `scripts/validar-producao.sh`; para e pergunta antes de qualquer escrita de DNS,
+  e só faz o primeiro deploy depois de provar no commit exato que envio desligado é zero
+  POST. N: rascunhos, sem tocar no `DECISOES.md`. Com elas são 7 frentes vivas (F, G, H, I,
+  B2, K, N); o limite de 5 foi passado por ordem do Éverton. L e M2 parcial entram quando os
+  verificadores da F e da I terminarem, por causa da memória (12 GB de 17 em uso)
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
