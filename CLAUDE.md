@@ -47,10 +47,14 @@ TypeScript na Cloudflare, um Durable Object por sessão, loop de ferramentas pr�
 
 ## Webhook real
 
-- **Nenhum POST ao webhook real antes da entrega**, por nenhuma sessão, nem como
-  teste. GET é permitido.
+- **Nenhum POST ao webhook real**, por nenhuma sessão, nem como teste. GET é permitido.
+  A única exceção foi o lead de teste que o Éverton autorizou em 14/11 (X36 em
+  `DECISOES.md`). Ele já foi feito, e a proibição vale inteira de novo.
 - Fluxo completo de lead, evals com confirmação e gravação de vídeo: só em `dev`, que
   usa o webhook falso. Contra `producao`, só conversas sem confirmação.
+- A lista real tem 1 lead, o de teste. O modo completo e o `--so-leitura` do
+  `scripts/validar-producao.sh` exigem zero lead real e por isso reprovam; use
+  `--entrega` e `--clientes`.
 
 ## Papéis
 
@@ -75,7 +79,7 @@ TypeScript na Cloudflare, um Durable Object por sessão, loop de ferramentas pr�
 | Simulador hostil (só `dev`) | `node evals/simulador/rodar.mjs --alvo "$AGENTE_URL_DEV"` |
 | Custo por conversa (de um relatório de eval) | `node scripts/custo.mjs <relatório.json>` |
 | Deploy de `dev` | `npm run deploy:dev` |
-| Validar `producao` sem enviar lead | `scripts/validar-producao.sh` |
+| Validar `producao` sem enviar lead | `scripts/validar-producao.sh --entrega` e `scripts/validar-producao.sh --clientes` |
 | Deploy de `producao` (envio real desligado até a ordem do Éverton) | `npm run deploy:producao` |
 
 Os comandos de `npm`, `evals/` e `scripts/validar-producao.sh` passam a existir

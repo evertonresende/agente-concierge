@@ -77,7 +77,8 @@ TypeScript na Cloudflare, um Durable Object por sessão, loop de ferramentas pr�
 
 ## Webhook real
 
-- **Nenhum POST ao webhook real**, por nenhuma sessão, nem como teste.
+- **Nenhum POST ao webhook real**, por nenhuma sessão, nem como teste. A única exceção
+  foi o lead de teste que o Éverton autorizou em 14/11 (X36 em `DECISOES.md`), já feito.
 - Fluxo completo de lead: só local ou em `dev`, que usa o webhook falso.
 
 ## Papéis

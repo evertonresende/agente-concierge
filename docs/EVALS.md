@@ -300,4 +300,5 @@ custo.
   confirmação e avisa quantos pulou; os demais rodam.
 - O simulador recusa qualquer alvo que não seja `dev`.
 - O webhook real não recebe POST de eval, de teste nem de verificação, por nenhuma sessão.
-  A conferência de `producao` usa só conversas sem confirmação.
+  A conferência de `producao` usa só conversas sem confirmação. Única exceção, fora das
+  evals e do runner: o lead de teste autorizado em 14/11 (X36 em `DECISOES.md`).
