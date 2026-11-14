@@ -56,6 +56,18 @@ export function formatarDataComDia(data: DataISO): string {
   return `${diaDaSemana(data)}, ${formatarData(data)}`;
 }
 
+const DIAS_EM_INGLES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
+const MESES_EM_INGLES = [
+  "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December",
+] as const;
+
+/** "2027-01-15" -> "sexta-feira, 15/01/2027" (pt) ou "Friday, January 15, 2027" (en). */
+export function dataComDia(data: DataISO, idioma: "pt" | "en"): string {
+  if (idioma === "pt") return formatarDataComDia(data);
+  const [ano, mes, dia] = data.split("-").map(Number);
+  return `${DIAS_EM_INGLES[indiceDiaDaSemana(data)]}, ${MESES_EM_INGLES[mes! - 1]} ${dia}, ${ano}`;
+}
+
 const FUSO_DO_NEGOCIO = "America/Sao_Paulo";
 const CALENDARIO_DE_SAO_PAULO = new Intl.DateTimeFormat("en-CA", {
   timeZone: FUSO_DO_NEGOCIO, year: "numeric", month: "2-digit", day: "2-digit",
