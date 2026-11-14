@@ -155,6 +155,14 @@ novo_repo v; echo "zqxwøæå" > "$AGENTE_CFG/sigilo-extra"
 echo "zqxwøæå" > "zqxwøæå.txt"; git add -A
 rodar; espera_codigo 1; espera_texto "localização omitida"; sem_pedaco "zqxwøæå"
 
+caso="w) linha enorme sem quebra"
+novo_repo w; head -c 30000000 /dev/zero | tr '\0' a > g.txt; git add g.txt
+inicio=$SECONDS
+rodar SIGILO_TEMPO=20 timeout 60; espera_codigo 0
+[ $((SECONDS - inicio)) -le 15 ] || falha "30 MB sem @ levou $((SECONDS - inicio)) s"
+git rm -q --cached g.txt; { head -c 60000 /dev/zero | tr '\0' a; echo @; } > g.txt; git add g.txt
+rodar SIGILO_TEMPO=2 timeout 60; espera_codigo 2
+
 caso="f) repositório limpo"
 novo_repo f
 rodar; espera_codigo 0; [ "$(tail -n 1 <<<"$saida")" = "SIGILO OK" ] || falha "a última linha não é SIGILO OK"

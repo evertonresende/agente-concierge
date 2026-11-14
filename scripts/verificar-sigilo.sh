@@ -87,9 +87,13 @@ relata() { # $1 = rótulo; stdin = localizações (arquivo:linha, commit ou comm
 # Lê do git para $tmpd/<arquivo>. Qualquer falha de leitura sai com 2, nunca com
 # SIGILO OK; o código 1 só é aceito do git grep, que o usa para "nada achado".
 # core.quotePath=false: nome não ASCII sai cru, e não em octal, para a máscara casar.
+# Cada leitura tem limite de tempo (SIGILO_TEMPO segundos, padrão 120): uma linha
+# enorme sem quebra pode travar a busca de e-mail; tempo esgotado também sai com 2.
+TEMPO="${SIGILO_TEMPO:-120}"
+command -v timeout >/dev/null || TEMPO=""
 le() { # $1 = arquivo de saída; o resto = subcomando do git e argumentos
   local arq="$tmpd/$1" st; shift
-  git -c core.quotePath=false "$@" > "$arq" 2>/dev/null; st=$?
+  ${TEMPO:+timeout "$TEMPO"} git -c core.quotePath=false "$@" > "$arq" 2>/dev/null; st=$?
   [ "$st" -eq 0 ] || { [ "$st" -eq 1 ] && [ "$1" = grep ]; } \
     || { echo "SIGILO: falha ao ler o repositório (git $1)"; exit 2; }
 }
@@ -101,8 +105,11 @@ cut -d: -f1,2 "$tmpd/indice" | relata "termo proibido (domínio, token, empresa 
 le ips grep --cached -a -n -o -E '\b([0-9]{1,3}\.){3}[0-9]{1,3}\b' -- .
 grep -v -E ':(127\.0\.0\.1|0\.0\.0\.0)$' "$tmpd/ips" | cut -d: -f1,2 | relata "endereço IP"
 
-le emails grep --cached -a -n -o -E '[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}' -- .
-grep -v -F ":$AUTOR" "$tmpd/emails" | cut -d: -f1,2 | relata "e-mail que não é o do autor"
+# O "-e @ --and" descarta antes as linhas sem @: sem ele, uma linha longa sem @ fazia a
+# expressão de e-mail levar minutos. O -o também imprime o "@" sozinho; ele é ignorado.
+le emails grep --cached -a -n -o -E -e '@' --and \
+  -e '[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}' -- .
+grep -v -E ':@$' "$tmpd/emails" | grep -v -F ":$AUTOR" | cut -d: -f1,2 | relata "e-mail que não é o do autor"
 
 le arquivos ls-files --cached
 grep -E '(^|/)(\.privado/|\.env($|\.)|\.dev\.vars)' "$tmpd/arquivos" | grep -v -F '.env.example' \
