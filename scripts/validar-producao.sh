@@ -15,7 +15,8 @@
 #                 fixa e não confirma nada, então não gera lead.
 #   --entrega     /saude com o envio ligado e LEADS REAIS; reprova se o envio estiver
 #                 desligado. Não manda nenhuma conversa.
-#   --autoteste   confere as funções do script, sem rede → AUTOTESTE OK
+#   --autoteste   confere funções e modos contra servidores falsos em 127.0.0.1, sem
+#                 tocar em producao nem no webhook real → AUTOTESTE OK
 #
 # Os endereços vêm de ~/.config/agente-concierge/env (ou do arquivo em $AGENTE_ENV) e
 # nunca aparecem na saída nem em argumento de linha de comando de processo filho.
@@ -312,13 +313,13 @@ def leads_reais(url):
     return total
 
 
-def modo_completo(agente, leads, extras, limpar):
+def modo_completo(agente, leads, extras, limpar, rodar=rodar_evals):
     exigir_ferramentas("node")
     exigir_saude(agente, "desligado")
     print("ENVIO: desligado")
     if leads_reais(leads) != 0:
         raise Falha("já existe lead no webhook real antes das evals")
-    motivo = veredito_das_evals(*rodar_evals(agente, extras, limpar))
+    motivo = veredito_das_evals(*rodar(agente, extras, limpar))
     depois = leads_reais(leads)
     if motivo:
         raise Falha(motivo)
@@ -416,7 +417,143 @@ def autoteste():
     assert veredito_das_evals(0, ["CASOS OK"])
     assert veredito_das_evals(2, passou[:-1] + ["EVAL PARCIAL"])
     assert veredito_das_evals(3, passou + ["EVAL PARCIAL"])
+    assert veredito_das_evals(1, passou + ["EVAL PARCIAL"])
+    autoteste_dos_modos()
     print("AUTOTESTE OK")
+
+
+class Falso:
+    """Agente e webhook de mentira num servidor local; grava método e caminho de cada pedido."""
+
+    def __init__(self):
+        import http.server
+        falso = self
+        self.pedidos, self.leads, self.chat, self.saude_redireciona = [], [0], "ok", False
+        self.saude = {"ok": True, "ambiente": "producao", "leads_destino": "real", "envio_leads": "desligado",
+                      "variaveis": dict.fromkeys(VARIAVEIS, True)}
+
+        class Atendente(http.server.BaseHTTPRequestHandler):
+            def log_message(self, *args):
+                pass
+
+            def responder(self, status, corpo, tipo="application/json", cabecalhos=()):
+                dados = corpo.encode()
+                self.send_response(status)
+                self.send_header("content-type", tipo)
+                self.send_header("content-length", str(len(dados)))
+                for nome, valor in cabecalhos:
+                    self.send_header(nome, valor)
+                self.end_headers()
+                self.wfile.write(dados)
+
+            def atender(self):
+                self.rfile.read(int(self.headers.get("content-length") or 0))
+                falso.pedidos.append((self.command, self.path))
+                if self.path == "/saude" and falso.saude_redireciona:
+                    return self.responder(307, "", cabecalhos=[("location", "/outra-saude")])
+                if self.path in ("/saude", "/outra-saude"):
+                    return self.responder(200, json.dumps(falso.saude))
+                if self.path.startswith("/leads/"):
+                    total = falso.leads.pop(0) if len(falso.leads) > 1 else falso.leads[0]
+                    return self.responder(200, json.dumps({"leads": [{}] * total}))
+                if self.path == "/chat" and falso.chat == "307":
+                    return self.responder(307, "", cabecalhos=[("location", "/leads/tok")])
+                if self.path == "/chat" and falso.chat == "html":
+                    return self.responder(200, "<html>desafio</html>", "text/html")
+                if self.path == "/chat":
+                    return self.responder(200, '{"reply": "Oi", "handoff": false}', cabecalhos=[("x-chamadas-modelo", "1")])
+                return self.responder(404, "{}")
+
+            do_GET = do_POST = do_PUT = do_DELETE = atender
+
+        self.servidor = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Atendente)
+        threading.Thread(target=self.servidor.serve_forever, daemon=True).start()
+        self.agente = f"http://127.0.0.1:{self.servidor.server_address[1]}"
+        self.url_leads = self.agente + "/leads/tok"
+
+    def metodos_no_webhook(self):
+        return {metodo for metodo, caminho in self.pedidos if caminho.startswith("/leads/")}
+
+
+def rodar_modo(funcao, *args):
+    """Roda um modo com a saída capturada; devolve (saída, motivo da falha ou None)."""
+    import contextlib, io
+    saida = io.StringIO()
+    with contextlib.redirect_stdout(saida):
+        try:
+            funcao(*args)
+            motivo = None
+        except Falha as erro:
+            motivo = str(erro)
+    return saida.getvalue(), motivo
+
+
+def autoteste_dos_modos():
+    try:
+        contar_leads(500, "application/json", '{"leads": []}')
+        raise AssertionError("500 com lista vazia virou zero")
+    except Falha:
+        pass
+    passou = ["[PASSOU] b/c"] * MINIMO_DE_CASOS + ["EVAL PARCIAL"]
+    chamado = []
+
+    def runner(codigo, linhas):
+        return lambda *args: chamado.append(1) or (codigo, linhas)
+
+    def completo(falso, codigo=2, linhas=passou):
+        chamado.clear()
+        return rodar_modo(modo_completo, falso.agente, falso.url_leads, [], Limpador([falso.agente]), runner(codigo, linhas))
+
+    falso = Falso()
+    saida, motivo = completo(falso)
+    assert motivo is None and "PRODUCAO OK" in saida and "LEADS REAIS: 0" in saida, (motivo, saida)
+    assert falso.metodos_no_webhook() == {"GET"}, falso.pedidos
+    assert sum(1 for metodo, caminho in falso.pedidos if caminho.startswith("/leads/")) == 2
+    assert "127.0.0.1" not in saida, "a saída mostrou o endereço"
+    for codigo, linhas in ((1, passou[:-1] + ["EVAL REPROVADO"]), (3, passou),
+                           (2, ["TRAVA: nenhum caso elegível", "EVAL PARCIAL"]), (0, ["CASOS OK"])):
+        saida, motivo = completo(Falso(), codigo, linhas)
+        assert motivo and "PRODUCAO OK" not in saida, (codigo, saida)
+    falso = Falso()
+    falso.leads = [1]
+    saida, motivo = completo(falso)
+    assert motivo and not chamado, "lead antes das evals precisa reprovar sem rodar o runner"
+    falso = Falso()
+    falso.leads = [0, 1]
+    saida, motivo = completo(falso)
+    assert motivo and "PRODUCAO OK" not in saida, "lead depois das evals precisa reprovar"
+    falso = Falso()
+    falso.saude = {**falso.saude, "envio_leads": "ligado"}
+    saida, motivo = completo(falso)
+    assert motivo and not chamado and not falso.metodos_no_webhook(), "envio ligado não pode rodar evals"
+
+    falso = Falso()
+    saida, motivo = rodar_modo(modo_clientes, falso.agente)
+    assert motivo is None and "CLIENTES OK" in saida and saida.count("200 OK") == 4, (motivo, saida)
+    assert "127.0.0.1" not in saida
+    for modo_do_chat in ("html", "307"):
+        falso = Falso()
+        falso.chat = modo_do_chat
+        saida, motivo = rodar_modo(modo_clientes, falso.agente)
+        assert motivo and "CLIENTES OK" not in saida, (modo_do_chat, saida)
+        assert "POST" not in falso.metodos_no_webhook(), "um cliente seguiu o redirecionamento com POST"
+    falso = Falso()
+    falso.saude = {**falso.saude, "ambiente": "dev"}
+    saida, motivo = rodar_modo(modo_clientes, falso.agente)
+    assert motivo and ("POST", "/chat") not in falso.pedidos, "/saude em dev não pode mandar conversa"
+
+    falso = Falso()
+    falso.saude_redireciona = True
+    saida, motivo = completo(falso)
+    assert motivo and ("GET", "/outra-saude") not in falso.pedidos, "o GET seguiu o redirecionamento"
+
+    falso = Falso()
+    saida, motivo = rodar_modo(modo_entrega, falso.agente, falso.url_leads)
+    assert motivo and "ENVIO: desligado" in saida and "ENTREGA OK" not in saida
+    falso.saude = {**falso.saude, "envio_leads": "ligado"}
+    saida, motivo = rodar_modo(modo_entrega, falso.agente, falso.url_leads)
+    assert motivo is None and "ENTREGA OK" in saida and ("POST", "/chat") not in falso.pedidos
+    assert falso.metodos_no_webhook() == {"GET"}
 
 
 def principal(argumentos):
