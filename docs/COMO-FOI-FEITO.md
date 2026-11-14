@@ -477,7 +477,7 @@ ajudaram de fato (X9). Autor e committer são sempre os do repositório.
 O setup do ambiente do autor que rodou nesta entrega (regras, skills e subagentes) está em
 [`setup/`](setup/).
 
-## 11. A preencher no fim
+## 11. Fechamento
 
 - Revisões (M2): as duas passadas estão em [`revisoes/m2.md`](revisoes/m2.md). O estado
   final de cada achado na árvore 9d37f9a, com a prova, está na seção "Fechamento" do mesmo
