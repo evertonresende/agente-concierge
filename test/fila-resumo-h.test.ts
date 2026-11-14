@@ -4,7 +4,7 @@
 // confirmação reapresenta o resumo, sem POST e sem chamar o modelo.
 import { runInDurableObject } from "cloudflare:test";
 import { env } from "cloudflare:workers";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { Env } from "../src/env";
 import worker from "../src/index";
 import { chaveDaReserva, type Reserva } from "../src/lead";
@@ -73,10 +73,10 @@ describe("fila da sessão e resumo ainda não entregue (frente H, B1)", () => {
     const vistas: string[] = [];
     const s = await abrir(vistas, () => 40);
 
-    const [a, b] = await Promise.all([
-      postChat(s.id, "quero fechar"),
-      pausa(5).then(() => postChat(s.id, "sim")),
-    ]);
+    // O "sim" sai com o turno do resumo já em curso (o modelo leva 40 ms): ordem garantida, não por tempo.
+    const fechar = postChat(s.id, "quero fechar");
+    await vi.waitFor(() => expect(vistas).toEqual(["quero fechar"]), { interval: 1 });
+    const [a, b] = await Promise.all([fechar, postChat(s.id, "sim")]);
     const resumo = await a.json<{ reply: string }>();
     const sim = await b.json<{ reply: string; handoff: boolean }>();
     expect(resumo.reply).toContain("Resumo do seu pedido de reserva:");
@@ -98,6 +98,24 @@ describe("fila da sessão e resumo ainda não entregue (frente H, B1)", () => {
     await postChat(s.id, "sim");
     expect(s.mundo.leads).toHaveLength(1);
   });
+
+  for (const [primeira, segunda] of [["sim", "confirmo"], ["confirmo", "sim"]] as const) {
+    it(`B1 não alcança resumo visto: '${primeira}' e '${segunda}' ao mesmo tempo → 1 lead, um 'foi registrado' e um 'já está registrado', sem reapresentação`, async () => {
+      const vistas: string[] = [];
+      const s = await abrir(vistas, () => 20);
+      await postChat(s.id, "quero fechar");
+
+      const [a, b] = await Promise.all([postChat(s.id, primeira), pausa(2).then(() => postChat(s.id, segunda))]);
+      const respostas = [(await a.json<{ reply: string; handoff: boolean }>()), (await b.json<{ reply: string; handoff: boolean }>())];
+      expect(s.mundo.leads).toHaveLength(1);
+      expect(respostas.map((r) => r.handoff)).toEqual([false, false]);
+      expect(respostas.some((r) => r.reply.includes("Ainda não enviei"))).toBe(false);
+      expect(respostas.map((r) => r.reply).sort()).toEqual([
+        expect.stringMatching(/já está registrado/),
+        expect.stringMatching(/foi registrado/),
+      ]);
+    });
+  }
 
   for (const tamanho of [5, 10]) {
     it(`B1 (item 5): ${tamanho} mensagens ao mesmo tempo depois de um resumo visto → nenhum lead de resumo trocado na rajada, ≤ 1 lead por reserva, nada perdido, ordem mantida`, async () => {
