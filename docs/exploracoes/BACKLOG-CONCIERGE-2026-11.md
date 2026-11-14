@@ -863,6 +863,13 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   (complemento da P18); com a ferramenta já chamada pelo modelo, a palavra de desconto define
   o motivo (complemento da P17); o resto aceito. Rodada integrada e sonda da P18 em curso;
   terceira rodada do verificador sai depois dos dois ajustes
+- 13/11 23h07 · Éverton · decisões (X24): histórico da I fica como está e entra por merge normal; gateway
+  de `producao` autorizado, com a chave por referência; só bloqueia a entrada na `main` o que
+  é determinístico ou gera lead errado; os 95% por bloco se provam com três rodadas seguidas
+  em `dev`, na soma por bloco, com o juiz corrigido e aprovado; modelo principal Haiku 5.5 no
+  nível alto, muito alto descartado, reserva em aberto; adiantar K (infraestrutura), N
+  (rascunhos), M2 (módulos estáveis) e L (custo) sem esperar a leva 2 inteira. Passado à I:
+  fixar o nível alto na configuração de `dev` e de `producao`
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
