@@ -19,11 +19,14 @@
 #                 tocar em producao nem no webhook real → AUTOTESTE OK
 #
 # Os endereços vêm de ~/.config/agente-concierge/env (ou do arquivo em $AGENTE_ENV) e
-# nunca aparecem na saída nem em argumento de linha de comando de processo filho.
+# nunca aparecem na saída nem em argumento de linha de comando de processo filho. O
+# limpador da saída do runner esconde esses endereços, os hostnames (em qualquer caixa) e
+# os IPs deles, e troca qualquer URL por <url>; um token ou caminho solto, fora de URL, não
+# é mascarado. Hoje nada do que o script ou o runner imprimem traz um.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 exec python3 -I - "$@" <<'PY'
-import json, os, re, shutil, socket, subprocess, threading, sys, tempfile, urllib.error, urllib.parse, urllib.request, uuid
+import json, os, re, shutil, signal, socket, subprocess, threading, sys, tempfile, urllib.error, urllib.parse, urllib.request, uuid
 
 MODOS = {"--so-leitura", "--clientes", "--entrega", "--autoteste"}
 MENSAGEM = "Olá! Em quais cidades vocês têm imóveis?"
@@ -185,7 +188,7 @@ def avaliar_chat(status, tipo, corpo, chamadas=""):
         return "HTTP 200 com corpo que não é JSON"
     if not isinstance(dado, dict) or not isinstance(dado.get("reply"), str) or not isinstance(dado.get("handoff"), bool):
         return "JSON sem reply e handoff"
-    if not (chamadas or "").strip().isdigit() or int(chamadas) < 1:
+    if not re.fullmatch(r"[0-9]+", (chamadas or "").strip()) or int(chamadas) < 1:
         return "cabeçalho x-chamadas-modelo ausente ou zero (o modelo não respondeu)"
     return None
 
@@ -205,7 +208,7 @@ def chat_curl(url):
             input=json.dumps(corpo_do_chat("curl")).encode(), capture_output=True)
         if processo.returncode != 0:
             raise Falha(f"curl saiu com código {processo.returncode}")
-        status, tipo, chamadas = (processo.stdout.decode().split("\n") + ["", ""])[:3]
+        status, tipo, chamadas = (processo.stdout.decode("utf-8", "replace").split("\n") + ["", ""])[:3]
         with open(saida, encoding="utf-8", errors="replace") as arquivo:
             return int(status), tipo, arquivo.read(), chamadas
 
@@ -278,14 +281,14 @@ def validar_extras(extras):
     if len(extras) % 2:
         raise Falha("argumentos extras incompletos (cada opção leva um valor)")
     for opcao, valor in zip(extras[::2], extras[1::2]):
-        if opcao not in EXTRAS_ACEITOS or not valor.isdigit():
+        if opcao not in EXTRAS_ACEITOS or not re.fullmatch(r"[0-9]+", valor):
             raise Falha(f"argumento extra não aceito: {opcao} (aceitos: {', '.join(sorted(EXTRAS_ACEITOS))})")
 
 
 def veredito_das_evals(codigo, linhas):
     """None quando o runner rodou o conjunto dev sem reprovar; senão o motivo."""
     executados = sum(1 for linha in linhas if linha.startswith(("[PASSOU] ", "[FALHOU] ")))
-    if codigo not in (0, 2) or not any(linha in ("EVAL OK", "EVAL PARCIAL") for linha in linhas):
+    if codigo not in (0, 2) or not any(re.fullmatch(r"EVAL (OK|PARCIAL)( \(pausa_ms=[0-9]+\))?", linha) for linha in linhas):
         return f"evals do conjunto dev reprovaram (runner saiu com {codigo})"
     if executados < MINIMO_DE_CASOS:
         return f"só {executados} caso(s) executado(s); o mínimo é {MINIMO_DE_CASOS}"
@@ -296,9 +299,17 @@ def rodar_evals(agente, extras, limpar, runner="evals/rodar.mjs"):
     ambiente = {chave: os.environ[chave] for chave in ("PATH", "HOME", "LANG") if chave in os.environ}
     ambiente.update(ALVO_EVAL=agente, RUNNER_EVAL=os.path.abspath(runner),
                     ARGS_EVAL=json.dumps(["--conjunto", "dev", "--sem-relatorio", *extras]))
-    processo = subprocess.Popen(["node", "--input-type=module", "-e", NODE_RUNNER], env=ambiente,
+    # Grupo próprio: se este processo sair por qualquer motivo, o finally mata o runner inteiro.
+    processo = subprocess.Popen(["node", "--input-type=module", "-e", NODE_RUNNER], env=ambiente, start_new_session=True,
                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, errors="replace")
-    relogio = threading.Timer(TEMPO_DO_RUNNER_S, processo.kill)  # morto, sai com código negativo e reprova
+
+    def matar():
+        try:
+            os.killpg(processo.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+
+    relogio = threading.Timer(TEMPO_DO_RUNNER_S, matar)  # morto, sai com código negativo e reprova
     relogio.start()
     linhas = []
     try:
@@ -308,6 +319,8 @@ def rodar_evals(agente, extras, limpar, runner="evals/rodar.mjs"):
         return processo.wait(), linhas
     finally:
         relogio.cancel()
+        if processo.poll() is None:
+            matar()
 
 
 def leads_reais(url):
@@ -397,7 +410,7 @@ def autoteste():
     assert limpar("HOST=AGENTE.EXEMPLO.INVALID") == "HOST=<oculto>"
     assert Limpador(["http://127.0.0.1:1"])("ip 127.0.0.1") == "ip <oculto>"
     assert avaliar_chat(200, "application/json", '{"reply": "Oi", "handoff": false}', "2") is None
-    for chamadas in ("", "0", "x"):
+    for chamadas in ("", "0", "x", "²"):
         assert "x-chamadas-modelo" in avaliar_chat(200, "application/json", '{"reply": "Oi", "handoff": false}', chamadas)
     assert "1010" in avaliar_chat(403, "text/html", "<html>error code: 1010</html>")
     assert "bloqueio" in avaliar_chat(200, "text/html", "<html>desafio</html>")
@@ -406,7 +419,7 @@ def autoteste():
     assert "redirecionamento" in avaliar_chat(307, "application/json", "{}")
     validar_extras(["--paralelo", "2", "--pausa-ms", "0"])
     for extras in (["--alvo", "x"], ["-h"], ["--listar"], ["--bloco", "marco1"], ["--conjunto", "dev"],
-                   ["--paralelo"], ["--paralelo", "x"], ["--relatorio", "1"]):
+                   ["--paralelo"], ["--paralelo", "x"], ["--relatorio", "1"], ["--paralelo", "²"], ["--pausa-ms", "٣"]):
         try:
             validar_extras(extras)
             raise AssertionError(extras)
@@ -421,6 +434,8 @@ def autoteste():
     assert veredito_das_evals(2, passou[:-1] + ["EVAL PARCIAL"])
     assert veredito_das_evals(3, passou + ["EVAL PARCIAL"])
     assert veredito_das_evals(1, passou + ["EVAL PARCIAL"])
+    assert veredito_das_evals(2, passou + ["EVAL PARCIAL (pausa_ms=500)"]) is None
+    assert veredito_das_evals(2, passou + ["EVAL PARCIAL de mentira"])
     autoteste_dos_modos()
     print("AUTOTESTE OK")
 
@@ -568,6 +583,22 @@ def autoteste_dos_modos():
         assert motivo and ("POST", "/chat") in falso.pedidos, (motivo, falso.pedidos)
         assert "POST" not in falso.metodos_no_webhook(), "o runner seguiu o redirecionamento com POST"
 
+    # principal recusa extra perigoso antes de qualquer rede, mesmo com um ambiente que responderia.
+    falso = Falso()
+    falso.saude = {**falso.saude, "envio_leads": "ligado"}
+    with tempfile.NamedTemporaryFile("w", suffix=".env") as arquivo:
+        arquivo.write(f"AGENTE_URL_PRODUCAO={falso.agente}\nCATALOGO_URL=https://api.exemplo.invalid/catalogo/tok\n")
+        arquivo.flush()
+        anterior = os.environ.get("AGENTE_ENV")
+        os.environ["AGENTE_ENV"] = arquivo.name
+        try:
+            for extras in (["--alvo", "http://x.invalid"], ["--bloco", "marco1"], ["-h"]):
+                saida, motivo = rodar_modo(principal, extras)
+                assert motivo and ("não aceito" in motivo or "incompletos" in motivo), (extras, motivo)
+            assert not falso.pedidos, "principal foi à rede antes de validar os extras"
+        finally:
+            os.environ.pop("AGENTE_ENV") if anterior is None else os.environ.update(AGENTE_ENV=anterior)
+
     falso = Falso()
     falso.saude_redireciona = True
     saida, motivo = completo(falso)
@@ -610,8 +641,14 @@ def principal(argumentos):
         raise Falha(limpar(str(erro))) from None
 
 
+# SIGTERM e SIGHUP viram saída normal, para os finally rodarem e o runner não ficar órfão.
+for sinal in (signal.SIGTERM, signal.SIGHUP):
+    signal.signal(sinal, lambda numero, quadro: sys.exit(128 + numero))
 try:
     principal(sys.argv[1:])
+except KeyboardInterrupt:
+    print("REPROVADO: interrompido")
+    sys.exit(130)
 except Falha as erro:
     print(f"REPROVADO: {erro}")
     sys.exit(1)
