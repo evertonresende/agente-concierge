@@ -69,3 +69,12 @@ lista de limites do [README](../README.md). O estado final do monitor diário: a
     cada uma com matriz negativa. Confirmação natural fora dela ainda custa um turno.
 16. **Reservado maior.** Com 60 casos, duas leituras seguidas variaram de 88% a 95%; mais
     casos dariam um número com menos variação (P33).
+17. **Destino do envio no sim.** Aceitar "pode enviar o pedido ao time comercial" e formas
+    parecidas, com matriz negativa e verificador independente. Custa refazer as três rodadas
+    oficiais, as duas leituras do reservado e a validação de `producao` (P36).
+18. **Juízes do simulador.** Exceção de negação de verdade na regra de disponibilidade, e
+    gatilho de pedido de humano que não case "pessoa" sozinha (P36).
+19. **Texto do agente no relatório do simulador**, para classificar falha sem repetir a
+    conversa (P36).
+20. **Relatório do runner na validação de `producao`**, gravado fora do repositório, para
+    uma falha ter o texto da resposta (P37).
