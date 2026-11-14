@@ -49,7 +49,7 @@ cabeçalhos `x-uso-entrada`, `x-uso-saida` e `x-chamadas-modelo`, usados para me
   pedido, escolhe a ferramenta e redige. Antes de sair, o texto do modelo é conferido por
   código: valor em reais que nenhuma ferramenta calculou não chega ao hóspede. A frente G
   amplia essa conferência para concessão, registro afirmado sem `201` e afirmação de
-  disponibilidade; ela está em integração.
+  disponibilidade; ela está em integração. Descrição final: a preencher.
   <!-- PREENCHER: conferir a descrição da conferência depois que a G entrar na main -->
 
   > Estado deste rascunho: a `main` já tem o adaptador do modelo (Haiku 5.5 em nível alto,
@@ -110,7 +110,7 @@ gateway da conta com a chave da Anthropic guardada nele. Sem isso, responde o re
 | Listar os casos de eval | `node evals/rodar.mjs --listar` | contagem por bloco e `CASOS OK` |
 | Teste do próprio runner | `node evals/teste-do-runner.mjs` | `TRAVA OK` e `RUNNER OK` |
 | Evals de desenvolvimento | `node evals/rodar.mjs --alvo "$AGENTE_URL_DEV" --conjunto dev` | `EVAL OK` |
-| Um bloco | acrescente `--bloco <nome>` | `BLOCO <nome>: 100%` |
+| Um bloco | acrescente `--bloco <nome>` | `BLOCO <nome>: N%`, limiar de 95% |
 | Conjunto reservado, só agregado | `node evals/rodar.mjs --alvo "$AGENTE_URL_DEV" --conjunto reservado --so-agregado` | `RESERVADO OK` |
 | Simulador de hóspede hostil (só `dev`) | `node evals/simulador/rodar.mjs --alvo "$AGENTE_URL_DEV"` | `SIMULADOR OK` |
 | Teste do simulador | `node evals/simulador/teste.mjs` | sem falha |
@@ -124,7 +124,8 @@ gateway da conta com a chave da Anthropic guardada nele. Sem isso, responde o re
 - `LEADS_URL_DEV` aponta para o webhook falso, para o runner conferir os leads de cada
   conversa. Ela nunca é impressa.
 - O conjunto de desenvolvimento tem 98 casos em 9 blocos. O reservado tem 60 casos, fica
-  fora do repositório até a entrega e só mostra o agregado por bloco.
+  fora do repositório até a entrega e só mostra o agregado por bloco. Caminho no
+  repositório depois da entrega: a preencher.
   <!-- PREENCHER: caminho do reservado no repositório depois da cópia de entrega -->
 - O simulador usa um modelo de outro provedor no papel do hóspede, por uma ferramenta de
   linha de comando (`--cli`, padrão `agy`).
