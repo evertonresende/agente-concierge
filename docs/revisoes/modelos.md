@@ -188,8 +188,12 @@ conta e store lidos no mesmo comando, nunca escritos em arquivo, e da resposta d
 `success` e `errors` na tela.
 
 1. **Criar o gateway** `concierge-producao` (`POST /accounts/{conta}/ai-gateway/gateways`)
-   com as mesmas opções do `concierge-dev`: `authentication: true`, `collect_logs: true`,
-   `cache_ttl: 0`, sem limite de taxa no gateway. Associar o Secrets Store da conta
+   com as mesmas opções do `concierge-dev` **menos o log**: `authentication: true`,
+   `collect_logs: false`, `cache_ttl: 0`, sem limite de taxa no gateway. O log fica
+   desligado porque o gateway guarda o pedido inteiro, com nome e telefone do hóspede
+   íntegros, e o contrato L22 não admite isso (achado da revisão de segurança; a frente K
+   desligou e conferiu por leitura). Não se religa o log em `producao`. O de `dev` segue
+   ligado: só tem dados sintéticos e é de onde sai a prova do nível. Associar o Secrets Store da conta
    (`store_id`, o mesmo do `concierge-dev`, visto com `GET .../gateways/concierge-dev`): a
    API recusa guardar chave em gateway sem store.
 2. **Guardar a chave da Anthropic por referência, em duas chamadas, nesta ordem** (a
@@ -212,13 +216,13 @@ conta e store lidos no mesmo comando, nunca escritos em arquivo, e da resposta d
    `ENVIO_LEADS` desligado). Só com o gateway já criado: um gateway nomeado que não existe
    derruba também o reserva, que passa pelo mesmo gateway (erro 2001).
 4. **Provar que o Haiku respondeu em `producao`**, com uma conversa sem confirmação de
-   lead:
-   - log do gateway `concierge-producao` (`GET .../gateways/concierge-producao/logs`):
-     chamadas de `anthropic/claude-haiku-5.5` com status 200 e `byok: default`, e o pedido
-     (`.../logs/{id}/request`) com `output_config: {"effort": "high"}`;
-   - nenhuma chamada do GLM-5.3 Flash nesse turno, salvo falha do Haiku;
-   - no log do Worker (`wrangler tail --env producao`), nenhuma linha `principal_pulado`
-     nem `modelo_falhou`.
+   lead. Sem log no gateway de `producao`, a prova é outra:
+   - o nível fica provado em `dev` (log do gateway `concierge-dev`, seção abaixo) e preso
+     pelo teste de configuração (`test/configuracao-i.test.ts`: os dois ambientes com
+     `MODELO_ESFORCO: "high"`);
+   - no log do Worker (`wrangler tail --env producao`), durante a validação, nenhuma linha
+     `principal_pulado` nem `modelo_falhou`;
+   - o cabeçalho `x-chamadas-modelo` das respostas maior que zero.
 
 ### Prova do nível em `dev` publicado (fumaça de 13/11, 23h17m50 a 23h18m27)
 
