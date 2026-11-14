@@ -667,6 +667,22 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   gateway e o reserva respondeu: é o id de chamada fora do padrão, que a I corrigiu em 651956e;
   no código integrado foram 0 falhas em 24 turnos. Ensaio do merge das três branches juntas
   (I, F e G) sobre a `main`: limpo
+- 13/11 21h57 · I · medição do Haiku em nível alto aceita e passada ao Éverton: 86% (85 de 98), contra 80%
+  no baixo, 82% no médio e 79% na repetição de controle do médio. Tempo por turno (p50, p95,
+  máximo): 2,3 / 5,5 / 11,9 s no alto e 2,0 / 4,4 / 11,1 s no médio. Por conversa: 12.838 tokens
+  de entrada e 676 de saída (US$ 0,0016) no alto, 12.532 e 528 (US$ 0,0015) no médio. Nenhuma
+  ida ao reserva, nenhum corte por limite de tokens, rajada com 40 de 40 turnos normais. Prova
+  de comparabilidade: código 895d8aa numa worktree separada da que a I editava, uma única
+  linha de subida no log do servidor (sem recarga), nível `high` conferido em 40 requisições do
+  log do gateway. A rodada da coordenadora na 8788 cruzou com o controle e com o primeiro
+  minuto do alto: +0,1 s no p50 e no p95 do controle. Limite da medição: uma rodada só no
+  alto; entre as duas rodadas do médio a diferença foi de 3 casos e 13 casos trocaram de
+  resultado. Tabela em `docs/revisoes/modelos.md` (db3027f). O `MODELO` segue no médio
+- 13/11 21h57 · I · P16 implementada (0b39d9f, 618 testes): sem gateway nenhuma chamada ao principal e um
+  registro `principal_pulado` por turno. Conferência da coordenadora nessa cabeça, servidor
+  local em `dev`: contrato 88% (a única falha é do juiz do rótulo, `con-03`), marco1 100%; 28
+  turnos e 42 chamadas ao modelo, com 0 falha do modelo, 0 principal pulado e 0 contingência,
+  ou seja, o Haiku respondeu todas. O verificador da segunda rodada revisa também esse commit
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
