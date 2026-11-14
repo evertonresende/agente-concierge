@@ -263,8 +263,11 @@ def chat_node(url):
 
 
 # O runner só aceita o alvo por argumento; aqui ele entra pelo ambiente, fora da lista de processos.
+# O envoltório do fetch impede o runner de seguir um 307/308 do /chat com POST e corpo.
 NODE_RUNNER = """
 import { pathToFileURL } from "node:url";
+const fetchOriginal = globalThis.fetch;
+globalThis.fetch = (url, opcoes = {}) => fetchOriginal(url, { ...opcoes, redirect: "manual" });
 process.argv = [process.argv[0], process.env.RUNNER_EVAL, "--alvo", process.env.ALVO_EVAL, ...JSON.parse(process.env.ARGS_EVAL)];
 await import(pathToFileURL(process.env.RUNNER_EVAL).href);
 """
@@ -289,9 +292,9 @@ def veredito_das_evals(codigo, linhas):
     return None
 
 
-def rodar_evals(agente, extras, limpar):
+def rodar_evals(agente, extras, limpar, runner="evals/rodar.mjs"):
     ambiente = {chave: os.environ[chave] for chave in ("PATH", "HOME", "LANG") if chave in os.environ}
-    ambiente.update(ALVO_EVAL=agente, RUNNER_EVAL=os.path.abspath("evals/rodar.mjs"),
+    ambiente.update(ALVO_EVAL=agente, RUNNER_EVAL=os.path.abspath(runner),
                     ARGS_EVAL=json.dumps(["--conjunto", "dev", "--sem-relatorio", *extras]))
     processo = subprocess.Popen(["node", "--input-type=module", "-e", NODE_RUNNER], env=ambiente,
                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, errors="replace")
@@ -475,6 +478,16 @@ class Falso:
         return {metodo for metodo, caminho in self.pedidos if caminho.startswith("/leads/")}
 
 
+RUNNER_FALSO = """
+const alvo = process.argv[process.argv.indexOf("--alvo") + 1];
+const r = await fetch(alvo + "/chat", { method: "POST", headers: { "content-type": "application/json" },
+  body: JSON.stringify({ session_id: "x", message: "oi" }) });
+console.log(r.status === 200 ? "[PASSOU] b/c" : `[FALHOU] b/c — HTTP ${r.status}`);
+console.log(r.status === 200 ? "EVAL PARCIAL" : "EVAL REPROVADO");
+process.exit(r.status === 200 ? 2 : 1);
+"""
+
+
 def rodar_modo(funcao, *args):
     """Roda um modo com a saída capturada; devolve (saída, motivo da falha ou None)."""
     import contextlib, io
@@ -541,6 +554,19 @@ def autoteste_dos_modos():
     falso.saude = {**falso.saude, "ambiente": "dev"}
     saida, motivo = rodar_modo(modo_clientes, falso.agente)
     assert motivo and ("POST", "/chat") not in falso.pedidos, "/saude em dev não pode mandar conversa"
+
+    # Runner de mentira em Node que faz o POST /chat como o de verdade: com 307 no /chat,
+    # o envoltório do NODE_RUNNER não pode deixar o POST chegar ao Location.
+    with tempfile.TemporaryDirectory() as pasta:
+        runner_falso = os.path.join(pasta, "runner.mjs")
+        with open(runner_falso, "w") as arquivo:
+            arquivo.write(RUNNER_FALSO)
+        falso = Falso()
+        falso.chat = "307"
+        saida, motivo = rodar_modo(modo_completo, falso.agente, falso.url_leads, [], Limpador([falso.agente]),
+                                   lambda agente, extras, limpar: rodar_evals(agente, extras, limpar, runner_falso))
+        assert motivo and ("POST", "/chat") in falso.pedidos, (motivo, falso.pedidos)
+        assert "POST" not in falso.metodos_no_webhook(), "o runner seguiu o redirecionamento com POST"
 
     falso = Falso()
     falso.saude_redireciona = True
