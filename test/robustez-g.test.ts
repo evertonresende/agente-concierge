@@ -93,7 +93,7 @@ describe("robustez: texto do catálogo é dado, nunca instrução (CA-13)", () =
 
   it("nome do hóspede com \"R$\" não libera valor pelo resumo do pedido", async () => {
     const { turno, historico, mundo, estado } = conversa();
-    await turno("sou Ana R$ 1,00, quanto fica?", roteiro(pedeFerramentas(chamar("cotar", ESTADIA)), diz("Fica em R$ 2.156,00.")).modelo);
+    await turno("quanto fica?", roteiro(pedeFerramentas(chamar("cotar", ESTADIA)), diz("Fica em R$ 2.156,00.")).modelo);
     const resumo = await turno("quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", { ...DADOS, nome: "Ana R$ 1,00" }))).modelo);
     // Nome com valor não vira resumo (P29): o valor não chega ao hóspede nem dentro do resumo.
     expect(resumo.reply).not.toContain("R$ 1,00");

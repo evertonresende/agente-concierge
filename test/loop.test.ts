@@ -107,7 +107,7 @@ describe("loop de ferramentas", () => {
 
   it("M1 cenário 2: nome do hóspede com valor no resumo não libera o valor nos turnos seguintes", async () => {
     const { turno } = conversa();
-    await turno("sou Ana R$ 10,00, quanto fica?", roteiro(pedeFerramentas(chamar("cotar", ESTADIA)), diz("Fica R$ 2.156,00.")).modelo);
+    await turno("quanto fica?", roteiro(pedeFerramentas(chamar("cotar", ESTADIA)), diz("Fica R$ 2.156,00.")).modelo);
     await turno("quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", { ...DADOS, nome: "Ana R$ 10,00" }))).modelo);
     const errado = diz("Combinado: fica R$ 10,00.");
     const depois = await turno("então fica R$ 10,00?", roteiro(errado, errado, diz("NÃO")).modelo);
