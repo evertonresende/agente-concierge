@@ -111,7 +111,8 @@ function argumentosComoObjeto(texto: string): Record<string, unknown> {
  * Converte o histórico neutro (chat completions) para o corpo da API Messages. Os
  * resultados de ferramenta seguidos viram uma única mensagem do usuário, como a API pede.
  */
-// Níveis de raciocínio da API. Ausente ou fora da lista vira "medium", o nível escolhido (X22).
+// Níveis de raciocínio da API. Ausente ou fora da lista vira "medium", o padrão da API; o nível
+// escolhido (alto) vem de MODELO_ESFORCO no wrangler.jsonc.
 const ESFORCOS = new Set(["low", "medium", "high", "xhigh", "max"]);
 export const esforcoValido = (esforco?: string) => (esforco && ESFORCOS.has(esforco) ? esforco : "medium");
 
