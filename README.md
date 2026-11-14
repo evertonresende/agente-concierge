@@ -46,11 +46,12 @@ cabeçalhos `x-uso-entrada`, `x-uso-saida` e `x-chamadas-modelo`, usados para me
 - **Código decide, modelo conversa.** Saem de código: preço em centavos inteiros, dia da
   semana, as recusas, o texto em reais (`R$ 2.156,00`), o valor enviado ao webhook, as
   transições do lead, o resumo para confirmação e o aviso de falha. O modelo entende o
-  pedido, escolhe a ferramenta e redige. Antes de sair, o texto do modelo é conferido por
-  código: valor em reais que nenhuma ferramenta calculou não chega ao hóspede. A frente G
-  amplia essa conferência para concessão, registro afirmado sem `201` e afirmação de
-  disponibilidade; ela está em integração. Descrição final: a preencher.
-  <!-- PREENCHER: conferir a descrição da conferência depois que a G entrar na main -->
+  pedido, escolhe a ferramenta e redige. Antes de sair, o texto do modelo passa por uma
+  conferência de código, que procura valor em reais que nenhuma ferramenta calculou. Essa
+  trava tem uma brecha conhecida, em correção na frente G, que também amplia a conferência
+  para concessão, registro afirmado sem `201` e afirmação de disponibilidade. O que a
+  conferência garante: a preencher.
+  <!-- PREENCHER: descrever a garantia da conferência só depois que a correção da G entrar na main e for verificada -->
 
   > Estado deste rascunho: a `main` já tem o adaptador do modelo (Haiku 5.5 em nível alto,
   > reserva e gateway em `dev`), mas ainda não tem as frentes F, G e H. O que está descrito
@@ -60,7 +61,7 @@ cabeçalhos `x-uso-entrada`, `x-uso-saida` e `x-chamadas-modelo`, usados para me
   provisório é o GLM-5.3 Flash, de outro fornecedor. Recusa por limite de pedidos vai
   direto ao reserva (L18). Nível final e reserva: a preencher.
   <!-- PREENCHER: nível final do raciocínio e modelo reserva escolhido -->
-- **AI Gateway** da Cloudflare entre o Worker e os modelos (P9 e X24): guarda a chave do
+- **AI Gateway** da Cloudflare entre o Worker e os modelos (X21 e X24): guarda a chave do
   provedor do principal, registra qual modelo respondeu e os erros de limite. Sem gateway
   configurado, o reserva responde direto (decisão provisória P16).
 - **Dois ambientes.** `dev` usa o catálogo real e um webhook falso, nosso (`falso/`), que
@@ -150,7 +151,10 @@ escrito pela frente K e ainda não está na `main`: comando e saída a preencher
 ## Custo por conversa
 
 O Worker devolve em cada resposta os tokens de entrada e de saída e o número de chamadas
-ao modelo. O runner soma por conversa e converte em dólar com o preço do modelo.
+ao modelo. O runner grava esses números no relatório de cada rodada, e
+`node scripts/custo.mjs <relatório.json>` calcula o custo por conversa com o preço do
+modelo. O número sai de uma rodada nova com o modelo final; os relatórios antigos do
+repositório são de outro código.
 
 Custo medido no código final: a preencher.
 <!-- PREENCHER: custo por conversa medido (média e p95) no código final, com o modelo e o nível finais -->
@@ -170,8 +174,10 @@ A história da escolha do modelo, com a tabela de medições, está em
 
 ## Revisões
 
-Revisão do primeiro marco: [`docs/revisoes/m1.md`](docs/revisoes/m1.md). Revisão de
-código, de segurança e segunda opinião antes de produção: a preencher.
+Revisão do primeiro marco: [`docs/revisoes/m1.md`](docs/revisoes/m1.md). Primeira passada
+da revisão final (segurança da `main`, código dos módulos estáveis e segunda opinião sobre
+o cálculo de preço): [`docs/revisoes/m2.md`](docs/revisoes/m2.md). Segunda passada, só do
+delta da leva 2: a preencher.
 <!-- PREENCHER: resultado das revisões de código e de segurança (M2) -->
 
 ## Limites conhecidos
@@ -180,20 +186,22 @@ Pela X24, só bloqueia a entrada na `main` o que é determinístico ou gera lead
 resto fica listado aqui. A lista fecha no fim: a preencher.
 <!-- PREENCHER: lista final de limites -->
 
-Já decididos ou declarados:
+Já decididos ou declarados. Os itens 1, 2, 4 e 5 descrevem comportamento das frentes F, G
+e H, que ainda não estão na `main`: em correção, conferir quando entrarem (a preencher).
+<!-- PREENCHER: conferir os limites 1, 2, 4 e 5 depois que F, G e H entrarem na main -->
+Os itens 10 a 14 vêm da primeira passada da revisão de segurança
+([`docs/revisoes/m2.md`](docs/revisoes/m2.md)).
 
 1. **Handoff depende do modelo.** Palavra na mensagem do hóspede não liga `handoff` por
    código: ela só provoca uma segunda chamada ao modelo, focada no pedido (P17). Se o
-   modelo errar também nessa chamada, o handoff não acontece. Concessão sem palavra de
-   desconto e sem valor escapa à conferência quando o modelo erra duas vezes.
+   modelo errar também nessa chamada, o handoff não acontece.
 2. **Mudança misturada com pergunta.** Com resumo pendente, a separação entre afirmação e
-   pergunta na mensagem do hóspede reconhece vírgula, ponto, ponto e vírgula, exclamação
-   e quebra de linha. Com outras formas (travessão, reticências, dois-pontos, emoji,
-   parênteses, "e" ou sem pontuação), perceber a mudança depende do modelo (P18).
+   pergunta na mensagem do hóspede reconhece só algumas formas de pontuação. Nas outras,
+   perceber a mudança depende do modelo (P18).
 3. **Número por extenso** fica fora da conferência de valores, e o total citado é amarrado
    à estadia só pelo rótulo e pelas datas.
-4. **Grupo cotado.** A trava que impede resumo com menos pessoas do que o grupo cotado se
-   solta se o modelo recotar com menos pessoas.
+4. **Grupo cotado.** A trava que impede resumo com menos pessoas do que o grupo cotado
+   depende da cotação que o modelo fizer.
 5. **Corpo muito grande.** Acima de 64 KB o Worker devolve `200` com o pedido para
    resumir, sem ler o resto (P12). Com corpo de vários megabytes, o cliente às vezes vê a
    conexão cair antes de ler a resposta.
@@ -206,12 +214,10 @@ Já decididos ou declarados:
    hóspede inventa; reprovação de handoff no simulador se lê à mão.
 9. **Conferência no nível do hóspede.** Quando o código pede ao modelo que corrija a
    resposta, a mensagem de conferência chega como texto de usuário, no mesmo nível de uma
-   fala do hóspede. Um hóspede que copie esse texto não ganha autoridade, mas o modelo
-   também não distingue os dois.
+   fala do hóspede, e o modelo não distingue as duas.
 10. **Sem limite de gasto por cliente ou por sessão.** O custo de modelo não tem teto por
     quem conversa.
-11. **O `session_id` é a única credencial da conversa.** Quem conhece o identificador de uma
-    sessão continua aquela conversa.
+11. **O `session_id` é a única credencial da conversa.**
 12. **Dados de terceiros nos leads.** Com o envio real ligado, nome e telefone do hóspede
     vão ao webhook do time comercial.
 13. **Página de chat sem cabeçalhos de proteção** do navegador.
@@ -234,9 +240,11 @@ Já decididos ou declarados:
 | [`docs/conselho/`](docs/conselho/) | perguntas e respostas da consulta às cegas a modelos de outros provedores |
 | [`docs/prompts/`](docs/prompts/) | prompts das sessões de planejamento e de coordenação |
 | [`docs/setup/`](docs/setup/) | regras, skills e subagentes do ambiente do autor usados nesta entrega |
-| [`docs/sessoes/`](docs/sessoes/) | exports de sessão, com dados pessoais e segredos removidos: a preencher <!-- PREENCHER: exports de sessão --> |
 | [`evals/`](evals/) | runner, casos, simulador e relatórios |
 | [`falso/`](falso/) | webhook falso de `dev` |
+
+Exports de sessão, com dados pessoais e segredos removidos: a preencher.
+<!-- PREENCHER: exports de sessão (docs/sessoes/), se o Éverton decidir publicar -->
 
 Vídeo da fábrica rodando: a preencher. <!-- PREENCHER: link e roteiro do vídeo -->
 
