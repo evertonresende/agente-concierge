@@ -85,6 +85,8 @@ export class Sessao extends DurableObject<Env> {
   // corrente de promises é o que garante uma mensagem por vez, na ordem de chegada.
   private fila: Promise<unknown> = Promise.resolve();
   private idEmCurso: string | null = null;
+  /** Mensagens na fila ou em processamento; com alguma, quem chega não viu o fim delas (B1). */
+  private naFila = 0;
   private readonly desistidos = new Set<string>();
 
   constructor(ctx: DurableObjectState, env: Env) {
@@ -101,7 +103,11 @@ export class Sessao extends DurableObject<Env> {
    */
   conversar(mensagem: string, chegada: number = Date.now(), idPedido?: string, prazoWorker?: number): Promise<RespostaDoChat> {
     const entradaNaFila = Date.now();
-    const vez = this.fila.then(() => this.processar(mensagem, chegada, entradaNaFila, idPedido, prazoWorker)).catch((erro: unknown): RespostaDoChat => {
+    // Com a sessão ocupada, o turno em curso já gravou o seu número: ele e os que vierem
+    // antes desta mensagem terminam depois de ela chegar, e o hóspede não viu o que mostram.
+    const turnoNaoVisto = this.naFila > 0 ? this.ler("turno", 0) : undefined;
+    this.naFila++;
+    const vez = this.fila.then(() => this.processar(mensagem, chegada, entradaNaFila, idPedido, prazoWorker, turnoNaoVisto)).catch((erro: unknown): RespostaDoChat => {
       try {
         this.gravar("handoff", true);
         if (pendenteAberto(this.ler<EstadoLead>("lead", ESTADO_INICIAL))) {
@@ -120,6 +126,7 @@ export class Sessao extends DurableObject<Env> {
       return { reply: CONTINGENCIA, handoff: true, uso: SEM_USO };
     });
     this.fila = vez;
+    void vez.finally(() => { this.naFila--; });
     return vez;
   }
 
@@ -175,6 +182,7 @@ export class Sessao extends DurableObject<Env> {
     entradaNaFila: number,
     idPedido?: string,
     prazoWorker?: number,
+    turnoNaoVisto?: number,
   ): Promise<RespostaDoChat> {
     if (idPedido) {
       const gravada = this.respostaDoPedido(idPedido);
@@ -221,6 +229,11 @@ export class Sessao extends DurableObject<Env> {
       const buscar = deps.buscar;
       const turno = this.ler("turno", 0) + 1;
       this.gravar("turno", turno);
+
+      // Resumo criado, alterado ou repetido por turno que terminou depois de esta mensagem
+      // chegar: ela não pode confirmá-lo; o "sim" reapresenta, sem POST (B1).
+      const pendenteNaChegada = turnoNaoVisto === undefined ? null : pendenteAberto(this.ler<EstadoLead>("lead", ESTADO_INICIAL));
+      if (pendenteNaChegada && pendenteNaChegada.turno >= turnoNaoVisto!) this.gravar("reapresentar", true);
 
       const deveReapresentar = this.ler("reapresentar", false);
       const estadoInicial = this.ler<EstadoLead>("lead", ESTADO_INICIAL);
