@@ -121,7 +121,7 @@ ela ter veredito.
 ### Merges de código sem verificador aprovado
 
 Lista tirada do log do backlog, merge a merge, entre os que mudam código, testes, evals ou
-scripts. Os demais merges de código da `main` tiveram verificador independente aprovado, ou
+scripts, fora os 14 merges só de relatório em `evals/relatorios/`. Os demais merges de código da `main` tiveram verificador independente aprovado, ou
 aprovado com ressalvas, antes de entrar.
 
 | Merge | Frente | Log | O que houve no lugar do verificador |

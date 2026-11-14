@@ -378,7 +378,7 @@ Os quatro casos que o simulador propôs não viraram caso fixo: fixariam expecta
 (P36). O conjunto de desenvolvimento fica com os 104 casos medidos.
 
 Registro anterior, que não é o resultado da entrega: a rodada ao vivo de 13/11, contra `dev`
-com a `main` 75fdeb8 (Marco 1 mais o passo 1 da F e o passo 2 da J; antes de E, G e H), deu 5 de 10 conversas aprovadas
+com a `main` 75fdeb8 (Marco 1 e o último commit da A, mais o passo 1 da F e o passo 2 da J; antes de E, G e H), deu 5 de 10 conversas aprovadas
 ([relatório](evals/relatorios/simulador-2026-11-13T21-32-22-068Z.md)). As cinco falhas foram
 lidas à mão no log do backlog: duas da frente F (um "sim" que repetia dados do resumo não
 confirmava, assunto que a P13 decidiu depois), uma da frente E (cotou estadia no passado) e
@@ -668,6 +668,7 @@ verificadores das frentes, no log do backlog.
 64. **Telefone com zero de longa distância.** "011 98765-4321" não é aceito como telefone
     (o DDD não pode começar com zero), e o agente pede o telefone de novo. Custa um turno;
     "11 98765-4321" passa. Conferido executando a função da árvore final.
+
 **Conferência do texto: formas que passam** (achadas pelo verificador final dos textos e pela
 varredura que veio depois, executando a função de conferência fora do repositório)
 

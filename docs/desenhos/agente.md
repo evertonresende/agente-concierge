@@ -13,9 +13,9 @@ Texto alternativo: o hóspede manda `session_id` e `message` ao Worker. O Worker
 corpo e entrega a mensagem ao Durable Object daquela sessão, que a põe numa fila de uma
 mensagem por vez. Dois atalhos respondem por código, sem modelo: o "sim" com a marca de
 reapresentar mostra o resumo de novo (a marca é gravada com resumo aberto quando o Worker
-responde fora do turno, P24; quando o pedido chega repetido ou desiste; quando a sessão
-responde a contingência; e quando o resumo foi criado depois de a mensagem chegar, ainda
-sem ter sido visto), e o "sim"
+responde fora do turno, P24, quando o pedido chega repetido e quando a sessão responde a
+contingência; quando o Worker desiste, também com o pedido ainda em curso; e quando o
+resumo foi criado depois de a mensagem chegar, ainda sem ter sido visto), e o "sim"
 repetido logo depois de um registro recebe um texto fixo. Fora disso, o laço chama o modelo (o principal e, se ele falhar ou recusar por
 limite, o reserva). Se o modelo pede ferramentas, o código confere a chamada, executa,
 grava o resultado e volta ao modelo, até 6 voltas e com teto de chamadas (P30). Quando o modelo responde em texto, o
