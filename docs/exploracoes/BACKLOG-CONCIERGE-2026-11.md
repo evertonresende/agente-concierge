@@ -62,7 +62,7 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 | L | agente-concierge | Custo por conversa e monitor diário | leva 2 integrada | média | 1 | subagente em worktree · Opus 5.5, esforço médio (X23) | script de custo na `main` desde 13/11 23h47 (eec433a), verificador aprovado; falta o monitor diário, depois que `producao` existir; aberta em 13/11 23h22, adiantada pela X24: só `scripts/custo.mjs`; o monitor diário espera a K | `frente-l` |
 | K | agente-concierge | Produção com o envio real desligado | M2 | alta | 1,5 | thread T3 · Opus 5.5, esforço alto (X23) | gateway de `producao` criado e com o log desligado; `scripts/validar-producao.sh` na branch (33c8316), reprovado pelo verificador por um falso verde com argumentos extras, em correção; `producao` no ar no endereço padrão (3e053cb) e no hostname próprio por rota (P22), envio desligado, zero lead; faltam o teste por agente de usuário, a latência, o limite de taxa e o deploy final. Primeiro deploy autorizado em 14/11 00h07 (X26), só no endereço padrão do Worker e com o envio real desligado; a rota no hostname próprio segue à espera do Éverton. Rodando desde 13/11 23h14, adiantada pela X24: só a infraestrutura de `producao` com o envio real desligado; o deploy final espera a M2 | `frente-k` |
 | N | agente-concierge | Entregáveis de processo | K | alta | 2 | thread T3 · Opus 5.5, esforço alto (X23) | rascunho completo na branch (ede0c12), sem achado de sigilo; reprovado por uma garantia dada como certa antes da hora, em correção; verificação final no fim da leva 2. Aberta em 13/11 23h14, adiantada pela X24: rascunhos do README, do "Como foi feito", dos desenhos e do setup, com marcador no que se preenche no fim | `frente-n` |
-| S | agente-concierge | Gate de sigilo: achados da M2 | M2, primeira passada | alta | 0,5 | subagente em worktree · Opus 5.5, esforço alto (X23) | rodando desde 13/11 23h46: conteúdo do histórico, saída sem trecho do termo, sufixo composto e teste do gate; verificador antes do merge | `frente-gate` |
+| S | agente-concierge | Gate de sigilo: achados da M2 | M2, primeira passada | alta | 0,5 | subagente em worktree · Opus 5.5, esforço alto (X23) | primeira entrega (1d5e406) reprovada pelo verificador em 14/11 00h27 por cinco médios, quatro deles anteriores à frente; em correção na mesma branch; verificador do delta antes do merge | `frente-gate` |
 | T | agente-concierge | Datas sem ano (P21) | G | alta | 0,5 | subagente em worktree · Opus 5.5, esforço alto (X23) | pronta na branch (e53e777, por cima da G em da64da4) em 14/11 00h24; verificador do delta rodando; entra na `main` depois da G | `frente-datas` |
 | — | — | Correções entre leva 2 e 3 | evals | alta | 1,5 | frente dona do arquivo | — | — |
 
@@ -1207,6 +1207,15 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   como limite da janela (o agente cota de novo). Baixos que viram limite: contagem de chamadas com 1
   a menos quando o prazo vence no reserva; milhar com espaço; motivo do handoff com falsos positivos
   quando a ferramenta já foi chamada. O relatório final do verificador ainda fecha os defeitos plantados
+- 14/11 00h27 · S · verificador independente do gate (1d5e406): REPROVADO. Confirmado o que a frente corrigiu
+  (histórico em todos os caminhos; nenhum pedaço de termo na saída em 40 casos; sufixo composto;
+  binário; `SIGILO OK` no repositório real). Reprovam cinco médios: um byte de separador na mensagem
+  de commit antes do termo faz o termo passar (piorou com a correção); linha inválida no arquivo de
+  ambiente faz o shell mostrar a linha e o gate ainda aprova; nome de branch, de tag e de autor não
+  são varridos; branch órfã pula o histórico; falha de leitura engolida no encadeamento aprova. Os
+  quatro últimos já existiam. Baixos e 5 de 16 defeitos plantados que o teste não pega. Correções
+  pedidas à frente. Conferido no ambiente real, sem imprimir valor: nenhuma linha com `export` nem
+  fora do formato, as 5 variáveis de endereço são lidas e o termo da empresa é derivado
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
