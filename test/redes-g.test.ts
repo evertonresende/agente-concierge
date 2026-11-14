@@ -1,7 +1,7 @@
-// Redes de código para handoff (frente G): precisão antes de cobertura. O sinal forte
-// (pedeAbatimento) força handoff e texto fixo, então tem de dar zero disparo em
-// mensagem comum de cotação e de lead. O sinal fraco (sugereNegociacao) só alerta e pede
-// correção ao modelo, e também não pode disparar em mensagem comum.
+// Redes de código para handoff (frente G): precisão antes de cobertura. Pela P17, sinal
+// na mensagem do hóspede (pedeAbatimento, sugereNegociacao, pedido de exceção) nunca liga
+// handoff nem acrescenta texto: só provoca uma chamada focada ao modelo. Cada disparo em
+// mensagem comum custa uma chamada, então a bateria negativa continua com zero disparo.
 import { describe, expect, it } from "vitest";
 import { decidirHandoff, pedeAbatimento, pedeExcecaoDepoisDaRegra, sugereNegociacao } from "../src/agente/ferramentas/handoff";
 import type { Mensagem } from "../src/modelo";
@@ -74,7 +74,7 @@ describe("redes de handoff: variações que não estão nos casos de desenvolvim
     "Consegue tirar a taxa de limpeza?",
     "Deixa por 1.800 que eu fecho.",
     "Can you do a better price?",
-  ])("sinal fraco (só alerta e conferência): %s", (mensagem) => {
+  ])("só o sinal largo (alerta e chamada focada): %s", (mensagem) => {
     expect(pedeAbatimento(mensagem)).toBe(false);
     expect(sugereNegociacao(mensagem)).toBe(true);
   });

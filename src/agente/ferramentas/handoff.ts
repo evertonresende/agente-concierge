@@ -98,9 +98,8 @@ const PRECO_MENOR = /(?<!\b(?:algum|alguma|outro|outra|opcao|opcoes|imovel|imove
 
 /**
  * Pedido de abatimento com sinal inequívoco: palavra de desconto (sem abrir mão nem
- * "cupom fiscal") ou percentual com verbo de aplicar. Com ele a conversa passa mesmo
- * que o modelo não chame a ferramenta (L16a). Precisão antes de cobertura: o resto fica
- * com o modelo e a ferramenta.
+ * "cupom fiscal") ou percentual com verbo de aplicar. Como todo sinal na mensagem do
+ * hóspede, só provoca a chamada focada ao modelo (P17); quem passa é a ferramenta.
  */
 export function pedeAbatimento(mensagem: string): boolean {
   const limpa = normalizar(mensagem);
@@ -176,8 +175,8 @@ export function decidirHandoff(motivo: string | undefined, mensagem: string, his
   // hasOwn: "constructor" e afins não são motivos da tabela.
   const linha = motivo && Object.hasOwn(MATRIZ, motivo) ? MATRIZ[motivo] : undefined;
   if (!linha) return true;
-  // Desconto é gatilho mesmo dentro de uma mensagem de manipulação ou de recusa (L16a).
-  if (pedeAbatimento(mensagem)) return true;
+  // Palavra da mensagem não troca o motivo escolhido pelo modelo (P17): desconto dentro de
+  // manipulação (L16a) chega aqui como desconto_ou_negociacao, pela instrução da ferramenta.
   const insiste = PEDE_EXCECAO.test(normalizar(mensagem));
   // Exceção ou insistência só existe depois da regra explicada ou com pedido explícito:
   // "posso fazer festa?" na primeira vez é conflito, não insistência.

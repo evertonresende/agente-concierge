@@ -67,6 +67,42 @@ describe("imóvel ambíguo: cotar espera a escolha do hóspede (L21, resp-11)", 
     expect(saida.reply).not.toMatch(/R\$/);
   });
 
+  it.each([
+    "Quanto fica o Chalé Serra de 15/01/2027 a 18/01/2027 para 2?",
+    "Quanto fica o GRM 301 de 15/01/2027 a 18/01/2027 para 2?",
+    "Cote os dois de 15/01/2027 a 18/01/2027 para 2.",
+  ])("P05 e R1: escolha pelo nome (com acento), pelo id sem hífen ou \"os dois\": cota (%s)", async (mensagem) => {
+    const { turno } = conversa({ fichas });
+    const r = roteiro(
+      pedeFerramentas(chamar("buscar_imoveis", { cidade: "Gramado" })),
+      pedeFerramentas(chamar("cotar", { imovel_id: "GRM-301", ...DATAS, adultos: 2 })),
+      diz("Fica em R$ 2.156,00."),
+    );
+    expect((await turno(mensagem, r.modelo)).reply).toContain("R$ 2.156,00");
+  });
+
+  it("id citado na mensagem anterior e o modelo refaz a busca: cota", async () => {
+    const { turno } = conversa({ fichas });
+    await turno("Gostei do GRM-301.", roteiro(diz("Ótimo! Quais as datas?")).modelo);
+    const r = roteiro(
+      pedeFerramentas(chamar("buscar_imoveis", { cidade: "Gramado" })),
+      pedeFerramentas(chamar("cotar", { imovel_id: "GRM-301", ...DATAS, adultos: 2 })),
+      diz("Fica em R$ 2.156,00."),
+    );
+    expect((await turno("De 15/01/2027 a 18/01/2027 para 2.", r.modelo)).reply).toContain("R$ 2.156,00");
+  });
+
+  it("cotar antes da busca no mesmo lote: a busca roda primeiro e a trava vale", async () => {
+    const { turno } = conversa({ fichas });
+    const r = roteiro(
+      pedeFerramentas(chamar("cotar", { imovel_id: "GRM-301", ...DATAS, adultos: 2 }), chamar("buscar_imoveis", { cidade: "Gramado" })),
+      diz("Há dois imóveis em Gramado: GRM-301 e GRM-302. Qual você prefere?"),
+    );
+    const saida = await turno("Quero cotar um imóvel em Gramado de 15/01/2027 a 18/01/2027 para 2 pessoas.", r.modelo);
+    expect(saida.reply).not.toMatch(/R\$/);
+    expect(JSON.parse(r.recebidas[1]!.filter((m) => m.role === "tool").at(-1)!.content).erro).toContain("peça a escolha");
+  });
+
   it("com o imóvel nomeado pelo hóspede, cota normalmente", async () => {
     const { turno } = conversa({ fichas });
     const r = roteiro(
