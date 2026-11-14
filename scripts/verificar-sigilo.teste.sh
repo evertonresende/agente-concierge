@@ -73,6 +73,22 @@ rodar; espera_codigo 2; sem_pedaco "api.qz.com.test"
 echo zqxwfirma > "$AGENTE_CFG/sigilo-extra"
 rodar; espera_codigo 0
 
+caso="i) linha inválida no arquivo de ambiente"
+for ruim in "TOKEN_X=$TOKEN)" "X=(\$TOKEN" "DEV_URL = https://$TOKEN.invalid" "X=\$(echo $TOKEN)"; do
+  novo_repo i
+  printf '%s\n' "$ruim" >> "$AGENTE_CFG/env"
+  rodar; espera_codigo 2; sem_pedaco "$TOKEN"
+  cd "$TMP" && rm -rf "$TMP/i"
+done
+
+caso="i2) export, aspas e comentário no arquivo de ambiente"
+novo_repo i2
+printf '# comentário\n\nexport FALSO_URL=https://zqxwfalso.invalid/lead\nB_URL="https://zqxwaspas.test/x"  # nota\n' >> "$AGENTE_CFG/env"
+echo "zqxwfalso.invalid" > c.txt; git add c.txt
+rodar; espera_codigo 1; espera_texto "c.txt:1"
+git rm -q --cached c.txt; echo "zqxwaspas.test" > c.txt; git add c.txt
+rodar; espera_codigo 1; espera_texto "c.txt:1"
+
 caso="e) termo em arquivo binário"
 novo_repo e
 printf 'PNG\0\0%s\0' "$TOKEN" > d.bin; git add d.bin

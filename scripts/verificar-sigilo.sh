@@ -27,9 +27,25 @@ DIR_CFG="${AGENTE_CFG:-$HOME/.config/agente-concierge}"
 marca=$(mktemp -u)   # arquivo-flag: relata() roda em subshell de pipe, variável não sobrevive
 
 [ -f "$DIR_CFG/env" ] || { echo "SIGILO: sem $DIR_CFG/env não dá para derivar os termos proibidos"; exit 2; }
-set -a; . "$DIR_CFG/env"; set +a
-url="${CATALOGO_URL:-}"
+# O arquivo de ambiente é lido como dado, nunca executado: o shell não ecoa nenhuma
+# linha dele num erro. Cada linha é vazia, comentário ou [export ]NOME=valor, com valor
+# sem aspas (sem espaço nem caractere especial do shell), entre "" (sem $, ` nem \) ou
+# entre ''. Linha fora disso sai com 2, sem mostrar o conteúdo.
+declare -A CFG
+re_valor="(\"[^\"\$\`\\\\]*\"|'[^']*'|[^[:space:]\"'\$\`\\\\;&|<>()~]*)"
+re_linha="^[[:space:]]*(export[[:space:]]+)?([A-Za-z_][A-Za-z0-9_]*)=$re_valor([[:space:]]+(#.*)?)?\$"
+nl=0
+while IFS= read -r linha || [ -n "$linha" ]; do
+  nl=$((nl + 1))
+  [[ $linha =~ ^[[:space:]]*(#.*)?$ ]] && continue
+  [[ $linha =~ $re_linha ]] || { echo "SIGILO: linha $nl do arquivo de ambiente fora do formato NOME=valor"; exit 2; }
+  v=${BASH_REMATCH[3]}
+  case $v in \"*|\'*) v=${v:1:${#v}-2} ;; esac
+  CFG[${BASH_REMATCH[2]}]=$v
+done < "$DIR_CFG/env"
+url="${CFG[CATALOGO_URL]:-}"
 [ -n "$url" ] || { echo "SIGILO: CATALOGO_URL vazia"; exit 2; }
+[[ $url =~ ^[a-z]+://[^/:]+.*/catalogo/[^/?]+ ]] || { echo "SIGILO: CATALOGO_URL fora do formato esperado"; exit 2; }
 
 host=$(printf '%s' "$url" | sed -E 's#^[a-z]+://([^/:]+).*#\1#')
 token=$(printf '%s' "$url" | sed -E 's#.*/catalogo/([^/?]+).*#\1#')
@@ -43,8 +59,8 @@ fixos=$(mktemp); trap 'rm -f "$fixos" "$marca"' EXIT
 {
   printf '%s\n' "$host" "$token" "$empresa"
   hostname; hostname -s
-  for nome in $(sed -n 's/^\([A-Za-z_][A-Za-z0-9_]*_URL[A-Za-z0-9_]*\)=.*/\1/p' "$DIR_CFG/env"); do
-    printf '%s\n' "${!nome}" | sed -E 's#^[a-z]+://([^/:]+).*#\1#'
+  for nome in "${!CFG[@]}"; do
+    [[ $nome == *_URL* ]] && printf '%s\n' "${CFG[$nome]}" | sed -E 's#^[a-z]+://([^/:]+).*#\1#'
   done
   [ -f "$DIR_CFG/sigilo-extra" ] && grep -v '^[[:space:]]*$' "$DIR_CFG/sigilo-extra"
 } | awk 'length($0) >= 4' | sort -u \
