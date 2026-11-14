@@ -11,7 +11,9 @@ sessão de planejamento leu o enunciado, verificou a plataforma, consultou dois 
 outros provedores às cegas e escreveu contrato, plano de evals e backlog. A coordenadora
 despacha frentes em worktrees, confere cada entrega com ensaio de merge, suíte, gate e
 CHECK no runtime real, pede um verificador independente e só então faz o merge. O
-conjunto reservado fica fora do repositório e só devolve o agregado.
+conjunto reservado fica fora do repositório e só devolve o agregado. Uma segunda sessão de
+IA, revisora do Éverton e fora da cadeia da coordenadora, lê o repositório e os relatórios
+e devolve os achados a ele.
 
 ```mermaid
 flowchart TB
@@ -19,6 +21,7 @@ flowchart TB
   accDescr: Éverton, sessão de planejamento, coordenadora, frentes em worktrees, verificador independente, conjunto reservado e gate de sigilo.
 
   EV["Éverton<br/>lacunas · modelos · ligar o envio real · repositório público"]
+  REV["Segunda sessão de IA, revisora do Éverton<br/>fora da cadeia da coordenadora:<br/>lê o repositório e os relatórios"]
 
   subgraph PLAN["Planejamento (não escreve código de produto)"]
     direction TB
@@ -55,6 +58,8 @@ flowchart TB
   COORD -.-> GATE
   COORD -->|"lacuna nova, Marco 1,<br/>o que não se desfaz"| EV
   EV -->|"ordem"| COORD
+  REV -->|"achados"| EV
+  FR -. "repositório e relatórios" .-> REV
 ```
 
 - **Barreira do reservado.** Quem escreveu o conjunto reservado (frente C, outro provedor)
@@ -63,6 +68,8 @@ flowchart TB
   de desenvolvimento antes da correção.
 - **Decisão provisória.** Lacuna nova com o Éverton fora segue a recomendação da
   coordenação, marcada como provisória (as decisões P) até ele confirmar (X15).
+- **Sessão revisora do Éverton**: uma segunda sessão de IA, independente, que ele usa para
+  revisar as entregas. Não recebe ordens da coordenadora e devolve os achados a ele.
 
 ## 2. Frentes e levas
 
