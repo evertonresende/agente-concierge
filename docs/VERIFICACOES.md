@@ -248,6 +248,27 @@ registrado.
 **Desconhecido.** Formato do 422 e de um item da lista de leads do webhook real. → Só se
 resolve com o primeiro lead real, depois da entrega; nenhuma frente tenta antes.
 
+**Atualização de 14/11 (X36 em `DECISOES.md`).** O Éverton autorizou um lead de teste no
+webhook real, um só. Ele saiu às 07h26 de uma conversa em `producao`, pelo caminho real do
+agente (cotação, resumo e "sim"), com o exemplo do Marco 1.
+
+- A lista real, lida por GET, foi de 0 (07h26:39) para 1 (07h26:47), com os sete campos
+  iguais aos do resumo.
+- O webhook respondeu `201`: o agente devolveu o texto fixo de registrado, que o código só
+  escreve depois de um `201` (`src/lead.ts:697`), e o log de `producao` tem nessa janela 1
+  turno com envio `registrado`. O número da resposta não vai para o log.
+- Com isso a aceitação real do payload está provada para os sete campos desse exemplo.
+- O formato de um item da lista ficou conhecido: um objeto com `lead` (os sete campos
+  enviados), `recebido_em` (data e hora) e `token`. O corpo do 422 real continua
+  desconhecido.
+- A linha da tabela que pede lista vazia não vale mais. O modo completo e o `--so-leitura`
+  do script exigem zero lead real e reprovam por construção; a conferência passa a ser
+  `--entrega` (`LEADS REAIS: 1` às 07h28) e `--clientes`.
+- Qualquer outro POST ao webhook real continua proibido.
+
+Fonte: leitura por GET da lista real em 14/11, antes e depois do envio; `src/lead.ts`; log
+do Worker de `producao`.
+
 ## 6. Catálogo real
 
 **Pergunta.** Qual o formato real das respostas e dos erros, há campos além do exemplo

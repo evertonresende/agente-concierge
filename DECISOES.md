@@ -64,8 +64,8 @@ depois que ele decide cada uma; lacuna sem resposta não aparece aqui como decid
 | # | Decisão | Motivo |
 |---|---|---|
 | 10 | `dev` usa um webhook falso que replica o contrato do real; `producao` usa o real | o fluxo de lead precisa ser exercitado de ponta a ponta sem tocar na lista real |
-| 11 | Webhook real: nenhum POST antes da entrega, por nenhuma sessão, nem teste identificado | a lista de leads é o que o avaliador vê e não pode ser apagada |
-| 12 | Fluxo completo de lead, evals com confirmação e gravação do vídeo rodam só em `dev`; contra `producao`, só conversas sem confirmação | consequência direta da decisão 11 |
+| 11 | Webhook real: nenhum POST antes da entrega, por nenhuma sessão, nem teste identificado. Mudada em 14/11 pela X36: um lead de teste autorizado, um só, já feito. Qualquer outro POST continua proibido | a lista de leads é o que o avaliador vê e não pode ser apagada; o lead de teste prova a comunicação antes da avaliação |
+| 12 | Fluxo completo de lead, evals com confirmação e gravação do vídeo rodam só em `dev`; contra `producao`, só conversas sem confirmação. Única exceção: a conversa do lead de teste da X36 | consequência direta da decisão 11 |
 
 ### Ordem e corte
 
@@ -194,6 +194,7 @@ Ditas pelo Éverton ao abrir a sessão coordenadora, salvo onde a linha diz outr
 | X33 | Dita em 14/11. (1) Confirmadas as decisões P1 a P38 da coordenação, menos a P23, já revogada; a confirmação inclui a P17. (2) Os exports de sessão não entram no repositório nesta entrega; saem do README e do "Como foi feito" os marcadores de exports | As decisões foram lidas por ele na lista de fechamento. Os exports pedem leitura dele antes de publicar, e a entrega não espera por isso |
 | X34 | Dita em 14/11. A cópia da skill de orquestração em `docs/setup` fica como está, com o marcador de revisão, e o item não é fechado: o Éverton envia uma versão da skill adaptada ao T3 Code, e a cópia do repositório sai dela. O resto dos textos de entrega não espera por isso. Feito no mesmo dia: a versão enviada foi copiada como veio (0c27a22) | A skill original é de outro orquestrador; a cópia reduzida de hoje descreve comandos que esta entrega não usou |
 | X35 | Dita em 14/11. O repositório pode ser tornado público. Feito no mesmo dia pela coordenação, depois de conferir o que ficaria público | Os textos de entrega estavam na `main` sem marcador aberto, o envio real estava ligado e validado, e o gate de sigilo estava verde em todas as refs publicáveis |
+| X36 | Dita em 14/11, às 07h17. Muda a decisão 11: fica autorizado UM lead de teste no webhook real, um só. (1) Sai de uma conversa em `producao`, pelo caminho real do agente: cotação, resumo e "sim". Nenhum POST direto ao webhook. (2) Dados: nome "Teste Everton Resende", telefone claramente fictício no formato do contrato, imóvel e datas do exemplo do Marco 1. (3) Prova: a lista lida antes e depois tem de ir de 0 para 1, com os campos iguais aos do resumo. (4) Se o webhook recusar, para, sem nova tentativa. (5) Continua proibido qualquer outro POST ao webhook real, e eval com confirmação contra `producao`. Feito no mesmo dia pela coordenação: lista em 0 às 07h26:39, "sim" às 07h26:46, lista em 1 às 07h26:47, com os sete campos iguais aos do resumo (GRM-301, 15/01/2027 a 18/01/2027, 2 hóspedes, total de R$ 2.156,00). O webhook respondeu `201`: o agente devolveu o texto fixo de registrado, que o código só escreve depois de um `201` (`src/lead.ts:697`), e o log de `producao` tem nessa janela 1 turno com envio `registrado`. O número da resposta não vai para o log | Provar a comunicação com o webhook real antes da bateria da avaliação. Até ali o caminho do POST só tinha rodado contra o webhook falso, e a aceitação do corpo pelo receptor real era o único ponto sem prova |
 
 ## Decisões da coordenação (P), confirmadas pelo Éverton em 14/11/2026
 
@@ -298,8 +299,8 @@ Escolhas técnicas que decorrem das verificações em `docs/VERIFICACOES.md`.
    dados da sessão.
 9. **Log sem eco de dado.** Mascarar o texto de erro da plataforma antes de gravar, para
    nenhum dígito de dado do hóspede chegar ao log.
-10. **Webhook real.** Conhecer o corpo do `422` e o formato da lista depois do primeiro lead
-    real, e ajustar o tratamento de campo apontado.
+10. **Webhook real.** Conhecer o corpo do `422` real e ajustar o tratamento de campo
+    apontado. O formato da lista ficou conhecido em 14/11, com o lead de teste (X36).
 11. **Leitura humana dos exports.** Um detector de trecho copiado do enunciado, para
     reduzir a leitura humana das sessões marcadas.
 12. **Juiz de decisão (X11).** Medir um segundo modelo como juiz nos dois pontos de maior

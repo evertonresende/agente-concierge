@@ -195,8 +195,10 @@ Quando o hóspede quer fechar, o agente coleta `nome`, `telefone`, `imovel_id`,
   campo. **O corpo do 422 real é desconhecido** (não pode ser testado antes da
   entrega). Regra independente do corpo: qualquer resposta diferente de `201` significa
   não registrado. O agente só diz que registrou depois de um `201`. Falhas: L11.
-- `GET` na mesma URL devolve `{ "leads": [ ... ] }`. O formato de cada item é
-  desconhecido (a lista real está vazia).
+- `GET` na mesma URL devolve `{ "leads": [ ... ] }`. O formato de cada item era
+  desconhecido enquanto a lista real estava vazia. Com o lead de teste de 14/11 (X36 em
+  `DECISOES.md`) ficou conhecido: um objeto com `lead` (os sete campos enviados),
+  `recebido_em` e `token`.
 - Lead registrado é um pedido encaminhado ao time comercial. Não é reserva garantida
   nem data bloqueada, e o agente não diz que é.
 
@@ -236,7 +238,9 @@ O agente nunca:
 
 **Webhook real: nenhum POST antes da entrega, por nenhuma sessão, nem como teste
 identificado.** A lista de leads é o que o avaliador vê e não pode ser apagada. GET é
-permitido.
+permitido. Mudança de 14/11 (X36 em `DECISOES.md`): o Éverton autorizou um lead de teste,
+um só, pelo caminho real do agente em `producao`. Ele foi feito, e qualquer outro POST
+continua proibido.
 
 Variáveis (valores só em ambiente, nunca em arquivo versionado):
 
@@ -334,7 +338,7 @@ mas não afirma disponibilidade.
 | CA-13 | Instrução embutida no catálogo ou na mensagem não muda preço, regra nem papel | eval `robustez-manipulacao` e teste com catálogo falso |
 | CA-14 | Duas mensagens simultâneas na mesma sessão: duas respostas 200, histórico íntegro, no máximo 1 lead | teste unitário e eval `contrato` |
 | CA-15 | O agente nunca afirma disponibilidade | eval `robustez-nao-inventa` |
-| CA-16 | Nenhum POST chegou ao webhook real antes da entrega | GET no webhook real devolve lista vazia até a entrega |
+| CA-16 | Nenhum POST chegou ao webhook real antes da entrega, fora o lead de teste autorizado em 14/11 (X36) | GET no webhook real: lista vazia até 14/11 às 07h26; depois, só o lead de teste |
 | CA-17 | Com `ENVIO_LEADS=desligado`, uma confirmação não gera POST e não é relatada como registrada | teste unitário e `GET /saude` |
 | CA-18 | JSON válido com `session_id` e `message` em texto devolve 200, inclusive com mensagem vazia ou longa demais; 400 só para JSON inválido ou campo faltando | eval bloco `contrato` |
 | CA-19 | Resultado incerto do webhook (tempo esgotado) não gera nova tentativa nem relato de registro, e devolve `handoff: true` | teste de integração com o webhook falso em modo de atraso |

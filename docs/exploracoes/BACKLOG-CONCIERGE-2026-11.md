@@ -60,7 +60,7 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 | J | agente-concierge | Página de chat em dois passos: design (canvas) e implementação | passo 1: nada; passo 2: Marco 1 e aprovação do Éverton | baixa | 0,7 + 1 | thread T3 · Fable 5.2 | passo 1 concluído (canvas aprovado pelo Éverton, com dois ajustes); passo 2 entregue (b8991ce) | `frente-j` |
 | M2 | agente-concierge | Revisão de código, segurança e segunda opinião | leva 2 integrada | alta | 1,5 | subagentes Opus 5.5 + segunda opinião do Gemini 4 Argon em esforço alto (X23) | primeira passada rodando desde 13/11 23h22, adiantada pela X24: segurança na `main` atual, código dos módulos estáveis e segunda opinião do Gemini sobre o cálculo; a segunda passada é só o delta, depois da leva 2 | — |
 | L | agente-concierge | Custo por conversa e monitor diário | leva 2 integrada | média | 1 | subagente em worktree · Opus 5.5, esforço médio (X23) | **fechada.** `scripts/custo.mjs` na `main` desde 13/11 23h47 (eec433a), verificador aprovado. Monitor diário cortado como código (P38): os modos `--clientes` e `--entrega` do script da K cobrem; agendar e escolher o canal do aviso ficam com o Éverton | `frente-l` |
-| K | agente-concierge | Produção com o envio real desligado | M2 | alta | 1,5 | thread T3 · Opus 5.5, esforço alto (X23) | **fechada, salvo a entrega.** Árvore final publicada em `producao` em 14/11 05h01 (versão 9e309710), envio real desligado, zero lead real; `CLIENTES OK`; validação completa com duas passadas registradas, 69 de 70 e 70 de 70 (P37); P25 reaplicada depois do deploy e a reaplicar depois de cada deploy. Falta só o passo da entrega (`--entrega`), com ordem do Éverton | `frente-k` |
+| K | agente-concierge | Produção com o envio real desligado | M2 | alta | 1,5 | thread T3 · Opus 5.5, esforço alto (X23) | **fechada, salvo a entrega.** Árvore final publicada em `producao` em 14/11 05h01 (versão 9e309710), envio real desligado, zero lead real; `CLIENTES OK`; validação completa com duas passadas registradas, 69 de 70 e 70 de 70 (P37); P25 reaplicada depois do deploy e a reaplicar depois de cada deploy. Passo da entrega feito em 14/11 06h40, por ordem do Éverton (X32): versão 4d457dc2, da `main` a97777b, envio real ligado, `ENTREGA OK`. Depois do lead de teste da X36 (07h26), `--entrega` dá `LEADS REAIS: 1` | `frente-k` |
 | N | agente-concierge | Entregáveis de processo | K | alta | 2 | thread T3 · Opus 5.5, esforço alto (X23) | rodando: README, "Como foi feito", desenhos e setup com os números finais (4a9ece4, em verificador final); depois, simulador, `producao`, limites 54 a 57, corte do monitor e fechamento da M2 (1df8d7e); em curso, os limites que faltavam no README. O que entrou depois de 4a9ece4 ganha verificação própria antes do merge | `frente-n` |
 | S | agente-concierge | Gate de sigilo: achados da M2 | M2, primeira passada | alta | 0,5 | subagente em worktree · Opus 5.5, esforço alto (X23) | primeira entrega (1d5e406) reprovada pelo verificador em 14/11 00h27 por cinco médios, quatro deles anteriores à frente; em correção na mesma branch; verificador do delta antes do merge | `frente-gate` |
 | T | agente-concierge | Datas sem ano (P21) | G | alta | 0,5 | subagente em worktree · Opus 5.5, esforço alto (X23) | pronta na branch (e53e777, por cima da G em da64da4) em 14/11 00h24; verificador do delta rodando; entra na `main` depois da G | `frente-datas` |
@@ -2262,6 +2262,32 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   diante todo push é publicação:** o gate continua obrigatório antes de cada commit e de cada push.
   Todas as 19 branches ficaram públicas; a única com commits fora da `main` é a `frente-n`, com o
   arquivo de rascunho das aberturas, cujo texto aprovado está no `DECISOES.md` e no README
+- 14/11 07h26 · entrega · **X36: UM lead de teste no webhook real, por ordem do Éverton, dada às 07h17. A lista
+  real foi de 0 para 1, e o webhook respondeu `201`.** **Como:** uma conversa em `producao`, pelo caminho
+  real do agente, com o exemplo do Marco 1 (GRM-301, 15/01/2027 a 18/01/2027, 2 hóspedes), nome
+  "Teste Everton Resende" e telefone fictício "(11) 90000-0000": cotação, resumo e "sim". Nenhum POST
+  direto ao webhook. **Antes:** a mesma conversa ensaiada em `dev`, contra o webhook falso (resumo com
+  R$ 2.156,00 e 1 lead na lista falsa, com os sete campos). **Travas da sonda:** o "sim" só sai com o
+  resumo conferido campo a campo, com `/saude` mostrando destino real e envio ligado, e uma vez só
+  (marcador gravado antes do envio). **Prova:** lista real lida por GET com 0 lead às 07h26:39; "sim"
+  às 07h26:46; resposta com o texto fixo de registrado, total de R$ 2.156,00 e `handoff: false`; lista
+  com 1 lead às 07h26:47, os sete campos iguais aos do resumo (`valor_total` 2156). **O código da
+  resposta:** `201`. O número não vai para o log; só um `201` grava "registrado" e escreve esse texto
+  (`src/lead.ts:697`), e o log de `producao` tem, de 07h26:00 a 07h27:30, 1 evento `turno` com envio
+  `registrado`, contagem sem amostragem. `scripts/validar-producao.sh --entrega` às 07h28:
+  `ENVIO: ligado`, `LEADS REAIS: 1`, `ENTREGA OK`. **Formato de um item da lista real**, agora
+  conhecido: `lead` (os sete campos enviados), `recebido_em` e `token`. O corpo do `422` real segue
+  desconhecido. **Efeito nos modos do script:** o modo completo e o `--so-leitura` exigem zero lead
+  real e passam a reprovar por construção; valem `--entrega` e `--clientes`. O script não muda.
+  **Textos corrigidos:** decisões 11 e 12, a X36 e o item 10 de "mais tempo" no `DECISOES.md`;
+  `CLAUDE.md` e `AGENTS.md`; o contrato (seções 5 e 8 e o CA-16); `docs/EVALS.md`;
+  `docs/VERIFICACOES.md` §5; o "Como foi feito"; o desenho do agente; e o README, pela frente N
+  (652cf5e, diferença conferida linha a linha). Os prompts em `docs/prompts/` e os textos do conselho
+  ficam como foram usados. **Deslize meu:** a primeira leitura da lista depois do envio imprimiu o
+  item inteiro na saída da minha ferramenta, com o campo `token`, que é o token do catálogo. Ficou só
+  no registro desta sessão, em nenhum arquivo; a sonda passou a omitir o campo. Os exports não entram
+  nesta entrega (X33); se um dia entrarem, esse trecho sai antes. **Segue proibido:** qualquer outro
+  POST ao webhook real, e eval com confirmação contra `producao`
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -2289,19 +2315,20 @@ M2 sem achado determinístico nem de lead errado na H (a primeira rodada oficial
 dela). Meta: 14/11 03h00. Limite: 06h00. Gatilho que já existia: 10h00 com o critério 4 não
 verde, parar e chamar o Éverton.
 
-**Estado em 14/11 07h09. ENTREGA NO AR: repositório público desde 07h08 (X35), `producao` com o envio real
+**Estado em 14/11 07h35. ENTREGA NO AR: repositório público desde 07h08 (X35), `producao` com o envio real
 ligado, `main` em e3d10a9 na hora da publicação.** Código do agente igual ao da árvore final
 9d37f9a; depois dela a `main` recebeu documentos, relatórios, o conjunto reservado e uma mudança
 de configuração (a97777b: `ENVIO_LEADS` ligado e `preview_urls: false` em `env.producao`, com o
 teste da configuração). **Medidas na árvore final:** 310 de 312 nas três rodadas oficiais (todo
 bloco com 97% ou mais); reservado 110 de 120 (91,7%); simulador 6 de 10, nenhuma marca é erro de
 contrato (P36); rajada 40 de 40. **`producao`:** versão 4d457dc2, `ENTREGA OK`, `CLIENTES OK`,
-zero lead real até 06h43. **Na `main`:** README, "Como foi feito", desenhos (renderizam no
+zero lead real até 07h26 e, desde então, 1 lead real: o de teste que o Éverton autorizou (X36),
+com `201` e os sete campos iguais aos do resumo; `--entrega` dá `LEADS REAIS: 1`. **Na `main`:** README, "Como foi feito", desenhos (renderizam no
 GitHub), setup com a skill adaptada ao T3 Code (X34), fechamento da M2, abertura do `DECISOES.md`
 com cortes e mais tempo, `docs/prompts/`, conjunto reservado com o diagnóstico. Nenhum marcador
 aberto. **Decisões:** P1 a P38 confirmadas (X33), menos a P23. **Só com o Éverton:** o vídeo, o
-e-mail da entrega e agendar o monitor dos 7 dias (P38). **Regra que segue:** nenhum POST de
-sessão nossa ao webhook real; contra `producao`, só conversa sem confirmação; todo push passa
+e-mail da entrega e agendar o monitor dos 7 dias (P38). **Regra que segue:** nenhum outro POST de
+sessão nossa ao webhook real (o lead de teste da X36 foi a única exceção, já usada); contra `producao`, só conversa sem confirmação; todo push passa
 pelo gate, porque agora é publicação.
 
 **Plano B, decisão do Éverton (perguntado em 14/11).** Um ciclo de correção e verificação leva
@@ -2363,7 +2390,8 @@ fatos; lista para o Éverton.
 
 Já decidido por ele: aberturas do `DECISOES.md` e dos limites aprovadas (X31, X32); envio real
 ligado (X32); URL pública no README (X32); vídeo só no e-mail (X32); P1 a P38 confirmadas, menos a
-P23 (X33); exports de sessão fora desta entrega (X33).
+P23 (X33); exports de sessão fora desta entrega (X33); um lead de teste no webhook real (X36), feito às
+07h26 com `201`.
 
 Falta só com ele:
 1. (feito em 14/11, X35) O repositório está público desde 07h08.
@@ -2371,7 +2399,9 @@ Falta só com ele:
    (limites 54 e 55 do README).
 3. Responder o e-mail da entrega.
 4. Monitor dos 7 dias (P38): agendar uma vez por dia `scripts/validar-producao.sh --clientes` e
-   `scripts/validar-producao.sh --entrega`, e escolher por onde chega o aviso de falha.
+   `scripts/validar-producao.sh --entrega`, e escolher por onde chega o aviso de falha. A lista real
+   parte de 1 lead (o de teste); o que passar disso vem da avaliação. O modo completo e o
+   `--so-leitura` exigem zero lead real e reprovam: não servem mais para o monitor.
 
 O que ele deve saber antes de publicar:
 - A tabela "Merges de código sem verificador aprovado" do "Como foi feito" lista 24 merges.
@@ -2379,6 +2409,9 @@ O que ele deve saber antes de publicar:
   resultado errado em nenhuma; o que não passou na terceira foi suavizado com o texto do verificador.
 - O registro desta sessão coordenadora tem uma saída de ferramenta, de 14/11 às 05h05, com o
   endereço de `dev`. Os exports não entram agora; se um dia entrarem, esse trecho sai antes.
+- A primeira leitura da lista real depois do lead de teste imprimiu o token do catálogo na saída de
+  uma ferramenta desta sessão. Não foi para nenhum arquivo. Vale a mesma regra do item acima se um
+  dia os exports entrarem.
 - Correção possível e não feita: aceitar o sim com o destino do envio ("pode enviar ao time
   comercial"), cerca de duas horas, refazendo rodadas, reservado e validação (P36).
 - Cinco erros da coordenação estão contados na seção 9 do "Como foi feito"; a frente F rodou em

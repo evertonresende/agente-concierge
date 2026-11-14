@@ -102,7 +102,7 @@ flowchart TB
   ("1999 conto") passam (limites 8 e 46 do README). Sem resumo aberto, o total repetido depois que a cotação sai da janela de
   80 mensagens é cortado, e o agente pede imóvel e datas de novo (P26).
 - Em `dev` o webhook é um falso que replica o contrato do real. O real não recebe nenhum
-  POST antes da entrega.
+  POST antes da entrega, fora o lead de teste autorizado em 14/11 (X36).
 - Recusa por limite de pedidos vai direto ao reserva e não é repetida (L18). Sem gateway
   configurado, o reserva responde direto (P16).
 - O resumo para confirmação, o resultado da confirmação e o aviso de falha são textos
