@@ -1,8 +1,11 @@
 # Escolha do modelo (frente I)
 
 Estado em 14/11/2026: **principal escolhido pelo Éverton: Claude Haiku 5.5, raciocínio
-em nível médio (`DECISOES.md` X22).** O reserva está em aberto entre GLM-5.3 Flash
-(provisório, X22), DeepSeek 4.1 Flash e GLM-5.3; o Éverton decide com a tabela abaixo.
+em nível alto (`high`)**, decidido em 13/11 às 23h10 depois das tabelas dos níveis
+(antes, X22 tinha fixado o médio). O muito alto (`xhigh`) está descartado. Configuração:
+`MODELO_ESFORCO: "high"` em `dev` e em `producao` no `wrangler.jsonc`; sem a variável, o
+código manda `medium`, o padrão da API. O reserva continua em aberto entre GLM-5.3 Flash
+(provisório), DeepSeek 4.1 Flash e GLM-5.3; o Éverton decide com a tabela abaixo.
 
 **Todos os números deste documento são de código anterior às frentes G e B2 mais
 recentes** (prompt, loop e casos novos). A fase 2 remede tudo com F, G e H na `main`.
@@ -171,21 +174,42 @@ aviso sem repetir o turno (`porLimite`, testado em `test/modelo.test.ts`).
   `AiError: 5007` e o reserva respondeu (log do gateway: 400 do principal, 200 do
   reserva). A prova em `dev` publicado fica com a coordenadora.
 
-## O que falta para `producao` usar o Haiku (frente K, com ordem do Éverton)
+## O que falta para `producao` usar o Haiku (frente K, autorizado pelo Éverton em 13/11)
 
-Hoje `producao` tem o Haiku em `MODELO`, mas não tem `AI_GATEWAY` (P10): toda chamada ao
-Haiku falha e o GLM-5.3 Flash responde.
+Hoje `producao` tem o Haiku em `MODELO` e `MODELO_ESFORCO: "high"`, mas não tem
+`AI_GATEWAY`: o adaptador pula o Haiku (uma linha `principal_pulado` por turno no log do
+Worker) e o GLM-5.3 Flash responde. Os passos copiam o `concierge-dev`, que funciona.
 
-1. Criar o gateway `concierge-producao` com autenticação ligada e o Secrets Store da
-   conta associado (a API exige o `store_id` antes de guardar chave).
-2. Guardar a chave da Anthropic: secret `concierge-producao_anthropic_default` no
-   Secrets Store, com escopo `ai_gateway`, e a configuração de provedor `anthropic` com
-   apelido `default`. O valor vai por entrada padrão, nunca em argumento.
-3. Pôr `"AI_GATEWAY": "concierge-producao"` em `env.producao.vars` e publicar. Antes do
-   gateway existir, não nomear: um gateway inexistente derruba também o reserva, que
-   passa pelo mesmo gateway.
-4. Conferir no log do gateway de `producao` que as chamadas ao Haiku saem com
-   `byok: default`.
+Em todas as chamadas: credencial da Cloudflare só por referência (`$(cat ~/.cf-token)`),
+conta lida do arquivo de ambiente no mesmo comando, e da resposta da API só `success` e
+`errors` na tela.
+
+1. **Criar o gateway** `concierge-producao` (`POST /accounts/{conta}/ai-gateway/gateways`)
+   com as mesmas opções do `concierge-dev`: `authentication: true`, `collect_logs: true`,
+   `cache_ttl: 0`, sem limite de taxa no gateway. Associar o Secrets Store da conta
+   (`store_id`, o mesmo do `concierge-dev`, visto com `GET .../gateways/concierge-dev`): a
+   API recusa guardar chave em gateway sem store. Hoje `GET .../gateways/concierge-producao`
+   responde erro 7002 (não existe).
+2. **Guardar a chave da Anthropic por referência.** `POST
+   .../gateways/concierge-producao/provider_configs` com o corpo
+   `{"alias": "default", "default_config": true, "provider_slug": "anthropic", "secret": <chave>}`
+   montado por um programa que lê a chave da variável de ambiente e manda pela entrada
+   padrão (`curl --data-binary @-`). Nunca em argumento de linha de comando, `.dev.vars`,
+   `--var`, `wrangler secret`, log ou relatório. Conferir com `GET .../provider_configs`:
+   uma entrada `anthropic`, apelido `default`, `default_config: true`. O Secrets Store
+   passa a ter o secret `concierge-producao_anthropic_default`, escopo `ai_gateway`.
+3. **Nomear o gateway em `producao`:** `"AI_GATEWAY": "concierge-producao"` em
+   `env.producao.vars` do `wrangler.jsonc` e publicar (`npm run deploy:producao`, com
+   `ENVIO_LEADS` desligado). Só depois do passo 1: um gateway nomeado que não existe
+   derruba também o reserva, que passa pelo mesmo gateway (erro 2001).
+4. **Provar que o Haiku respondeu em `producao`**, com uma conversa sem confirmação de
+   lead:
+   - log do gateway `concierge-producao` (`GET .../gateways/concierge-producao/logs`):
+     chamadas de `anthropic/claude-haiku-5.5` com status 200 e `byok: default`, e o pedido
+     (`.../logs/{id}/request`) com `output_config: {"effort": "high"}`;
+   - nenhuma chamada do GLM-5.3 Flash nesse turno, salvo falha do Haiku;
+   - no log do Worker (`wrangler tail --env producao`), nenhuma linha `principal_pulado`
+     nem `modelo_falhou`.
 
 ## Opinião da frente (não é decisão)
 
