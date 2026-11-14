@@ -92,7 +92,9 @@ flowchart TB
 
 - A fila existe porque o objeto intercala outro pedido enquanto espera o modelo ou o
   catálogo, e o bloqueio nativo tem limite de 30 s (`docs/VERIFICACOES.md` §1).
-- O texto que vem do catálogo entra na conversa como dado delimitado, nunca como instrução.
+- O texto que vem do catálogo é saneado (uma linha por campo, até 300 caracteres, sem "$")
+  e entra na conversa como dado delimitado, com o aviso de que não é instrução. Não há
+  filtro de instrução no código: não obedecer é do modelo, pelo prompt (limite 61 do README).
 - O total sai pronto da ferramenta de cotação. A conferência retira do texto do modelo
   valor em dinheiro que nenhuma ferramenta calculou, com "R$", "reais", outra moeda ou
   centavos (frente G). Número por extenso e número solto sem marca nem centavos ("consigo
