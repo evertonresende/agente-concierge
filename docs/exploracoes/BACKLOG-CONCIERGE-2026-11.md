@@ -774,6 +774,36 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   da tabela. O nível continua em aberto e o `MODELO` fica no médio. Passado à frente I, com
   a conferência de que a cópia de medição aceita `xhigh` (nível inválido vira médio) e a
   prova pelo log do gateway. Nenhuma outra rodada de eval na máquina até ela terminar
+- 13/11 22h34 · I · medição do Haiku no nível muito alto aceita e passada ao Éverton: 85% (84 de 98), contra
+  86% no alto, 82% e 79% no médio e 80% no baixo. Tempo por turno (p50, p95, máximo): 2,9 /
+  11,7 / 27,3 s, contra 2,3 / 5,5 / 11,9 s no alto. Por conversa: 13.669 tokens de entrada e
+  1.281 de saída, US$ 0,0020 (alto: 12.838 e 676, US$ 0,0016). Nenhum corte por limite de
+  tokens (maior saída 3.137 de 8.000), nenhuma ida ao reserva, rajada com 40 de 40 normais.
+  Mesma cópia de medição do alto, sem mudança de código (ela já aceitava `xhigh`); nível
+  conferido em 40 requisições do log do gateway; rodou das 22h18 às 22h25. Ressalva: a suíte
+  da I rodou uns 16 s no começo da rodada. Tabela em `docs/revisoes/modelos.md` (a7ae9b8,
+  64f0526)
+- 13/11 22h34 · I · causa do erro de entrada no código integrado provada pelo log do gateway: as 12
+  chamadas recusadas têm a mesma forma e o mesmo erro da API (o modelo não aceita conversa que
+  termina em mensagem do assistente). O pedido terminava no rascunho do assistente, e a
+  mensagem de conferência do laço da G ia para o campo de sistema. A falha é sempre a chamada
+  refeita depois da conferência, e nesses 12 turnos o último texto de modelo foi do reserva.
+  Corrigido no adaptador (5c0df15: a conferência vai ao Haiku como texto do usuário); chamada
+  real com a forma nova passou. Correções da segunda rodada entregues (ce3ee56, 1b2f837,
+  13e01d7, 77fc438, 400c35d, 7f11dee, 18976f5, 967ff96; cabeça 64f0526, 711 testes): 79 das 83
+  sondas do verificador passam, e as 4 restantes dependem do laço. Terceira rodada do
+  verificador lançada (só o delta), com ataque à conferência como texto do usuário; terceira
+  rodada integrada em curso, com critério de zero falha do modelo
+- 13/11 22h34 · I · incidente de sigilo, sem dado real: dois commits (77fc438 e 5c0df15) foram publicados
+  na branch da I com o gate reprovando, por causa de um endereço IP de faixa reservada a
+  documentação e de um e-mail com domínio reservado, os dois inventados, numa linha de teste.
+  Saíram em ad2fc72 e o gate passa na cabeça; continuam no histórico da branch. O gate não lê
+  o conteúdo de commits antigos, só a árvore atual, as mensagens e os autores. A I não entra
+  na `main` antes de o Éverton decidir se o histórico fica assim
+- 13/11 22h34 · I · capacidade de `producao` sem gateway, pelo que foi medido: só o reserva responde, com
+  20 chamadas por minuto por conta e modelo, limite dividido com `dev`. Dá cerca de 13 turnos
+  por minuto somando todas as conversas: 10 a 13 conversas simultâneas no ritmo de uma pessoa;
+  uma conversa automatizada sem pausa já passa do limite
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
