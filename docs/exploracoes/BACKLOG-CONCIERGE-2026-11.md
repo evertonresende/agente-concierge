@@ -2430,12 +2430,11 @@ em fca6d6d mais os textos desta entrada; `producao` na versão 9e8b35d1, publica
 redirecionamento e com teto, nome de ferramenta, texto do catálogo, `preview_urls` em `dev` e a
 confirmação que recusa entrada já passada). **Números oficiais:** continuam os da árvore 9d37f9a
 (310 de 312, reservado 110 de 120, simulador 6 de 10, rajada 40 de 40). Sobre as correções rodaram de
-novo a suíte (58 arquivos, 1604 testes), duas rodadas do conjunto de desenvolvimento (104 de 104 nas
-duas), a página num navegador e as validações de `producao`; o resto não rodou de novo.
+novo a suíte (58 arquivos, 1604 testes), duas rodadas do conjunto de desenvolvimento com relatório
+versionado (104 de 104 nas duas) e uma de sinal antes do merge (104 de 104), a página num navegador e as validações de `producao`; o resto não rodou de novo.
 **Auditoria:** uma passada `quick` da skill `security-audit`, com 1 achado confirmado (corrigido), 2 que
 precisam de validação (limites 24 e 67) e 4 unidades adiadas; registro em `docs/revisoes/seguranca.md`.
-**Decisões:** X37; P39 a P45 provisórias, com a P41 e a primeira parte da P40 já decididas pelo
-Éverton. **Com o Éverton:** as provisórias, o script da borda bloqueado na página de `producao` (P43),
+**Decisões:** X37; P39 a P45 provisórias, com a P40 e a P41 já decididas pelo Éverton. **Com o Éverton:** as provisórias, o script da borda bloqueado na página de `producao` (P43),
 o vídeo, o e-mail da entrega e o monitor dos 7 dias. **Regras que seguem:** nenhum POST de sessão nossa
 ao webhook real; contra `producao`, só conversa sem confirmação; todo push passa pelo gate.
 
@@ -2546,12 +2545,12 @@ O que ele deve saber antes de publicar:
 **Lista para o Éverton, em 14/11 10h45 (acréscimos da X37).**
 
 Decidido por ele em 14/11: a auditoria e as correções no mesmo dia (X37); a correção do achado
-confirmado entra (P41); o gasto do modelo fica como o limite 24, sem pendência nova (P40); o gateway
+confirmado entra (P41); o gasto do modelo fica como o limite 24, sem pendência nova, e o webhook
+falso de `dev` sem teto fica como limite (P40, os dois como a coordenação decidiu); o gateway
 de `producao` está com a coleta de log desligada (fato conferido por ele).
 
 Falta com ele:
-5. Confirmar ou mudar as decisões provisórias P39, P40 (webhook falso como limite), P42, P43, P44 e
-   P45.
+5. Confirmar ou mudar as decisões provisórias P39, P42, P43, P44 e P45.
 6. Página de `producao`: a borda insere um script de detecção de robôs que a política nova bloqueia,
    o que gera um erro de console a cada carga, sem efeito na conversa (P43). Escolher: desligar essa
    injeção para o hostname na zona, aceitar o erro, ou pedir a política por nonce.
