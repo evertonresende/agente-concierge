@@ -112,6 +112,8 @@ grep -E '(^|/)(\.privado/|\.env($|\.)|\.dev\.vars)' "$tmpd/arquivos" | grep -v -
 #    outra identidade; elas não são publicadas por `git push` e ficam fora desta
 #    checagem, mas o item 3 garante que nenhuma chegou ao remoto.
 PUBLICAVEL="--branches --tags --remotes"
+[ "$(git rev-parse --is-shallow-repository 2>/dev/null)" = false ] \
+  || { echo "SIGILO: clone raso: o histórico está incompleto e não dá para varrê-lo"; exit 2; }
 : > "$tmpd/tipos"
 # Vale com ou sem commit no HEAD (branch órfã): o que conta é haver ref publicável.
 le publicaveis for-each-ref --count=1 refs/heads refs/tags refs/remotes

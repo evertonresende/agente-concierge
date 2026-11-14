@@ -126,6 +126,11 @@ rodar; espera_codigo 1; espera_texto "nome de autor ou committer"; sem_pedaco "$
 novo_repo j4; git tag -a v1 -m "$HOST"
 rodar; espera_codigo 1; espera_texto "tag anotada"; sem_pedaco "$HOST"
 
+caso="r) clone raso"
+novo_repo r; git commit -q --allow-empty -m "segundo"
+git clone -q --depth 1 "file://$PWD" "$TMP/r-raso" && cd "$TMP/r-raso"
+rodar; espera_codigo 2
+
 caso="e) termo em arquivo binário"
 novo_repo e
 printf 'PNG\0\0%s\0' "$TOKEN" > d.bin; git add d.bin
