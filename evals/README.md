@@ -130,6 +130,47 @@ Gerados de forma única a cada execução e caso, substituídos em `mensagem`, `
 - `estadia` (objeto ou array de `{ imovel_id, checkin, checkout, hospedes?, obrigatorio? }`): aciona o juiz determinístico independente em centavos inteiros (`evals/lib/juiz-preco.mjs`). Se `obrigatorio` for `true` (padrão), exige o total exato na resposta e aceita apenas os componentes/subtotais coerentes nomeados como componente no texto (ex.: diárias, taxa de limpeza) e `valores_tolerados`; se `false`, valida apenas se algum `R$` aparecer.
 - `leads_ate_agora` (número, opcional): em `dev`, consulta `GET` no webhook falso logo após o turno e exige exatamente essa quantidade de leads para o telefone do caso. Dentro de um turno `paralelo`, a consulta é feita depois de todos os subturnos responderem e vale o maior `leads_ate_agora` declarado entre eles.
 
+### Juiz de preço: rótulo de componente e limites conhecidos
+
+Um valor igual a um componente da estadia (diária, diária de sexta e sábado, taxa de limpeza,
+subtotal de noites) só passa quando a resposta o apresenta como componente
+(`evals/lib/rotulo-componente.mjs`): valor "por noite" tem de ser a diária das noites nomeadas,
+valor ao lado de uma contagem tem de caber nela, valor com "total" ao lado é total, e resposta que
+concede preço reprova. A regressão do juiz são os corpora do verificador em
+`evals/lib/corpus-juiz.json` (100 respostas da rodada 1 e 134 da rodada 2), conferidos no
+autoteste (`node evals/teste-do-runner.mjs`).
+
+Limites conhecidos: formatos que o agente não escreveu nos cinco registros reais revisados. O
+veredito atual deles fica fixado no corpus; o juiz erra nestes exemplos.
+
+Respostas certas que reprovam:
+
+- conta com "×": "2 noites × R$ 590,00 = R$ 1.180,00"
+- conta com "+": "R$ 708,00 + R$ 708,00 + R$ 590,00 + R$ 150,00 = R$ 2.156,00"
+- subtotal entre parênteses: "Noites: 2, a R$ 590,00 cada (R$ 1.180,00)"
+- conta entre parênteses: "Diárias: R$ 2.006,00 (1 × R$ 590,00 + 2 × R$ 708,00)"
+- "em vez de": "custam R$ 708,00 em vez de R$ 590,00"
+- tabela com vírgula no rótulo: "| Sexta, 15/01 | R$ 708,00 |"
+- subtotal com verbo de total: "The 3 nights come to R$ 2.006,00, plus the R$ 150,00 cleaning fee"
+- subtotal chamado de total: "Total for the nights: R$ 2.006,00"
+- concessão hipotética: "Eu adoraria poder dar um desconto, mas quem decide isso é o time."
+
+Respostas erradas que aprovam:
+
+- "a partir de": "A estadia fica a partir de R$ 2.156,00, dependendo da disponibilidade."
+- noites entre parênteses: "Valor da estadia: R$ 2.006,00 (3 noites)."
+- total sem a limpeza sem a palavra "total": "The full price is R$ 2.006,00 for the 3 nights."
+- componente trocado com o total certo: "Taxa de limpeza: R$ 590,00" seguido de "Total: R$ 2.156,00"
+- limpeza por noite em `sem_total`: "a limpeza custa R$ 150,00 a cada noite"
+- contagem em inglês por extenso: "Two regular nights at R$ 590,00 each" numa estadia com 1 noite comum
+- valor por pessoa: "A diária é R$ 590,00 por pessoa"
+- fronteira: "São 2 noites, R$ 1.416,00 de diárias" (as 2 noites de R$ 708,00 cabem na estadia de 3)
+
+O juiz reconhece concessão pela construção, não pelo significado. Contra um agente que conceda com
+palavras novas, a guarda mais forte é o `handoff` com o valor fora da tabela. Nos casos de desconto
+(`hand-01`, `hand-03`, `marco1-02`, `man-12`), proibidas cobrem a limpeza tirada e a diária comum
+aplicada à sexta e ao sábado.
+
 ## Trava e sigilo nos relatórios
 
 1. Antes de executar, o runner consulta `GET <alvo>/saude`. Todo caso com `confirma: true` (booleano estrito), `webhook_modo`, `leads_esperados` ou `leads_ate_agora` exige `ambiente: "dev"` e `LEADS_URL_DEV` definida; caso contrário, é pulado pela trava. Fora de `dev` a trava é por negação: só roda o caso que declara `confirma: false` explícito; caso sem a marca é pulado, porque pode confirmar um lead pelas mensagens sem declarar campo nenhum.
