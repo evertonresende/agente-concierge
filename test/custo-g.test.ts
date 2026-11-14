@@ -19,6 +19,10 @@ describe("custo de CPU (BAIXA 9)", () => {
     expect((sanear({ d: "x".repeat(10_000) }) as { d: string }).d.length).toBe(300);
   });
 
+  it("P24: espaços sem \"$\" no fim (o caso quadrático) também cortam antes", () => {
+    expect(ms(() => sanear({ d: " ".repeat(30_000) }))).toBeLessThan(300);
+  });
+
   it("mensagem de 8.000 dígitos e resposta longa de números não travam a conferência", () => {
     expect(ms(() => sugereNegociacao("1".repeat(8_000)))).toBeLessThan(300);
     expect(ms(() => conferir("1.".repeat(4_000), new Set(), { mensagem: "1".repeat(8_000), handoff: false }))).toBeLessThan(500);
