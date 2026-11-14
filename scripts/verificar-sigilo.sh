@@ -107,13 +107,15 @@ if git rev-parse -q --verify HEAD >/dev/null; then
     echo "SIGILO: falha ao ler o conteúdo do histórico"; exit 2
   fi
 
-  # Um registro por commit (separador \036); procura só no texto depois de \037 e
-  # imprime só o identificador curto, nunca a linha encontrada.
-  git log $PUBLICAVEL --format='%x1e%H%x1f%B' | awk -v F="$fixos" '
-    BEGIN { while ((getline t < F) > 0) T[tolower(t)]; RS = "\036" }
-    { i = index($0, "\037"); if (!i) next
+  # Um registro por commit, separado por NUL (que não cabe numa mensagem): hash, \037 e
+  # a mensagem. Procura só na mensagem e imprime só o identificador curto. Registro fora
+  # desse formato reprova como ilegível, em vez de ser pulado.
+  git log -z $PUBLICAVEL --format='%H%x1f%B' | awk -v F="$fixos" '
+    BEGIN { while ((getline t < F) > 0) T[tolower(t)]; RS = "\0" }
+    { i = index($0, "\037"); h = substr($0, 1, i - 1)
+      if (i == 0 || h !~ /^[0-9a-f]+$/) { print "(mensagem ilegível)"; next }
       corpo = tolower(substr($0, i + 1))
-      for (t in T) if (index(corpo, t)) { print substr($0, 1, 8); next } }' \
+      for (t in T) if (index(corpo, t)) { print substr(h, 1, 8); next } }' \
     | relata "termo proibido em mensagem de commit"
   git log $PUBLICAVEL --format='%ae%n%ce' | sort -u | grep -v -x -F "$AUTOR" | sed 's/.*/(e-mail fora do padrão no histórico)/' \
     | relata "autor ou committer diferente de $AUTOR"

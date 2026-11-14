@@ -57,6 +57,11 @@ novo_repo c
 git commit -q --allow-empty -m "docs: ajuste" -m "$HOST aparece no corpo"; c=$(curto)
 rodar; espera_codigo 1; espera_texto "mensagem de commit"; espera_texto "$c"; sem_pedaco "$HOST"
 
+caso="c2) byte 0x1E na mensagem antes do termo"
+novo_repo c2
+git commit -q --allow-empty -m "docs: ajuste" -m "$(printf '\036 %s' "$HOST")"; c=$(curto)
+rodar; espera_codigo 1; espera_texto "$c"; sem_pedaco "$HOST"
+
 caso="d) host com sufixo composto"
 novo_repo d "api.$EMPRESA.com.test"
 echo "desafio da ZqxwKorp" > c.txt; git add c.txt
