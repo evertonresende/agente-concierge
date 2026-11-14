@@ -41,6 +41,9 @@ const MAX_VOLTAS = 6;
  */
 export const MAX_CHAMADAS_POR_RESPOSTA = 16;
 export const MAX_CHAMADAS_POR_TURNO = 32;
+/** A busca por comodidade lê o catálogo inteiro (1 + cidades + fichas: 27 pedidos no real): até 2 por turno. */
+export const MAX_COMODIDADE_POR_TURNO = 2;
+const COMODIDADE = "buscar_por_comodidade";
 const LIMITE_DE_CHAMADAS = "Limite de chamadas de ferramenta neste turno: esta não foi executada. Responda com o que já "
   + "tem ou peça ao hóspede para reduzir o pedido.";
 const CONFIRMAR = "confirmar_reserva";
@@ -614,6 +617,7 @@ export async function rodarTurno(entrada: EntradaDoTurno): Promise<SaidaDoTurno>
   let handoff = false;
   let rascunho: string | undefined;
   let chamadasNoTurno = 0;
+  let comodidadesNoTurno = 0;
   // Sinal na mensagem do hóspede (P17): provoca no máximo UMA chamada focada ao modelo.
   let focou = false;
   const pendenteNoInicio = pendenteAberto(entrada.contexto.cofre.ler());
@@ -803,12 +807,14 @@ export async function rodarTurno(entrada: EntradaDoTurno): Promise<SaidaDoTurno>
         let resultado: Resultado;
         if (respostaFinal !== undefined || falhou) {
           resultado = { paraOModelo: { ignorada: "o turno já tinha sido encerrado por outra ferramenta" } };
-        } else if (chamada.function.name !== CONFIRMAR && (noLote >= MAX_CHAMADAS_POR_RESPOSTA || chamadasNoTurno >= MAX_CHAMADAS_POR_TURNO)) {
+        } else if (chamada.function.name !== CONFIRMAR && (noLote >= MAX_CHAMADAS_POR_RESPOSTA || chamadasNoTurno >= MAX_CHAMADAS_POR_TURNO
+          || (chamada.function.name === COMODIDADE && comodidadesNoTurno >= MAX_COMODIDADE_POR_TURNO))) {
           // Passou do teto (P30): não executa, e o modelo responde com o que já tem.
           resultado = { paraOModelo: { erro: LIMITE_DE_CHAMADAS } };
         } else {
           noLote++;
           chamadasNoTurno++;
+          if (chamada.function.name === COMODIDADE) comodidadesNoTurno++;
           usadas.push(chamada.function.name);
           try {
             resultado = barrar(chamada, chamadas) ?? await comPrazo(executar(comGrupoSomado(chamada), contexto), entrada.prazo - agora());
