@@ -25,7 +25,11 @@ url="${CATALOGO_URL:-}"
 
 host=$(printf '%s' "$url" | sed -E 's#^[a-z]+://([^/:]+).*#\1#')
 token=$(printf '%s' "$url" | sed -E 's#.*/catalogo/([^/?]+).*#\1#')
-empresa=$(printf '%s' "$host" | awk -F. '{print $(NF-1)}')
+# Nome da empresa = penúltimo rótulo do host. Se ele for curto demais (< 4, o que inclui
+# os sufixos com, net, org, gov, edu e co de hosts como api.nome.com.br), usa o anterior.
+empresa=$(printf '%s' "$host" | awk -F. '{ e = $(NF-1); if (length(e) < 4 && NF > 2) e = $(NF-2); if (length(e) >= 4) print e }')
+[ -n "$empresa" ] || [ -f "$DIR_CFG/sigilo-extra" ] \
+  || { echo "SIGILO: não deu para derivar o nome da empresa do host; ponha-o em sigilo-extra"; exit 2; }
 
 fixos=$(mktemp); trap 'rm -f "$fixos" "$marca"' EXIT
 {
