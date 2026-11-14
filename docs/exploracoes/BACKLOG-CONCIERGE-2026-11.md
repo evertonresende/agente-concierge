@@ -2320,6 +2320,9 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   dos MCPs:** registros do Claude Code e do Codex; os arquivos do Gemini que citam o projeto foram
   só passados em revista, sem chamada de ferramenta à vista. As 69 leituras de página foram todas
   à documentação da Cloudflare
+- 14/11 08h50 · entrega · linha do topo do README trocada por ordem do Éverton, para não envelhecer: o lead
+  de teste passa a ser "o único lead anterior à avaliação", com a data e a hora (frente N 69cea61,
+  merge 92d1d6d). Só essa linha; diferença conferida pela coordenação
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
