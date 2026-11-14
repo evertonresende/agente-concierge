@@ -52,8 +52,9 @@ cabeçalhos `x-uso-entrada`, `x-uso-saida` e `x-chamadas-modelo`, usados para me
   disponibilidade; ela está em integração.
   <!-- PREENCHER: conferir a descrição da conferência depois que a G entrar na main -->
 
-  > Estado deste rascunho: a `main` ainda não tem todas as frentes da leva 2. O que está
-  > descrito como decidido (modelo, gateway, limite de corpo) entra com elas.
+  > Estado deste rascunho: a `main` já tem o adaptador do modelo (Haiku 5.5 em nível alto,
+  > reserva e gateway em `dev`), mas ainda não tem as frentes F, G e H. O que está descrito
+  > como decidido e depende delas (conferência ampliada, limite de corpo) entra com elas.
 - **Modelo.** Decidido pelo Éverton por medição (`DECISOES.md` X22 e X24): Claude Haiku
   5.5, com o raciocínio em nível alto, como principal. O reserva está em aberto; o
   provisório é o GLM-5.3 Flash, de outro fornecedor. Recusa por limite de pedidos vai
