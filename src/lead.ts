@@ -209,8 +209,11 @@ export type Leitura =
 
 const PRECO = new RegExp(
   "r\\$|\\$\\s*\\d|\\d\\s*%|\\breais\\b|\\bdescont|\\bcupo(m|ns)\\b|\\bpromoc|\\babat|\\bbarat|\\bdiscount|\\bcheaper|\\bcoupon"
-    + "|\\b(por|for)\\s+\\d[\\d.,]{2,}"
-    + "|\\b(se|desde que|contanto que|caso|if|unless|provided|as long as)\\b.*\\b(valor|preco|total|price|\\d{3,})",
+    + "|\\b(por|for)\\s+\\d[\\d.,]{2,}|\\b(por|for)\\s+(\\d+|um|dois|tres|quatro|cinco|one|two|three|four|five)\\s*(mil|k)\\b"
+    + "|\\bpagar menos\\b|\\bpay less\\b|\\bem conta\\b|\\bmetade do (valor|preco)\\b|\\bhalf price\\b"
+    // Condição com qualquer coisa com cara de valor ou de preço (B3): "sim, se fizer 2 mil".
+    + "|\\b(se|desde que|contanto que|caso|if|unless|provided|as long as)\\b.*(\\b(valor|preco|total|price|mil|metade|half|desconto"
+    + "|barat|cheap|baix|menos|less|lower|orcamento|budget|pagar|pay|cost)|\\d+\\s*k\\b|\\d{3,})",
 );
 const HESITA = /\b(acho|achando|talvez|pode ser|nao sei|sei la|quase|provavel|provavelmente|depende|vou pensar|vou ver|pensando|maybe|i think|i guess|probably|perhaps|not sure|might|kind of|sort of)\b/;
 // As palavras de hesitação e o que só as acompanha ("acho que", "i think so", "ainda"). O que

@@ -410,3 +410,22 @@ describe("B4: referência confirma; valor por extenso igual repete o pedido, dif
     it(`derruba: "${mensagem}"`, () => expect(lerConfirmacao(mensagem, GRM301, 3)).toBe("outra"));
   }
 });
+
+describe("B3: condição de preço sem número de três dígitos também é condição de preço (L9)", () => {
+  for (const mensagem of ["sim, se fizer 2 mil", "sim se fizer mais em conta", "sim se baixar um pouco", "fecha por dois mil?", "sim, mas quero pagar menos",
+    "yes if you can do 2k", "sim, desde que caiba no orçamento", "sim, se fizer pela metade", "sim, caso fique mais barato", "yes if it's cheaper"]) {
+    it(`condição de preço, handoff e nenhum lead: "${mensagem}"`, async () => {
+      expect(lerConfirmacao(mensagem, GRM301, 3)).toBe("condicao_de_preco");
+      const mundo = criarMundo();
+      let estado: EstadoLead = ESTADO_INICIAL;
+      const cofre: Cofre = { ler: () => estado, salvar: (e) => { estado = e; } };
+      await montarResumo.executar({ imovel_id: "GRM-301", checkin: "15/01/2027", checkout: "18/01/2027", hospedes: 2, nome: "Ana Lima", telefone: "(11) 98888-0000" },
+        criarContexto(mundo, cofre, 2, "quero fechar"));
+      expect((await confirmarReserva.executar({}, criarContexto(mundo, cofre, 3, mensagem))).handoff).toBe(true);
+      expect(mundo.leads).toEqual([]);
+    });
+  }
+  it("condição que não é de preço segue como antes: \"sim, se tiver wifi\" não é sim nem preço", () => {
+    expect(lerConfirmacao("sim, se tiver wifi", GRM301, 3)).toBe("outra");
+  });
+});
