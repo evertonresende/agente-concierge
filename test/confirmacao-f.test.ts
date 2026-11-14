@@ -174,9 +174,13 @@ describe("leitura da mensagem diante do resumo pendente", () => {
     ["pode fechar com outra data", "outra"],
     ["pode mudar as datas", "outra"],
     ["confirmo outro telefone", "outra"],
-    ["sim, segunda", "outra"],
-    ["confirmo a reserva de segunda", "outra"],
-    ["pode reservar a segunda", "outra"],
+    // A saída do resumo é numa segunda-feira: "segunda" é valor igual e repete o pedido (P13.3, B4).
+    ["sim, segunda", "hesitacao"],
+    ["sim, terça", "outra"],
+    ["confirmo a reserva de segunda", "hesitacao"],
+    ["confirmo a reserva de terça", "outra"],
+    ["pode reservar a segunda", "hesitacao"],
+    ["pode reservar a terça", "outra"],
     ["certo, e o wifi", "outra"],
     ["pode me dizer o horário", "outra"],
     ["sim, depois confirmo", "outra"],
@@ -184,7 +188,8 @@ describe("leitura da mensagem diante do resumo pendente", () => {
     ["sim, confirmo por R$ 2.000,00", "condicao_de_preco"],
     ["Obrigado, por enquanto não vou fechar ainda.", "outra"],
     ["", "outra"],
-    ["👍", "outra"],
+    // Emoji sozinho repete o pedido com o resumo, sem confirmar nem derrubar (P15).
+    ["👍", "hesitacao"],
     ["2", "outra"],
   ];
   for (const [mensagem, esperado] of naoSao) {
@@ -227,7 +232,8 @@ describe("leitura da mensagem diante do resumo pendente", () => {
       ["Sim, confirmo de 15/01 a 17/01", "outra"],
       ["Sim, de 15 a 17 de janeiro", "outra"],
       ["Sim, somos 3", "outra"],
-      ["Sim, para três pessoas", "outra"],
+      ["Sim, para três pessoas", "hesitacao"], // número por extenso igual ao do resumo (B4)
+      ["Sim, para quatro pessoas", "outra"],
       ["Sim, 3 pessoas e 1 bebê", "outra"],
       ["Sim, confirmo 3 noites", "outra"],
       ["Sim, confirmo o GRM-301 de 15/01/2027 a 17/01/2027", "outra"],
@@ -237,7 +243,8 @@ describe("leitura da mensagem diante do resumo pendente", () => {
       ["Sim, confirmo, e tem wifi?", "pergunta"],
       ["Sim, confirmo! Tem wifi?", "pergunta"],
       ["Pode fechar a reserva do SAO-501 de 15/01/2027 a 17/01/2027?", "pergunta"],
-      ["Sim, confirmo de 15/01/2027 a 17/01/2027. Dá para entrar mais cedo?", "pergunta"],
+      // "Mais cedo" é sinal de mudança (pode ser outro horário ou outro dia): derruba.
+      ["Sim, confirmo de 15/01/2027 a 17/01/2027. Dá para entrar mais cedo?", "outra"],
       ["Sim, confirmo! Pode fechar a reserva do SAO-501 de 15/01/2027 a 18/01/2027, por favor?", "outra"],
       ["Sim, confirmo por R$ 700,00", "condicao_de_preco"],
     ];

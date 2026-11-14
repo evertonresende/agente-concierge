@@ -76,7 +76,16 @@ describe("pedido de confirmação com a mensagem do turno: mudança de dado derr
     });
   }
 
-  for (const mensagem of ["tem wifi?", "qual o horário do check-in?", "o GRM-301 aceita pet?", "para 2 pessoas mesmo, certo?"]) {
+  // Valor do resumo repetido fora de um sim também derruba (B2).
+  for (const mensagem of ["o GRM-301 aceita pet?", "para 2 pessoas mesmo, certo?"]) {
+    it(`derruba: "${mensagem}"`, () => {
+      const { cofre, estado } = cofreCom(GRM301);
+      expect(pedidoDeConfirmacaoPendente(cofre, 3, "pt", mensagem)).toBeUndefined();
+      expect(estado().pendente).toBeNull();
+    });
+  }
+
+  for (const mensagem of ["tem wifi?", "qual o horário do check-in?", "aceita pet?"]) {
     it(`mantém e repete o pedido: "${mensagem}"`, () => {
       const { cofre, estado } = cofreCom(GRM301);
       expect(pedidoDeConfirmacaoPendente(cofre, 3, "pt", mensagem)).toMatch(/aguarda a sua confirmação/);
@@ -227,7 +236,7 @@ describe("rearme negado por padrão: mensagem com sinal de mudança derruba o re
 });
 
 describe("sim só com caracteres comuns; \"?\" só com verbo de envio (A4)", () => {
-  const ESTRANHOS = ["sim❓", "sim❔", "sim﹖", "sim⁇", "sim‽", "sim;", "¿sim", "sim 🤔", "sim 👎", "sim ❌", "confirmo 👍"];
+  const ESTRANHOS = ["sim❓", "sim❔", "sim﹖", "sim⁇", "sim‽", "sim;", "¿sim", "sim 🤔", "sim 👎", "sim ❌"]; // "confirmo 👍" confirma desde a P15
   for (const mensagem of ESTRANHOS) {
     it(`repete o pedido: ${JSON.stringify(mensagem)}`, () => expect(lerConfirmacao(mensagem, GRM301)).toBe("hesitacao"));
   }
@@ -338,7 +347,118 @@ describe("P13: sim com palavra de referência ou de novidade, sem dado novo", ()
     });
   }
 
-  it("\"segunda\" como data continua sendo data: derruba", () => {
-    for (const mensagem of ["sim, na segunda", "sim, entrada segunda-feira", "sim, segunda que vem"]) expect(lerConfirmacao(mensagem, GRM301, 3)).toBe("outra");
+  it("\"segunda\" como data continua sendo data: derruba quando não é dia do resumo, repete quando é", () => {
+    const quartaASexta: Pendente = { ...GRM301, reserva: { ...GRM301.reserva, checkin: "2027-01-20", checkout: "2027-01-22" } };
+    for (const mensagem of ["sim, na segunda", "sim, entrada segunda-feira", "sim, segunda que vem"]) {
+      expect(lerConfirmacao(mensagem, quartaASexta, 3)).toBe("outra");
+    }
+    // No GRM-301 a saída é numa segunda-feira: valor igual, repete o pedido.
+    expect(lerConfirmacao("sim, na segunda", GRM301, 3)).toBe("hesitacao");
   });
+});
+
+describe("B1: a hesitação não engole a mudança; só é hesitação o que, sem as palavras de hesitação, fica vazio ou é sim", () => {
+  const DADOS = { imovel_id: "GRM-301", checkin: "15/01/2027", checkout: "18/01/2027", hospedes: 2, nome: "Ana Lima", telefone: "(11) 98888-0000" };
+  for (const mensagem of ["acho que sim, mas no mês que vem", "talvez, só eu", "pode ser, mas sem o pet", "acho que sim, sobrenome Souza",
+    "acho que sim, mas na semana que vem", "maybe next month", "acho que sim, mas posterga", "talvez, mas é Ana Lima Souza", "não sei, sozinho",
+    "pode ser mais tarde"]) {
+    it(`derruba, e o sim seguinte não envia: "${mensagem}"`, async () => {
+      const mundo = criarMundo();
+      let estado: EstadoLead = ESTADO_INICIAL;
+      const cofre: Cofre = { ler: () => estado, salvar: (e) => { estado = e; } };
+      const ctx = (turno: number, m: string) => criarContexto(mundo, cofre, turno, m);
+      await montarResumo.executar(DADOS, ctx(2, "quero fechar"));
+      expect(lerConfirmacao(mensagem, GRM301, 3)).toBe("outra");
+      await confirmarReserva.executar({}, ctx(3, mensagem));
+      await confirmarReserva.executar({}, ctx(4, "sim"));
+      expect(mundo.leads).toEqual([]);
+    });
+  }
+  for (const mensagem of ["acho que sim", "Acho que sim, talvez pode ser.", "pode ser", "talvez", "não sei ainda", "I think so", "not sure", "acho que sim, ok"]) {
+    it(`continua hesitação: "${mensagem}"`, () => expect(lerConfirmacao(mensagem, GRM301, 3)).toBe("hesitacao"));
+  }
+});
+
+describe("P15: formas de confirmação", () => {
+  const DADOS = { imovel_id: "GRM-301", checkin: "15/01/2027", checkout: "18/01/2027", hospedes: 2, nome: "Ana Lima", telefone: "(11) 98888-0000" };
+  for (const mensagem of ["tá ótimo, confirma", "Sim! 😊", "sim 👍", "manda ver", "bora", "isso aí", "show, pode mandar", "beleza, confirma", "confirma",
+    "sim, quero", "quero sim", "perfect, go ahead", "please confirm", "all correct", "confirme", "confirm", "correct", "go ahead", "Sim 🙏", "confirmo ✅"]) {
+    it(`envia: "${mensagem}"`, async () => {
+      const mundo = criarMundo();
+      let estado: EstadoLead = ESTADO_INICIAL;
+      const cofre: Cofre = { ler: () => estado, salvar: (e) => { estado = e; } };
+      await montarResumo.executar(DADOS, criarContexto(mundo, cofre, 2, "quero fechar"));
+      expect((await confirmarReserva.executar({}, criarContexto(mundo, cofre, 3, mensagem))).respostaFinal).toMatch(/registrado|registered/);
+      expect(mundo.leads).toHaveLength(1);
+    });
+  }
+  for (const mensagem of ["👍", "😊", "ok", "perfeito", "ótimo", "tá ótimo", "beleza", "show", "perfect", "great", "sim 🤔", "sim ❓"]) {
+    it(`repete o pedido com o resumo, sem derrubar: "${mensagem}"`, () => expect(lerConfirmacao(mensagem, GRM301, 3)).toBe("hesitacao"));
+  }
+  it("\"confirma?\" continua pergunta", () => expect(lerConfirmacao("confirma?", GRM301, 3)).toBe("pergunta"));
+});
+
+describe("B4: referência confirma; valor por extenso igual repete o pedido, diferente derruba", () => {
+  for (const mensagem of ["sim, esse pedido", "sim, esse resumo", "sim, essa reserva", "sim, esses dados"]) {
+    it(`sim: "${mensagem}"`, () => expect(lerConfirmacao(mensagem, GRM301, 3)).toBe("sim"));
+  }
+  // Resumo GRM-301: entrada sexta-feira 15/01/2027, saída segunda-feira 18/01/2027, 2 hóspedes, 3 noites.
+  for (const mensagem of ["sim, dois hóspedes", "sim, duas pessoas", "sim, sexta", "sim, sexta-feira", "sim, janeiro", "sim, três noites", "sim, segunda-feira"]) {
+    it(`repete o pedido: "${mensagem}"`, () => expect(lerConfirmacao(mensagem, GRM301, 3)).toBe("hesitacao"));
+  }
+  for (const mensagem of ["sim, três hóspedes", "sim, sábado", "sim, fevereiro", "sim, duas noites"]) {
+    it(`derruba: "${mensagem}"`, () => expect(lerConfirmacao(mensagem, GRM301, 3)).toBe("outra"));
+  }
+});
+
+describe("B3: condição de preço sem número de três dígitos também é condição de preço (L9)", () => {
+  for (const mensagem of ["sim, se fizer 2 mil", "sim se fizer mais em conta", "sim se baixar um pouco", "fecha por dois mil?", "sim, mas quero pagar menos",
+    "yes if you can do 2k", "sim, desde que caiba no orçamento", "sim, se fizer pela metade", "sim, caso fique mais barato", "yes if it's cheaper"]) {
+    it(`condição de preço, handoff e nenhum lead: "${mensagem}"`, async () => {
+      expect(lerConfirmacao(mensagem, GRM301, 3)).toBe("condicao_de_preco");
+      const mundo = criarMundo();
+      let estado: EstadoLead = ESTADO_INICIAL;
+      const cofre: Cofre = { ler: () => estado, salvar: (e) => { estado = e; } };
+      await montarResumo.executar({ imovel_id: "GRM-301", checkin: "15/01/2027", checkout: "18/01/2027", hospedes: 2, nome: "Ana Lima", telefone: "(11) 98888-0000" },
+        criarContexto(mundo, cofre, 2, "quero fechar"));
+      expect((await confirmarReserva.executar({}, criarContexto(mundo, cofre, 3, mensagem))).handoff).toBe(true);
+      expect(mundo.leads).toEqual([]);
+    });
+  }
+  it("condição que não é de preço segue como antes: \"sim, se tiver wifi\" não é sim nem preço", () => {
+    expect(lerConfirmacao("sim, se tiver wifi", GRM301, 3)).toBe("outra");
+  });
+});
+
+describe("B6: o teto de 300 caracteres vale antes de qualquer leitura", () => {
+  it("pergunta neutra acima de 300 caracteres não é pergunta: é \"outra\" e derruba; abaixo, continua pergunta", () => {
+    const longa = "tem wifi? ".repeat(31);
+    expect(longa.length).toBeGreaterThan(300);
+    expect(lerConfirmacao(longa, GRM301, 3)).toBe("outra");
+    expect(lerConfirmacao("tem wifi? ".repeat(29), GRM301, 3)).toBe("pergunta");
+    let estado: EstadoLead = { ...ESTADO_INICIAL, pendente: GRM301 };
+    const cofre: Cofre = { ler: () => estado, salvar: (e) => { estado = e; } };
+    expect(pedidoDeConfirmacaoPendente(cofre, 3, "pt", longa)).toBeUndefined();
+    expect(estado.pendente).toBeNull();
+  });
+});
+
+describe("rearme: afirmação só mantém o resumo se for sim ou hesitação; ajustes do B3, do P15 e do check-out", () => {
+  const rearma = (mensagem: string) => {
+    let estado: EstadoLead = { ...ESTADO_INICIAL, pendente: GRM301 };
+    const cofre: Cofre = { ler: () => estado, salvar: (e) => { estado = e; } };
+    return { pedido: pedidoDeConfirmacaoPendente(cofre, 3, "pt", mensagem), pendente: estado.pendente };
+  };
+  for (const mensagem of ["quero cancelar", "desisti", "vou com o João", "quero entrar antes", "fico a semana inteira", "add my brother"]) {
+    it(`derruba: "${mensagem}"`, () => expect(rearma(mensagem)).toEqual({ pedido: undefined, pendente: null }));
+  }
+  for (const mensagem of ["obrigado!", "acho que sim", "qual o horário do check-out?", "tem wifi?"]) {
+    it(`mantém: "${mensagem}"`, () => expect(rearma(mensagem).pendente).not.toBeNull());
+  }
+  for (const mensagem of ["sim, se for uma noite a menos", "sim, se puder pagar no cartão", "sim, se tiver vista para a costa"]) {
+    it(`não é condição de preço: "${mensagem}"`, () => expect(lerConfirmacao(mensagem, GRM301, 3)).toBe("outra"));
+  }
+  for (const mensagem of ["ｓｉｍ", "нет"]) {
+    it(`texto com letra fora da gramática é "outra", não repete: "${mensagem}"`, () => expect(lerConfirmacao(mensagem, GRM301, 3)).toBe("outra"));
+  }
 });
