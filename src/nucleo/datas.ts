@@ -180,36 +180,41 @@ function interpretarAno(texto: string): number {
   return texto.length === 2 ? 2000 + n : n;
 }
 
-function resolverComReferencias(texto: string, refSemAno: DataISO, refDiaSemana: DataISO, refRelativo: DataISO): DataISO | null {
+/** `semAno`: a data veio de dia e mês sem ano, resolvida a partir de `refSemAno` (P1, P5, P21). */
+type Resolvida = { data: DataISO; semAno: boolean };
+
+function resolverComReferencias(texto: string, refSemAno: DataISO, refDiaSemana: DataISO, refRelativo: DataISO): Resolvida | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(refSemAno) || !interpretarData(refSemAno)) return null;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(refDiaSemana) || !interpretarData(refDiaSemana)) return null;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(refRelativo) || !interpretarData(refRelativo)) return null;
 
   const explicita = interpretarData(texto);
-  if (explicita) return explicita;
+  if (explicita) return { data: explicita, semAno: false };
 
   const norm = normalizarTexto(texto);
   if (!norm) return null;
 
   const rel = /^(?:(?:para|pra|a partir de|desde|de|ate)\s+)?(.+)$/.exec(norm);
   if (rel && Object.hasOwn(RELATIVOS, rel[1]!)) {
-    return somarDias(refRelativo, RELATIVOS[rel[1]!]!);
+    return { data: somarDias(refRelativo, RELATIVOS[rel[1]!]!), semAno: false };
   }
 
   const sem = /^(?:(?:para|pra|na|no|nesta|neste|nessa|nesse|esta|este|essa|esse|proxima|proximo|de|da|do|ate|desde|a|o)\s+)*([a-z]+(?:[- ][a-z]+)?)(?:\s+(?:que vem|proxima|proximo|agora))?$/.exec(norm);
   if (sem && Object.hasOwn(DIAS_DA_SEMANA, sem[1]!)) {
     const alvo = DIAS_DA_SEMANA[sem[1]!]!;
     const delta = ((alvo - indiceDiaDaSemana(refDiaSemana) + 7) % 7) || 7;
-    return somarDias(refDiaSemana, delta);
+    return { data: somarDias(refDiaSemana, delta), semAno: false };
   }
 
   const { diaEsperado, resto } = extrairNucleoDeData(norm);
   let resolvida: DataISO | null = interpretarData(resto);
+  let semAno = false;
 
   if (!resolvida) {
     const brSemAno = /^(\d{1,2})\/(\d{1,2})$/.exec(resto);
     if (brSemAno) {
       resolvida = resolverSemAno(Number(brSemAno[1]), Number(brSemAno[2]), refSemAno);
+      semAno = true;
     }
   }
 
@@ -219,6 +224,7 @@ function resolverComReferencias(texto: string, refSemAno: DataISO, refDiaSemana:
       const dia = Number(ext[1]);
       const mes = MESES[ext[2]!]!;
       resolvida = ext[3] ? montar(interpretarAno(ext[3]), mes, dia) : resolverSemAno(dia, mes, refSemAno);
+      semAno = !ext[3];
     }
   }
 
@@ -228,6 +234,7 @@ function resolverComReferencias(texto: string, refSemAno: DataISO, refDiaSemana:
       const dia = Number(barraMes[1]);
       const mes = MESES[barraMes[2]!]!;
       resolvida = barraMes[3] ? montar(interpretarAno(barraMes[3]), mes, dia) : resolverSemAno(dia, mes, refSemAno);
+      semAno = !barraMes[3];
     }
   }
 
@@ -237,12 +244,13 @@ function resolverComReferencias(texto: string, refSemAno: DataISO, refDiaSemana:
       const mes = MESES[en[1]!]!;
       const dia = Number(en[2]);
       resolvida = en[3] ? montar(interpretarAno(en[3]), mes, dia) : resolverSemAno(dia, mes, refSemAno);
+      semAno = !en[3];
     }
   }
 
   if (!resolvida) return null;
   if (diaEsperado !== undefined && indiceDiaDaSemana(resolvida) !== diaEsperado) return null;
-  return resolvida;
+  return { data: resolvida, semAno };
 }
 
 /**
@@ -254,7 +262,7 @@ function resolverComReferencias(texto: string, refSemAno: DataISO, refDiaSemana:
  * Expressões vagas (`fim de semana`, `Natal`, `feriado`, `dia 15`) ou datas inexistentes devolvem null.
  */
 export function resolverData(texto: string, hoje: DataISO): DataISO | null {
-  return resolverComReferencias(texto, hoje, hoje, hoje);
+  return resolverComReferencias(texto, hoje, hoje, hoje)?.data ?? null;
 }
 
 /**
@@ -263,7 +271,20 @@ export function resolverData(texto: string, hoje: DataISO): DataISO | null {
  * dia da semana ou data sem ano resolvem a partir de `checkin`.
  */
 export function resolverSaida(texto: string, checkin: DataISO, hoje: DataISO): DataISO | null {
-  return resolverComReferencias(texto, checkin, checkin, hoje);
+  return resolverComReferencias(texto, checkin, checkin, hoje)?.data ?? null;
+}
+
+/** Maior estadia, em noites, que uma saída escrita sem ano pode dar sem pedir as datas de novo (P21). */
+export const TETO_NOITES_SAIDA_SEM_ANO = 90;
+
+/**
+ * P21: a saída foi escrita sem ano e, resolvida depois da entrada (P5), cai a mais de
+ * `TETO_NOITES_SAIDA_SEM_ANO` noites dela, o que costuma ser engano de digitação
+ * ("de 20/01 a 18/01" daria 363 noites). Saída com ano, por dia da semana ou relativa não entra.
+ */
+export function saidaSemAnoAlemDoTeto(texto: string, checkin: DataISO, hoje: DataISO): boolean {
+  const saida = resolverComReferencias(texto, checkin, checkin, hoje);
+  return !!saida && saida.semAno && diasEntre(checkin, saida.data) > TETO_NOITES_SAIDA_SEM_ANO;
 }
 
 function temFormaDeCalendario(resto: string): boolean {
