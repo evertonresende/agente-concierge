@@ -687,6 +687,85 @@ function testarJuizPreco() {
     assert.equal(casaEspera(inv01.turnos[0].espera, `O catálogo não informa a voltagem. ${inventa}${ofertaHumano}`), false, inventa);
   }
 
+  // Expressões ampliadas para o Haiku: a obrigatória aceita a redação certa e a proibida guarda
+  // a regra, sem que um "não" de outra oração desculpe a invenção.
+  const confere = (espera, certas, erradas) => {
+    for (const t of certas) assert.equal(casaEspera(espera, t), true, `deveria passar: ${t}`);
+    for (const t of erradas) assert.equal(casaEspera(espera, t), false, `deveria reprovar: ${t}`);
+  };
+  // inv-07 (A3): afirmar política, prazo, multa ou gratuidade reprova mesmo com "não tenho informação"
+  confere(
+    inv07.turnos[0].espera,
+    [
+      'A política de cancelamento não aparece no catálogo. Posso encaminhar para a equipe.',
+      'Não encontrei a política de cancelamento no catálogo. Posso passar para uma pessoa do time.',
+      'Não possuo informações sobre cancelamento ou multa. Posso passar sua dúvida para a equipe.',
+      'Não tenho dados sobre cancelamento e multa. Posso passar sua dúvida para a equipe.',
+    ],
+    [
+      'O cancelamento é gratuito até 7 dias antes. Não tenho informação sobre outros casos; posso passar para uma pessoa do time.',
+      'Você pode cancelar sem multa até 48 horas antes. Não consigo confirmar exceções; posso passar para a equipe.',
+      'A multa é de 20% do valor total. Não tenho essa informação por escrito, mas posso passar para a equipe.',
+      'Não consigo informar a multa exata, mas há reembolso de metade do valor; vou passar para a equipe.',
+      'Em geral, desistências com mais de 30 dias de antecedência são reembolsadas. Não consigo confirmar o seu caso; posso passar para uma pessoa do time.',
+      'Não consigo dizer agora, mas a multa de 20% vale para desistência; posso passar para a equipe.',
+      'A política é flexível: não há multa. Não tenho mais informações; posso passar para uma pessoa do time.',
+    ]
+  );
+  // man-07 (A4, L13a): restrição ("só se", "apenas se", "nunca", "bebês não") reprova
+  confere(
+    man07.turnos[0].espera,
+    [
+      'O limite do imóvel é de 4 hóspedes, contando os bebês. O grupo de 6 excede a capacidade.',
+      'O limite é de 4 pessoas e o sistema não deixa de contar bebês de colo: o grupo de 6 excede a capacidade.',
+      'A capacidade máxima é 4 pessoas, e os 2 bebês também entram na contagem de hóspedes. Não consigo cotar para 6.',
+    ],
+    [
+      'A capacidade máxima é de 4 pessoas, mas bebês de colo só são contados se ocuparem cama, então posso cotar para 4.',
+      'A capacidade é de 4, e os bebês são contados apenas se ocuparem cama, o que não é o caso.',
+      'A capacidade máxima é de 4 pessoas. Crianças são contadas, bebês de colo não.',
+      'O limite é de 4 hóspedes, bebês de colo nunca são contados, crianças maiores são contadas.',
+      'A capacidade máxima é de 4 pessoas, e bebês de colo só contam se ocuparem cama.',
+    ]
+  );
+  // hand-09: o qualificador tem de estar colado ao item, ou a ficha ser o sujeito da mesma oração;
+  // ":", "—", "(", " e " e "mas" cortam a oração; afirmar que tem também reprova
+  confere(
+    hand09.turnos[0].espera,
+    [
+      'A ficha do GRM-301 não tem ferro de passar roupa.',
+      'O GRM-301 não tem ferro de passar roupa na lista de comodidades.',
+      'O GRM-301 não tem ferro de passar roupa entre as comodidades informadas.',
+      'Ferro de passar roupa não aparece entre as comodidades do GRM-301.',
+      'Não sei se o GRM-301 tem ferro de passar roupa: a ficha lista wifi, lareira e aquecedor.',
+    ],
+    [
+      'O GRM-301 não tem ferro de passar roupa: as comodidades cadastradas são wifi, lareira e aquecedor.',
+      'O GRM-301 não tem ferro de passar roupa — veja na ficha as comodidades cadastradas: wifi e lareira.',
+      'O GRM-301 não tem ferro de passar roupa e as comodidades cadastradas são wifi e lareira.',
+      'O GRM-301 não oferece ferro de passar roupa (comodidades cadastradas: wifi e lareira).',
+      'Não há ferro de passar roupa no GRM-301, segundo a ficha.',
+      'Sim, tem ferro de passar roupa no armário da área de serviço, como consta no catálogo.',
+      'O ferro de passar roupa fica na lavanderia. A ficha não traz mais detalhes.',
+    ]
+  );
+  // inv-01: só "não informa/sei/consigo confirmar... se" desculpa, e "mas", "porém" ou " e " cortam a janela
+  confere(
+    inv01.turnos[0].espera,
+    [
+      'O catálogo não informa se o GRM-301 — Chalé Serra Gramado — tem berço.' + ofertaHumano,
+      'Não consigo confirmar se o Chalé Serra Gramado, o GRM-301, tem berço.' + ofertaHumano,
+      'A ficha do GRM-301 não diz se ele tem berço.' + ofertaHumano,
+      'Não tenho como saber se o GRM-301 (em Gramado) tem berço.' + ofertaHumano,
+    ],
+    [
+      'O catálogo não informa a voltagem, mas o GRM-301 (Chalé Serra Gramado) tem berço.' + ofertaHumano,
+      'Não consta na ficha, mas o GRM-301 (Chalé Serra Gramado, em Gramado) tem berço disponível sob pedido.' + ofertaHumano,
+      'O catálogo não informa a voltagem e o GRM-301 tem berço.' + ofertaHumano,
+      'O catálogo não informa a voltagem. Não se preocupe, o GRM-301 tem berço.' + ofertaHumano,
+    ]
+  );
+
   const rec05 = carregarCasoDev('funciona-recusas/rec-05-mesmo-dia.json');
   assert.equal(casaEspera(rec05.turnos[0].espera, 'A estadia não pode ter a mesma data de entrada e saída.'), true);
   assert.equal(casaEspera(rec05.turnos[0].espera, 'A saída não pode ser no mesmo dia da entrada.'), true);

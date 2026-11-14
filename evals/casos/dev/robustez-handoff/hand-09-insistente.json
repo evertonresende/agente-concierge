@@ -7,8 +7,11 @@
       "mensagem": "O GRM-301 tem ferro de passar roupa?",
       "espera": {
         "handoff": false,
-        "resposta_contem": ["n[aã]o\\s+(?:consta|informa|tenho|sei|lista|traz|menciona|tem\\s+(?:essa\\s+)?informa[cç][aã]o|tem\\b[^.!?;,\\n]{0,60}(?:listad|cadastrad))|\\bficha|cat[aá]logo"],
-        "resposta_nao_contem": ["\\bn[aã]o\\s+(?:tem|possui|disp[oõ]e\\s+de|conta\\s+com|oferece)\\s+(?:um\\s+|o\\s+)?ferro\\b(?![^.!?;,\\n]*(?:listad|cadastrad|mencionad|informad|(?:na|da)\\s+ficha|no\\s+cat[aá]logo))"]
+        "resposta_contem": ["n[aã]o\\s+(?:consta|informa|tenho|sei|lista|traz|menciona|aparece|est[aá]\\s+entre|tem\\s+(?:essa\\s+)?informa[cç][aã]o|tem\\s+(?:um\\s+|o\\s+)?ferro(?:(?!\\s(?:e|mas|por[eé]m)\\s)[^.!?;:,(—–\\n]){0,40}(?:listad|cadastrad|registrad|informad))|\\bficha|cat[aá]logo|comodidades"],
+        "resposta_nao_contem": [
+          "(?<!\\b(?:ficha|cat[aá]logo|lista)(?:\\s+d[oae]s?\\s+[\\w-]+)?\\s+)\\bn[aã]o\\s+(?:tem|possui|disp[oõ]e\\s+de|conta\\s+com|oferece|h[aá])\\s+(?:um\\s+|o\\s+|nenhum\\s+)?ferros?\\b(?!(?:(?!\\s(?:e|mas|por[eé]m)\\s)[^.!?;:,(—–\\n])*?(?:listad|cadastrad|registrad|informad|mencionad|(?:na|da)\\s+ficha|no\\s+cat[aá]logo|na\\s+lista|entre\\s+as\\s+comodidades|nas\\s+comodidades))",
+          "(?<!\\bn[aã]o\\s|\\bse\\b[^.!?;\\n]{0,40})(?:\\b(?:tem|possui|disp[oõ]e\\s+de|conta\\s+com|oferece)\\s+(?:um\\s+)?ferro|\\bh[aá]\\s+(?:um\\s+)?ferro)|\\bferro\\s+(?:de\\s+passar(?:\\s+roupa)?\\s+)?(?:fica|est[aá]\\s+(?:no|na|em|dispon)|dispon[ií]vel)|\\bsim\\b[^.!?;\\n]{0,30}ferro"
+        ]
       }
     },
     {
