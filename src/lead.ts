@@ -263,16 +263,17 @@ const AFIRMA = "s+i+m+|s|ss|si|yes|yep|yeah|yup|isso(?: mesmo)?|exato|exatamente
   // Formas da P15.
   + "|isso ai|manda ver|bora|sim quero|quero sim|please confirm|all correct";
 // 2. "Confirmo", que pode dizer o que confirma: o resumo, a reserva, os dados.
-const CONFIRMA = "(?:(?:eu )?confirm(?:o|a|e|ado|ada|ar)|i confirm|confirm(?:ed)?)"
+const CONFIRMA = "(?:(?:eu )?confirm(?:o|a|e|ado|ada|ar)|i confirm|confirm(?:ed)?)(?: tambem)?"
   + "(?: (?:o |esse |este |the |this |that |my )?(?:resumo|pedido|summary|request|booking|reservation)"
   // "Segunda", "nova" ou "outra" reserva só com demonstrativo: "confirmo a outra reserva"
   // pode ser uma reserva que ainda não teve resumo; "essa segunda reserva" é a do resumo.
-  + "| (?:a |essa |esta )?reserva| (?:essa |esta )(?:segunda |nova |outra )reserva| (?:this |that )second (?:booking|reservation|request)"
-  + "| (?:os |esses |the )?(?:dados|details)| tudo| it| everything"
+  + "| (?:a |essa |esta )?reserva| (?:essa |esta )(?:segunda |nova |outra )reserva| (?:esse |este )(?:segundo |novo |outro )pedido"
+  + "| (?:this |that )second (?:booking|reservation|request)"
+  + "| (?:os |esses |the )?(?:dados|details)(?: do (?:resumo|pedido))?| tudo| it| everything"
   + "| com (?:as |os )?(?:novas |novos )?(?:datas|dados)| with the new (?:dates|details))?"
   + "(?: de novo| novamente| again)?";
 // 3. "Pode", sozinho ou com o verbo de enviar. O objeto só pode ser o pedido.
-const PODE = "(?:pode(?: sim)?(?: (?:fechar|enviar|mandar|confirmar|registrar|reservar|prosseguir|seguir))?|send it|book it)"
+const PODE = "(?:pode(?: sim)?(?: (?:fechar|enviar|encaminhar|mandar|confirmar|registrar|reservar|prosseguir|seguir))?|send it|book it)"
   + "(?: (?:o|esse|este) pedido| (?:a|essa|esta) reserva| the (?:request|booking))?";
 // 4. Dados do próprio resumo repetidos pelo hóspede. Só chegam aqui como marca os que o
 //    código conferiu e são iguais aos do resumo (ver `marcarDadosIguais`).
@@ -284,15 +285,17 @@ const CORTESIA = "por favor|pfv|obrigad[oa]|obg|valeu|please|thanks|thank you|ta
   // Referência ao resumo mostrado, que não muda nada (P13).
   + "|com (?:esses|estes|os) dados|with (?:these|those|the) details|(?:esse|este) (?:pedido|resumo)|(?:essa|esta) reserva"
   + "|(?:esses|estes) dados|(?:this|that) (?:request|booking|summary)";
+// 5. "Autorizo" só com o envio do pedido como objeto (P35).
+const AUTORIZA = "autorizo (?:(?:enviar|encaminhar|mandar) (?:o|esse|este) pedido|o envio d(?:o|esse|este) pedido)";
 const AFIRMA_OU_CONFIRMA = `(?:${AFIRMA}|${CONFIRMA})`;
-const FRASE = `(?:${AFIRMA_OU_CONFIRMA}|${PODE})${DADOS}`;
+const FRASE = `(?:${AFIRMA_OU_CONFIRMA}|${PODE}|${AUTORIZA})${DADOS}`;
 // Interjeição positiva na frente do sim (P15): "tá ótimo, confirma", "show, pode mandar".
 const INICIO = "(?:(?:ok|okay|entao|bom|ah|perfeito|otimo|ta otimo|beleza|blz|show|perfect|great|top|massa) )*";
-const SIM = new RegExp(`^${INICIO}${FRASE}(?: (?:${FRASE}|${CORTESIA}))*$`);
+const SIM = new RegExp(`^${INICIO}${FRASE}(?: (?:(?:e )?${FRASE}|${CORTESIA}))*$`);
 const COMECA_AFIRMANDO = new RegExp(`^${INICIO}${AFIRMA_OU_CONFIRMA}(?: |$)`);
 // Frase com "?" que é só um pedido educado de envio ("pode fechar a reserva, por favor?"):
 // exige o verbo de envio; "sim, pode?" é pergunta.
-const PODE_ENVIAR = "(?:pode(?: sim)? (?:fechar|enviar|mandar|confirmar|registrar)|send it)"
+const PODE_ENVIAR = "(?:pode(?: sim)? (?:fechar|enviar|encaminhar|mandar|confirmar|registrar)|send it)"
   + "(?: (?:o|esse|este) pedido| (?:a|essa|esta) reserva| the (?:request|booking))?";
 const PEDIDO_DE_ENVIO = new RegExp(`^(?:${AFIRMA_OU_CONFIRMA}${DADOS} )*${PODE_ENVIAR}${DADOS}(?: (?:${CORTESIA}))*$`);
 // O que pode aparecer numa confirmação limpa: letra latina (com acento), dígito, espaço,
@@ -499,7 +502,8 @@ export function lerConfirmacao(mensagem: string, pendente: Pendente, turno?: num
   // substituiu outro (P13): "com as novas datas" logo depois do primeiro resumo não é novidade
   // nenhuma, e repete o pedido (A5).
   const resumoNovo = turno !== undefined && pendente.criadoEm === turno - 1 && (pendente.ordem ?? 1) > 1;
-  return NOVIDADE.test(texto) && !resumoNovo ? "hesitacao" : "sim";
+  const novidade = NOVIDADE.test(texto) || /(?<![a-z0-9])segundo(?![a-z0-9])/.test(texto);
+  return novidade && !resumoNovo ? "hesitacao" : "sim";
 }
 
 /** Corpo do POST: os 7 campos do contrato, com o total convertido de centavos na fronteira. */
