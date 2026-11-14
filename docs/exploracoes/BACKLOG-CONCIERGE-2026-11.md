@@ -602,6 +602,17 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   que falhava 10 de 10 passa inteira e a da primeira rodada segue sem violação; no runtime
   real (modelo antigo), `funciona-leads` 86% só com `lead-05` e `lead-06`, que dependem da G.
   Terceira rodada do verificador independente (Opus 5.5, esforço muito alto) em curso
+- 13/11 21h32 · I · verificador independente (Opus 5.5) sobre o adaptador do modelo (a071311): REPROVADO
+  por um defeito, alto e de correção curta: resposta `200` inútil do Haiku (vazia, cortada por
+  limite de tokens, erro devolvido como valor) não vai para o reserva; o loop repete o
+  principal e cai na contingência, e texto cortado pode chegar ao hóspede. Passou: corpo do
+  pedido, leitura da resposta, troca de modelo no meio do turno e de volta, prazo de 45 s,
+  sigilo; 15 de 19 defeitos plantados pegos. Também pedidos: identificador de chamada de
+  ferramenta único e saneado, máscara de endereço no log de falha, quatro testes que faltam,
+  retirada de código morto, número real de chamadas exposto. Achado que não é da I: na `main`
+  o loop ainda ignora `porLimite` (a G corrige). Cinco perguntas ficam para chamada real em
+  `dev`, entre elas se o Haiku sem gateway falha na hora ou fica pendurado (o que decide
+  como `producao` se comporta enquanto não houver gateway). Devolvida; o merge espera
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
