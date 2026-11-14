@@ -511,7 +511,9 @@ verificadores das frentes, no log do backlog.
 
 35. **Reinício com o "sim" na fila.** Se o objeto reinicia com o "sim" ainda na fila, a marca
     de reapresentação se perde, e o "sim" confirma o resumo criado no turno anterior (1 lead).
-36. **Pergunta e "sim" na fila.** O "sim" responde só "Certo.", sem lead.
+36. **Pergunta e "sim" na fila.** Quando uma pergunta e um "sim" chegam juntos com resumo
+    pendente, o "sim" não confirma nem gera lead; a resposta dele é do modelo. Foi medido
+    só em teste, com modelo de mentira.
 37. **Corpo enviado devagar** até o prazo do Worker: o hóspede recebe a contingência com
     `handoff`, mas a sessão não fica marcada.
 38. **Worker desiste com o "sim" em curso.** O lead sai (um só, igual ao resumo) e o hóspede
