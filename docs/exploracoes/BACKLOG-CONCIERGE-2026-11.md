@@ -1331,6 +1331,25 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   que escapavam agora são pegas, e o gate no repositório real termina em menos de 2 s com `SIGILO OK`.
   Verificador do delta lançado (Opus 5.5, esforço alto), com barra fechada de oito itens. O gate não
   está no conjunto do congelamento: pode entrar com as rodadas já em curso
+- 14/11 01h07 · N · desenhos de volta ao conteúdo da `main`: fábrica em 1c4e82a (os cinco itens, em dois blocos
+  Mermaid) e agente em bfe754a (11 pontos de volta). Corrigido por estar desatualizado: portão da revisão
+  final só com o Gemini 4 Argon (X16), frente C encerrada, L como custo, portões por merge e por revisão
+  final. O que depende da H está marcado como desenho até ela entrar. Conferência da coordenadora por
+  frases-chave; a comparação nó a nó com a `main` fica para o verificador final da N
+- 14/11 01h07 · K · verificador da rodada 3: APROVADO o delta f28ce3e..b57b4ee (0 pedidos no destino do
+  redirecionamento em 10 cenários; os cinco baixos corrigidos; matrizes de regressão sem mudança).
+  **Entrou na `main`: merge `--no-ff` de b57b4ee, main em b069b85** (só `scripts/validar-producao.sh`;
+  ensaio com 1369 testes verdes e `AUTOTESTE OK` com ambiente vazio). Limites: SIGQUIT e SIGKILL
+  deixam o runner órfão (só conversas sem confirmação); o autoteste pega 9 de 23 defeitos plantados
+- 14/11 01h07 · F · P20 em 63b6e8c (regra em `src/agente/ferramentas/lead.ts`, `test/nome-f.test.ts` com 33
+  testes; 1388 testes verdes na branch, em cima da `main` 472277c). Não entra ainda: com a `main` atual
+  dois testes da frente T ficam vermelhos, porque o apoio deles passa um nome que o hóspede não escreveu.
+  Saída escolhida: a T troca a linha do apoio em commit próprio de teste, entra na `main`, e a F mescla a
+  `main`. A H recebeu o mesmo pedido para os testes dela (hóspede escreve o nome, verde sem a regra),
+  para as duas frentes não dependerem de ordem. Aceito da F: o commit 1b24c7b (testes que passavam sem
+  montar o resumo que preparavam) e os três testes da G com valor no nome, com os roteiros intactos.
+  Limites para o README: palavras do hóspede em outra ordem passam; pontuação não é conferida; fora da
+  janela de 80 mensagens o nome é pedido de novo
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
