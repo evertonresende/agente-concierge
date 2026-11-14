@@ -393,6 +393,55 @@ function testarJuizPreco() {
   );
   assert.ok(julgarSemTotal('A diária é R$ 590,00.', null).length > 0);
 
+  // Rótulo de componente nas redações do Haiku: "cada", "cada uma", rótulo depois do valor
+  // e rótulo antes da vírgula identificam componente (passam)
+  const grm = { imovel_id: 'GRM-301', checkin: '2027-01-15', checkout: '2027-01-18' };
+  const grmUteis = { imovel_id: 'GRM-301', checkin: '2027-01-18', checkout: '2027-01-20' };
+  const semRotulo = (erros, valor) => erros.some((e) => e.includes(`"${valor}" aparece sem rótulo`));
+  const redacoesComRotulo = [
+    ['- 1 noite comum: R$ 590,00\n- 2 noites de sexta e sábado: R$ 708,00 cada\n- Taxa de limpeza: R$ 150,00\n- Total: R$ 2.156,00', grm],
+    ['3 noites: 1 noite comum a R$ 590,00 e 2 noites de sexta e sábado a R$ 708,00 cada\nTaxa de limpeza: R$ 150,00\nTotal: R$ 2.156,00', grm],
+    ['2 noites, de R$ 590,00 cada\nTaxa de limpeza: R$ 150,00\nTotal: R$ 1.330,00', grmUteis],
+    ['Noites: 2, a R$ 590,00 cada\nTaxa de limpeza: R$ 150,00\nTotal: R$ 1.330,00', grmUteis],
+    ['Total R$ 1.330,00: R$ 590,00 per night, R$ 590,00 nightly, R$ 590,00 each, cleaning fee R$ 150,00.', grmUteis],
+    ['2 noites a R$ 280,00 cada\nTaxa de limpeza: R$ 90,00\nTotal: R$ 650,00', { imovel_id: 'FLN-101', checkin: '2027-01-18', checkout: '2027-01-20' }],
+    ['Noites: 2 (sexta e sábado), R$ 336,00 cada\nTaxa de limpeza: R$ 90,00\nTotal: R$ 762,00', { imovel_id: 'FLN-101', checkin: '2027-01-15', checkout: '2027-01-17' }],
+    ['Valor de cada noite: R$ 439,08\nTaxa de limpeza: R$ 95,00\nTotal: R$ 973,16', { imovel_id: 'NAT-601', checkin: '2027-01-15', checkout: '2027-01-17' }],
+    ['1 noite (sexta), diária de R$ 372,00\nTaxa de limpeza: R$ 100,00\nTotal: R$ 472,00', { imovel_id: 'SAO-501', checkin: '2026-11-13', checkout: '2026-11-14' }],
+    ['1 noite (sexta), R$ 372,00\nTaxa de limpeza: R$ 100,00\nTotal: R$ 472,00', { imovel_id: 'SAO-501', checkin: '2026-11-13', checkout: '2026-11-14' }],
+    ['A estadia fica em total R$ 664,20. As 2 noites começam na sexta ou no sábado, então cada uma sai por R$ 294,60. A taxa de limpeza é R$ 75,00.', { imovel_id: 'RIO-402', checkin: '2027-01-15', checkout: '2027-01-17' }],
+  ];
+  for (const [texto, estadia] of redacoesComRotulo) {
+    assert.deepEqual(julgarPrecoResposta(texto, estadia), [], texto);
+  }
+
+  // Continuam reprovando pelo motivo certo (erro "sem rótulo" daquele valor, com o total certo presente)
+  assert.ok(semRotulo(julgarPrecoResposta('Total: R$ 2.156,00. Fica R$ 590,00.', grm), 'R$ 590,00'));
+  assert.ok(semRotulo(julgarPrecoResposta('Total: R$ 2.156,00. R$ 590,00.', grm), 'R$ 590,00'));
+  assert.ok(semRotulo(julgarPrecoResposta('Total: R$ 590,00', grm), 'R$ 590,00'));
+  assert.ok(semRotulo(julgarPrecoResposta('Para 2 noites, fica R$ 590,00. Total: R$ 1.330,00.', grmUteis), 'R$ 590,00'));
+  assert.ok(semRotulo(julgarPrecoResposta('Total R$ 2.156,00. Para você sai por R$ 1.416,00.', grm), 'R$ 1.416,00'));
+  // O rótulo de uma frase não vale para o valor da frase vizinha (antes ou depois)
+  const vizinhaAntes = julgarPrecoResposta(
+    'São 2 noites de sexta e sábado a R$ 708,00 cada. Fica R$ 590,00. Total: R$ 2.156,00.',
+    grm
+  );
+  assert.ok(semRotulo(vizinhaAntes, 'R$ 590,00'));
+  assert.ok(!semRotulo(vizinhaAntes, 'R$ 708,00'));
+  assert.ok(
+    semRotulo(
+      julgarPrecoResposta('Fica R$ 590,00. Cada noite de sexta e sábado sai por R$ 708,00. Total: R$ 2.156,00.', grm),
+      'R$ 590,00'
+    )
+  );
+  // O "cada" que vem depois de um valor pertence a ele, não ao valor seguinte
+  assert.ok(
+    semRotulo(
+      julgarPrecoResposta('2 noites de sexta e sábado a R$ 708,00 cada e R$ 590,00. Total: R$ 2.156,00.', grm),
+      'R$ 590,00'
+    )
+  );
+
   // Checagem direta das regexes dos casos corrigidos (respostas válidas passam; inválidas reprovam)
   const carregarCasoDev = (rel) =>
     JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'evals', 'casos', 'dev', rel), 'utf8'));

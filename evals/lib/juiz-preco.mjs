@@ -267,7 +267,7 @@ export function calcularEstadia({ imovel_id, checkin, checkout, hospedes }) {
 }
 
 const REGEX_TERMO_COMPONENTE =
-  /\b(?:di[aá]rias?|noites?|hospedagem|sub-?total|limpeza|taxa(?:\s+de\s+limpeza)?|fim\s+de\s+semana|fds|(?:\d+|uma?)\s+norma(?:l|is)|sexta(?:-feira)?|s[aá]bado|domingo|segunda(?:-feira)?|ter[cç]a(?:-feira)?|quarta(?:-feira)?|quinta(?:-feira)?|dias?\s+[uú]te(?:l|is)|semana|unit[aá]ri[oa]|por\s+noite|cada\s+noite|daily|night(?:s)?|rate(?:s)?|weekend|weekday(?:s)?|cleaning|fee)\b/i;
+  /\b(?:di[aá]rias?|noites?|hospedagem|sub-?total|limpeza|taxa(?:\s+de\s+limpeza)?|fim\s+de\s+semana|fds|(?:\d+|uma?)\s+norma(?:l|is)|sexta(?:-feira)?|s[aá]bado|domingo|segunda(?:-feira)?|ter[cç]a(?:-feira)?|quarta(?:-feira)?|quinta(?:-feira)?|dias?\s+[uú]te(?:l|is)|semana|unit[aá]ri[oa]|por\s+noite|cada|daily|night(?:s|ly)?|each|rate(?:s)?|weekend|weekday(?:s)?|cleaning|fee)\b/i;
 
 function temPrefixoR$(texto, indice) {
   const antes = texto.slice(Math.max(0, indice - 10), indice);
@@ -367,13 +367,13 @@ export function extrairValoresCentavos(texto) {
   return valores;
 }
 
-function extrairClausulaAoRedor(texto, indice, tamanho) {
+function extrairClausulaAoRedor(texto, indice, tamanho, { pararEmVirgula = true } = {}) {
   let ini = indice;
   while (ini > 0) {
     const ch = texto[ini - 1];
     if (ch === '\n' || ch === ';' || ch === '!' || ch === '?') break;
     if (ch === '.' && !(/\d/.test(texto[ini - 2] || '') && /\d/.test(texto[ini] || ''))) break;
-    if (ch === ',' && !/\d{2}/.test(texto.slice(ini, ini + 2))) break;
+    if (pararEmVirgula && ch === ',' && !/\d{2}/.test(texto.slice(ini, ini + 2))) break;
     ini--;
   }
 
@@ -392,17 +392,28 @@ function extrairClausulaAoRedor(texto, indice, tamanho) {
   };
 }
 
-function subtotalNomeadoComoComponente(texto, valorObj) {
-  const { antes, depois } = extrairClausulaAoRedor(texto, valorObj.indice, valorObj.texto.length);
+// Rótulo que vem DEPOIS de um valor ("R$ 708,00 cada") pertence a ele, não ao valor seguinte.
+const REGEX_ROTULO_POSPOSTO =
+  /^\s*(?:cada\s+(?:uma?|noite|di[aá]ria)|cada|each(?:\s+night)?|(?:por|per|a)\s+noite|per\s+night|nightly)\b/i;
 
-  // Isola o trecho desde a ocorrência anterior de "R$ ..." (se houver) nesta cláusula
+/**
+ * Isola o trecho desde a ocorrência anterior de "R$ ..." (se houver), descartando o
+ * rótulo posposto daquele valor anterior.
+ */
+function cortarAposValorAnterior(antes) {
   const reAnterior = /R\$\s*(?:[1-9]\d{0,2}(?:\.\d{3})*|0),\d{2}/g;
   let fimAnterior = 0;
   let mAnt;
   while ((mAnt = reAnterior.exec(antes)) !== null) {
     fimAnterior = mAnt.index + mAnt[0].length;
   }
-  const antesSemValorAnterior = antes.slice(fimAnterior);
+  if (fimAnterior === 0) return antes;
+  return antes.slice(fimAnterior).replace(REGEX_ROTULO_POSPOSTO, '');
+}
+
+function subtotalNomeadoComoComponente(texto, valorObj) {
+  const { antes, depois } = extrairClausulaAoRedor(texto, valorObj.indice, valorObj.texto.length);
+  const antesSemValorAnterior = cortarAposValorAnterior(antes);
 
   const idxParen = antesSemValorAnterior.lastIndexOf('(');
   const trechoAposParen = idxParen >= 0 ? antesSemValorAnterior.slice(idxParen + 1) : antesSemValorAnterior;
@@ -412,7 +423,12 @@ function subtotalNomeadoComoComponente(texto, valorObj) {
       : trechoAposParen;
 
   // Não aceita subtotal disfarçado de desconto/oferta ou de total geral da estadia
-  if (/(?:fa[cç]o|fecho|fechamos|sai)\s+por|desconto\s+(?:de|para)|com\s+desconto/i.test(prefixoOferta)) {
+  // "cada uma sai por R$ 294,60" é preço por noite, não oferta
+  if (
+    /(?:fa[cç]o|fecho|fechamos|(?<!\bcada(?:\s+(?:uma?|noite|di[aá]ria))?\s+)sai)\s+por|desconto\s+(?:de|para)|com\s+desconto/i.test(
+      prefixoOferta
+    )
+  ) {
     return false;
   }
   if (/(?<!\bsub)\btotal\b(?!\s+(?:das?|de)\s+(?:di[aá]rias?|noites?|hospedagem))/i.test(prefixoOferta)) {
@@ -427,7 +443,18 @@ function subtotalNomeadoComoComponente(texto, valorObj) {
       ? antesSemValorAnterior
       : trechoAposParen;
 
-  return REGEX_TERMO_COMPONENTE.test(`${trechoContextoAntes} ${depoisAteProx}`);
+  // Valor logo depois da vírgula, só com conector ("2 noites, de R$ 590,00 cada";
+  // "1 noite (sexta), R$ 372,00"): o rótulo está na cláusula anterior da mesma frase.
+  // "2 noites, fica R$ 590,00" não estende e continua reprovando.
+  let antesDaVirgula = '';
+  if (/^\s*(?:de|a|por)?\s*$/i.test(antesSemValorAnterior)) {
+    const { antes: antesFrase } = extrairClausulaAoRedor(texto, valorObj.indice, valorObj.texto.length, {
+      pararEmVirgula: false,
+    });
+    antesDaVirgula = cortarAposValorAnterior(antesFrase);
+  }
+
+  return REGEX_TERMO_COMPONENTE.test(`${trechoContextoAntes} ${antesDaVirgula} ${depoisAteProx}`);
 }
 
 /**
