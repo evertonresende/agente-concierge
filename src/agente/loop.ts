@@ -167,7 +167,6 @@ function idiomaDoTurno(entrada: EntradaDoTurno): Idioma {
   return idiomaDoHospede([...entrada.historico.filter((m) => m.role === "user").map((m) => m.content), entrada.mensagem]);
 }
 
-const VALOR_DO_CODIGO = /R\$ \d{1,3}(?:\.\d{3})*,\d{2}/g;
 // Tamanho limitado: sem teto, a busca fica quadrática em texto longo de dígitos.
 const NUMERO = String.raw`\d(?:[\d.,]{0,14}\d)?`;
 // Com marca de moeda: "R$ 2.156,00", "R$2156", "$ 2,156.00", "2156 reais", "2 mil reais",
@@ -344,15 +343,32 @@ function amarrarTotal(frase: string, totais: string[] | undefined): string {
 }
 
 
+// Campos em que o código escreve dinheiro com formatarReais: só eles liberam valor.
+const CAMPOS_DE_VALOR = new Set(["total", "valor_de_cada", "taxa_de_limpeza", "diaria", "taxa_limpeza"]);
+const SO_VALOR = /^R\$ \d{1,3}(?:\.\d{3})*,\d{2}$/;
+
+function valoresDosCampos(dado: unknown): string[] {
+  if (Array.isArray(dado)) return dado.flatMap(valoresDosCampos);
+  if (!dado || typeof dado !== "object") return [];
+  return Object.entries(dado).flatMap(([chave, valor]) =>
+    (CAMPOS_DE_VALOR.has(chave) && typeof valor === "string" && SO_VALOR.test(valor) ? [valor] : valoresDosCampos(valor)));
+}
+
 /**
- * Todo valor em reais que o código já escreveu nesta conversa: só resultados de
- * ferramenta. Neles o "R$" só aparece em campo formatado pelo código (o catálogo chega
- * sem "$" e nenhum resultado repete texto do hóspede). Respostas não entram: o resumo
- * traz o nome do hóspede, e um nome "R$ 1,00" liberaria esse valor; o total do resumo
- * chega pelo resultado da ferramenta que o gerou.
+ * Todo valor em reais que o código já emitiu nesta conversa (contrato seção 7): só o
+ * campo de dinheiro de um resultado de ferramenta, inteiro, formatado pelo código.
+ * Nunca a releitura de texto livre: resposta do modelo (o texto junto de uma chamada de
+ * ferramenta entra cru), resumo com o nome do hóspede, erro que repete argumento do
+ * modelo. O total do resumo chega pelo campo `total` do resultado que o gerou.
  */
 export function valoresDoCodigo(mensagens: Mensagem[]): Set<string> {
-  return new Set(mensagens.filter((m) => m.role === "tool").flatMap((m) => m.content.match(VALOR_DO_CODIGO) ?? []));
+  return new Set(mensagens.filter((m) => m.role === "tool").flatMap((m) => {
+    try {
+      return valoresDosCampos(JSON.parse(m.content));
+    } catch {
+      return [];
+    }
+  }));
 }
 
 /** Resultado da ferramenta como vai para o histórico: com o total do código, se houver, para ele ficar permitido. */

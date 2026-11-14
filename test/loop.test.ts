@@ -84,6 +84,37 @@ describe("loop de ferramentas", () => {
     expect(corrigirValores("Sem valores aqui: check-in às 15:00, 2 quartos.", permitidos)).toBe("Sem valores aqui: check-in às 15:00, 2 quartos.");
   });
 
+  it("M1: só campo de dinheiro, inteiro, de resultado de ferramenta libera valor; texto que repete argumento não", () => {
+    const permitidos = valoresDoCodigo([
+      { role: "tool", tool_call_id: "a", content: JSON.stringify({ erro: "Imóvel R$ 10,00 não encontrado.", imovel_id: "R$ 20,00", nome: "Ana R$ 30,00" }) },
+      { role: "tool", tool_call_id: "b", content: JSON.stringify({ noites_comuns: { valor_de_cada: "R$ 590,00" }, taxa_de_limpeza: "R$ 150,00", total: "R$ 2.156,00" }) },
+      { role: "tool", tool_call_id: "c", content: "texto solto com R$ 40,00" },
+    ]);
+    expect([...permitidos].sort()).toEqual(["R$ 150,00", "R$ 2.156,00", "R$ 590,00"]);
+  });
+
+  it("M1 cenário 1: conta escrita pelo modelo junto com a chamada de cotar não libera o valor inventado", async () => {
+    const { turno } = conversa();
+    const r = roteiro(
+      { ...pedeFerramentas(chamar("cotar", ESTADIA)), texto: "Vou cotar: 3 noites × R$ 500,00 = R$ 2.000,00." },
+      diz("Fica R$ 2.000,00 pelas 3 noites."),
+      diz("Fica R$ 2.000,00 pelas 3 noites."),
+    );
+    const saida = await turno("quanto fica o GRM-301 de 15/01/2027 a 18/01/2027 para 2?", r.modelo);
+    expect(saida.reply).not.toContain("R$ 2.000,00");
+    expect(saida.reply).toContain("R$ 2.156,00");
+  });
+
+  it("M1 cenário 2: nome do hóspede com valor no resumo não libera o valor nos turnos seguintes", async () => {
+    const { turno } = conversa();
+    await turno("quanto fica?", roteiro(pedeFerramentas(chamar("cotar", ESTADIA)), diz("Fica R$ 2.156,00.")).modelo);
+    await turno("quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", { ...DADOS, nome: "Ana R$ 10,00" }))).modelo);
+    const errado = diz("Combinado: fica R$ 10,00.");
+    const depois = await turno("então fica R$ 10,00?", roteiro(errado, errado, diz("NÃO")).modelo);
+    const doModelo = depois.reply.split("\n\nO seu pedido de reserva ainda aguarda")[0]!;
+    expect(doModelo).not.toContain("R$ 10,00");
+  });
+
   it("recusa de cotação chega ao modelo com o motivo e sem total", async () => {
     const { turno } = montar();
     const { modelo, recebidas } = roteiro(
