@@ -1034,6 +1034,31 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   batem com a fonte. Baixos: restos de outras entregas nas cópias do setup, cenário de ataque em três
   trechos, dados vencidos. Regra passada à frente: garantia só no presente se já está na `main` e
   verificada. Correções pedidas; a verificação final roda no fim, com tudo preenchido
+- 13/11 23h58 · integração · rodada integrada com o modelo real em nível alto, servidor local, árvore das
+  cinco branches (I 433439c, F 28109d8, G 29ae3aa, H, B2 3b37fa0), 98 casos: 97 de 98. Oito blocos em
+  100% e contrato em 88%. A única falha (`con-10-idioma`) é do juiz: a resposta em inglês está certa
+  e o juiz novo não reconhece o rótulo da diária em inglês; correção pedida à B2. Nenhum
+  `modelo_falhou` nem `principal_pulado` em 165 turnos; p50 2,5 s, p95 5,3 s, máximo 15,7 s. Não conta
+  para a prova dos 95%, que é em `dev` publicado e com o juiz aprovado
+- 13/11 23h58 · B2 · relatório da cabeça b954a48 (juiz refeito pela estrutura da estadia; no corpus de 100,
+  0 erradas aprovadas e 1 certa reprovada, na leitura da frente). A frente já está adiante, com os
+  itens do runner da M2, o redirecionamento e o rótulo em inglês. A segunda rodada do verificador
+  sai sobre uma cabeça só, quando esses itens estiverem publicados
+- 13/11 23h58 · I · verificador independente, quarta rodada (b34ab95): APROVADO. Ressalva baixa, regressão do
+  delta: dígito colado em letra vira código de erro no log em 70 casos novos; a correção é trocar um
+  trecho de expressão em uma linha, provada pelo verificador. Pedida à frente antes do merge, com o
+  teste que faltava. Limite conhecido: se a plataforma ecoar o pedido no começo da mensagem de erro,
+  até 4 dígitos vão para o log (já existia na `main`). Documento do gateway ajustado em 433439c: log
+  desligado em `producao` e prova pelo log do Worker
+- 13/11 23h58 · N · correções do verificador na `frente-n` (1005b2c, com a `main` mesclada). Parada; a
+  verificação final roda no fim da leva 2
+- 13/11 23h58 · H · cabeça a58ff5e. A frente achou e corrigiu um defeito determinístico em arquivo dela
+  (0912578): o contador e o bloqueio por estadia da P14 só iam ao armazenamento no fim do turno; num
+  turno abandonado pelo Worker a estadia perdia o bloqueio e saía um terceiro POST. Agora são gravados
+  na hora. A mensagem desse commit fala também em reinício do objeto, que não tem teste: o caminho
+  provado é o do turno abandonado. Teste "item 1b" reescrito como autorizado. A frente relata 918
+  testes na branch e os quatro arquivos dela verdes em quatro árvores. Verificador independente,
+  terceira rodada, rodando sobre a H sozinha e sobre a F nova com a H
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
