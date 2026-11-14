@@ -47,15 +47,16 @@ cabeçalhos `x-uso-entrada`, `x-uso-saida` e `x-chamadas-modelo`, usados para me
   semana, as recusas, o texto em reais (`R$ 2.156,00`), o valor enviado ao webhook, as
   transições do lead, o resumo para confirmação e o aviso de falha. O modelo entende o
   pedido, escolhe a ferramenta e redige. Antes de sair, o texto do modelo passa por uma
-  conferência de código, que procura valor em reais que nenhuma ferramenta calculou. Essa
-  trava tem uma brecha conhecida, em correção na frente G, que também amplia a conferência
-  para concessão, registro afirmado sem `201` e afirmação de disponibilidade. O que a
-  conferência garante: a preencher.
-  <!-- PREENCHER: descrever a garantia da conferência só depois que a correção da G entrar na main e for verificada -->
+  conferência de código: valor em reais que nenhuma ferramenta calculou, concessão,
+  registro afirmado sem `201` e afirmação de disponibilidade não chegam ao hóspede (frente
+  G). Os limites dessa conferência estão na lista do fim.
+- **Nome do lead.** Só pode ser formado por palavras que o hóspede escreveu na conversa
+  (P20); se não for, a ferramenta do resumo recusa e o modelo pede o nome.
 
-  > Estado deste rascunho: a `main` já tem o adaptador do modelo (frente I) e a trava do
-  > lead (frente F), verificados. Ainda não tem as frentes G e H: o que depende delas
-  > (conferência ampliada, limite de corpo) entra com elas.
+  > Estado deste rascunho: a `main` tem as frentes I, F, G e T, o script de validação de
+  > `producao` (K) e o gate de sigilo novo (S), todos verificados. Falta a frente H
+  > (concorrência e falha interna): o que depende dela (limite de corpo de 64 KB, P24) entra
+  > com ela. <!-- PREENCHER: conferir depois da entrada da H -->
 - **Modelo.** Decidido pelo Éverton por medição (`DECISOES.md` X24 e X30;
   [`docs/revisoes/modelos.md`](docs/revisoes/modelos.md)). Principal: Claude Haiku 5.5, com
   o raciocínio em nível alto, direto do provedor pelo AI Gateway. Reserva: GLM-5.3 Flash,
@@ -107,7 +108,9 @@ gateway da conta com a chave da Anthropic guardada nele. Sem isso, responde o re
 |---|---|---|
 | Testes unitários e de integração local | `npm test` | vitest sem falha e sem erro não tratado |
 | Tipos | `npm run tipos` | sem erro |
-| Gate de sigilo e de histórico | `scripts/verificar-sigilo.sh` | `SIGILO OK` |
+| Gate de sigilo e de histórico (varre o histórico inteiro) | `scripts/verificar-sigilo.sh` | `SIGILO OK` |
+| Teste do gate | `scripts/verificar-sigilo.teste.sh` | `TESTE DO GATE OK` |
+| Teste do script de custo | `node --test scripts/custo.test.mjs` | sem falha |
 | Listar os casos de eval | `node evals/rodar.mjs --listar` | contagem por bloco e `CASOS OK` |
 | Teste do próprio runner | `node evals/teste-do-runner.mjs` | `TRAVA OK` e `RUNNER OK` |
 | Evals de desenvolvimento | `node evals/rodar.mjs --alvo "$AGENTE_URL_DEV" --conjunto dev` | `EVAL OK` |
@@ -138,9 +141,10 @@ hostname próprio, que chega ao Worker por uma rota, sem escrita no DNS (X26, P2
 endereço padrão não serve como URL de entrega: a plataforma barra nele alguns clientes
 HTTP, e isso não se desliga (X28). No teste da frente K, `Python-urllib` e `libwww-perl`
 levam 403 no endereço padrão, em POST e em GET, e passam no hostname próprio; os outros
-15 clientes testados passam nos dois. As URLs de pré-visualização de `producao` estão
-desligadas (P25, provisória). A confirmar no congelamento.
-<!-- PREENCHER: a confirmar no congelamento (clientes, P25) -->
+15 clientes testados passam nos dois. As URLs de pré-visualização do Worker de `producao`
+estão desligadas (P25). É só proteção: a plataforma não gera URL por versão para Worker com
+Durable Object, então nenhuma existia. A confirmar no congelamento.
+<!-- PREENCHER: a confirmar no congelamento (clientes) -->
 
 O webhook real não recebe nenhum POST antes da entrega, nem como teste. A validação é por
 composição:
@@ -152,10 +156,16 @@ composição:
 3. O caminho do POST é o mesmo código que roda em `dev` contra o webhook falso.
 4. Contra `producao` só rodam conversas sem confirmação.
 
-O script `scripts/validar-producao.sh` junta essas conferências: `--so-leitura` imprime
-`LEADS REAIS: 0` e `--entrega` só imprime `ENTREGA OK` com o envio ligado. Ele está sendo
-escrito pela frente K e ainda não está na `main`: comando e saída a preencher.
-<!-- PREENCHER: confirmar opções e saídas de scripts/validar-producao.sh quando entrar na main -->
+O script `scripts/validar-producao.sh` junta essas conferências. Os endereços vêm do
+arquivo de ambiente e nunca aparecem na saída.
+
+| Modo | O que faz | Saída de sucesso |
+|---|---|---|
+| sem modo | `/saude`, leads reais antes e depois e o conjunto dev sem os casos de confirmação | `PRODUCAO OK` |
+| `--so-leitura` | só o GET no webhook real; exige zero lead real | `LEADS REAIS: 0` |
+| `--clientes` | um turno sem confirmação com curl, Python `requests`, Python `urllib` e `fetch` do Node | `CLIENTES OK` |
+| `--entrega` | `/saude` com o envio ligado e leads reais; reprova com o envio desligado | `ENTREGA OK` |
+| `--autoteste` | confere o próprio script contra servidores falsos locais, sem tocar em `producao` | `AUTOTESTE OK` |
 
 ## Custo por conversa
 
@@ -181,6 +191,10 @@ chamadas). Bate com a rodada local (p50 2,5 s, p95 5,3 s). O número final sai d
 oficiais: a confirmar no congelamento.
 <!-- PREENCHER: latência final das rodadas oficiais (a confirmar no congelamento) -->
 
+`dev` está publicado com o código da `main` que tem G, T e F. Fumaças depois desse deploy,
+que não contam como rodada: bloco `marco1` com 100% (p50 1,2 s, p95 4,5 s) e bloco
+`funciona-leads` inteiro pelo proxy de registro com 100% (p50 1,6 s, p95 5,7 s).
+
 Notas por bloco e do reservado: a preencher.
 <!-- PREENCHER: nota dos evals por bloco (três rodadas em dev) e agregado do conjunto reservado -->
 
@@ -201,54 +215,112 @@ Pela X24, só bloqueia a entrada na `main` o que é determinístico ou gera lead
 resto fica listado aqui. A lista fecha no fim: a preencher.
 <!-- PREENCHER: lista final de limites -->
 
-Já decididos ou declarados. Os itens 1, 2, 4 e 5 dependem das frentes G e H, que ainda não
-estão na `main`: conferir quando entrarem (a preencher).
-<!-- PREENCHER: conferir os limites 1, 2, 4 e 5 depois que G e H entrarem na main -->
-Os itens 10 a 14 vêm da primeira passada da revisão de segurança
-([`docs/revisoes/m2.md`](docs/revisoes/m2.md)).
+Já decididos ou declarados, por área. Os de segurança vêm da primeira passada da revisão
+([`docs/revisoes/m2.md`](docs/revisoes/m2.md)); os demais, das decisões (P) e dos
+verificadores das frentes, no log do backlog.
+
+**Conversa e modelo**
 
 1. **Handoff depende do modelo.** Palavra na mensagem do hóspede não liga `handoff` por
    código: ela só provoca uma segunda chamada ao modelo, focada no pedido (P17). Se o
    modelo errar também nessa chamada, o handoff não acontece.
-2. **Mudança misturada com pergunta.** Com resumo pendente, a separação entre afirmação e
+2. **Pedido de humano.** "Quero falar com um humano" só vira `handoff` se o modelo chamar
+   a ferramenta.
+3. **Mudança misturada com pergunta.** Com resumo pendente, a separação entre afirmação e
    pergunta na mensagem do hóspede reconhece só algumas formas de pontuação. Nas outras,
    perceber a mudança depende do modelo (P18).
-3. **Número por extenso** fica fora da conferência de valores, e o total citado é amarrado
-   à estadia só pelo rótulo e pelas datas.
-4. **Grupo cotado.** A trava que impede resumo com menos pessoas do que o grupo cotado
+4. **Pergunta com dado, sem sinal claro.** Com resumo pendente, derrubar o resumo diante
+   de uma pergunta que traz um dado novo depende do modelo.
+5. **Grupo cotado.** A trava que impede resumo com menos pessoas do que o grupo cotado
    depende da cotação que o modelo fizer.
-5. **Corpo muito grande.** Acima de 64 KB o Worker devolve `200` com o pedido para
-   resumir, sem ler o resto (P12). Com corpo de vários megabytes, o cliente às vezes vê a
-   conexão cair antes de ler a resposta.
-6. **Webhook real.** O corpo do `422` e o formato de um item da lista são desconhecidos até
-   o primeiro lead real. Qualquer resposta diferente de `201` é tratada como não
-   registrado.
-7. **Disponibilidade.** O catálogo não informa datas livres. O agente cota, mas não diz que
-   a data está disponível, e lead registrado é pedido encaminhado, não reserva garantida.
-8. **Simulador.** O juiz de handoff do simulador não enxerga gatilho que o modelo do
-   hóspede inventa; reprovação de handoff no simulador se lê à mão.
-9. **Conferência no nível do hóspede.** Quando o código pede ao modelo que corrija a
-   resposta, a mensagem de conferência chega como texto de usuário, no mesmo nível de uma
-   fala do hóspede, e o modelo não distingue as duas.
-10. **Sem limite de gasto por cliente ou por sessão.** O custo de modelo não tem teto por
+6. **Data no formato americano.** "01/15/2027" não é lida como data; o agente pede as
+   datas de novo.
+7. **Conversa muito longa.** Sem resumo aberto, depois que a cotação sai da janela de 80
+   mensagens, o agente não repete o total: diz que não tem o valor confirmado e pede o
+   imóvel e as datas de novo (P26). Nenhum valor errado é dito.
+
+**Conferência do texto do modelo**
+
+8. **Número por extenso** fica fora da conferência de valores, e o total citado é amarrado
+   à estadia só pelo rótulo e pelas datas.
+9. **Milhar com espaço.** Um valor escrito com espaço no lugar do ponto ("R$ 2 156,00") é
+   cortado, mesmo quando certo.
+10. **Contagem de chamadas.** Quando o prazo do turno vence com o modelo reserva rodando, o
+    cabeçalho de chamadas conta uma a menos.
+11. **Motivo do handoff.** O motivo registrado tem falsos positivos quando a ferramenta de
+    handoff já tinha sido chamada.
+12. **Conferência no nível do hóspede.** Quando o código pede ao modelo que corrija a
+    resposta, a mensagem de conferência chega como texto de usuário, no mesmo nível de uma
+    fala do hóspede, e o modelo não distingue as duas.
+
+**Lead e nome (P20, P28)**
+
+13. **Ordem do nome.** Palavras que o hóspede escreveu, em outra ordem ou combinação,
+    passam. Depois de "na verdade o titular é o Pedro Alves", um modelo que passe o nome
+    antigo é aceito, porque as palavras foram escritas.
+14. **Pontuação do nome** não é conferida.
+15. **Nome fora da janela.** Turno com ferramenta gasta 4 ou mais mensagens; numa conversa
+    com cotações o nome sai da janela de 80 mensagens bem antes de 40 turnos e é pedido de
+    novo.
+16. **Modelo que insiste no nome errado** esgota as chamadas do turno e o hóspede recebe o
+    aviso de contingência com `handoff`, sem resumo e sem envio.
+17. **Recusa do nome derruba o resumo pendente.** O "sim" seguinte não envia nada: o
+    hóspede recebe a pergunta do agente e um resumo novo (P28).
+18. **Nome em chinês, japonês ou coreano** grudado na frase ("meu nome é" e o nome sem
+    espaço) é recusado; mandado sozinho, passa (P28).
+19. **Webhook real.** O corpo do `422` e o formato de um item da lista são desconhecidos até
+    o primeiro lead real. Qualquer resposta diferente de `201` é tratada como não
+    registrado.
+20. **Disponibilidade.** O catálogo não informa datas livres. O agente cota, mas não diz que
+    a data está disponível, e lead registrado é pedido encaminhado, não reserva garantida.
+
+**Pedido HTTP (dependem da frente H, ainda fora da `main`; conferir quando ela entrar: a
+preencher)**
+<!-- PREENCHER: conferir os itens 21 a 23 depois da entrada da H -->
+
+21. **Corpo muito grande.** Acima de 64 KB o Worker devolve `200` com o pedido para
+    resumir, sem ler o resto (P12). Com corpo de vários megabytes, o cliente às vezes vê a
+    conexão cair antes de ler a resposta.
+22. **Corpo grande com resumo pendente.** Acima de 64 KB o pedido não toca na sessão, e o
+    "sim" seguinte não reapresenta o resumo (P24).
+23. **Sessão nova com mensagem vazia.** Um `session_id` novo com mensagem vazia cria a
+    sessão com as tabelas vazias.
+
+**Segurança e dados**
+
+24. **Sem limite de gasto por cliente ou por sessão.** O custo de modelo não tem teto por
     quem conversa.
-11. **O `session_id` é a única credencial da conversa.**
-12. **Dados de terceiros nos leads.** Com o envio real ligado, nome e telefone do hóspede
+25. **O `session_id` é a única credencial da conversa.**
+26. **Dados de terceiros nos leads.** Com o envio real ligado, nome e telefone do hóspede
     vão ao webhook do time comercial.
-13. **Página de chat sem cabeçalhos de proteção** do navegador.
-14. **Dados da sessão sem prazo de apagamento** no armazenamento do objeto.
-15. **Pergunta com dado, sem sinal claro.** Com resumo pendente, derrubar o resumo diante
-    de uma pergunta que traz um dado novo depende do modelo.
-16. **Conversa muito longa.** Depois que a cotação sai da janela de mensagens que o modelo
-    recebe, o agente cota de novo em vez de repetir o valor.
-17. **Pedido de humano.** "Quero falar com um humano" só vira `handoff` se o modelo chamar
-    a ferramenta.
-18. **Log.** Até 4 dígitos de um dado podem ir para o log se a plataforma ecoar o pedido
+27. **Página de chat sem cabeçalhos de proteção** do navegador.
+28. **Dados da sessão sem prazo de apagamento** no armazenamento do objeto.
+29. **Log.** Até 4 dígitos de um dado podem ir para o log se a plataforma ecoar o pedido
     numa mensagem de erro.
-19. **Veredito do simulador.** O resultado do simulador hostil é lido no relatório, não só
-    na linha final.
-20. **Medição do nível alto.** A comparação de níveis do Haiku teve uma rodada só no nível
-   alto, e entre duas rodadas do mesmo nível 13 casos trocaram de resultado.
+
+**Ferramentas de verificação**
+
+30. **Juiz de preço dos evals.** Reconhece pela forma da frase, não pelo sentido; os
+    formatos que ele não julga estão em `evals/README.md`. Em compensação, as rodadas
+    oficiais passam por um proxy local que só grava as conversas, e toda resposta com valor
+    em reais nos casos de preço e de desconto é lida à mão (P27).
+31. **Simulador.** O juiz de handoff do simulador não enxerga gatilho que o modelo do
+    hóspede inventa; reprovação de handoff no simulador se lê à mão. O resultado também é
+    lido no relatório, não só na linha final.
+32. **Validação de `producao`.** No modo completo, interromper o script com Ctrl-\ ou
+    `kill -9` deixa o runner das conversas rodando sozinho (só conversas sem confirmação).
+33. **Gate de sigilo.** Procura IP e e-mail só nos arquivos atuais, não em commits antigos
+    nem em mensagens; não procura IPv6; não vê reescrita de histórico com push forçado nem
+    termo partido por quebra de linha; alguns formatos do arquivo de ambiente fazem ele
+    sair com 2, do lado seguro. Lista completa no cabeçalho de `scripts/verificar-sigilo.sh`.
+34. **Medição do nível alto.** A comparação de níveis do Haiku teve uma rodada só no nível
+    alto, e entre duas rodadas do mesmo nível 13 casos trocaram de resultado.
+
+**Conferências com o modelo real** (uma repetição de cada roteiro, não são rodadas de eval):
+oito roteiros de nome, nenhum travado em recusa, e os sete leads com o nome exatamente como
+o hóspede escreveu; quatro pedidos com saída sem ano anterior à entrada, nenhum valor em
+reais e nenhum ano completado pelo modelo; 20 sessões com resumo pendente e mensagem que
+mistura mudança e pergunta, zero lead com dado velho e zero nome sujo.
 
 ## Onde está cada documento
 
