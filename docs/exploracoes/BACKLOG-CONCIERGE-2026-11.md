@@ -54,7 +54,7 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 | M1 | agente-concierge | Revisão curta do Marco 1 | A | alta | 0,5 | subagentes Opus 5.5 + conselho | concluída (`docs/revisoes/m1.md`; achados com dono) | — |
 | I | agente-concierge | Escolha do modelo por eval | A, B2 | alta | 1 | subagente em worktree · Opus 5.5, esforço médio desde a X16 | adaptador na `main` desde 13/11 23h18 (27c3093), com o Haiku 5.5 em nível alto (X24); `dev` publicado dessa versão. Delta do log de falha e gateway de `producao` na `main` desde 13/11 23h59 (fcb7dc2), verificador aprovado. Fica viva para a fase 2 (medição no código final) e para a linha do gateway de `producao` | `t3/modelo-evals-fallback` |
 | E | agente-concierge | Datas | Marco 1, L1, L1a, L1b, L2 | alta | 1,5 | subagente em worktree · Gemini 4 Hydrogen | concluída: na `main` (81873fa) | `t3/datas-relativas-sao-paulo` |
-| F | agente-concierge | Lead robusto | Marco 1, L6, L7, L9, L10, L11, L15 (textos fixos), L20 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16) | na `main`: primeira parte (801c8a2) e complemento (0a44bd6, 14/11 00h05; P14 por estadia, P18, P19, C7 a C11), com seis rodadas de verificador. Aberta só para o nome do lead (P20), em commit novo | `frente-f` |
+| F | agente-concierge | Lead robusto | Marco 1, L6, L7, L9, L10, L11, L15 (textos fixos), L20 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16); de 13/11 23h28 a 14/11 02h55 rodou em Fable 5.2 por desvio não percebido; de volta ao Opus 5.5, esforço alto, em 14/11 04h07 | na `main`: primeira parte (801c8a2) e complemento (0a44bd6, 14/11 00h05; P14 por estadia, P18, P19, C7 a C11), com seis rodadas de verificador. Aberta só para o nome do lead (P20), em commit novo | `frente-f` |
 | G | agente-concierge | Robustez e handoff | Marco 1, L3, L4, L5, L5a, L12, L13a, L15, L16, L16a, L19, L21 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16) | rodando | `frente-g` |
 | H | agente-concierge | Concorrência endurecida e falha interna | Marco 1, L17, L17a, L18 | alta | 1 | subagente em worktree · Gemini 4 Hydrogen até 13/11 21h26; depois Opus 5.5, esforço alto (X23) | duas rodadas de verificador independente; correções entregues (c905a09); espera a F entrar na `main` para o merge final e a terceira rodada | `t3/durable-session-concurrency` |
 | J | agente-concierge | Página de chat em dois passos: design (canvas) e implementação | passo 1: nada; passo 2: Marco 1 e aprovação do Éverton | baixa | 0,7 + 1 | thread T3 · Fable 5.2 | passo 1 concluído (canvas aprovado pelo Éverton, com dois ajustes); passo 2 entregue (b8991ce) | `frente-j` |
@@ -1805,6 +1805,20 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   classificadas como falso vermelho), e a leitura do tipo de noite contra o valor não marca nenhuma
   resposta nas três: o buraco do 4efb030 não foi exercitado. A P34 também fixa, antes da primeira
   rodada oficial da árvore nova, como conta um falso vermelho classificado
+- 14/11 04h02 · reservado · os 4 casos revelados chegaram (regra 6). São confirmações em frase composta,
+  como "Pode fechar, confirmo os dados do resumo." e "Sim, confirmo o resumo e autorizo encaminhar o
+  pedido."; o agente repete o resumo e pede o "sim". Conferência da coordenação pela função de leitura
+  do sim da `main`, numa cópia: as quatro saem como "outra" por falta de vocabulário na gramática
+  fechada, não por decisão que mande não confirmar; os exemplos literais da L9 e da P13 confirmam
+- 14/11 04h05 · F · reaberta para as formas de confirmação da P35 (provisória): só vocabulário da mesma
+  classe que a L9 e a P13 já aceitam, matriz negativa para cada forma, e palavra de preço junto do sim
+  continua sem confirmar. Cabeça pedida até 04h45; só entra com verificador independente aprovado até
+  05h30; sem isso a `main` congela sem a mudança e o comportamento vira limite no README. **Desvio de
+  modelo achado agora:** a thread da F rodou de 13/11 23h28 a 14/11 02h55 (regra do nome, "sim" limpo,
+  P29 e o ajuste de teste) em Fable 5.2, e não em Opus 5.5 como manda a X23. A coordenação não
+  percebeu a troca e a causa não foi determinada. As entregas desse período passaram por verificador
+  independente em Opus 5.5. A thread voltou ao Opus 5.5, esforço alto, antes desta tarefa; G, N, K e
+  B2 conferidas, todas em Opus 5.5
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
