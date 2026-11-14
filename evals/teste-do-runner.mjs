@@ -1305,13 +1305,14 @@ const LIMITES_CONHECIDOS = new Set([
   'subtotal-sem-rotulo-de-componente', 'concessao-hipotetica', 'noites-entre-parenteses',
   'total-sem-a-palavra-total', 'componente-trocado-com-total-certo', 'limpeza-por-noite-sem-total',
   'contagem-em-ingles-por-extenso', 'fronteira-diarias-que-cabem', 'valor-por-pessoa', 'a-partir-de',
+  'acrescimo-so-descrito', 'negacao-longe',
 ]);
 function testarCorpusJuiz() {
   const corpus = JSON.parse(fs.readFileSync(path.join(__dirname, 'lib', 'corpus-juiz.json'), 'utf8'));
   assert.equal(corpus.filter((c) => c.rodada === 1).length, 100);
   assert.equal(corpus.filter((c) => c.rodada === 2).length, 134);
   // rodada 3: respostas reais do ensaio que o juiz errava, uma por correção
-  assert.equal(corpus.filter((c) => c.rodada === 3).length, 5);
+  assert.equal(corpus.filter((c) => c.rodada === 3).length, 7);
   const esperas = {};
   const espera = (rel) =>
     (esperas[rel] ??= JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'evals', 'casos', 'dev', rel), 'utf8')).turnos[0].espera);
