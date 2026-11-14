@@ -54,7 +54,7 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 | M1 | agente-concierge | Revisão curta do Marco 1 | A | alta | 0,5 | subagentes Opus 5.5 + conselho | concluída (`docs/revisoes/m1.md`; achados com dono) | — |
 | I | agente-concierge | Escolha do modelo por eval | A, B2 | alta | 1 | subagente em worktree · Opus 5.5, esforço médio desde a X16 | adaptador na `main` desde 13/11 23h18 (27c3093), com o Haiku 5.5 em nível alto (X24); `dev` publicado dessa versão. Delta do log de falha e gateway de `producao` na `main` desde 13/11 23h59 (fcb7dc2), verificador aprovado. Fica viva para a fase 2 (medição no código final) e para a linha do gateway de `producao` | `t3/modelo-evals-fallback` |
 | E | agente-concierge | Datas | Marco 1, L1, L1a, L1b, L2 | alta | 1,5 | subagente em worktree · Gemini 4 Hydrogen | concluída: na `main` (81873fa) | `t3/datas-relativas-sao-paulo` |
-| F | agente-concierge | Lead robusto | Marco 1, L6, L7, L9, L10, L11, L15 (textos fixos), L20 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16) | primeira parte na `main` (801c8a2); o complemento (P14 por estadia, P18, C7 a C11) está em 28109d8, com o ensaio limpo e a sexta rodada do verificador rodando | `frente-f` |
+| F | agente-concierge | Lead robusto | Marco 1, L6, L7, L9, L10, L11, L15 (textos fixos), L20 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16) | na `main`: primeira parte (801c8a2) e complemento (0a44bd6, 14/11 00h05; P14 por estadia, P18, P19, C7 a C11), com seis rodadas de verificador. Aberta só para o nome do lead (P20), em commit novo | `frente-f` |
 | G | agente-concierge | Robustez e handoff | Marco 1, L3, L4, L5, L5a, L12, L13a, L15, L16, L16a, L19, L21 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16) | rodando | `frente-g` |
 | H | agente-concierge | Concorrência endurecida e falha interna | Marco 1, L17, L17a, L18 | alta | 1 | subagente em worktree · Gemini 4 Hydrogen até 13/11 21h26; depois Opus 5.5, esforço alto (X23) | duas rodadas de verificador independente; correções entregues (c905a09); espera a F entrar na `main` para o merge final e a terceira rodada | `t3/durable-session-concurrency` |
 | J | agente-concierge | Página de chat em dois passos: design (canvas) e implementação | passo 1: nada; passo 2: Marco 1 e aprovação do Éverton | baixa | 0,7 + 1 | thread T3 · Fable 5.2 | passo 1 concluído (canvas aprovado pelo Éverton, com dois ajustes); passo 2 entregue (b8991ce) | `frente-j` |
@@ -1083,6 +1083,22 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   (a frente relata 21 de 21 defeitos plantados pegos). Verificador independente, segunda rodada (só
   o delta), rodando. A conferir entre a K e a B2: o mínimo de 60 casos depois que a trava do runner
   passar a ser por negação
+- 14/11 00h05 · F · complemento NA `main` (0a44bd6, cabeça 28109d8). Verificador independente, sexta
+  rodada: APROVADO. Sim com anúncio de dúvida não envia (0 de 32 mensagens da sonda anterior e 0 de
+  118 novas; na cabeça reprovada, 17 e 23); confirmação legítima intacta (49 de 50, as mesmas); a P14
+  inteira e as sondas gerais idênticas à rodada 5; a suíte pega 10 de 12 defeitos plantados. Ensaio
+  da coordenadora sobre a `main` atual: merge limpo, 1069 testes, tipos sem erro, SIGILO OK. Limites
+  para o README: pergunta com dado sem sinal ("uma pergunta, pode ser com o João?") mantém o resumo
+  pelo texto, e quem segura é a pergunta fechada da G, que depende do modelo (C14); se o modelo chamar
+  a confirmação numa pergunta pura, o resumo cai, lado seguro (C13). Avisadas a G (mesclar a `main` e
+  corrigir os 2 testes), a B2 (mesclar a `main`, mover o `lead-12`) e a F (nome do lead, P20, em
+  commit novo). Próxima na ordem: H, em verificação
+- 14/11 00h05 · S · gate de sigilo corrigido na `frente-gate` (1d5e406, seis commits): lê o conteúdo de todos
+  os commits publicáveis, nenhuma saída mostra o texto encontrado, procura termos em nomes de arquivo,
+  trata binário como texto, e ganhou teste próprio. Ensaio da coordenadora: merge limpo, 740 testes,
+  `SIGILO OK` no repositório real em 1,2 s, `TESTE DO GATE OK`. Verificador independente rodando, só
+  com termos falsos em repositórios descartáveis. Limites declarados pela frente: mensagem de tag
+  anotada não é lida; IP e e-mail só no índice
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
