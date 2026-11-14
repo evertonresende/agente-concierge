@@ -941,6 +941,14 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   com marcador no que se preenche no fim. Respondido: os nomes dos modelos ficam, com revisão do
   Éverton; nada em `docs/sessoes/` até o Éverton escolher as sessões, e a frente adianta fora do
   repositório o programa que limpa um export
+- 13/11 23h31 · H · diagnóstico do teste que falhava no ensaio de todas as branches ("item 1b" de
+  `test/concorrencia-h.test.ts`): o teste estava desatualizado, não há defeito. Com a G, a pergunta do
+  turno 2 repete o resumo (L9), o "sim" do turno 3 vale e a primeira passagem envia; a segunda passagem
+  só devolve a resposta gravada (1 chamada ao modelo, 1 POST, 1 lead). Conferido por leitura: só o
+  laço da G chama `pedidoDeConfirmacaoPendente`. Autorizado reescrever o subcaso sem fixar se a
+  primeira passagem envia (a ordem de entrada é F, H, G, e a G ainda muda esse ponto): o teste prova
+  que a segunda passagem não acrescenta efeito. Prova pedida em três árvores. A H já tem a F nova
+  (efb67f7): 907 testes verdes na branch
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
