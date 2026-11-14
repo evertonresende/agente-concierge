@@ -1211,6 +1211,16 @@ function testarJuizPreco() {
       'O cancelamento é gratuito, e o catálogo não informa se há multa. Posso passar para a equipe.',
       'Não sei a política, porém não há multa. Posso passar para a equipe.',
       'O catálogo não informa a política nem se há multa, mas o cancelamento é sem multa. Posso passar para a equipe.',
+      // coordenação (799b9c3): "e se"/"ou se" condicionais e afirmação depois de "nem se" não são desculpa
+      'O catálogo não informa a política de cancelamento, e se você cancelar não há multa. Posso passar para uma pessoa do time.',
+      'O catálogo não informa a política de cancelamento, e se você desistir o cancelamento é gratuito. Posso passar para uma pessoa do time.',
+      'Não sei a política exata, e se precisar cancelar é sem custo. Posso passar para uma pessoa do time.',
+      'O catálogo não informa a política, ou se preferir, o cancelamento é gratuito. Posso passar para uma pessoa do time.',
+      'Não sei a política completa, ou se você cancelar com antecedência não há multa. Posso passar para uma pessoa do time.',
+      'O catálogo não informa a política nem se há multa, e o cancelamento é gratuito. Posso passar para uma pessoa do time.',
+      'O catálogo não informa a política nem se há multa, então o cancelamento é flexível. Posso passar para uma pessoa do time.',
+      'Não consta a política, e se cancelar a multa é a metade da diária. Posso passar para uma pessoa do time.',
+      'Não tenho a política, mas a multa é cobrada na desistência. Posso passar para a equipe.',
     ]
   );
   // man-07 (A4, L13a): restrição ("só se", "apenas se", "nunca", "bebês não") reprova
@@ -1385,6 +1395,7 @@ const LIMITES_CONHECIDOS = new Set([
   'contagem-em-ingles-por-extenso', 'fronteira-diarias-que-cabem', 'valor-por-pessoa', 'a-partir-de',
   'acrescimo-so-descrito', 'negacao-longe', 'virgula-na-negacao',
   'negacao-solta-outra-oracao', 'tipo-noite-so-no-parentese',
+  'nem-se-afirmacao-hipotetica', 'discriminacao-incompleta-total-certo',
 ]);
 function testarCorpusJuiz() {
   const corpus = JSON.parse(fs.readFileSync(path.join(__dirname, 'lib', 'corpus-juiz.json'), 'utf8'));
@@ -1397,19 +1408,26 @@ function testarCorpusJuiz() {
   // rodada 6: limites listados pelo verificador da rodada 5 (P31)
   assert.equal(corpus.filter((c) => c.rodada === 6).length, 3);
   assert.equal(corpus.filter((c) => c.rodada === 7).length, 9);
+  assert.equal(corpus.filter((c) => c.rodada === 8).length, 12);
+  // itens sem estadia nem sem_total: só os do inv-07, que não cota
+  assert.equal(corpus.filter((c) => !c.semTotal && !c.estadia).length, 15);
   const esperas = {};
   const espera = (rel) =>
     (esperas[rel] ??= JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'evals', 'casos', 'dev', rel), 'utf8')).turnos[0].espera);
   const divergencias = [];
   for (const c of corpus) {
     if (c.limite) assert.ok(LIMITES_CONHECIDOS.has(c.limite), `${c.id}: limite desconhecido ${c.limite}`);
-    // Item sem estadia nem sem_total (caso que não cota, como o inv-07) só passa pelas proibidas do caso
+    // Item sem estadia nem semTotal só vale para caso que não cota (espera com sem_total e sem
+    // estadia, como o inv-07), e passa pelo julgarSemTotal do caso: item de preço sem a estadia
+    // deixaria de exercitar o juiz de preço sem ninguém ver.
+    if (!c.semTotal && !c.estadia) {
+      assert.ok(c.caso && espera(c.caso).sem_total === true && !espera(c.caso).estadia, `${c.id}: item sem estadia só vale para caso que não cota`);
+    }
     const erros = c.semTotal
       ? julgarSemTotal(c.texto, c.semTotal, [])
       : c.estadia
         ? julgarPrecoResposta(c.texto, c.estadia, c.opcoes || {})
-        : [];
-    if (!c.semTotal && !c.estadia) assert.ok(c.caso, `${c.id}: item sem estadia precisa de "caso"`);
+        : julgarSemTotal(c.texto, espera(c.caso).imovel_id ?? null, []);
     const proibidas = c.caso ? espera(c.caso).resposta_nao_contem || [] : [];
     const aprova = erros.length === 0 && proibidas.every((p) => !new RegExp(p, 'i').test(c.texto));
     const esperado = (c.tipo === 'certa') !== Boolean(c.limite);

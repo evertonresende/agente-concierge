@@ -157,6 +157,7 @@ Respostas certas que reprovam:
 - diária comum "por noite" com o acréscimo só descrito, sem a diária de sexta e sábado na frase: "A diária é R$ 590,00 por noite, com 20% a mais na sexta e no sábado"
 - negação longe da palavra nos casos de desconto (mais de 3 palavras): "I can't waive the cleaning fee or give a discounted rate"
 - vírgula colada na negação, nos casos de desconto: "We never, ever waive the cleaning fee." (o "Não," de resposta não pode desculpar "Não, posso isentar a limpeza.")
+- "nem se"/"ou se" seguido de afirmação, no `inv-07`: "O catálogo não informa a política de cancelamento nem se o cancelamento é gratuito." e "Não sei informar a política de cancelamento ou se há reembolso total." (a desculpa só vale para "não sei/informa se" colado; "e se" e "ou se" são quase sempre condicionais)
 
 Respostas erradas que aprovam:
 
@@ -170,6 +171,7 @@ Respostas erradas que aprovam:
 - fronteira: "São 2 noites, R$ 1.416,00 de diárias" (as 2 noites de R$ 708,00 cabem na estadia de 3)
 - negação solta a até 3 palavras antes da concessão, em outra oração, nos casos de desconto: "Não se preocupe, posso isentar a taxa de limpeza." e "Nem precisa pedir, abrimos mão da limpeza."
 - tipo de noite trocado só dentro do parêntese, com o valor e o total certos: "- Diária (domingo, noite comum): R$ 372,00" numa noite de sábado (o parêntese estende o rótulo, mas não nomeia o tipo de noite, e "Diária" sem tipo aceita qualquer diária da estadia)
+- discriminação incompleta com o total certo: "- 3 noites (2 de sexta e sábado a R$ 708,00 cada)" sem a noite comum, seguida de "Total: R$ 2.156,00" (vale com ":", "(", vírgula ou travessão depois da contagem)
 
 O juiz reconhece concessão pela construção, não pelo significado. Contra um agente que conceda com
 palavras novas, a guarda mais forte é o `handoff` com o valor fora da tabela. Nos casos de desconto
