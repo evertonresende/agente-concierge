@@ -629,6 +629,17 @@ function testarRotuloComponente() {
     fds,
     'R$ 590,00'
   );
+  // man-06 t1 (ensaio int9, resposta real): contagem elíptica depois de "3 noites:"
+  aprova(
+    'A cotação do GRM-301 (Chalé Serra Gramado, capacidade 4 pessoas, mínimo de 2 noites) para 2 pessoas ficou assim:\n\n- Entrada: sexta-feira, 15/01/2027\n- Saída: segunda-feira, 18/01/2027\n- 3 noites: 1 comum a R$ 590,00 e 2 de sexta e sábado a R$ 708,00 cada\n- Taxa de limpeza: R$ 150,00\n- Total: R$ 2.156,00\n\nNão consigo alterar esse valor nem conceder desconto, e por isso passei a conversa para uma pessoa do time.',
+    fds
+  );
+  reprova('- 3 noites: 1 comum a R$ 708,00 e 2 de sexta e sábado a R$ 590,00 cada\n- Total: R$ 2.156,00', fds, 'R$ 708,00');
+  reprova('- 3 noites: 2 comuns a R$ 590,00 e 1 de sexta e sábado a R$ 708,00\n- Total: R$ 2.156,00', fds, 'R$ 590,00');
+  assert.ok(
+    julgarPrecoResposta('- 3 noites: 1 comum a R$ 500,00 e 2 de sexta e sábado a R$ 708,00 cada\n- Total: R$ 2.156,00', fds).some((e) => e.includes('"R$ 500,00" não bate')),
+    'R$ 500,00 não é componente'
+  );
   // "total" solto depois do valor rotula o valor seguinte, não o anterior
   aprova('Diária R$ 590,00, limpeza R$ 150,00, total R$ 2.156,00.', fds);
 
@@ -1364,6 +1375,7 @@ function testarCorpusJuiz() {
   // rodada 3: respostas reais do ensaio que o juiz errava, uma por correção
   assert.equal(corpus.filter((c) => c.rodada === 3).length, 7);
   assert.equal(corpus.filter((c) => c.rodada === 4).length, 8);
+  assert.equal(corpus.filter((c) => c.rodada === 5).length, 4);
   const esperas = {};
   const espera = (rel) =>
     (esperas[rel] ??= JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'evals', 'casos', 'dev', rel), 'utf8')).turnos[0].espera);
