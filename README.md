@@ -4,7 +4,8 @@ Agente de chat para quem quer se hospedar em imóveis de temporada. Ele faz quat
 
 1. Responde dúvidas sobre os imóveis pelo catálogo. O que o catálogo não traz, ele é
    instruído a dizer que não sabe. A conferência de código corta a afirmação de data livre
-   nas formas que reconhece; paráfrase passa (limite 20).
+   nas formas que reconhece, algumas só quando a mensagem do hóspede traz a data; paráfrase
+   passa (limite 20).
 2. Cota estadias pela regra de preço, com o total calculado por código.
 3. Registra o pedido de reserva (lead): coleta os dados, mostra um resumo, espera a
    confirmação do hóspede em outro turno e só então envia ao webhook.
@@ -477,9 +478,10 @@ verificadores das frentes, no log do backlog.
     registrado.
 20. **Disponibilidade.** O catálogo não informa datas livres. O agente é instruído a cotar
     sem dizer que a data está disponível, e lead registrado é pedido encaminhado, não
-    reserva garantida. A conferência de código reconhece formas da frase: "Sim, as datas
-    estão livres!", "está disponível de 15/01/2027 a 18/01/2027" e "Tem vaga sim" são
-    cortadas; paráfrases como "Ninguém reservou essas datas ainda, então é só confirmar.",
+    reserva garantida. A conferência de código reconhece formas da frase. "Sim, as datas
+    estão livres!" e "está disponível de 15/01/2027 a 18/01/2027" são cortadas; "Tem vaga
+    sim" e "Sim, está disponível!" só são cortadas quando a mensagem do hóspede traz a data
+    em número ou como "15 de janeiro" (com "tem vaga no réveillon?", passam). Paráfrases como "Ninguém reservou essas datas ainda, então é só confirmar.",
     "o imóvel é seu nessas datas" e "Essas datas ficaram livres para você." passam.
 
 **Pedido HTTP**
