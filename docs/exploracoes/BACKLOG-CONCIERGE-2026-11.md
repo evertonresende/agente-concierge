@@ -822,6 +822,23 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   taxa, subtotal, total) em vez de alargar lista de palavras. Entram junto três ajustes de
   caso: turno 4 de `lead-12-troca-resumo` vira um sim limpo (P13), `lead-05` turno 2 e
   `hand-09`
+- 13/11 22h53 · F · verificador independente, quarta rodada (7a3f50d): REPROVADO pelo C5. A separação de
+  afirmação e pergunta só reconhece vírgula, ponto, ponto e vírgula, exclamação e quebra de
+  linha; com travessão, reticências, dois-pontos, emoji, parênteses, "e" ou sem pontuação, 34
+  de 106 mensagens mantinham o resumo antigo. C7 (médio, depende de reinício do Durable Object
+  no meio do POST): o marcador de envio fica sem contador e a estadia chega a 3 ou 4 POSTs.
+  Baixos: C6, C8 (9 de 31 defeitos plantados escapam), C9. Passou: teto por estadia em 3.768
+  sequências, os 18 testes da rodada 3, os 125 ataques da P15, 49 de 50 confirmações naturais,
+  sim com pergunta. Nenhum achado alto
+- 13/11 22h53 · coordenadora · sonda do C5 com o modelo real, no código integrado (I 64f0526, F 7a3f50d,
+  G 22455e4): 20 mensagens que misturam mudança e pergunta, com resumo pendente, seguidas de
+  "sim". Em 17 o agente percebeu a mudança (resumo novo com 3 hóspedes ou pergunta de
+  esclarecimento sem enviar). Em 3 o lead saiu com 2 hóspedes; em 2 dessas, o próprio agente
+  tinha perguntado "quer que eu atualize para 3 hóspedes?" e o "sim" do hóspede enviou o
+  resumo antigo. Decisão provisória P18: pergunta do agente com resumo pendente derruba o
+  resumo (correção no laço da G, item novo da lista dela); a rede de texto da F fica como
+  está e o C5 e o C6 viram limite conhecido. Para a F ficam o C7, o C9 e os testes do C8;
+  depois, conferência só do delta e a F entra na `main`
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
