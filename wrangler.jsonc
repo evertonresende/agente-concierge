@@ -31,6 +31,8 @@
     "producao": {
       "ai": { "binding": "AI" },
       "durable_objects": { "bindings": [{ "name": "SESSAO", "class_name": "Sessao" }] },
+      // URLs de pré-visualização desligadas (P25); sem isto o deploy as religa.
+      "preview_urls": false,
       "vars": {
         "AMBIENTE": "producao",
         "MODELO": "anthropic/claude-haiku-5.5",
