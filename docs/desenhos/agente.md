@@ -11,7 +11,9 @@ de 80 mensagens, 8.000 caracteres por mensagem e 64 KB de corpo.
 
 Texto alternativo: o hóspede manda `session_id` e `message` ao Worker. O Worker valida o
 corpo e entrega a mensagem ao Durable Object daquela sessão, que a põe numa fila de uma
-mensagem por vez. O laço chama o modelo (o principal e, se ele falhar ou recusar por
+mensagem por vez. Dois atalhos respondem por código, sem modelo: o "sim" com a marca de
+reapresentar (depois de uma resposta fora do turno, P24) mostra o resumo de novo, e o "sim"
+repetido logo depois de um registro recebe um texto fixo. Fora disso, o laço chama o modelo (o principal e, se ele falhar ou recusar por
 limite, o reserva). Se o modelo pede ferramentas, o código confere a chamada, executa,
 grava o resultado e volta ao modelo, até 6 voltas e com teto de chamadas (P30). Quando o modelo responde em texto, o
 código confere o texto, pede uma correção se achar problema, retira o que não pode
@@ -33,6 +35,7 @@ flowchart TB
   subgraph DO["Durable Object: um por session_id"]
     direction TB
     F["Fila em memória<br/>uma mensagem por vez, na ordem de chegada"]
+    Q{"Sim com a marca de reapresentar?<br/>(resposta fora do turno, P24)"}
     J{"Sim repetido logo depois<br/>de um registro?"}
     L["Laço de ferramentas<br/>até 6 voltas, 45 s de trabalho externo<br/>até 16 chamadas por resposta, 32 por turno (P30)"]
     C{"O modelo pediu<br/>ferramentas?"}
@@ -40,7 +43,8 @@ flowchart TB
     X["Conferência do texto<br/>valor sem ferramenta, concessão,<br/>registro sem 201, disponibilidade"]
     FE["Fechamento por código<br/>retira frase barrada, anexa o total,<br/>pergunta do agente derruba o resumo (P18),<br/>pedido de confirmação fixo"]
     S[("SQLite da sessão<br/>histórico · rascunho da reserva · estado do lead<br/>marcador de envio · flag de handoff")]
-    F --> J
+    F --> Q
+    Q -->|"não"| J
     J -->|"não"| L
     L --> C
     C -->|"sim"| B
@@ -69,6 +73,7 @@ flowchart TB
 
   H -->|"session_id + message"| V
   V --> F
+  Q -->|"sim: reapresenta o resumo por código, sem modelo"| S
   J -->|"sim: texto fixo, sem modelo"| S
   L <-->|"mensagens e pedidos de ferramenta"| M
   B --> T
