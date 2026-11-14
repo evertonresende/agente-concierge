@@ -585,6 +585,12 @@ function testarRotuloComponente() {
   aprova('Total: R$ 2.156,00\n\nResumindo: R$ 2.156,00 no total, já com a limpeza de R$ 150,00.', fds);
   aprova('Total: R$ 2.156,00, incluindo a limpeza de R$ 150,00.', fds);
   reprova('Total: R$ 2.156,00, já com a taxa de limpeza de R$ 590,00.', fds, 'R$ 590,00');
+  // cot-13 t1 (ensaio int8, resposta real): rótulo seguido de parêntese explicativo com vírgula
+  aprova(
+    'Para o SAO-501 (Apartamento Pinheiros Work), a estadia seria de sábado, 14/11/2026 a domingo, 15/11/2026, 1 noite, para 1 hóspede.\n\n- Diária de sábado (noite que começa em sexta ou sábado, com acréscimo de 20%): R$ 372,00\n- Taxa de limpeza (cobrada uma vez por estadia): R$ 100,00\n- Total: R$ 472,00',
+    { imovel_id: 'SAO-501', checkin: '2026-11-14', checkout: '2026-11-15', hospedes: 1 }
+  );
+  reprova('Total: R$ 472,00\n- Diária de domingo (noite comum, sem acréscimo): R$ 372,00', { imovel_id: 'SAO-501', checkin: '2026-11-14', checkout: '2026-11-15', hospedes: 1 }, 'R$ 372,00');
   // "total" solto depois do valor rotula o valor seguinte, não o anterior
   aprova('Diária R$ 590,00, limpeza R$ 150,00, total R$ 2.156,00.', fds);
 
@@ -1276,7 +1282,7 @@ function testarJuizPreco() {
   assert.ok(/^\d{4}-\d{2}-\d{2}$/.test(resolverPlaceholderData('hoje_iso', obterHojeSaoPauloMs())));
 }
 
-// Corpora do verificador (rodadas 1 e 2 do juiz da B2): cada resposta com o veredito esperado.
+// Corpora do verificador (rodadas 1 e 2 do juiz da B2) e respostas reais do ensaio (rodada 3): cada resposta com o veredito esperado.
 // "certa" aprova e "errada" reprova, exceto as marcadas com `limite`, que são formatos que o agente
 // não escreveu nos registros reais e ficam como limite conhecido (evals/README.md); para elas o
 // veredito atual é fixado, para que qualquer mudança no juiz apareça aqui.
@@ -1290,6 +1296,8 @@ function testarCorpusJuiz() {
   const corpus = JSON.parse(fs.readFileSync(path.join(__dirname, 'lib', 'corpus-juiz.json'), 'utf8'));
   assert.equal(corpus.filter((c) => c.rodada === 1).length, 100);
   assert.equal(corpus.filter((c) => c.rodada === 2).length, 134);
+  // rodada 3: respostas reais do ensaio que o juiz errava, uma por correção
+  assert.equal(corpus.filter((c) => c.rodada === 3).length, 1);
   const esperas = {};
   const espera = (rel) =>
     (esperas[rel] ??= JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'evals', 'casos', 'dev', rel), 'utf8')).turnos[0].espera);

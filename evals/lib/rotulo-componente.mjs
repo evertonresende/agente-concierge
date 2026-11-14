@@ -218,7 +218,10 @@ export function motivoNaoComponente(texto, valor, perfis, contexto = {}) {
   // Rótulo: na cláusula do valor; se antes dele, depois da vírgula, só vem conector
   // ("2 noites, de R$ 590,00 cada"), vale a cláusula anterior da mesma frase.
   const antesCurto = cortarAposValorAnterior(texto.slice(clausula.ini, valor.indice));
-  const antes = REGEX_SO_CONECTOR.test(antesCurto) ? antesNaFrase : antesCurto;
+  // Também vale a frase quando a vírgula estava dentro de um parêntese explicativo do rótulo
+  // ("Diária de sábado (noite que começa em sexta ou sábado, com acréscimo de 20%): R$ 372,00").
+  const virgulaNoParentese = /^[^(]*\)/.test(antesCurto);
+  const antes = REGEX_SO_CONECTOR.test(antesCurto) || virgulaNoParentese ? antesNaFrase : antesCurto;
   const restoDaClausula = texto.slice(valor.indice + tam, clausula.fim);
   const depois = ateProximoValor(restoDaClausula);
   const restoDaFrase = texto.slice(valor.indice + tam, frase.fim);

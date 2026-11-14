@@ -137,7 +137,7 @@ subtotal de noites) só passa quando a resposta o apresenta como componente
 (`evals/lib/rotulo-componente.mjs`): valor "por noite" tem de ser a diária das noites nomeadas,
 valor ao lado de uma contagem tem de caber nela, valor com "total" ao lado é total, e resposta que
 concede preço reprova. A regressão do juiz são os corpora do verificador em
-`evals/lib/corpus-juiz.json` (100 respostas da rodada 1 e 134 da rodada 2), conferidos no
+`evals/lib/corpus-juiz.json` (100 respostas da rodada 1, 134 da rodada 2 e as respostas reais do ensaio que o juiz errava), conferidos no
 autoteste (`node evals/teste-do-runner.mjs`).
 
 Limites conhecidos: formatos que o agente não escreveu nos cinco registros reais revisados. O
