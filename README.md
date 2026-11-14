@@ -371,6 +371,13 @@ da árvore final.
 Os quatro casos que o simulador propôs não viraram caso fixo: fixariam expectativa errada
 (P36). O conjunto de desenvolvimento fica com os 104 casos medidos.
 
+Registro anterior, que não é o resultado da entrega: a rodada ao vivo de 13/11, contra `dev`
+com a `main` 75fdeb8 (código do Marco 1, antes da leva 2), deu 5 de 10 conversas aprovadas
+([relatório](evals/relatorios/simulador-2026-11-13T21-32-22-068Z.md)). As cinco falhas foram
+lidas à mão no log do backlog: duas da frente F (um "sim" que repetia dados do resumo não
+confirmava, assunto que a P13 decidiu depois), uma da frente E (cotou estadia no passado) e
+duas falsas, do juiz de handoff do simulador.
+
 A história da escolha do modelo, com a tabela de medições, está em
 [`docs/COMO-FOI-FEITO.md`](docs/COMO-FOI-FEITO.md).
 
