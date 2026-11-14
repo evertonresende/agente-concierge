@@ -366,6 +366,21 @@ function carregarCasos(baseDir, blocosFiltro, mascararErros = false) {
             : `Caso ${caso.id} precisa de "turnos" não vazio`
         );
       }
+      // Caso sem nenhuma conferência passaria sempre, inclusive confirmando um lead sem
+      // ninguém olhar; exige ao menos um "espera" (turno, subturno ou conjunto) ou leads_esperados.
+      const temEspera = caso.turnos.some(
+        (t) =>
+          (t?.espera && typeof t.espera === 'object') ||
+          (t?.espera_conjunto && typeof t.espera_conjunto === 'object') ||
+          (Array.isArray(t?.paralelo) && t.paralelo.some((sub) => sub?.espera && typeof sub.espera === 'object'))
+      );
+      if (!temEspera && caso.leads_esperados === undefined) {
+        throw new Error(
+          mascararErros
+            ? `Caso sem conferência no bloco ${bloco}`
+            : `Caso ${caso.id} não confere nada: precisa de "espera" em algum turno ou de "leads_esperados"`
+        );
+      }
       const cacheRegex = new Map();
       validarECompilarCaso(caso, cacheRegex, mascararErros);
       lista.push({ ...caso, bloco, _cacheRegex: cacheRegex });
@@ -1237,17 +1252,22 @@ async function main() {
   const casosElegiveis = [];
   const resultadosPulados = [];
   let puladosNaoDev = 0;
+  let puladosSemConfirmaFalse = 0;
   let puladosSemLeadsUrl = 0;
 
   for (const caso of todosCasos) {
     const precisaDev = requerDev(caso);
-    if (!ehDev && precisaDev) {
-      puladosNaoDev++;
+    // Fora de dev a trava é por negação: só roda o caso que declara "confirma": false. Um
+    // caso sem a marca pode confirmar um lead pelas mensagens sem declarar campo nenhum.
+    const semConfirmaFalse = !precisaDev && caso.confirma !== false;
+    if (!ehDev && (precisaDev || semConfirmaFalse)) {
+      if (precisaDev) puladosNaoDev++;
+      else puladosSemConfirmaFalse++;
       resultadosPulados.push({
         id: caso.id,
         bloco: caso.bloco,
         pulado: true,
-        motivoPulo: 'trava confirma fora de dev',
+        motivoPulo: precisaDev ? 'trava confirma fora de dev' : 'trava fora de dev: sem "confirma": false',
         passou: false,
         falhas: ['pulado pela trava não-dev'],
         latenciasMs: [],
@@ -1282,6 +1302,11 @@ async function main() {
   if (puladosNaoDev > 0) {
     console.warn(
       `TRAVA: alvo não é dev (ambiente=${saude.ambiente}); ${puladosNaoDev} caso(s) com confirmação recusado(s).`
+    );
+  }
+  if (puladosSemConfirmaFalse > 0) {
+    console.warn(
+      `TRAVA: alvo não é dev (ambiente=${saude.ambiente}); ${puladosSemConfirmaFalse} caso(s) sem "confirma": false explícito recusado(s).`
     );
   }
   if (puladosSemLeadsUrl > 0) {

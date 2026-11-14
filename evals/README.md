@@ -132,7 +132,8 @@ Gerados de forma única a cada execução e caso, substituídos em `mensagem`, `
 
 ## Trava e sigilo nos relatórios
 
-1. Antes de executar, o runner consulta `GET <alvo>/saude`. Todo caso com `confirma: true` (booleano estrito), `webhook_modo`, `leads_esperados` ou `leads_ate_agora` exige `ambiente: "dev"` e `LEADS_URL_DEV` definida; caso contrário, é pulado pela trava.
+1. Antes de executar, o runner consulta `GET <alvo>/saude`. Todo caso com `confirma: true` (booleano estrito), `webhook_modo`, `leads_esperados` ou `leads_ate_agora` exige `ambiente: "dev"` e `LEADS_URL_DEV` definida; caso contrário, é pulado pela trava. Fora de `dev` a trava é por negação: só roda o caso que declara `confirma: false` explícito; caso sem a marca é pulado, porque pode confirmar um lead pelas mensagens sem declarar campo nenhum.
+   Na carga, caso sem nenhum `espera` (em turno, subturno ou `espera_conjunto`) e sem `leads_esperados` é recusado: ele passaria sem conferir nada.
 2. Códigos de saída: `0` (`EVAL OK` / `RESERVADO OK`) só quando nenhum caso foi pulado e todos os limiares passaram; `2` (`EVAL PARCIAL` / `RESERVADO PARCIAL`) quando houve qualquer caso pulado pela trava/ambiente e os casos executados passaram; `1` (`EVAL REPROVADO` / `RESERVADO REPROVADO`) quando algum bloco ou critério global reprovou.
 3. Os relatórios gravados em `evals/relatorios/` registram apenas `ambiente` (nunca a URL do alvo nem do webhook), mascaram `nome` e `telefone` (L22) e, no modo `--conjunto reservado` (`--so-agregado`), omitem por completo o campo `conversas`, IDs, mensagens, respostas e falhas individuais.
 4. Limiares de aprovação: `≥ 95%` por bloco em `dev` (`EVAL OK`), `≥ 90%` agregado no `reservado` (`RESERVADO OK`), zero leads antecipados/duplicados, latência p95 `≤ 20 s` e máxima `< 60 s`.

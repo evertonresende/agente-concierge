@@ -267,6 +267,54 @@ async function testarTrava() {
     );
     assert.equal(rConfirmaStr.code, 1, 'confirma como string deve falhar na validação de carga (D5)');
 
+    // 7. M3: trava fora de dev por negação. O caso da sonda do revisor (fecha e confirma sem
+    // declarar campo nenhum) não pode rodar contra producao; só roda "confirma": false explícito.
+    const tmpM3Dir = fs.mkdtempSync(path.join(os.tmpdir(), 'trava-m3-'));
+    try {
+      const bM3 = path.join(tmpM3Dir, 'sonda-m3');
+      fs.mkdirSync(bM3, { recursive: true });
+      const turnosFechamento = [
+        { mensagem: 'Quero fechar o GRM-301 de 15/01/2027 a 18/01/2027, 2 pessoas. Sou {{nome}}, {{telefone}}.', espera: { handoff: false } },
+        { mensagem: 'Sim, confirmo.', espera: { handoff: false } },
+      ];
+      fs.writeFileSync(
+        path.join(bM3, 'sem-marca.json'),
+        JSON.stringify({ id: 'm3-sem-marca', bloco: 'sonda-m3', turnos: turnosFechamento })
+      );
+      chatRequests = 0;
+      const rSemMarca = await rodarCli(
+        ['--alvo', agenteProducao.url, '--conjunto', 'reservado', '--sem-relatorio'],
+        { LEADS_URL_DEV: `${webhook.url}/leads/teste`, RESERVADO_DIR: tmpM3Dir }
+      );
+      assert.equal(rSemMarca.code, 2, `M3: caso sem "confirma" contra producao deve ser pulado (2): ${rSemMarca.stdout}`);
+      assert.match(rSemMarca.stderr, /1 caso\(s\) sem "confirma": false explícito recusado/);
+      assert.match(rSemMarca.stdout, /RESERVADO PARCIAL/);
+      assert.equal(chatRequests, 0, 'M3: nenhum POST /chat para caso sem "confirma": false em producao');
+
+      // Com "confirma": false explícito, o mesmo tipo de caso roda contra producao
+      fs.writeFileSync(
+        path.join(bM3, 'sem-marca.json'),
+        JSON.stringify({ id: 'm3-com-marca', bloco: 'sonda-m3', confirma: false, turnos: [{ mensagem: 'Qual a capacidade do GRM-301?', espera: { handoff: false } }] })
+      );
+      const rComMarca = await rodarCli(
+        ['--alvo', agenteProducao.url, '--conjunto', 'reservado', '--sem-relatorio'],
+        { LEADS_URL_DEV: `${webhook.url}/leads/teste`, RESERVADO_DIR: tmpM3Dir }
+      );
+      assert.equal(rComMarca.code, 0, `M3: caso com "confirma": false roda em producao: ${rComMarca.stdout}${rComMarca.stderr}`);
+      assert.equal(chatRequests, 1);
+
+      // A sonda do revisor como veio (sem nenhum "espera" e sem leads_esperados) falha na carga
+      fs.writeFileSync(
+        path.join(bM3, 'sem-marca.json'),
+        JSON.stringify({ id: 'm3-sem-espera', bloco: 'sonda-m3', turnos: turnosFechamento.map(({ mensagem }) => ({ mensagem })) })
+      );
+      const rSemEspera = await rodarCli(['--conjunto', 'reservado', '--listar'], { RESERVADO_DIR: tmpM3Dir });
+      assert.equal(rSemEspera.code, 1, 'M3: caso que não confere nada deve falhar na carga');
+      assert.match(rSemEspera.stderr, /sem conferência/);
+    } finally {
+      fs.rmSync(tmpM3Dir, { recursive: true, force: true });
+    }
+
     console.log('TRAVA OK');
   } finally {
     fs.rmSync(tmpRel, { force: true });
@@ -1327,7 +1375,8 @@ async function testarRunner() {
           id: 'd9-sem-espera',
           bloco: 'contrato',
           confirma: false,
-          turnos: [{ mensagem: 'Quanto custa?' }],
+          // O turno 1 desliga a conferência de formato; a falha só pode vir do turno 2, sem espera
+          turnos: [{ mensagem: 'Olá', espera: { formato_total_estrito: false } }, { mensagem: 'Quanto custa?' }],
         })
       );
       modo = 'moeda_invalida';
