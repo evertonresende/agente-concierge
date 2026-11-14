@@ -48,7 +48,7 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 |---|---|---|---|---|---|---|---|---|
 | A | agente-concierge | Esqueleto vertical até o Marco 1 | pré-voo | alta | 3,5 | thread T3 · Fable 5.2 | concluída | `frente-a` |
 | B1 | agente-concierge | Webhook falso (Worker próprio), construído e testado local; deploy em `dev` pela coordenadora | pré-voo | alta | 1 | subagente em worktree · DeepSeek | concluída | `t3/webhook-falso-leads` |
-| B2 | agente-concierge | Harness HTTP e casos dev por bloco | — | alta | 2,5 | thread T3 · Gemini 4 Hydrogen | passo 2 na main; resíduos da segunda verificação em commit de seguimento | `frente-b2` |
+| B2 | agente-concierge | Harness HTTP e casos dev por bloco | — | alta | 2,5 | thread T3 · Gemini 4 Hydrogen até 13/11 21h26; depois Opus 5.5 (X23) | passo 2 na main; resíduos da segunda verificação em commit de seguimento | `frente-b2` |
 | C | agente-concierge | Conjunto reservado (fora do repo) | — | alta | 2 | thread T3 · GPT-6 Astra até 13/11 18h35 | 60 casos entregues fora do repo; conversa no GPT encerrada pela X16. Caso substituto, se for preciso, numa conversa nova em Gemini 4 Hydrogen | `frente-c` (sem commits; casos fora do repo) |
 | D | agente-concierge | Simulador de hóspede hostil | B2 (formato de caso) | média | 2,5 | thread T3 · Gemini 4 Hydrogen | concluída: na `main` (6c090d0), rodada ao vivo com `SIMULADOR OK`; a B2 move os 12 casos fixos | `frente-d` |
 | M1 | agente-concierge | Revisão curta do Marco 1 | A | alta | 0,5 | subagentes Opus 5.5 + conselho | concluída (`docs/revisoes/m1.md`; achados com dono) | — |
@@ -56,12 +56,12 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 | E | agente-concierge | Datas | Marco 1, L1, L1a, L1b, L2 | alta | 1,5 | subagente em worktree · Gemini 4 Hydrogen | concluída: na `main` (81873fa) | `t3/datas-relativas-sao-paulo` |
 | F | agente-concierge | Lead robusto | Marco 1, L6, L7, L9, L10, L11, L15 (textos fixos), L20 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16) | concluída: na `main` (801c8a2); verificador independente rodando | `frente-f` |
 | G | agente-concierge | Robustez e handoff | Marco 1, L3, L4, L5, L5a, L12, L13a, L15, L16, L16a, L19, L21 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16) | rodando | `frente-g` |
-| H | agente-concierge | Concorrência endurecida e falha interna | Marco 1, L17, L17a, L18 | alta | 1 | subagente em worktree · Gemini 4 Hydrogen | reprovada no CHECK 2 (Worker não sobe no runtime real); em correção | `t3/durable-session-concurrency` |
+| H | agente-concierge | Concorrência endurecida e falha interna | Marco 1, L17, L17a, L18 | alta | 1 | subagente em worktree · Gemini 4 Hydrogen até 13/11 21h26; depois Opus 5.5, esforço alto (X23) | duas rodadas de verificador independente; correções entregues (c905a09); espera a F entrar na `main` para o merge final e a terceira rodada | `t3/durable-session-concurrency` |
 | J | agente-concierge | Página de chat em dois passos: design (canvas) e implementação | passo 1: nada; passo 2: Marco 1 e aprovação do Éverton | baixa | 0,7 + 1 | thread T3 · Fable 5.2 | passo 1 concluído (canvas aprovado pelo Éverton, com dois ajustes); passo 2 entregue (b8991ce) | `frente-j` |
-| M2 | agente-concierge | Revisão de código, segurança e segunda opinião | leva 2 integrada | alta | 1,5 | subagentes Opus 5.5 (esforço médio) + conselho só com o Gemini (X16) | pendente | — |
-| L | agente-concierge | Custo por conversa e monitor diário | leva 2 integrada | média | 1 | subagente em worktree · Gemini 4 Hydrogen | pendente | — |
-| K | agente-concierge | Produção com o envio real desligado | M2 | alta | 1,5 | thread T3 · Opus 5.5, esforço médio (X16) | pendente | — |
-| N | agente-concierge | Entregáveis de processo | K | alta | 2 | thread T3 · Opus 5.5, esforço médio (X16) | pendente | — |
+| M2 | agente-concierge | Revisão de código, segurança e segunda opinião | leva 2 integrada | alta | 1,5 | subagentes Opus 5.5 + segunda opinião do Gemini 4 Argon em esforço alto (X23) | pendente | — |
+| L | agente-concierge | Custo por conversa e monitor diário | leva 2 integrada | média | 1 | subagente em worktree · Opus 5.5 (X23; antes prevista para o Gemini 4 Hydrogen) | pendente | — |
+| K | agente-concierge | Produção com o envio real desligado | M2 | alta | 1,5 | thread T3 · Opus 5.5, esforço conforme a dificuldade (X23) | pendente | — |
+| N | agente-concierge | Entregáveis de processo | K | alta | 2 | thread T3 · Opus 5.5, esforço conforme a dificuldade (X23) | pendente | — |
 | — | — | Correções entre leva 2 e 3 | evals | alta | 1,5 | frente dona do arquivo | — | — |
 
 Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `bloqueada` ·
@@ -580,6 +580,17 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   diagnosticar três defeitos do agente medidos com o Haiku (`rec-11`, `man-13`, `resp-11`).
   Exceção de dono: a G pode editar `pedido.ts` e `cotacao.ts` na contagem e na validade do
   número de hóspedes. Depois, segunda rodada de verificador. Ordem de entrada: I, F, H, G
+- 13/11 21h26 · Éverton · X23. (1) Teto de carga: duas suítes de teste ao mesmo tempo na máquina; o resto
+  do teto continua (6 servidores locais, um servidor de CHECK por vez, uma rodada de evals sem
+  pausa por vez). A coordenadora criou `~/.cache/agente-concierge/com-trava.sh <comando>`, com
+  duas vagas; a trava antiga (`flock …/suite.lock`) continua valendo e conta como a vaga 1.
+  Provado: três comandos ao mesmo tempo, dois rodam juntos e o terceiro espera. (2) Modelos:
+  frentes, verificadores e subagentes só no Opus 5.5, com esforço médio, alto ou muito alto
+  conforme a dificuldade; o Gemini sai das frentes e fica só para a revisão final (Gemini 4
+  Argon, esforço alto); a coordenadora segue no Fable 5.2. B2: avisada para fechar o turno em
+  curso com nota de estado; o pedido que estava na fila dela foi retirado e vai para a sessão
+  nova. H: estava parada com tudo entregue (c905a09); a conversa dela foi reconfigurada para
+  o Opus 5.5 em esforço alto e o próximo pedido abre sessão nova com a nota de estado
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -727,8 +738,9 @@ que escreve o agente.
 | Provedor e modelo no T3 Code | Quem roda |
 |---|---|
 | Claude Fable 5.2 (`claudeAgent`, `claude-fable-5-2`) | só a coordenadora, desde 13/11 às 18h35 (`DECISOES.md` X16). Antes: A, J, e F e G até a troca |
-| Claude Opus 5.5 (`claudeAgent`, `claude-opus-5-5`), esforço médio (X16) | F, G, I, K, N e os subagentes de revisão e de verificação |
-| Gemini 4 Hydrogen (`antigravity`, `gemini-4-hydrogen`) | B2, D e, desde a leva 2, E, H e L (`DECISOES.md` X14: o limite semanal do Claude chegou a 79%). Desde a X16, é o único provedor fora do Claude: fica também com o conselho e com o que estava previsto para o GPT |
+| Claude Opus 5.5 (`claudeAgent`, `claude-opus-5-5`), esforço médio, alto ou muito alto conforme a dificuldade (X23; antes só médio, X16) | todas as frentes desde 13/11 às 21h26: F, G, I, K, N e, vindas do Gemini, B2, H e L; e todos os subagentes de revisão e de verificação |
+| Gemini 4 Hydrogen (`antigravity`, `gemini-4-hydrogen`) | B2, D e, desde a leva 2, E, H e L (`DECISOES.md` X14: o limite semanal do Claude chegou a 79%). Desde a X16, é o único provedor fora do Claude: fica também com o conselho e com o que estava previsto para o GPT. Saiu das frentes em 13/11 às 21h26 (X23): até ali fez B2, D, E e H |
+| Gemini 4 Argon (`antigravity`, `gemini-4-argon`), esforço alto | só a revisão final (a segunda opinião da M2), desde a X23 |
 | GPT-6 Astra (`codex`, `gpt-6-astra`) | saiu do plano em 13/11 às 18h35 (X16). Até ali escreveu o conjunto reservado (C) e uma das leituras do conselho no Marco 1 |
 | DeepSeek pago (`opencode`, `deepseek/deepseek-flash`) | saiu do plano em 13/11 às 18h35 (X16). Até ali fez a B1 |
 
@@ -750,8 +762,9 @@ que escreve o agente.
    CHECK que usa variável do arquivo de ambiente é rodado pela coordenadora.
 5. O relatório é conferido por um subagente verificador do Claude antes do merge, como o
    de qualquer frente.
-6. Provedor falhou ou a cota acabou: a frente passa para o Gemini 4 Hydrogen, com registro
-   no log e aviso no resumo da leva.
+6. Desde a X23 nenhuma frente roda fora do Claude. Se o provedor falhar ou a cota acabar, a
+   coordenadora para a frente e avisa o Éverton (antes a frente passava para o Gemini 4
+   Hydrogen, X7).
 7. O rodapé do commit nomeia a ferramenta e o modelo que ajudaram de fato, no lugar de
    "Claude Code". Autor e committer continuam os do repositório.
 
@@ -1173,7 +1186,8 @@ MANUAL: captura de tela da conversa do Marco 1 feita na página em `dev`.
 - [ ] Revisão de código do diff integrado (`code-reviewer`).
 - [ ] Revisão de segurança (`security-reviewer`): segredos, injeção, parâmetros
       enviados ao catálogo, dados pessoais em log, abuso de custo.
-- [ ] Segunda opinião do Gemini 4 Hydrogen (a leitura do GPT saiu do plano, X16), focada
+- [ ] Segunda opinião do Gemini 4 Argon em esforço alto (X23; a leitura do GPT saiu do plano,
+      X16), focada
       em cálculo, confirmação, POST,
       concorrência e isolamento de sessões; registros em `docs/conselho/`.
 - [ ] Achado crítico ou alto corrigido antes de K.
