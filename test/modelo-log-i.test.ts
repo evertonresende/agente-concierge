@@ -43,6 +43,12 @@ describe("log de falha: código só da posição de código, nome de lista fecha
     expect((await rodar(lanca(comNome("Maria Souza 11 98765-4321", "x")))).falhas).toEqual(["ErroDesconhecido"]);
   });
 
+  it("classe da plataforma com o código no começo da mensagem; Error genérico não", async () => {
+    expect((await rodar(lanca(comNome("AiGatewayError", "7003: does not support assistant message prefill")))).falhas).toEqual(["AiGatewayError 7003"]);
+    expect((await rodar(lanca(comNome("AiError", "5007: No such model")))).falhas).toEqual(["AiError 5007"]);
+    expect((await rodar(lanca(new Error("1234, apto 502")))).falhas).toEqual(["Error"]);
+  });
+
   it("valor lançado que não é Error sai como ErroDesconhecido", async () => {
     expect((await rodar(() => { throw "AiError: 3021"; })).falhas).toEqual(["ErroDesconhecido"]);
   });

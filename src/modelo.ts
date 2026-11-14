@@ -285,6 +285,7 @@ function comLimite<T>(promessa: Promise<T>, ms: number): Promise<T> {
 }
 
 // Nomes de erro que podem ir ao log; qualquer outro sai como ErroDesconhecido.
+const CLASSES_DA_PLATAFORMA = new Set(["AiError", "AiGatewayError", "InferenceUpstreamError"]);
 const NOMES_DE_ERRO = new Set(["Error", "TypeError", "AiError", "AiGatewayError", "InferenceUpstreamError", "RespostaInutil", "TempoDoPrincipal", "RecusaPorLimite"]);
 
 /**
@@ -295,7 +296,9 @@ const NOMES_DE_ERRO = new Set(["Error", "TypeError", "AiError", "AiGatewayError"
  */
 function registrarFalha(modelo: string, erro: unknown): void {
   const nome = erro instanceof Error && NOMES_DE_ERRO.has(erro.name) ? erro.name : "ErroDesconhecido";
-  const codigo = (erro instanceof Error ? erro.message : "").match(/^[A-Za-z]{1,40}Error: ?(\d{3,4})(?!\d)/)?.[1];
+  // Erro de classe própria da plataforma traz o código no começo da mensagem ("7003: …").
+  const padrao = CLASSES_DA_PLATAFORMA.has(nome) ? /^(?:[A-Za-z]{1,40}Error: ?)?(\d{3,4})(?!\d)/ : /^[A-Za-z]{1,40}Error: ?(\d{3,4})(?!\d)/;
+  const codigo = (erro instanceof Error ? erro.message : "").match(padrao)?.[1];
   const motivo = erro instanceof RespostaInutil ? erro.motivo : undefined;
   console.warn(JSON.stringify({ evento: "modelo_falhou", modelo, erro: [nome, codigo, motivo].filter(Boolean).join(" ") }));
 }
