@@ -20,6 +20,7 @@ import {
   mascararDadosPessoais,
   montarResumoRelatorio,
 } from './lib/relatorio.mjs';
+import { casoMandaSim } from './lib/mensagem-confirma.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..');
@@ -1288,6 +1289,7 @@ async function main() {
   const resultadosPulados = [];
   let puladosNaoDev = 0;
   let puladosSemConfirmaFalse = 0;
+  let puladosComSim = 0;
   let puladosSemLeadsUrl = 0;
 
   for (const caso of todosCasos) {
@@ -1295,14 +1297,22 @@ async function main() {
     // Fora de dev a trava é por negação: só roda o caso que declara "confirma": false. Um
     // caso sem a marca pode confirmar um lead pelas mensagens sem declarar campo nenhum.
     const semConfirmaFalse = !precisaDev && caso.confirma !== false;
-    if (!ehDev && (precisaDev || semConfirmaFalse)) {
+    // A marca não basta: caso com mensagem que o produto pode ler como "sim" ("Sim,
+    // confirmo.") também é recusado fora de dev, mesmo declarando "confirma": false.
+    const mandaSim = !precisaDev && !semConfirmaFalse && casoMandaSim(caso);
+    if (!ehDev && (precisaDev || semConfirmaFalse || mandaSim)) {
       if (precisaDev) puladosNaoDev++;
-      else puladosSemConfirmaFalse++;
+      else if (semConfirmaFalse) puladosSemConfirmaFalse++;
+      else puladosComSim++;
       resultadosPulados.push({
         id: caso.id,
         bloco: caso.bloco,
         pulado: true,
-        motivoPulo: precisaDev ? 'trava confirma fora de dev' : 'trava fora de dev: sem "confirma": false',
+        motivoPulo: precisaDev
+          ? 'trava confirma fora de dev'
+          : semConfirmaFalse
+            ? 'trava fora de dev: sem "confirma": false'
+            : 'trava fora de dev: mensagem de confirmação',
         passou: false,
         falhas: ['pulado pela trava não-dev'],
         latenciasMs: [],
@@ -1342,6 +1352,11 @@ async function main() {
   if (puladosSemConfirmaFalse > 0) {
     console.warn(
       `TRAVA: alvo não é dev (ambiente=${saude.ambiente}); ${puladosSemConfirmaFalse} caso(s) sem "confirma": false explícito recusado(s).`
+    );
+  }
+  if (puladosComSim > 0) {
+    console.warn(
+      `TRAVA: alvo não é dev (ambiente=${saude.ambiente}); ${puladosComSim} caso(s) com mensagem de confirmação recusado(s), mesmo com "confirma": false.`
     );
   }
   if (puladosSemLeadsUrl > 0) {

@@ -16,6 +16,7 @@ import {
   resolverPlaceholderData,
   verificarFormatoMoeda,
 } from './lib/juiz-preco.mjs';
+import { casoMandaSim, mensagemPodeConfirmar } from './lib/mensagem-confirma.mjs';
 
 const execFileAsync = promisify(execFile);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -301,6 +302,32 @@ async function testarTrava() {
         { LEADS_URL_DEV: `${webhook.url}/leads/teste`, RESERVADO_DIR: tmpM3Dir }
       );
       assert.equal(rComMarca.code, 0, `M3: caso com "confirma": false roda em producao: ${rComMarca.stdout}${rComMarca.stderr}`);
+      assert.equal(chatRequests, 1);
+
+      // M2P2-1: a marca não basta. "confirma": false com "Sim, confirmo." depois do resumo é
+      // recusado contra producao, sem nenhum POST /chat; uma pergunta que começa com "Certo,"
+      // (hand-14) segue rodando
+      fs.writeFileSync(
+        path.join(bM3, 'sem-marca.json'),
+        JSON.stringify({ id: 'm2p2-marca-falsa', bloco: 'sonda-m3', confirma: false, turnos: turnosFechamento })
+      );
+      chatRequests = 0;
+      const rMarcaFalsa = await rodarCli(
+        ['--alvo', agenteProducao.url, '--conjunto', 'reservado', '--sem-relatorio'],
+        { LEADS_URL_DEV: `${webhook.url}/leads/teste`, RESERVADO_DIR: tmpM3Dir }
+      );
+      assert.equal(rMarcaFalsa.code, 2, `M2P2-1: caso com "Sim, confirmo." contra producao deve ser recusado (2): ${rMarcaFalsa.stdout}`);
+      assert.match(rMarcaFalsa.stderr, /1 caso\(s\) com mensagem de confirmação recusado/);
+      assert.equal(chatRequests, 0, 'M2P2-1: nenhum POST /chat para caso que confirma pelas mensagens em producao');
+      fs.writeFileSync(
+        path.join(bM3, 'sem-marca.json'),
+        JSON.stringify({ id: 'm2p2-pergunta', bloco: 'sonda-m3', confirma: false, turnos: [{ mensagem: 'Certo, deixando isso de lado: qual a capacidade do GRM-301?', espera: { handoff: false } }] })
+      );
+      const rPergunta = await rodarCli(
+        ['--alvo', agenteProducao.url, '--conjunto', 'reservado', '--sem-relatorio'],
+        { LEADS_URL_DEV: `${webhook.url}/leads/teste`, RESERVADO_DIR: tmpM3Dir }
+      );
+      assert.equal(rPergunta.code, 0, `M2P2-1: pergunta com "Certo," roda em producao: ${rPergunta.stdout}${rPergunta.stderr}`);
       assert.equal(chatRequests, 1);
 
       // A sonda do revisor como veio (sem nenhum "espera" e sem leads_esperados) falha na carga
@@ -1076,6 +1103,14 @@ function testarJuizPreco() {
     ]
   );
 
+  // M2P2-1: o detector do "sim" que a trava de producao usa, no mesmo critério de lerConfirmacao
+  for (const sim of ['Sim, confirmo.', 'Pode registrar', 'yes', 'Tá ótimo, confirma', 'Sim, confirmo! Pode fechar a reserva, por favor?', 'Show, pode mandar', 'Isso mesmo']) {
+    assert.equal(mensagemPodeConfirmar(sim), true, sim);
+  }
+  for (const nao of ['Quero fechar o GRM-301', 'Sim, e tem wifi?', 'Certo, deixando isso de lado: quanto fica o SAO-501?', 'Acho que sim, talvez pode ser.', 'Qual a capacidade?']) {
+    assert.equal(mensagemPodeConfirmar(nao), false, nao);
+  }
+
   // Trava fora de dev por negação: todo caso de dev declara "confirma" (sem a marca, ele é
   // pulado contra producao), e pelo menos 60 rodam lá, o mínimo do validar-producao.sh
   {
@@ -1096,7 +1131,7 @@ function testarJuizPreco() {
               t?.espera?.leads_ate_agora !== undefined ||
               (t.paralelo || []).some((s) => s?.espera?.leads_ate_agora !== undefined)
           );
-        if (c.confirma === false && !usaWebhook) elegiveisProducao++;
+        if (c.confirma === false && !usaWebhook && !casoMandaSim(c)) elegiveisProducao++;
       }
     }
     assert.ok(elegiveisProducao >= 60, `só ${elegiveisProducao} casos de dev rodam contra producao (mínimo 60)`);
