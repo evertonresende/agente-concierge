@@ -2297,6 +2297,23 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   lê os documentos editados; gate de sigilo verde em cada commit e em cada merge. O Éverton autorizou
   fechar os quatro itens depois de uma edição recusada sem querer. Lista real conferida de novo por
   GET depois dos textos: 1 lead, o de teste
+- 14/11 08h35 · entrega · **últimos retoques de texto, pedidos pelo Éverton, na `main`: 491c5a7 (coordenação) e
+  84ded07 (README, frente N 3372b5c). Só texto: `src/`, scripts, testes, evals e configuração não
+  mudam.** Sem verificador, por ordem dele: a coordenação conferiu a diferença da N linha a linha.
+  (1) README, topo: a lista real tem um único lead, o de teste de 14/11 às 07h26 (X36). (2) MCPs:
+  pelos registros de sessão, o único servidor MCP chamado foi o do T3 Code, a ferramenta de
+  orquestração (mais de 700 chamadas nos 86 registros do Claude Code deste projeto; nenhuma nos 3
+  registros do Codex que citam o projeto); dito no README, no "Como foi feito" e em
+  `docs/setup/README.md`. (3) Desenho da fábrica: as caixas da K dizem envio ligado em 14/11 por
+  ordem do Éverton, e a do reservado diz que ele foi copiado para o repositório; os quatro blocos
+  passam no parser e renderizam, com 17, 16, 25 e 7 nós, como antes. (4) Leituras do reservado e
+  proxy de gravação: o README e o item 11 da seção 9 do "Como foi feito" dizem agora o par, a
+  árvore e a hora (a segunda leitura do primeiro par, b5af852, 03h12 a 03h16, passou pelo proxy; as
+  duas finais, 9d37f9a, 04h52 a 04h57, não passaram). (5) `DECISOES.md`: os itens 11 e 12 de "mais
+  tempo", a P37 e a P10 dizem o que aconteceu depois; nas duas P a decisão ficou como foi escrita.
+  (6) README: a lista traz os 66 limites; o estado final do reservado (53 iguais aos originais, 3
+  apertados, 4 substitutos, nenhum afrouxado; as 9 mudanças vetadas voltaram ao original); e o que
+  entrou na `main` depois da árvore final 9d37f9a, com o commit publicado em `producao` (a97777b)
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
