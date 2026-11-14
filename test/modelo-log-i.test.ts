@@ -67,3 +67,22 @@ describe("log de falha: motivo da resposta inútil numa palavra", () => {
     expect(falhas).toEqual([`RespostaInutil ${motivo}`]);
   });
 });
+
+describe("chamada de ferramenta inválida vai ao reserva (K10, K11)", () => {
+  it("input em lista não é aceito como argumentos (K10)", async () => {
+    const { r, falhas } = await rodar(() => ({ stop_reason: "tool_use", content: [{ type: "tool_use", id: "a", name: "cotar", input: [] }] }));
+    expect(r.chamadas).toEqual([]);
+    expect(r.texto).toBe("Resposta do reserva.");
+    expect(falhas).toEqual(["RespostaInutil ferramenta_invalida"]);
+  });
+
+  it("um bloco sem name ao lado de um válido não é descartado em silêncio (K11)", async () => {
+    const { r, chamados } = await rodar(() => ({
+      stop_reason: "tool_use",
+      content: [{ type: "tool_use", id: "a", name: "cotar", input: {} }, { type: "tool_use", id: "b", input: {} }],
+    }));
+    expect(chamados).toEqual([HAIKU, RESERVA]);
+    expect(r.chamadas).toEqual([]);
+    expect(r.texto).toBe("Resposta do reserva.");
+  });
+});
