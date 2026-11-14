@@ -13,28 +13,29 @@ despacha frentes em worktrees, confere cada entrega com ensaio de merge, suíte,
 CHECK no runtime real, pede um verificador independente e só então faz o merge. O
 conjunto reservado fica fora do repositório e só devolve o agregado. Uma segunda sessão de
 IA, revisora do Éverton e fora da cadeia da coordenadora, lê o repositório e os relatórios
-e devolve os achados a ele.
+e devolve os achados a ele, que viram itens do backlog. A frente K pede ao Éverton a ordem
+para ligar o envio real de leads, e só ele a dá.
 
 ```mermaid
 flowchart TB
   accTitle: Papéis da fábrica
-  accDescr: Éverton, sessão de planejamento, coordenadora, frentes em worktrees, verificador independente, conjunto reservado e gate de sigilo.
+  accDescr: Éverton, sessão revisora, sessão de planejamento, coordenadora, frentes em worktrees, verificador independente, conjunto reservado, gate de sigilo e a ordem para ligar o envio real.
 
-  EV["Éverton<br/>lacunas · modelos · ligar o envio real · repositório público"]
+  EV["Éverton<br/>decide as lacunas e os modelos · grava o vídeo<br/>manda ligar o envio real e publicar"]
   REV["Segunda sessão de IA, revisora do Éverton<br/>fora da cadeia da coordenadora:<br/>lê o repositório e os relatórios"]
 
   subgraph PLAN["Planejamento (não escreve código de produto)"]
     direction TB
-    P1["Lê o enunciado<br/>(fora do repositório)"]
-    P2["Seis verificações em subagentes<br/>plataforma, modelos, limites, catálogo"]
-    P3["Conselho às cegas<br/>dois modelos de outros provedores"]
-    P4["CONTRATO · EVALS · BACKLOG · DECISOES"]
+    P1["Lê o enunciado<br/>(material local, fora do repositório)"]
+    P2["Seis verificações em subagentes paralelos<br/>(plataforma, modelos, limites, catálogo real)"]
+    P3["Conselho às cegas: Gemini e GPT<br/>mesma pergunta, um não vê o outro"]
+    P4["CONTRATO · BACKLOG · EVALS · DECISOES<br/>prompt da coordenadora"]
     P1 --> P2 --> P3 --> P4
   end
 
   subgraph COORD["Coordenadora (não edita código de produto)"]
     direction TB
-    C1["Despacha a frente<br/>worktree própria, dono por arquivo"]
+    C1["Confere sobreposição de arquivos da leva<br/>despacha a frente, uma worktree cada"]
     C2["Ensaio de merge sobre a main<br/>suíte · tipos · gate de sigilo"]
     C3["CHECK no runtime real<br/>servidor local ou dev"]
     C4["Merge --no-ff · publica dev"]
@@ -44,10 +45,12 @@ flowchart TB
   VER["Verificador independente<br/>sondas próprias · defeitos plantados"]
   RES[("Conjunto reservado<br/>fora do repositório")]
   GATE["Gate de sigilo e de histórico<br/>antes de cada commit e de cada push"]
+  K["K · produção<br/>envio real desligado"]
 
-  EV -->|"decide"| P4
-  P3 -->|"divergências"| EV
-  P4 --> C1
+  EV -->|"prompt de planejamento"| PLAN
+  P3 -->|"lacunas, recomendação e divergências"| EV
+  EV -->|"decisões"| P4
+  P4 -->|"contrato e backlog commitados"| C1
   C1 --> FR
   FR -->|"relatório com evidência"| C2
   C2 --> C3 --> VER
@@ -59,19 +62,89 @@ flowchart TB
   COORD -->|"lacuna nova, Marco 1,<br/>o que não se desfaz"| EV
   EV -->|"ordem"| COORD
   REV -->|"achados"| EV
+  EV -->|"achados viram itens do backlog"| COORD
   FR -. "repositório e relatórios" .-> REV
+  C4 --> K
+  K -->|"pede ordem para ligar o envio real"| EV
+  EV -->|"ordem explícita"| K
 ```
 
-- **Barreira do reservado.** Quem escreveu o conjunto reservado (frente C, outro provedor)
-  não corrige o agente, e quem corrige o agente só vê o agregado.
-- **Falha do simulador vira caso fixo.** A conversa que falhou é reduzida e entra nos casos
-  de desenvolvimento antes da correção.
-- **Decisão provisória.** Lacuna nova com o Éverton fora segue a recomendação da
-  coordenação, marcada como provisória (as decisões P) até ele confirmar (X15).
+## Legenda
+
+- **Éverton** decide tudo o que é produto (as lacunas do enunciado), grava o vídeo e é o
+  único que manda ligar o envio real de leads e tornar o repositório público. Produção
+  pode subir sem ele enquanto o envio real estiver desligado.
+- **Sessão de planejamento** transforma o enunciado em contrato e backlog. Nenhuma outra
+  sessão lê o enunciado: todas leem o contrato.
+- **Conselho às cegas**: Gemini e GPT recebem a mesma pergunta de uma pasta vazia, sem ver a
+  recomendação da sessão nem a resposta um do outro. Pergunta e respostas ficam em
+  `docs/conselho/`. Foi assim no planejamento e no Marco 1, antes da X16; na revisão final
+  (M2) a segunda opinião foi só do Gemini 4 Argon, porque o GPT saiu pela X16.
+- **Sessão coordenadora** não edita código de produto. Ela só despacha, confere e mergeia;
+  o contexto dela fica limpo para durar todas as levas.
+- **Frentes** trabalham cada uma na sua worktree, com critérios de aceite binários e
+  evidência exigida. Frente pequena é subagente; frente longa é thread própria.
+- **Portões**: nada entra em `main` sem passar por eles. M1 é a versão curta (revisão de
+  código da máquina de estados no marco 1); M2 é a completa (código, segurança e segunda
+  opinião do Gemini 4 Argon) antes de produção.
+- **Laço de robustez**: falha do simulador → caso fixo em `evals/casos/dev/` → correção →
+  agregado do reservado.
+- **Barreira do reservado**: quem escreve o conjunto reservado não corrige o agente, e quem
+  corrige o agente só vê o agregado.
 - **Sessão revisora do Éverton**: uma segunda sessão de IA, independente, que ele usa para
   revisar as entregas. Não recebe ordens da coordenadora e devolve os achados a ele.
+- **Decisão provisória.** Lacuna nova com o Éverton fora segue a recomendação da
+  coordenação, marcada como provisória (as decisões P) até ele confirmar (X15).
 
-## 2. Frentes e levas
+## 2. Portões e laços
+
+Texto alternativo: os portões, na ordem: gate de sigilo, testes unitários, evals de
+desenvolvimento, revisão de código pelo verificador independente, revisão de segurança,
+segunda opinião de outro provedor e agregado do conjunto reservado. O laço de robustez
+leva a falha do simulador a um caso fixo, que fica vermelho para a frente de produto até a
+correção. Bloco reprovado no reservado revela o caso, que migra para os casos de
+desenvolvimento, e a frente C escreve um substituto.
+
+```mermaid
+flowchart TB
+  accTitle: Portões e laços da fábrica
+  accDescr: Cadeia de portões G1 a G7, laço de robustez do simulador e laço do conjunto reservado.
+
+  subgraph PROD["Produto"]
+    EFGH["E datas · F lead · G robustez<br/>H concorrência · J página · L custo"]
+  end
+  subgraph EVAL["Evals"]
+    B2["B2 · harness e casos de desenvolvimento"]
+    D["D · simulador de hóspede hostil"]
+  end
+  C["C · conjunto reservado<br/>thread separada, encerrada pela X16<br/>não corrige o agente"]
+  C3["Coordenadora verifica<br/>critérios de aceite, suíte, evals, CHECK no runtime"]
+  C4["Merge sem squash, sem rebase, sem amend<br/>(--no-ff) · publica dev"]
+
+  subgraph PORT["Portões: G1 a G4 a cada merge de produto; G5 a G7 na revisão final"]
+    direction TB
+    G1["Gate de sigilo<br/>antes de cada commit e de cada push"]
+    G2["Testes unitários do núcleo"]
+    G3["Evals de desenvolvimento por bloco"]
+    G4["Revisão de código<br/>verificador independente: sondas e defeitos plantados"]
+    G5["Revisão de segurança"]
+    G6["Segunda opinião de outro provedor<br/>só Gemini 4 Argon na revisão final:<br/>o GPT saiu pela X16"]
+    G7["Agregado do conjunto reservado"]
+    G1 --> G2 --> G3 --> G4 --> G5 --> G6 --> G7
+  end
+
+  EFGH -->|"relatório com evidência"| C3
+  C3 --> PORT
+  PORT -->|"tudo verde"| C4
+  D -->|"falha vira caso fixo"| B2
+  B2 -->|"caso vermelho"| EFGH
+  EFGH -->|"correção com o caso verde"| C3
+  C ==>|"só o agregado por bloco"| G7
+  C -. "barreira: não mostra casos,<br/>não toca o produto" .- PROD
+  G7 -->|"bloco reprovado: caso revelado migra para dev<br/>e C escreve um substituto"| B2
+```
+
+## 3. Frentes e levas
 
 Texto alternativo: na leva 1, a frente A é a única de produto até o Marco 1; em paralelo
 correm as frentes de eval (webhook falso, runner e casos, conjunto reservado, simulador) e
@@ -83,7 +156,7 @@ parte da M2 foram adiantadas pela X24.
 ```mermaid
 flowchart LR
   accTitle: Frentes por leva
-  accDescr: Leva 1 com A, B1, B2, C, D e J; portão com Marco 1, M1 e I; leva 2 com E, F, G, H e J; leva 3 com M2, L, K e N.
+  accDescr: Leva 1 com A, B1, B2, C, D e J; portão com Marco 1, M1 e I; leva 2 com E, F, G, H, J e as rodadas ao vivo do simulador; leva 3 com M2, L, K, N e o agregado do reservado.
 
   subgraph L1["Leva 1"]
     direction TB
@@ -97,7 +170,7 @@ flowchart LR
 
   subgraph PT["Portão"]
     direction TB
-    MK{{"Marco 1 em dev<br/>13/11 17h31"}}
+    MK{{"Marco 1 em dev, 13/11 17h31<br/>cotação do exemplo · confirmação<br/>lead no webhook falso · desconto vira handoff"}}
     M1["M1 · revisão curta<br/>verificador + conselho"]
     I["I · escolha do modelo<br/>por medição"]
   end
@@ -109,6 +182,7 @@ flowchart LR
     G["G · robustez e handoff"]
     H["H · concorrência e falha interna"]
     J2["J · página implementada"]
+    D2["D · rodadas ao vivo contra dev"]
   end
 
   subgraph L3["Leva 3"]
@@ -116,7 +190,8 @@ flowchart LR
     M2["M2 · código, segurança,<br/>segunda opinião"]
     L["L · custo por conversa"]
     K["K · produção, envio desligado"]
-    N["N · entregáveis"]
+    N["N · README, decisões, desenhos, roteiro do vídeo"]
+    RR["Agregado do reservado"]
   end
 
   A --> MK
@@ -133,13 +208,16 @@ flowchart LR
   L --> ENT
 ```
 
+Linha de corte do plano: o acabamento da página (J) e o monitor diário (L) caem primeiro se
+o tempo apertar; horas e corte estão no backlog.
+
 Provedores por frente (X6, X16, X23): coordenadora no Claude Fable 5.2; A e J no Fable;
 F e G começaram no Fable e passaram ao Claude Opus 5.5; D e E rodaram no Gemini 4
 Hydrogen e terminaram antes da X23; B2 e H rodaram no Gemini 4 Hydrogen até a X23 e depois
 no Opus 5.5; C no GPT-6 Astra; B1 no DeepSeek; I, K, L, N e
 todos os verificadores no Opus 5.5; segunda opinião da M2 no Gemini 4 Argon.
 
-## 3. Ciclo de uma entrega até a `main`
+## 4. Ciclo de uma entrega até a `main`
 
 Texto alternativo: a frente entrega um relatório. A coordenadora faz o ensaio de merge e
 o CHECK no runtime real; falhou, volta para a frente. Passou, o verificador independente
