@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { conferir, corrigirValores, falaDeDisponibilidade } from "../src/agente/loop";
 import { montarPrompt } from "../src/agente/prompt";
-import { ESTADO_INICIAL } from "../src/lead";
+import { ESTADO_INICIAL, pendenteAberto, textoDoPedidoDeConfirmacao } from "../src/lead";
 import { chamar, diz, FICHAS, pedeFerramentas, roteiro } from "./apoio";
 import { conversa, FICHAS_COM_ORDEM } from "./apoio-g";
 
@@ -95,14 +95,16 @@ describe("registro só com 201 (MÉDIA 3)", () => {
   });
 
   it("modelo diz \"registrado\" com resumo pendente: a frase não chega ao hóspede e o pedido de confirmação continua", async () => {
-    const { turno, mundo } = conversa();
+    const { turno, mundo, estado } = conversa();
     await turno("quanto fica?", roteiro(pedeFerramentas(chamar("cotar", ESTADIA)), diz("Fica em R$ 2.156,00.")).modelo);
-    await turno("quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
+    await turno("quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", { ...DADOS, nome: "Ana Aceita Pets" }))).modelo);
     const errado = diz("Tem wifi. Pronto, seu pedido foi registrado e enviado ao time!");
     const saida = await turno("tem wifi?", roteiro(errado, errado).modelo);
     expect(mundo.leads).toEqual([]);
     expect(saida.reply).not.toMatch(/registrado e enviado/);
     expect(saida.reply.startsWith("Tem wifi. O seu pedido só é registrado depois que você confirmar o resumo.\n\n")).toBe(true);
+    // O bloco do resumo, do código, fica intacto e no fim, fora da conferência e do corte.
+    expect(saida.reply.endsWith(textoDoPedidoDeConfirmacao(pendenteAberto(estado())!, "pt"))).toBe(true);
   });
 
   it("depois de um registro de verdade, o modelo pode dizer que o pedido já está registrado", async () => {

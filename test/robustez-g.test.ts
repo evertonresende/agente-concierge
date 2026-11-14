@@ -6,7 +6,7 @@ import { decidirHandoff, MATRIZ, mencionaDesconto, pedeAbatimento, sugereNegocia
 import { conferir, corrigirValores, falaDeDisponibilidade, semPontaSolta, valoresDoCodigo, valoresInventados } from "../src/agente/loop";
 import { montarPrompt } from "../src/agente/prompt";
 import { sanear } from "../src/catalogo";
-import { ESTADO_INICIAL } from "../src/lead";
+import { ESTADO_INICIAL, type EstadoLead, pendenteAberto, textoDoPedidoDeConfirmacao } from "../src/lead";
 import type { Mensagem } from "../src/modelo";
 import { chamar, diz, FICHAS, pedeFerramentas, roteiro } from "./apoio";
 import { conversa, FICHAS_COM_ORDEM, ultimoResultado } from "./apoio-g";
@@ -16,6 +16,8 @@ const DADOS = { ...ESTADIA, nome: "Ana Lima", telefone: "(11) 98888-0000" };
 const passar = (motivo: string) => pedeFerramentas(chamar("passar_para_humano", { motivo }));
 const ultimoResultadoDe = (mensagens: Mensagem[]) => ultimoResultado(mensagens);
 const valores = (texto: string) => texto.match(/R\$ ?[\d.,]*\d/g) ?? [];
+/** Pedido de confirmação gerado pela frente F para o resumo em aberto: o texto vem da função dela. */
+const pedidoDoCodigo = (estado: EstadoLead) => textoDoPedidoDeConfirmacao(pendenteAberto(estado)!, "pt");
 
 describe("robustez: texto do catálogo é dado, nunca instrução (CA-13)", () => {
   it("ordem na descrição, no nome e nas comodidades não muda o preço", async () => {
@@ -67,7 +69,7 @@ describe("robustez: texto do catálogo é dado, nunca instrução (CA-13)", () =
   });
 
   it("valor embutido no nome do imóvel não é liberado pela cotação nem pelo resumo do pedido", async () => {
-    const { turno, historico, mundo } = conversa({ fichas: FICHAS_COM_ORDEM });
+    const { turno, historico, mundo, estado } = conversa({ fichas: FICHAS_COM_ORDEM });
     await turno("quanto fica?", roteiro(pedeFerramentas(chamar("cotar", ESTADIA)), diz("Fica em R$ 2.156,00.")).modelo);
     const resumo = await turno("quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
     expect(resumo.reply).toContain("Resumo do seu pedido");
@@ -76,8 +78,7 @@ describe("robustez: texto do catálogo é dado, nunca instrução (CA-13)", () =
     // No turno seguinte o modelo tenta usar o valor do nome: sai.
     const depois = await turno("e a diária?", roteiro(diz("A diária agora é R$ 1,00. Posso ajudar em algo mais?")).modelo);
     // A frase com o valor sai; como há resumo pendente, o código repete o pedido de confirmação.
-    expect(depois.reply).toBe('Posso ajudar em algo mais?\n\nO seu pedido de reserva do GRM-301 ainda aguarda a sua confirmação. '
-      + 'Posso enviar ao time comercial? Para confirmar, responda "sim".');
+    expect(depois.reply).toBe(`Posso ajudar em algo mais?\n\n${pedidoDoCodigo(estado())}`);
     expect(mundo.leads).toEqual([]);
   });
 
@@ -88,15 +89,20 @@ describe("robustez: texto do catálogo é dado, nunca instrução (CA-13)", () =
   });
 
   it("nome do hóspede com \"R$\" não libera valor pelo resumo do pedido", async () => {
-    const { turno, historico, mundo } = conversa();
+    const { turno, historico, mundo, estado } = conversa();
     await turno("quanto fica?", roteiro(pedeFerramentas(chamar("cotar", ESTADIA)), diz("Fica em R$ 2.156,00.")).modelo);
     const resumo = await turno("quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", { ...DADOS, nome: "Ana R$ 1,00" }))).modelo);
     expect(resumo.reply).toContain("Ana R$ 1,00");
     expect(valoresDoCodigo(historico).has("R$ 1,00")).toBe(false);
     expect(valoresDoCodigo(historico).has("R$ 2.156,00")).toBe(true);
     const depois = await turno("e a diária?", roteiro(diz("A diária é R$ 1,00. O total é R$ 2.156,00.")).modelo);
-    expect(depois.reply).not.toContain("R$ 1,00");
-    expect(depois.reply).toContain("O total é R$ 2.156,00.");
+    // O eco do nome dentro do resumo de código é permitido; fora dele, o valor não aparece.
+    const pedido = pedidoDoCodigo(estado());
+    expect(depois.reply.endsWith(pedido)).toBe(true);
+    const doModelo = depois.reply.slice(0, -pedido.length);
+    expect(doModelo).not.toContain("R$ 1,00");
+    expect(doModelo).toContain("O total é R$ 2.156,00.");
+    expect(valoresDoCodigo([...historico, ...depois.novas]).has("R$ 1,00")).toBe(false);
     expect(mundo.leads).toEqual([]);
   });
 
@@ -465,11 +471,10 @@ describe("robustez: conferência depois da resposta (CA-05)", () => {
   });
 
   it("com resumo pendente, a resposta do modelo termina com o pedido de confirmação do código, fora da conferência", async () => {
-    const { turno, mundo } = conversa();
+    const { turno, mundo, estado } = conversa();
     await turno("quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
     const pergunta = await turno("tem wifi?", roteiro(pedeFerramentas(chamar("ver_imovel", { imovel_id: "GRM-301" })), diz("Sim, tem wifi.")).modelo);
-    expect(pergunta.reply).toBe('Sim, tem wifi.\n\nO seu pedido de reserva do GRM-301 ainda aguarda a sua confirmação. '
-      + 'Posso enviar ao time comercial? Para confirmar, responda "sim".');
+    expect(pergunta.reply).toBe(`Sim, tem wifi.\n\n${pedidoDoCodigo(estado())}`);
     // O sim seguinte vale, porque a resposta anterior trouxe o pedido.
     const sim = await turno("sim", roteiro(pedeFerramentas(chamar("confirmar_reserva"))).modelo);
     expect(sim.reply).toMatch(/registrad/i);
