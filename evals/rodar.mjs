@@ -436,6 +436,7 @@ async function consultarSaude(alvo) {
   try {
     const res = await fetch(`${alvo}/saude`, {
       method: 'GET',
+      redirect: 'manual',
       signal: AbortSignal.timeout(10_000),
     });
     if (!res.ok) {
@@ -543,6 +544,7 @@ async function buscarLeadsPorTelefones(leadsUrl, conjuntoDigitos) {
   try {
     res = await fetch(leadsUrl, {
       method: 'GET',
+      redirect: 'manual',
       signal: AbortSignal.timeout(15_000),
     });
   } catch {
@@ -587,6 +589,7 @@ async function ligarModoWebhook(leadsUrl, telefoneDigitos, cfg) {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(corpo),
+      redirect: 'manual',
       signal: AbortSignal.timeout(10_000),
     });
   } catch {
@@ -604,6 +607,7 @@ async function desligarModoWebhook(leadsUrl, telefoneDigitos) {
   try {
     await fetch(url, {
       method: 'DELETE',
+      redirect: 'manual',
       signal: AbortSignal.timeout(10_000),
     });
   } catch {
@@ -700,6 +704,7 @@ async function enviarChat(alvo, corpoTexto, timeoutMs) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: corpoTexto,
+      redirect: 'manual',
       signal: AbortSignal.timeout(timeoutMs),
     });
     textoCorpo = await res.text();
@@ -721,6 +726,21 @@ async function enviarChat(alvo, corpoTexto, timeoutMs) {
   }
 
   const latenciaMs = performance.now() - inicio;
+  // Redirecionamento não é seguido (o POST com corpo iria para o endereço do Location):
+  // conta como falha do turno, com o status e sem o endereço.
+  if (res.status >= 300 && res.status < 400) {
+    return {
+      okRede: false,
+      erroRede: `POST /chat respondeu redirecionamento HTTP ${res.status}; o runner não segue redirecionamento`,
+      latenciaMs,
+      status: res.status,
+      usoEntrada: 0,
+      usoSaida: 0,
+      chamadasModelo: 0,
+      semUso: true,
+      dados: null,
+    };
+  }
   const numHeader = (nome) => {
     const v = Number(res.headers.get(nome));
     return Number.isFinite(v) && v >= 0 ? v : 0;

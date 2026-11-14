@@ -420,6 +420,52 @@ async function testarTrava() {
       await agenteUso.fechar();
     }
 
+    // 10. Redirecionamento: um 307 no /chat não pode levar o POST a outro servidor; o turno
+    // falha com o status, sem o endereço do Location na saída.
+    let postsDesviados = 0;
+    const destinoDesvio = await iniciarServidorMock(async (req, res) => {
+      if (req.method === 'POST') postsDesviados++;
+      await lerCorpo(req);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ reply: 'Certo.', handoff: false }));
+    });
+    const agenteRedireciona = await iniciarServidorMock(async (req, res) => {
+      if (req.method === 'GET' && req.url === '/saude') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, ambiente: 'producao', leads_destino: 'real', envio_leads: 'desligado' }));
+        return;
+      }
+      await lerCorpo(req);
+      res.writeHead(307, { Location: `${destinoDesvio.url}/chat` });
+      res.end();
+    });
+    const tmpRedirDir = fs.mkdtempSync(path.join(os.tmpdir(), 'trava-redir-'));
+    try {
+      const bRedir = path.join(tmpRedirDir, 'contrato');
+      fs.mkdirSync(bRedir, { recursive: true });
+      fs.writeFileSync(
+        path.join(bRedir, 'redir.json'),
+        JSON.stringify({ id: 'redir-307', bloco: 'contrato', confirma: false, turnos: [{ mensagem: 'Olá', espera: { handoff: false } }] })
+      );
+      const rRedir = await rodarCli(['--alvo', agenteRedireciona.url, '--conjunto', 'dev', '--bloco', 'contrato', '--sem-relatorio'], {
+        LEADS_URL_DEV: '',
+      });
+      assert.ok(rRedir.code !== 0, 'redirecionamento no /chat não pode dar EVAL OK');
+      assert.equal(postsDesviados, 0, 'nenhum POST pode chegar ao endereço do Location');
+      const rRedirRes = await rodarCli(['--alvo', agenteRedireciona.url, '--conjunto', 'reservado', '--sem-relatorio'], {
+        RESERVADO_DIR: tmpRedirDir,
+      });
+      assert.equal(rRedirRes.code, 1, `307 no /chat deve reprovar o turno: ${rRedirRes.stdout}`);
+      assert.equal(postsDesviados, 0);
+      const saidaRedir = rRedir.stdout + rRedir.stderr + rRedirRes.stdout + rRedirRes.stderr;
+      assert.match(rRedir.stdout, /redirecionamento HTTP 307/);
+      assert.equal(saidaRedir.includes(destinoDesvio.url), false, 'o endereço do Location não aparece na saída');
+    } finally {
+      fs.rmSync(tmpRedirDir, { recursive: true, force: true });
+      await destinoDesvio.fechar();
+      await agenteRedireciona.fechar();
+    }
+
     console.log('TRAVA OK');
   } finally {
     fs.rmSync(tmpRel, { force: true });
