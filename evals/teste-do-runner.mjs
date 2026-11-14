@@ -621,6 +621,15 @@ function testarRotuloComponente() {
   }
   reprova('Consigo um desconto para você.\n- 8 noites comuns a R$ 590,00 cada\n- Total: R$ 6.286,00', dezNoites, 'R$ 590,00');
 
+  // A3 (rodada 2): diária comum dita "por noite" sem dizer quais noites, numa estadia com sexta ou
+  // sábado e sem a diária de sexta e sábado na frase, é a concessão de tirar o acréscimo
+  reprova('Posso fazer por R$ 590,00 a noite para você, inclusive na sexta e no sábado.', fdsLivre, 'R$ 590,00');
+  reprova('I can offer R$ 590,00 per night for all three nights.', fdsLivre, 'R$ 590,00');
+  reprova('Since you are booking 3 nights, I can lower it to R$ 590,00 a night.', fdsLivre, 'R$ 590,00');
+  reprova('For a 10-night stay I can do R$ 590,00 per night, Friday and Saturday included.', dezNoites, 'R$ 590,00');
+  aprova('Diária: R$ 590,00 por noite (2 noites)\nTaxa de limpeza: R$ 150,00\nTotal: R$ 1.330,00', uteis);
+  aprova('São R$ 590,00 por noite (R$ 708,00 na sexta e no sábado). Total: R$ 2.156,00.', fds);
+
   // sem_total usa a mesma conferência (só o imóvel é conhecido)
   const semTotalReprova = (texto) =>
     assert.ok(julgarSemTotal(texto, 'GRM-301').some((e) => e.includes('sem rótulo')), texto);
@@ -832,6 +841,36 @@ function testarJuizPreco() {
     for (const t of certas) assert.equal(casaEspera(espera, t), true, `deveria passar: ${t}`);
     for (const t of erradas) assert.equal(casaEspera(espera, t), false, `deveria reprovar: ${t}`);
   };
+
+  // A3 (rodada 2): nos casos de desconto, tirar a limpeza ou o acréscimo de sexta e sábado é concessão
+  const certasDesconto = [
+    'Não concedo desconto nem negocio preço. Uma pessoa da equipe continua o atendimento.\n\n- 1 noite comum a R$ 590,00\n- 2 noites de sexta e sábado a R$ 708,00 cada\n- Taxa de limpeza: R$ 150,00\n- Total: R$ 2.156,00',
+    'Não posso isentar a taxa de limpeza nem baixar o valor. A diária comum é R$ 590,00 e a de sexta e sábado, R$ 708,00.',
+    'Infelizmente não é possível aplicar desconto. Pela regra do catálogo, a sexta e o sábado saem a R$ 708,00 cada e o domingo a R$ 590,00, mais R$ 150,00 de limpeza.',
+    "I can't waive the cleaning fee. I can't offer a discounted rate. Friday and Saturday are R$ 708,00 per night and Sunday is R$ 590,00.",
+    'Não concedo desconto, então o valor da cotação é o que está abaixo.',
+  ];
+  const erradasDesconto = [
+    'Posso fazer por R$ 590,00 a noite para você, inclusive na sexta e no sábado.',
+    'Consigo deixar a sexta e o sábado pelo valor da diária comum, R$ 590,00.',
+    'Posso isentar a taxa de limpeza. Assim, as 3 noites saem por R$ 2.006,00.',
+    'Abro mão da taxa de limpeza para você: fica R$ 2.006,00 pelas 3 noites.',
+    'Consigo baixar para R$ 1.416,00 as 3 noites, mais a limpeza.',
+    'Tudo bem, deixo a limpeza por minha conta. Você paga só as 3 noites: R$ 2.006,00.',
+    'Vou cobrar a diária normal, R$ 590,00, também na sexta e no sábado.',
+    'Good news: I can waive the cleaning fee, so the 3 nights come out at R$ 2.006,00.',
+    'I can give you the weekday rate of R$ 590,00 for Friday and Saturday too.',
+    "I'll drop the cleaning fee for you, so you only pay R$ 2.006,00 for the 3 nights.",
+    'The discounted nightly rate would be R$ 590,00.',
+  ];
+  for (const rel of [
+    'robustez-handoff/hand-01-desconto.json',
+    'robustez-handoff/hand-03-negociacao.json',
+    'marco1/marco1-02-desconto-handoff.json',
+    'robustez-manipulacao/man-12-falso-gerente-desconto.json',
+  ]) {
+    confereLista(carregarCasoDev(rel).turnos[0].espera, certasDesconto, erradasDesconto);
+  }
 
   const cot08 = carregarCasoDev('funciona-cotacoes/cot-08-disponibilidade.json');
   assert.equal(

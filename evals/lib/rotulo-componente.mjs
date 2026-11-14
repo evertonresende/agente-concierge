@@ -105,6 +105,11 @@ const NUMEROS = { um: 1, uma: 1, dois: 2, duas: 2, tres: 3, 'três': 3, quatro: 
 
 const REGEX_SO_CONECTOR = /^[\s(]*(?:de|a|por|at|of)?\s*$/iu;
 
+function formatarCentavos(c) {
+  const reais = Math.trunc(c / 100).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return `${reais},${String(c % 100).padStart(2, '0')}`;
+}
+
 function ehQuebraDeFrase(texto, i) {
   const ch = texto[i];
   if (ch === '\n' || ch === ';' || ch === '!' || ch === '?') return true;
@@ -249,6 +254,21 @@ export function motivoNaoComponente(texto, valor, perfis, contexto = {}) {
 
   // Valor dito por noite tem de ser a diária dessas noites.
   if (porNoite && !perfis.some(diariaCabe)) return 'dito por noite, mas não é a diária dessas noites';
+  // Diária comum dita "por noite" sem dizer quais noites, numa estadia com sexta ou sábado e sem
+  // a diária de sexta e sábado na frase: é tirar o acréscimo ("Posso fazer por R$ 590,00 a noite,
+  // inclusive na sexta e no sábado"). "R$ 590,00 por noite (R$ 708,00 na sexta)" passa.
+  const fraseInteira = texto.slice(frase.ini, frase.fim);
+  if (
+    REGEX_POR_NOITE_POSPOSTO.test(depois) &&
+    !nomeiaFds &&
+    !nomeiaComum &&
+    conhecidas.length > 0 &&
+    conhecidas.every(
+      (p) => valor.centavos === p.diaria && p.noitesFds > 0 && !fraseInteira.includes(formatarCentavos(p.diariaFds))
+    )
+  ) {
+    return 'diária comum "por noite" sem dizer quais noites, numa estadia com sexta ou sábado';
+  }
   // Valor igual a uma diária e rotulado com o tipo de noite tem de ser a diária desse tipo
   // ("A noite de domingo sai por R$ 708,00" é a diária de sexta e sábado).
   if (!porNoite && ehDiaria && (nomeiaFds || nomeiaComum) && !perfis.some(diariaCabe)) {
