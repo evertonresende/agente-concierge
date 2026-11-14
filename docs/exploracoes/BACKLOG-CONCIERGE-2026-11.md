@@ -48,20 +48,20 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 |---|---|---|---|---|---|---|---|---|
 | A | agente-concierge | Esqueleto vertical até o Marco 1 | pré-voo | alta | 3,5 | thread T3 · Fable 5.2 | concluída | `frente-a` |
 | B1 | agente-concierge | Webhook falso (Worker próprio), construído e testado local; deploy em `dev` pela coordenadora | pré-voo | alta | 1 | subagente em worktree · DeepSeek | concluída | `t3/webhook-falso-leads` |
-| B2 | agente-concierge | Harness HTTP e casos dev por bloco | — | alta | 2,5 | thread T3 · Gemini 4 Hydrogen até 13/11 21h26; depois Opus 5.5, esforço alto (X23) | passo 2 na main; resíduos da segunda verificação em commit de seguimento | `frente-b2` |
+| B2 | agente-concierge | Harness HTTP e casos dev por bloco | — | alta | 2,5 | thread T3 · Gemini 4 Hydrogen até 13/11 21h26; depois Opus 5.5, esforço alto (X23) | **fechada.** Na `main`: runner, trava de `producao`, casos e juiz de preço; o juiz e o runner ficaram idênticos byte a byte aos de 193d1bf (41ecd72, P34), depois de seis rodadas de verificador; os quatro casos revelados pelo reservado entraram em cd28bc8. Conjunto com 104 casos. Os limites do juiz estão em `evals/README.md` | `frente-b2` |
 | C | agente-concierge | Conjunto reservado (fora do repo) | — | alta | 2 | thread T3 · GPT-6 Astra até 13/11 18h35 | 60 casos entregues fora do repo; conversa no GPT encerrada pela X16. Caso substituto, se for preciso, numa conversa nova em Gemini 4 Hydrogen | `frente-c` (sem commits; casos fora do repo) |
 | D | agente-concierge | Simulador de hóspede hostil | B2 (formato de caso) | média | 2,5 | thread T3 · Gemini 4 Hydrogen | concluída: na `main` (6c090d0), rodada ao vivo com `SIMULADOR OK`; a B2 move os 12 casos fixos | `frente-d` |
 | M1 | agente-concierge | Revisão curta do Marco 1 | A | alta | 0,5 | subagentes Opus 5.5 + conselho | concluída (`docs/revisoes/m1.md`; achados com dono) | — |
-| I | agente-concierge | Escolha do modelo por eval | A, B2 | alta | 1 | subagente em worktree · Opus 5.5, esforço médio desde a X16 | adaptador na `main` desde 13/11 23h18 (27c3093), com o Haiku 5.5 em nível alto (X24); `dev` publicado dessa versão. Delta do log de falha e gateway de `producao` na `main` desde 13/11 23h59 (fcb7dc2), verificador aprovado. Fica viva para a fase 2 (medição no código final) e para a linha do gateway de `producao` | `t3/modelo-evals-fallback` |
+| I | agente-concierge | Escolha do modelo por eval | A, B2 | alta | 1 | subagente em worktree · Opus 5.5, esforço médio desde a X16 | **fechada.** Adaptador na `main` desde 13/11 23h18 (27c3093), Haiku 5.5 em nível alto (X24), reserva GLM-5.3 Flash (X30). Fase 2, medição no código final, escrita pela coordenação em `docs/revisoes/modelos.md` em 14/11: 310 de 312 e rajada 40 de 40 | `t3/modelo-evals-fallback` |
 | E | agente-concierge | Datas | Marco 1, L1, L1a, L1b, L2 | alta | 1,5 | subagente em worktree · Gemini 4 Hydrogen | concluída: na `main` (81873fa) | `t3/datas-relativas-sao-paulo` |
-| F | agente-concierge | Lead robusto | Marco 1, L6, L7, L9, L10, L11, L15 (textos fixos), L20 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16); de 13/11 23h28 a 14/11 02h55 rodou em Fable 5.2 por desvio não percebido; de volta ao Opus 5.5, esforço alto, em 14/11 04h07 | na `main`: primeira parte (801c8a2) e complemento (0a44bd6, 14/11 00h05; P14 por estadia, P18, P19, C7 a C11), com seis rodadas de verificador. Aberta só para o nome do lead (P20), em commit novo | `frente-f` |
-| G | agente-concierge | Robustez e handoff | Marco 1, L3, L4, L5, L5a, L12, L13a, L15, L16, L16a, L19, L21 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16) | rodando | `frente-g` |
+| F | agente-concierge | Lead robusto | Marco 1, L6, L7, L9, L10, L11, L15 (textos fixos), L20 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16); de 13/11 23h28 a 14/11 02h55 rodou em Fable 5.2 por desvio não percebido; de volta ao Opus 5.5, esforço alto, em 14/11 04h07 | **fechada.** Na `main`: lead robusto (801c8a2, 0a44bd6), nome do lead (P20), sim limpo e P29 (rodada 8 do verificador), formas de confirmação da P35 (a4b13fa, rodada 9 do verificador, 14/11 04h31). Limites de confirmação que ficam: sim que repete dado do resumo (P13) e sim com o destino do envio (P36) | `frente-f` |
+| G | agente-concierge | Robustez e handoff | Marco 1, L3, L4, L5, L5a, L12, L13a, L15, L16, L16a, L19, L21 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16) | **fechada.** Na `main`: robustez e handoff, P17, P18, P30 (teto de chamadas) e a correção do R1 (eb5c7d4, rodada 5 do verificador, 14/11 03h10). A P30 entrou pelo relatório lido antes do fim da rodada 4, que terminou reprovada só pelo R1; a correção foi verificada à parte | `frente-g` |
 | H | agente-concierge | Concorrência endurecida e falha interna | Marco 1, L17, L17a, L18 | alta | 1 | subagente em worktree · Gemini 4 Hydrogen até 13/11 21h26; depois Opus 5.5, esforço alto (X23) | duas rodadas de verificador independente; correções entregues (c905a09); espera a F entrar na `main` para o merge final e a terceira rodada | `t3/durable-session-concurrency` |
 | J | agente-concierge | Página de chat em dois passos: design (canvas) e implementação | passo 1: nada; passo 2: Marco 1 e aprovação do Éverton | baixa | 0,7 + 1 | thread T3 · Fable 5.2 | passo 1 concluído (canvas aprovado pelo Éverton, com dois ajustes); passo 2 entregue (b8991ce) | `frente-j` |
 | M2 | agente-concierge | Revisão de código, segurança e segunda opinião | leva 2 integrada | alta | 1,5 | subagentes Opus 5.5 + segunda opinião do Gemini 4 Argon em esforço alto (X23) | primeira passada rodando desde 13/11 23h22, adiantada pela X24: segurança na `main` atual, código dos módulos estáveis e segunda opinião do Gemini sobre o cálculo; a segunda passada é só o delta, depois da leva 2 | — |
 | L | agente-concierge | Custo por conversa e monitor diário | leva 2 integrada | média | 1 | subagente em worktree · Opus 5.5, esforço médio (X23) | **fechada.** `scripts/custo.mjs` na `main` desde 13/11 23h47 (eec433a), verificador aprovado. Monitor diário cortado como código (P38): os modos `--clientes` e `--entrega` do script da K cobrem; agendar e escolher o canal do aviso ficam com o Éverton | `frente-l` |
 | K | agente-concierge | Produção com o envio real desligado | M2 | alta | 1,5 | thread T3 · Opus 5.5, esforço alto (X23) | **fechada, salvo a entrega.** Árvore final publicada em `producao` em 14/11 05h01 (versão 9e309710), envio real desligado, zero lead real; `CLIENTES OK`; validação completa com duas passadas registradas, 69 de 70 e 70 de 70 (P37); P25 reaplicada depois do deploy e a reaplicar depois de cada deploy. Falta só o passo da entrega (`--entrega`), com ordem do Éverton | `frente-k` |
-| N | agente-concierge | Entregáveis de processo | K | alta | 2 | thread T3 · Opus 5.5, esforço alto (X23) | rascunho completo na branch (ede0c12), sem achado de sigilo; reprovado por uma garantia dada como certa antes da hora, em correção; verificação final no fim da leva 2. Aberta em 13/11 23h14, adiantada pela X24: rascunhos do README, do "Como foi feito", dos desenhos e do setup, com marcador no que se preenche no fim | `frente-n` |
+| N | agente-concierge | Entregáveis de processo | K | alta | 2 | thread T3 · Opus 5.5, esforço alto (X23) | rodando: README, "Como foi feito", desenhos e setup com os números finais (4a9ece4, em verificador final); depois, simulador, `producao`, limites 54 a 57, corte do monitor e fechamento da M2 (1df8d7e); em curso, os limites que faltavam no README. O que entrou depois de 4a9ece4 ganha verificação própria antes do merge | `frente-n` |
 | S | agente-concierge | Gate de sigilo: achados da M2 | M2, primeira passada | alta | 0,5 | subagente em worktree · Opus 5.5, esforço alto (X23) | primeira entrega (1d5e406) reprovada pelo verificador em 14/11 00h27 por cinco médios, quatro deles anteriores à frente; em correção na mesma branch; verificador do delta antes do merge | `frente-gate` |
 | T | agente-concierge | Datas sem ano (P21) | G | alta | 0,5 | subagente em worktree · Opus 5.5, esforço alto (X23) | pronta na branch (e53e777, por cima da G em da64da4) em 14/11 00h24; verificador do delta rodando; entra na `main` depois da G | `frente-datas` |
 | — | — | Correções entre leva 2 e 3 | evals | alta | 1,5 | frente dona do arquivo | — | — |
@@ -2019,6 +2019,24 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   e, depois de ligado o envio, `--entrega`. Falta agendar a execução diária e escolher o canal do
   aviso de falha: ficam com o Éverton, com o comando pronto na lista dele. A frente L fecha com o
   `scripts/custo.mjs` na `main`
+- 14/11 05h32 · entregáveis · **`docs/prompts/` completo na `main` (68d0cf5):** 60 prompts de abertura (18 de
+  frentes, 37 de verificadores, 5 de revisores), extraídos do registro da sessão coordenadora por
+  script, na ordem de envio, com data, hora e modelo. Trocados por marcadores: caminhos da máquina e
+  o identificador local da conversa da coordenadora. Omitidas e marcadas no lugar: duas frases sobre
+  a disponibilidade do Éverton, nos prompts das frentes F e G. As mensagens de acompanhamento não
+  entram. Gate verde; além do gate, procurei identificadores longos, contas e endereços: nada.
+  **Desenhos:** os seis blocos Mermaid de `docs/desenhos/agente.md` e `fabrica.md` (cabeça f06104d
+  da frente N) passam no parser e renderizam no Mermaid 11.4.1, em navegador sem interface; li o
+  desenho do agente renderizado. **Frente N em f06104d:** simulador, rajada, `producao` com as duas
+  passadas, limites 54 a 57 e corte do monitor nos textos; pedido a ela o fechamento da M2 em
+  `docs/revisoes/m2.md`, achado por achado. O verificador final da N julga 4a9ece4; o que entrou
+  depois ganha verificação própria antes do merge. **Frases da sonda do sim** (resumo pendente do
+  GRM-301, 18/01/2027 a 20/01/2027, 3 hóspedes, R$ 1.330,00), as sete com dado do resumo que não
+  confirmam: "Sim, confirmo a reserva do GRM-301", "Sim, confirmo a reserva para 3 hóspedes", "Sim,
+  confirmo a reserva de 18/01/2027 a 20/01/2027", "Sim, confirmo o Chalé Serra Gramado", "Sim,
+  confirmo o total de R$ 1.330,00", "Confirmo, 3 pessoas", "Sim, pode enviar o pedido do GRM-301".
+  **Limpeza:** o webhook falso local antigo, na porta 8799, foi encerrado pelo PID; nenhuma porta de
+  eval local ficou aberta
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -2098,18 +2116,63 @@ relatório novo (`scripts/custo.mjs`); segunda passada da M2, só o delta; deplo
 e `scripts/validar-producao.sh` completo; textos finais da frente N e verificador de sigilo e de
 fatos; lista para o Éverton.
 
-**Critérios de fechamento ainda abertos** (numeração da tabela de outcomes):
-- 1: `producao` no ar no endereço padrão e no hostname próprio, envio desligado. Falta o deploy
-  final, o `PRODUCAO OK` e o monitor diário da frente L.
-- 2 a 9: dependem das três rodadas oficiais e do critério de integração 3 (frente H).
-- 12: relatórios das rodadas oficiais e do simulador versionados.
-- 13: agregado do reservado; cópia do conjunto para o repositório no commit de entrega.
-- 14: segunda passada da M2 em `docs/revisoes/m2.md`.
-- 15: medição final em `docs/revisoes/modelos.md`.
-- 17 e 19: README com o custo medido; desenhos conferidos no GitHub.
-- 18: `DECISOES.md` ainda não tem as seções de cortes e do que faria com mais tempo.
-- 20: `docs/prompts/` com os prompts das levas 2 e 3; exports de sessão dependem do Éverton.
+**Critérios de fechamento em 14/11 05h33** (numeração da tabela de outcomes):
+- 1: **atendido com ressalva.** `producao` no ar no endereço padrão e no hostname próprio, na árvore
+  final, envio desligado, zero lead real; validação completa com duas passadas, 69 de 70 e 70 de 70
+  (P37). Monitor diário cortado como código (P38): falta só o Éverton agendar o comando.
+- 2 a 9: **atendidos.** 310 de 312 nas três rodadas oficiais; todo bloco com 97% ou mais na soma.
+- 12: **atendido.** Relatórios das rodadas oficiais e do simulador versionados.
+- 13: agregado do reservado em 110 de 120 (91,7%). Falta a cópia do conjunto para o repositório no
+  commit de entrega, com a ordem do Éverton.
+- 14: segunda passada registrada; o fechamento achado por achado foi pedido à frente N.
+- 15: **atendido.** Fase 2 em `docs/revisoes/modelos.md`.
+- 17 e 19: README com o custo medido na cabeça da frente N, ainda fora da `main`. Os desenhos
+  renderizam no Mermaid 11.4.1; a conferência na página do GitHub fica para depois do merge.
+- 18: rascunho de cortes e do que faria com mais tempo pronto na frente N; entra em `DECISOES.md`
+  no merge dela.
+- 20: **atendido** nos prompts (`docs/prompts/`). Exports de sessão dependem do Éverton.
 - 21 a 24: do Éverton (vídeo, e-mail, repositório público, envio real).
+
+**Lista para o Éverton** (o que só ele faz, e o que ele confirma ou reverte).
+
+Só ele faz, nesta ordem sugerida:
+1. Ler o README e o "Como foi feito" depois do merge da frente N, e os marcadores `PREENCHER` que
+   sobraram (URL pública, repositório público, envio ligado, caminho do reservado, exports, vídeo).
+2. Escolher as sessões a exportar. Nada entra em `docs/sessoes/` antes de ele ler. Aviso: o registro
+   desta sessão coordenadora tem uma saída de ferramenta, de 14/11 às 05h05, com o endereço de `dev`;
+   o gate pega, e o trecho precisa sair antes de qualquer export.
+3. Dar a ordem de ligar o envio real. O que a ordem dispara: deploy de `producao` com o envio
+   ligado, P25 reaplicada e conferida por leitura, `scripts/validar-producao.sh --entrega`, cópia do
+   conjunto reservado para o repositório com o último agregado, marcadores do README preenchidos.
+4. Tornar o repositório público, depois do gate na árvore de entrega.
+5. Gravar o vídeo. Na confirmação do pedido, responder só "sim" (limites 54 e 55 do README).
+6. Responder o e-mail da entrega.
+7. Monitor dos 7 dias (P38): agendar uma vez por dia `scripts/validar-producao.sh --clientes` e
+   `scripts/validar-producao.sh --entrega`, e escolher por onde chega o aviso de falha.
+
+Ele confirma ou reverte:
+- Todas as provisórias, P1 a P38 (a P23 já foi revogada por ele). As desta madrugada: P32 (catálogo
+  fora do ar em rodada oficial), P33 (regra do reservado), P34 (juiz volta ao estado aprovado), P35
+  (formas novas de confirmação), P36 (simulador: nada reabre a `main`), P37 (duas passadas em
+  `producao`), P38 (monitor), e a correção do texto da P25.
+- A pergunta "tira": nos prompts versionados, duas frases sobre a disponibilidade dele foram
+  omitidas e marcadas. As frases de circunstância que restam em X15, no `DECISOES.md` e neste log
+  continuam como estão até ele dizer.
+- O plano B perguntado em 14/11 não foi preciso: a H e o juiz fecharam por verificador.
+
+Números que ele precisa saber sem abrir relatório:
+- Conjunto de desenvolvimento: 310 de 312 (99,4%); as duas falhas são um falso vermelho do juiz e
+  uma descrição de dia errada, corrigida no próprio texto do agente.
+- Conjunto reservado: 110 de 120 (91,7%), leituras de 88% e 95%; antes da correção da P35, 83% e 80%.
+- Simulador: 6 de 10, nenhuma marca é erro de contrato; dois limites de confirmação no README.
+- `producao`: uma passada reprovada por 1 caso em 70, sem texto para classificar; a seguinte, 70 de 70.
+- Custo: US$ 0,0026 por conversa em média. Latência: p50 3,0 s, p95 6,2 s, máximo 13,8 s.
+- Correção possível e não feita: aceitar o sim com o destino do envio ("pode enviar ao time
+  comercial"). Custa cerca de duas horas e refaz as três rodadas, o reservado e `producao`.
+
+O que ele deve saber do processo: cinco erros da coordenação, contados na seção 9 do "Como foi
+feito" e registrados neste log na hora em que foram vistos; a frente F rodou em Fable 5.2 de 13/11 23h28 a 14/11 02h55 por desvio não
+percebido, e o que ela entregou nesse período passou por verificador em Opus 5.5.
 
 ## Pré-voo (antes da leva 1)
 
