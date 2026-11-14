@@ -1505,6 +1505,24 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
 - 14/11 01h59 · M2 · parte 2 da segunda passada lançada: a frente H na `main` 6daffb1 (identificador do
   pedido, teto da fila, teto do corpo, log e dado pessoal, os dois caminhos que o verificador não mediu),
   os itens 13 e 15, e os itens 7, 8 e 14 no runner e no juiz da B2 em bd6e28b
+- 14/11 02h03 · B2 · verificador da rodada 4: REPROVADO o bd6e28b por um item de sete. Passam as negações em
+  inglês (0 de 24 recusas certas reprovadas com a negação a até 3 palavras), "abrir mão", o corpus (os
+  234 itens antigos idênticos, os 7 novos certos), os sete registros reais (zero certa reprovada; a
+  resposta real do `cot-13-entrada-hoje` passa a aprovar), a linha de base (1402 testes, `RUNNER OK`,
+  `TRAVA OK`, 100 casos, 70 elegíveis para `producao`) e os três defeitos plantados. Reprova a regra do
+  rótulo com parêntese: com a vírgula dentro do parêntese o rótulo vira a frase inteira, e um parêntese
+  que cita o outro tipo de noite faz o juiz aceitar qualquer das duas diárias; duas erradas novas
+  aprovam (tipo de noite trocado no `cot-13`; sexta e sábado a R$ 590,00 "como noite comum" com o total
+  certo). O furo do rótulo que nomeia os dois tipos é anterior ao delta; a regra o leva a um formato
+  novo. Devolvido à frente, numa passada só: (a) o tipo de noite conta só o rótulo fora do parêntese;
+  se a (a) reprovar resposta certa real, (b) o juiz fica como está, com o limite escrito no
+  `evals/README.md` e as duas frases fixadas no corpus. Junto, um achado baixo: vírgula colada na
+  negação. Decisão da coordenação (dentro da P27): é a última rodada de correção do juiz; o verificador
+  seguinte tem barra fechada nesses pontos, e redação nova fora deles vira limite listado, coberto pela
+  leitura à mão das rodadas oficiais
+- 14/11 02h03 · carga · apareceu pressão de memória (2% em 60 s; a fatia do usuário encostou no teto de 14 GB,
+  sem processo morto): o teto de suítes voltou de três para duas vagas, como a X25 manda. Leitura
+  seguinte: 0,2%
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -1530,13 +1548,13 @@ e o runner da B2, a P20 (nome do lead, frente F) e a P21 (datas sem ano, frente 
 casos fixo. Meta: 14/11 03h00. Limite: 06h00. Gatilho que já existia: 10h00 com o critério 4 não
 verde, parar e chamar o Éverton.
 
-**Estado do congelamento em 14/11 01h59.** Na `main` (6daffb1): G, T (P21), F (P20), H (fila da sessão e
-P24), o script da K e o gate da S. Abertos, todos pequenos e com verificador curto depois: F ("sim"
-limpo entregue em efa5f8b e conferido com o modelo real, 8 de 8; falta o hash com a P29, nome sem
-dígito nem moeda); G (P30, teto de chamadas de ferramenta); B2 (bd6e28b, com as três correções, no
-verificador da rodada 4). A parte 2 da M2 (H, itens 7, 8, 13, 14 e 15) está em curso. O ensaio local da
-árvore candidata deu 98 de 100, e as duas falhas têm correção entregue. Só o que muda o comportamento
-do agente ou o juiz reinicia a contagem das rodadas.
+**Estado do congelamento em 14/11 02h03.** Na `main` (6daffb1 em código): G, T (P21), F (P20), H (fila da
+sessão e P24), o script da K e o gate da S. Abertos, todos pequenos e com verificador curto depois: F
+("sim" limpo entregue em efa5f8b e conferido com o modelo real, 8 de 8; falta o hash com a P29, nome
+sem dígito nem moeda); G (P30, teto de chamadas de ferramenta); B2 (bd6e28b reprovado por um item, o
+rótulo com parêntese; última rodada de correção do juiz em curso). A parte 2 da M2 (H, itens 7, 8, 13,
+14 e 15) está em curso. O ensaio local da árvore candidata deu 98 de 100, e as duas falhas têm
+correção entregue. Só o que muda o comportamento do agente ou o juiz reinicia a contagem das rodadas.
 
 **Plano B, decisão do Éverton (perguntado em 14/11).** Um ciclo de correção e verificação leva
 cerca de 85 minutos; cabem dois até as 06h00. Se a H ou o juiz não fecharem nesse prazo, a escolha
