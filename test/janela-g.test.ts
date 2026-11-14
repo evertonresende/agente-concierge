@@ -12,7 +12,7 @@ import { conversa } from "./apoio-g";
 
 const ESTADIA = { imovel_id: "GRM-301", checkin: "15/01/2027", checkout: "18/01/2027", hospedes: 2 };
 const PESSOA = { nome: "Ana Lima", telefone: "(11) 98888-0000" };
-const COTA = "quanto fica o GRM-301 de 15/01/2027 a 18/01/2027 para 2?";
+const COTA = "sou Ana Lima, quanto fica o GRM-301 de 15/01/2027 a 18/01/2027 para 2?";
 const TOTAL = "Tem wifi. O total do pedido é R$ 2.156,00.";
 
 /** Modelo por regra: cota, monta o resumo, responde NÃO à pergunta fechada e o resto com TOTAL. */
@@ -39,7 +39,7 @@ describe("total do resumo pendente fora da janela (M-1)", () => {
 
   it("pelo laço, com o histórico vazio: o total do resumo aberto vale, o nome do hóspede não", async () => {
     const c = conversa();
-    await c.turno(COTA, roteiro(pedeFerramentas(chamar("cotar", ESTADIA)), diz("Fica R$ 2.156,00.")).modelo);
+    await c.turno("sou Ana R$ 10,00, quanto fica o GRM-301 de 15/01/2027 a 18/01/2027 para 2?", roteiro(pedeFerramentas(chamar("cotar", ESTADIA)), diz("Fica R$ 2.156,00.")).modelo);
     await c.turno("quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", { ...ESTADIA, ...PESSOA, nome: "Ana R$ 10,00" }))).modelo);
     c.historico.splice(0); // a cotação e o resumo saíram da janela
     const certo = await c.turno("tem wifi?", roteiro(diz(TOTAL), diz("NÃO")).modelo);
