@@ -420,9 +420,11 @@ canal do aviso ficaram com o Éverton.
     rodava quando o teto de chamadas cortava um `cotar` ou um `montar_resumo` do mesmo lote.
     A `main` já estava congelada. O congelamento foi reaberto, a G corrigiu e a contagem das
     rodadas recomeçou. Regra nova: veredito só vale quando a tarefa do verificador termina.
-11. **Leitura do reservado gravada (14/11).** A segunda leitura do conjunto reservado passou
-    pelo proxy de gravação, contra a regra de não gravar leitura do reservado. O registro
-    não foi lido e foi movido para uma pasta privada que só o papel da frente C abre.
+11. **Leitura do reservado gravada (14/11).** A segunda leitura do primeiro par, na árvore
+    b5af852 (03h12 a 03h16, 80%), passou pelo proxy de gravação, contra a regra de não
+    gravar leitura do reservado. O registro não foi lido e foi movido para uma pasta
+    privada que só o papel da frente C abre. As duas leituras finais, na árvore 9d37f9a
+    (04h52 a 04h57), que dão o número da entrega, não passaram pelo proxy.
 12. **Arquivos de sonda num commit de backlog (14/11).** Um commit de backlog feito com a
     árvore inteira em stage levou dois arquivos vazios deixados por uma sonda de
     verificação. Saíram num commit novo. Regra nova: a coordenação põe em stage só os
