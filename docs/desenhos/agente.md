@@ -7,6 +7,12 @@ verificadas. Os números do desenho foram conferidos contra o código dela: 6 vo
 trabalho externo, 16 chamadas por resposta e 32 por turno, 2 buscas por comodidade, janela
 de 80 mensagens, 8.000 caracteres por mensagem e 64 KB de corpo.
 
+Depois da árvore final entraram as correções de segurança de 14/11
+([`docs/revisoes/seguranca.md`](../revisoes/seguranca.md)). Elas não mudam os fluxos
+desenhados, com dois acréscimos que os desenhos não mostram: a página responde com
+cabeçalhos de proteção, e a confirmação do lead, antes de refazer o total, recusa a entrada
+que já passou (não envia, descarta o resumo e o modelo pede novas datas).
+
 ## 1. Um turno: do pedido à resposta
 
 Texto alternativo: o hóspede manda `session_id` e `message` ao Worker. O Worker valida o

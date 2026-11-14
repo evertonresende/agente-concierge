@@ -498,3 +498,12 @@ registros de sessão está em [`setup/README.md`](setup/README.md).
   arquivo: nenhum achado crítico ou alto aberto.
 - Custo por conversa no código final: US$ 0,0026 em média nas três rodadas oficiais (seção 8
   e [README](../README.md)).
+- Auditoria de segurança (14/11, com a entrega já no ar): uma passada rápida e parcial com a
+  skill `security-audit` da Cloudflare, e as correções do mesmo dia, em
+  [`revisoes/seguranca.md`](revisoes/seguranca.md). Os números deste documento foram medidos
+  na árvore 9d37f9a; os commits de segurança vieram depois. Entre eles está a correção do
+  único achado confirmado pela skill, de severidade baixa, no envio do lead, que entrou por
+  decisão do Éverton (P41). Sobre as correções rodaram de novo a suíte, duas rodadas inteiras
+  do conjunto de desenvolvimento (104 de 104 nas duas), a página num navegador e as
+  validações de `producao`. As três rodadas oficiais, o conjunto reservado, o simulador e a
+  rajada não rodaram de novo.
