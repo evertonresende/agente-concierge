@@ -15,6 +15,8 @@ entrega está marcado como "a preencher".
 
 **URL pública:** a preencher. <!-- PREENCHER: URL pública do agente (só com ordem do Éverton, L23) -->
 
+**Repositório público:** a preencher. <!-- PREENCHER: repositório público (só com ordem do Éverton) -->
+
 ## Interface
 
 ```
@@ -147,9 +149,9 @@ HTTP, e isso não se desliga (X28). No teste da frente K, `Python-urllib` e `lib
 levam 403 no endereço padrão, em POST e em GET, e passam no hostname próprio; os outros
 15 clientes testados passam nos dois. As URLs de pré-visualização do Worker de `producao`
 estão desligadas (P25). É só proteção: a plataforma não gera URL por versão para Worker com
-Durable Object, então nenhuma existia. Deploy e validação finais de `producao`, com a
-árvore final: a preencher.
-<!-- PREENCHER: deploy e validação finais de producao (frente K) -->
+Durable Object, então nenhuma existia. O ajuste não sobrevive a deploy: o deploy religa as
+URLs de pré-visualização, e a frente K reaplica o ajuste pela API e confere por leitura
+depois de cada deploy de `producao`, também no deploy da entrega.
 
 O webhook real não recebe nenhum POST antes da entrega, nem como teste. A validação é por
 composição:
@@ -171,6 +173,40 @@ arquivo de ambiente e nunca aparecem na saída.
 | `--clientes` | um turno sem confirmação com curl, Python `requests`, Python `urllib` e `fetch` do Node | `CLIENTES OK` |
 | `--entrega` | `/saude` com o envio ligado e leads reais; reprova com o envio desligado | `ENTREGA OK` |
 | `--autoteste` | confere o próprio script contra servidores falsos locais, sem tocar em `producao` | `AUTOTESTE OK` |
+
+### Deploy final e validação
+
+A árvore final foi publicada em `producao` em 14/11, com o envio real desligado. Nenhum lead
+real do começo ao fim: o webhook real só foi lido por GET, antes e depois de cada etapa. Os
+quatro clientes (curl, Python `requests`, Python `urllib` e `fetch` do Node) receberam 200:
+`CLIENTES OK`.
+
+A validação completa roda o conjunto de desenvolvimento sem os 34 casos com confirmação, que
+a trava recusa fora de `dev`; rodam 70. Foram duas passadas, as duas registradas (P37):
+
+| Passada | Resultado | Latência p50 / p95 / máximo |
+|---|---|---|
+| 1 | 69 de 70, **reprovada** | 3,4 / 6,0 / 14,3 s |
+| 2, com o script sem mudança | 70 de 70, `PRODUCAO OK` | 3,0 / 5,3 / 13,6 s |
+| soma | 139 de 140; no bloco não-inventa, 19 de 20 (95%) | |
+
+A falha da primeira passada é o `inv-05-feriado`, reprovado pelo juiz de preço ("R$ 708,00
+sem rótulo de componente"). R$ 708,00 é a diária certa de sexta e sábado daquele imóvel, mas
+a falha fica **não classificada**: o script roda o runner sem relatório e o Worker não
+registra texto, então a resposta não ficou em lugar nenhum. As 16 respostas gravadas do
+mesmo caso em `dev` estão certas e rotuladas; isso mostra que a forma reprovada é rara, não
+que ela estava certa. Não houve terceira passada.
+
+Envio real de leads: desligado até a ordem do Éverton. Depois de ligado, `--entrega`
+confirma o estado: a preencher.
+<!-- PREENCHER: envio real ligado e ENTREGA OK (ordem do Éverton) -->
+
+### Sete dias no ar
+
+Não há monitor automático entregue: o monitor diário foi cortado como código (P38). O que ele
+faria já existe em dois modos de `scripts/validar-producao.sh`: `--clientes` e, depois de
+ligado o envio, `--entrega`. Agendar a execução diária e escolher por onde chega o aviso de
+falha ficam com o Éverton; o comando está pronto.
 
 ## Custo por conversa
 
