@@ -93,9 +93,9 @@ decisivo fora dele; não é vulnerabilidade confirmada.
 
 | # | Achado | Veredito da skill | Severidade | Destino |
 |---|---|---|---|---|
-| 1 | A confirmação do lead não refaz a regra da data de entrada. A regra L2 do contrato (entrada anterior a hoje é recusada) vale ao cotar e ao montar o resumo, e não era refeita na hora do envio | confirmado, com reprodução independente no sandbox | baixa (probabilidade baixa, impacto baixo; confiança alta) | Corrigido em 14/11, por decisão do Éverton no mesmo dia (`e85de28`): a confirmação refaz a regra com o mesmo relógio do resumo (fuso de São Paulo, entrada hoje aceita). Se a data de entrada já passou, nada é enviado, o resumo é descartado e o modelo recebe o motivo, para explicar e pedir novas datas, com `handoff: false` |
+| 1 | A confirmação do lead não refaz a regra da data de entrada. A regra L2 do contrato (entrada anterior a hoje é recusada) vale ao cotar e ao montar o resumo, e não era refeita na hora do envio | confirmado, com reprodução independente no sandbox | baixa (probabilidade baixa, impacto baixo; confiança alta) | Corrigido em 14/11, por decisão do Éverton no mesmo dia (`e85de28`): a confirmação refaz a regra com o mesmo relógio do resumo (fuso de São Paulo, entrada hoje aceita). Se a data de entrada já passou, nada é enviado, o resumo é descartado e o modelo recebe o motivo, para explicar e pedir novas datas, com `handoff: false`. O texto dessa explicação é escrito pelo modelo e não foi medido (limite 70 do README) |
 | 2 | `POST /chat` sem autenticação consome o modelo pago do operador sem teto por cliente nem agregado visível no código | precisa de validação | sem severidade | Não muda no código: é o contrato do `POST /chat` (X37, item 4). Vale a decisão que já existia (P23 revogada, X29), reafirmada pelo Éverton em 14/11: é o limite 24 do README, com o limite de gasto na conta do provedor do modelo como controle e sem regra de taxa hoje. Sem pendência nova |
-| 3 | Webhook falso de `dev` grava leads sem teto de quantidade, de tamanho nem de retenção, em qualquer segmento | precisa de validação | sem severidade | Fica como limite: é infraestrutura de teste, só de `dev`, com dados fictícios. O fato decisivo (cota e conta que hospeda o falso) está fora do repositório |
+| 3 | Webhook falso de `dev` grava leads sem teto de quantidade, de tamanho nem de retenção, em qualquer segmento | precisa de validação | sem severidade | Fica como limite (o 67 do README): é infraestrutura de teste, só de `dev`, com dados fictícios. O fato decisivo (cota e conta que hospeda o falso) está fora do repositório |
 
 ## Notas de endurecimento
 
@@ -167,10 +167,10 @@ lacuna virou um commit de teste antes do merge:
 Ficaram registrados, sem correção:
 
 - emoji composto por U+200D (família, bandeira) no texto do catálogo passa a aparecer como os
-  emojis separados. Nenhum texto do catálogo de hoje usa isso;
+  emojis separados. Nenhum texto do catálogo de hoje usa isso (limite 68 do README);
 - o id e os argumentos de uma chamada de ferramenta vinda do modelo não têm teto de tamanho, e
   um nome que seja só meio caractere vira nome vazio, que o loop trata como ferramenta
-  inexistente;
+  inexistente (limite 69 do README);
 - com `img-src 'none'`, um navegador que peça `/favicon.ico` sozinho pode registrar um aviso da
   política. A rota já respondia 404;
 - o hash da política pressupõe um bloco de script e um de estilo na página. Os testes pegam a
