@@ -2062,6 +2062,15 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   que eu tinha passado errado: a P30 (b43ac7b, f485eef) entrou pelo relatório lido antes do fim da
   rodada 4 do verificador, que terminou reprovada só pelo R1; só a correção eb5c7d4 teve rodada
   aprovada. Depois das correções, um segundo verificador julga tudo o que entrou desde 4a9ece4
+- 14/11 05h43 · Éverton · **X31: rascunho de abertura curta para o `DECISOES.md` e para os limites do
+  README.** Pedido à frente N, na fila para depois das correções do verificador: arquivo novo
+  `docs/rascunho-aberturas.md` na `frente-n`, com (1) uma tela de abertura para o `DECISOES.md` em
+  três partes (escolhas, cortes, o que faria com mais tempo), apontando para as tabelas, que não
+  são cortadas; (2) os cinco limites que mais pesam primeiro, o resto depois. **Trava: o rascunho
+  não entra na `main` antes de o Éverton ler.** Como a trava é garantida: a N faz o rascunho em
+  commits posteriores à cabeça das correções, e o merge da `frente-n` é pelo hash exato da cabeça
+  verificada, que não contém o rascunho. Antes de qualquer merge da `frente-n`, conferir que
+  `docs/rascunho-aberturas.md` não existe no hash mesclado
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -2163,6 +2172,8 @@ fatos; lista para o Éverton.
 Só ele faz, nesta ordem sugerida:
 1. Ler o README e o "Como foi feito" depois do merge da frente N, e os marcadores `PREENCHER` que
    sobraram (URL pública, repositório público, envio ligado, caminho do reservado, exports, vídeo).
+   E ler `docs/rascunho-aberturas.md` na branch `frente-n` (X31): decidir se a abertura curta do
+   `DECISOES.md` e os cinco limites primeiro entram, e como. Não está na `main`.
 2. Escolher as sessões a exportar. Nada entra em `docs/sessoes/` antes de ele ler. Aviso: o registro
    desta sessão coordenadora tem uma saída de ferramenta, de 14/11 às 05h05, com o endereço de `dev`;
    o gate pega, e o trecho precisa sair antes de qualquer export.
