@@ -103,7 +103,7 @@ ela ter veredito.
 | B2 (runner e casos) | 2 do runner na leva 1, 6 do juiz de preço na leva 2 | **falso verde crítico**: caso pulado pela trava saía do denominador e o `marco1` dava 100% e `EVAL OK` sem rodar a conversa de lead; 20 de 80 casos reprovariam um agente correto; 2 de manipulação rodariam contra `producao`. Na terceira, o juiz novo tinha ficado mais frouxo: aprovava desconto escrito como "cada noite sai por", total errado e política inventada (primeira do juiz). Juiz R2: quatro altos (total sem a limpeza aprovado, resposta real certa reprovada, desconto com valor igual a um componente aprovado, respostas certas em inglês reprovadas). R3: aprovada. R4: a regra do rótulo com parêntese fazia o juiz aceitar qualquer das duas diárias. R5: aprovada; a P31 fechou o ciclo de correção do juiz, e o que sobra fica listado em `evals/README.md`. R6: reprovada; as duas correções de redação faziam aprovar respostas erradas que o juiz anterior reprovava, e o juiz voltou ao estado aprovado na R5 (P34) |
 | D (simulador) | 1 | `SIMULADOR OK` com a ferramenta do hóspede fora do ar; erro do agente derrubava a rodada; juiz de handoff acusava agente certo e deixava passar errado; 10 de 12 casos fixos frágeis |
 | E (datas) | conferência da coordenação | tabela própria de datas em três fusos, sem diferença; o CHECK no runtime achou regressão da L8 (1 de 3 respostas sem a pergunta de quantas pessoas), corrigida e repetida 10 de 10 |
-| F (lead) | 8: aprovada na sexta; a sétima aprovou a regra do nome (P20) e a oitava o "sim" limpo e a P29 | R1: hesitação com dado ("acho que sim, mas somos 3") e o "sim" seguinte enviava o dado antigo. R2: "acho que sim, mas no mês que vem" reexibia o resumo antigo e o sim o enviava, 10 de 10; das 50 confirmações naturais, 15 não enviavam. R3: um "?" em qualquer ponto mantinha o resumo; combinações de `422` e `5xx` somavam 3 e 4 POSTs para a mesma estadia. R4: com outras formas de pontuação, 34 de 106 mensagens mantinham o resumo antigo (virou limite conhecido, P18). R5: um sim com anúncio de dúvida ainda podia enviar o lead (daí a P19). R6: aprovada, com zero envio nesses casos e a confirmação legítima intacta. R7: a regra do nome (P20) aprovada; dois efeitos viraram limites (P28). R8: aprovada; o "sim" limpo pelo caminho do resumo dá o mesmo lead que a confirmação em 28 formas de mensagem e não fura a fila da H |
+| F (lead) | 9: aprovada na sexta; a sétima aprovou a regra do nome (P20), a oitava o "sim" limpo e a P29, a nona as formas de confirmação da P35 | R1: hesitação com dado ("acho que sim, mas somos 3") e o "sim" seguinte enviava o dado antigo. R2: "acho que sim, mas no mês que vem" reexibia o resumo antigo e o sim o enviava, 10 de 10; das 50 confirmações naturais, 15 não enviavam. R3: um "?" em qualquer ponto mantinha o resumo; combinações de `422` e `5xx` somavam 3 e 4 POSTs para a mesma estadia. R4: com outras formas de pontuação, 34 de 106 mensagens mantinham o resumo antigo (virou limite conhecido, P18). R5: um sim com anúncio de dúvida ainda podia enviar o lead (daí a P19). R6: aprovada, com zero envio nesses casos e a confirmação legítima intacta. R7: a regra do nome (P20) aprovada; dois efeitos viraram limites (P28). R8: aprovada; o "sim" limpo pelo caminho do resumo dá o mesmo lead que a confirmação em 28 formas de mensagem e não fura a fila da H |
 | G (robustez) | 5, aprovada na quinta | R1: o código ligava `handoff` com texto fixo em mensagem comum ("Pode fechar, meu telefone é…", "a 500 m da praia"). R2: as redes por palavra passavam 24 de 80 mensagens comuns para humano ("esse lugar é descontraído?", "não estou pedindo desconto"); a conferência cortava a explicação do acréscimo de sexta e sábado; o lead podia sair com menos pessoas do que o grupo cotado. R3: reprovada por um achado só de teste, já corrigido; um médio (o total repetido saía cortado depois de 80 mensagens) foi corrigido com resumo aberto e aceito como limite sem ele (P26). R4 (teto de chamadas, P30): reprovada por um ponto do caminho do lead, achado depois que a coordenação já tinha mesclado (seção 9). R5: só a correção desse ponto, aprovada; sobrou um baixo do lado seguro (a confirmação do turno não roda quando o teto corta um `cotar` ou um `montar_resumo`, e o hóspede confirma de novo) |
 | H (concorrência) | 5 do verificador, mais um só para a P24, e 2 conferências da coordenação | **crítico**: a nova tentativa do Worker reenviava a mesma mensagem sem identificador, e um "sim" podia valer duas vezes. A coordenadora achou no runtime real dois defeitos que o vitest não pega: o Worker não subia (constante exportada no módulo de entrada) e todo turno com catálogo caía em contingência (`fetch` chamado como método de objeto). R2: resumo gravado cuja resposta se perdia no caminho podia ser confirmado sem o hóspede ter visto; corpo sem limite de tamanho (corrigido pela P12). R3: duas mensagens ao mesmo tempo na sessão e um resumo que ficava confirmável sem ter sido visto quando o Worker desistia com o pedido na fila. R4: a correção desse segundo caso abriu outro (as duas tentativas do Worker entravam na fila e a segunda rodava o turno); a P24 foi verificada à parte e aprovada. R5: aprovada |
 | S (gate de sigilo) | 2, mais uma conferência da coordenação | R1: cinco médios, quatro deles anteriores à frente. R2: com o índice corrompido, o gate terminava com `SIGILO OK` depois de falha de leitura; corrigido e conferido pela coordenação com as sondas do verificador |
@@ -150,14 +150,24 @@ O custo das duas primeiras está declarado como limite no [README](../README.md)
   devolve só contagens.
 - O diagnóstico terminou, devolvido só em contagens. Nos 60 casos, nenhum lead sem
   confirmação, duplicado ou diferente do resumo. A passada única mudou a expectativa de 9
-  casos (7 afrouxados por redação, 2 apertados), cada um com a cláusula citada; o segundo
-  revisor com veto ainda está conferindo. Contagem depois do veto: a preencher.
-- O conjunto fez o trabalho dele: achou um erro real e repetido do agente. Em 4 casos o
-  hóspede confirma de um jeito que a L9 e a P13 aceitam, e o agente repete o resumo sem
-  enviar. Pela regra 6 de `docs/EVALS.md`, esses 4 casos foram revelados para a correção,
-  migram para o conjunto de desenvolvimento e ganham substitutos que ninguém vê.
-- Correção do agente e agregado final: a preencher.
-  <!-- PREENCHER: correção dos 4 casos de confirmação, contagem depois do veto e soma das duas leituras finais do reservado (P33) -->
+  casos (7 afrouxados por redação, 2 apertados), cada um com a cláusula citada.
+- **O veto funcionou.** O segundo revisor vetou as 9 mudanças, e os casos voltaram ao
+  original: nas 7 afrouxadas, a expressão nova aprovava respostas erradas (5 a 6 por caso);
+  das 2 apertadas, uma reprovava respostas certas e a outra ficou em dúvida. Ele apertou 3
+  casos frouxos e concordou com a classificação das falhas (3 do juiz compartilhado, 1 de
+  idioma, 4 de lead). É a regra da P33 fazendo o que devia: o primeiro revisor tendia a
+  afrouxar; o segundo, sem esse interesse, barrou. A leitura de 91,7% que o primeiro
+  revisor tinha feito não vale.
+- **O conjunto fez o trabalho dele:** achou um erro real e repetido do agente. Em 4 casos o
+  hóspede confirmava de um jeito que a L9 e a P13 aceitam, e o agente repetia o resumo sem
+  enviar. Pela regra 6 de `docs/EVALS.md`, os 4 casos foram revelados, migraram para o
+  conjunto de desenvolvimento e ganharam substitutos, conferidos duas vezes pelo segundo
+  revisor. A correção (P35) foi pequena e verificada a fundo: 4 minutos de mudança, 20
+  linhas na gramática do sim, e um verificador independente com 11.829 leituras de 3.943
+  mensagens em três estados.
+- O conjunto mede com as expectativas originais. O agregado final sai de duas leituras na
+  árvore final e vai ao Éverton como estiver: a preencher.
+  <!-- PREENCHER: soma das duas leituras finais do reservado na árvore 9d37f9a (P33) -->
 
 ## 6. Gate de sigilo e de histórico
 
@@ -261,7 +271,19 @@ do agente. Julgadas de novo com o juiz de 193d1bf (P34), dão o mesmo resultado.
 rodadas oficiais, falso vermelho do juiz conta como falha na soma do bloco (P34). Como a correção da G reabriu o congelamento, a contagem das três rodadas
 oficiais recomeça na árvore nova; as três de b5af852 ficam registradas.
 
-Resultado das três rodadas: a preencher.
+Árvore de reserva 0567371 (sem a P35), três rodadas oficiais registradas: 99, 97 e 100 de
+100, soma 296 de 300, nenhuma falha do agente. As 4 falhas são falso vermelho, classificadas
+pela conversa gravada: três redações de cotação certa que o juiz não reconhece e uma
+expressão proibida do caso que pega "o pedido não foi enviado". Contando os falsos vermelhos
+como falha (P34), cotações fecha em 37 de 39 (94,9%); sem eles, 39 de 39. Esses números são
+da árvore de reserva, não o resultado da entrega.
+
+A árvore final é 9d37f9a: o código de b5af852 mais a correção da G e as formas de
+confirmação da F (P35), as duas aprovadas por verificador independente, juiz e runner
+idênticos aos de 193d1bf, e 104 casos de desenvolvimento. A contagem das três rodadas
+oficiais recomeça nela.
+
+Resultado das três rodadas na árvore final: a preencher.
 <!-- PREENCHER: três rodadas em dev, nota por bloco, classificação de cada falha -->
 
 ## 9. O que deu errado e como foi corrigido
@@ -340,8 +362,8 @@ Resultado das três rodadas: a preencher.
 
 | Provedor e modelo | O que fez | Fase |
 |---|---|---|
-| Claude Fable 5.2 | coordenadora do começo ao fim; frentes A (produto até o Marco 1) e J (design e página); começo das frentes F e G | leva 1 e leva 2 até a X16 nas frentes |
-| Claude Opus 5.5 | verificadores independentes e subagentes de revisão desde a leva 1; frentes I, K, L e N; F e G depois da X16; B2 e H depois da X23; S e T, como subagentes em worktree; o revisor do reservado no papel da frente C (P33) | toda a entrega; a partir da X23, o único modelo das frentes e dos verificadores, com esforço médio, alto ou muito alto conforme a tarefa |
+| Claude Fable 5.2 | coordenadora do começo ao fim; frentes A (produto até o Marco 1) e J (design e página); começo das frentes F e G; a frente F de novo de 13/11 23h28 a 14/11 02h55 (regra do nome, "sim" limpo e P29), por um desvio de modelo, contra a X23, que a coordenação não percebeu e cuja causa não foi determinada | leva 1 e leva 2 até a X16 nas frentes; as entregas da F do desvio passaram por verificador em Opus 5.5 |
+| Claude Opus 5.5 | verificadores independentes e subagentes de revisão desde a leva 1; frentes I, K, L e N; F (fora do desvio citado acima) e G depois da X16; B2 e H depois da X23; S e T, como subagentes em worktree; o revisor do reservado no papel da frente C (P33) | toda a entrega; a partir da X23, o único modelo das frentes e dos verificadores, com esforço médio, alto ou muito alto conforme a tarefa |
 | Gemini 4 Hydrogen | frentes B2 (runner e casos), D (simulador), E (datas) e H (concorrência); conselho às cegas das lacunas e do Marco 1 | leva 1 e leva 2, até a X23 |
 | Gemini 3.8 Flash (`gemini-3.8-flash-low`) | o hóspede simulado do simulador hostil (padrão de `evals/simulador/hospede-cli.mjs`) | rodadas ao vivo do simulador |
 | Gemini 4 Argon | segunda opinião da revisão final (M2) | leva 3; desde a X23 é a única segunda opinião de outro provedor |
