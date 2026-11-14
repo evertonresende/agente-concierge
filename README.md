@@ -395,6 +395,26 @@ na lista de limites abaixo.
 
 ## Limites conhecidos
 
+**Os cinco limites que mais pesam**
+
+1. **Handoff depende do modelo** (limite 1). O que a pessoa vê: um pedido de desconto ou
+   de negociação que não passa para humano. Custo: se o modelo errar também na chamada
+   focada, o handoff não acontece.
+2. **Número solto sem marca de moeda nem centavos passa pela conferência** (limite 46). O
+   que a pessoa vê: "consigo deixar o total em 1500" chega sem corte. Custo: um valor que não
+   saiu do código na conversa; o valor do lead continua sendo o do código.
+3. **Sim com o destino do envio não confirma** (limite 55). O que a pessoa vê: "Sim, pode
+   enviar o pedido ao time comercial" faz o agente repetir o resumo, embora o próprio
+   resumo use essa frase. Custo: um turno a mais; nunca gera lead errado.
+4. **Sim que repete dado do resumo não confirma** (limite 54). O que a pessoa vê:
+   "Confirmo, 3 pessoas" faz o agente repetir o resumo. Custo: um turno a mais; nunca gera
+   lead errado.
+5. **Data no formato americano** (limite 6). O que a pessoa vê: "01/15/2027" não é lida
+   como data, e o agente pede as datas de novo. Custo: um turno, e a conversa em inglês
+   não chega à cotação enquanto a data vier nesse formato.
+
+Os outros 61 limites seguem abaixo, por grupo, com o número e o texto de sempre.
+
 Pela X24, só bloqueia a entrada na `main` o que é determinístico ou gera lead errado; o
 resto fica listado aqui.
 
