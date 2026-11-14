@@ -77,6 +77,8 @@ rodar; espera_codigo 1; espera_texto "c.txt:1"; sem_pedaco "$EMPRESA"
 caso="d) host sem nome de empresa utilizável e sem sigilo-extra"
 novo_repo d2 "api.qz.com.test"
 rodar; espera_codigo 2; sem_pedaco "api.qz.com.test"
+: > "$AGENTE_CFG/sigilo-extra"
+rodar; espera_codigo 2
 echo zqxwfirma > "$AGENTE_CFG/sigilo-extra"
 rodar; espera_codigo 0
 

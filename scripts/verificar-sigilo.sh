@@ -51,7 +51,7 @@ token=$(printf '%s' "$url" | sed -E 's#.*/catalogo/([^/?]+).*#\1#')
 # Nome da empresa = penúltimo rótulo do host. Se ele for curto demais (< 4, o que inclui
 # os sufixos com, net, org, gov, edu e co de hosts como api.nome.com.br), usa o anterior.
 empresa=$(printf '%s' "$host" | awk -F. '{ e = $(NF-1); if (length(e) < 4 && NF > 2) e = $(NF-2); if (length(e) >= 4) print e }')
-[ -n "$empresa" ] || [ -f "$DIR_CFG/sigilo-extra" ] \
+[ -n "$empresa" ] || grep -q '[^[:space:]]' "$DIR_CFG/sigilo-extra" 2>/dev/null \
   || { echo "SIGILO: não deu para derivar o nome da empresa do host; ponha-o em sigilo-extra"; exit 2; }
 
 tmpd=$(mktemp -d) || { echo "SIGILO: não consegui criar a pasta temporária"; exit 2; }
