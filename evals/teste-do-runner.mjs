@@ -1016,6 +1016,9 @@ function testarJuizPreco() {
       'Certo, enviei o seu pedido ao time comercial. Está tudo certo?',
       'Seu pedido já foi encaminhado. Se quiser mudar algo, é só responder sim.',
       'Entendi.',
+      // M1 (rodada 2): "está tudo certo" só conta dentro de uma pergunta
+      'Ótimo! Está tudo certo, então vou enviar seu pedido ao time comercial.',
+      'Combinado, está tudo certo com seus dados. Seu pedido segue para o time.',
     ]
   );
 
