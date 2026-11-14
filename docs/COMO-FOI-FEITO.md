@@ -97,9 +97,11 @@ de chegar à `main` ou a `dev`.
 | B2 (runner e casos) | 3 | **falso verde crítico**: caso pulado pela trava saía do denominador e o `marco1` dava 100% e `EVAL OK` sem rodar a conversa de lead; 20 de 80 casos reprovariam um agente correto; 2 de manipulação rodariam contra `producao`. Na terceira, o juiz novo tinha ficado mais frouxo: aprovava desconto escrito como "cada noite sai por", total errado e política inventada |
 | D (simulador) | 1 | `SIMULADOR OK` com a ferramenta do hóspede fora do ar; erro do agente derrubava a rodada; juiz de handoff acusava agente certo e deixava passar errado; 10 de 12 casos fixos frágeis |
 | E (datas) | conferência da coordenação | tabela própria de datas em três fusos, sem diferença; o CHECK no runtime achou regressão da L8 (1 de 3 respostas sem a pergunta de quantas pessoas), corrigida e repetida 10 de 10 |
-| F (lead) | 6, aprovada na sexta | R1: hesitação com dado ("acho que sim, mas somos 3") e o "sim" seguinte enviava o dado antigo. R2: "acho que sim, mas no mês que vem" reexibia o resumo antigo e o sim o enviava, 10 de 10; das 50 confirmações naturais, 15 não enviavam. R3: um "?" em qualquer ponto mantinha o resumo; combinações de `422` e `5xx` somavam 3 e 4 POSTs para a mesma estadia. R4: com outras formas de pontuação, 34 de 106 mensagens mantinham o resumo antigo (virou limite conhecido, P18). R5: um sim com anúncio de dúvida ainda podia enviar o lead (daí a P19). R6: aprovada, com zero envio nesses casos e a confirmação legítima intacta |
-| G (robustez) | 2, a terceira depois dos ajustes | R1: o código ligava `handoff` com texto fixo em mensagem comum ("Pode fechar, meu telefone é…", "a 500 m da praia"). R2: as redes por palavra passavam 24 de 80 mensagens comuns para humano ("esse lugar é descontraído?", "não estou pedindo desconto"); a conferência cortava a explicação do acréscimo de sexta e sábado; o lead podia sair com menos pessoas do que o grupo cotado |
+| F (lead) | 7, aprovada na sexta; a sétima aprovou a regra do nome (P20) | R1: hesitação com dado ("acho que sim, mas somos 3") e o "sim" seguinte enviava o dado antigo. R2: "acho que sim, mas no mês que vem" reexibia o resumo antigo e o sim o enviava, 10 de 10; das 50 confirmações naturais, 15 não enviavam. R3: um "?" em qualquer ponto mantinha o resumo; combinações de `422` e `5xx` somavam 3 e 4 POSTs para a mesma estadia. R4: com outras formas de pontuação, 34 de 106 mensagens mantinham o resumo antigo (virou limite conhecido, P18). R5: um sim com anúncio de dúvida ainda podia enviar o lead (daí a P19). R6: aprovada, com zero envio nesses casos e a confirmação legítima intacta. R7: a regra do nome (P20) aprovada; dois efeitos viraram limites (P28) |
+| G (robustez) | 3, aprovada na terceira | R1: o código ligava `handoff` com texto fixo em mensagem comum ("Pode fechar, meu telefone é…", "a 500 m da praia"). R2: as redes por palavra passavam 24 de 80 mensagens comuns para humano ("esse lugar é descontraído?", "não estou pedindo desconto"); a conferência cortava a explicação do acréscimo de sexta e sábado; o lead podia sair com menos pessoas do que o grupo cotado. R3: aprovada com um médio (o total repetido saía cortado depois de 80 mensagens), corrigido com resumo aberto e aceito como limite sem ele (P26) |
 | H (concorrência) | 2 do verificador, 2 conferências da coordenação | **crítico**: a nova tentativa do Worker reenviava a mesma mensagem sem identificador, e um "sim" podia valer duas vezes. A coordenadora achou no runtime real dois defeitos que o vitest não pega: o Worker não subia (constante exportada no módulo de entrada) e todo turno com catálogo caía em contingência (`fetch` chamado como método de objeto). R2: resumo gravado cuja resposta se perdia no caminho podia ser confirmado sem o hóspede ter visto; corpo sem limite de tamanho (corrigido pela P12 na branch da H, em verificação) |
+| S (gate de sigilo) | 2, mais uma conferência da coordenação | R1: cinco médios, quatro deles anteriores à frente. R2: com o índice corrompido, o gate terminava com `SIGILO OK` depois de falha de leitura; corrigido e conferido pela coordenação com as sondas do verificador |
+| T (datas sem ano, P21) | 1 | aprovada: 82.102 casos comparados com a árvore anterior; só mudaram as saídas sem ano a mais de 90 noites, que passaram a ser recusadas; 11 de 12 defeitos plantados pegos |
 | I (modelo) | 3, aprovada na terceira | R1: resposta `200` inútil do Haiku (vazia, cortada, erro como valor) não ia ao reserva. R2: fim de resposta que não batia com o conteúdo passava, e o mesmo id duas vezes quebrava o pareamento de chamada e resultado. R3: aprovada, sem achado alto nem médio; 7 de 68 defeitos plantados escapam, como seguimento |
 
 Contagens de defeitos plantados pegos pela suíte, por rodada: F 12 de 12, 21 de 25, e na
@@ -145,9 +147,11 @@ commit, com tudo em stage, e antes de cada push.
   token.
 - **Incidente.** Às 22h34, a frente I publicou dois commits com o gate reprovando, por
   causa de dados inventados numa linha de teste (endereço de faixa de documentação,
-  e-mail em domínio reservado). Saíram no commit seguinte. O gate só lê a árvore atual,
+  e-mail em domínio reservado). Saíram no commit seguinte. O gate daquela hora só lia a árvore atual,
   as mensagens e os autores, não o conteúdo de commits antigos. O Éverton decidiu que o
-  histórico fica como aconteceu (X24).
+  histórico fica como aconteceu (X24). Depois, a frente S fez o gate varrer o histórico
+  inteiro a cada execução, com teste próprio (`scripts/verificar-sigilo.teste.sh`); isso
+  fecha os achados 4, 5 e 6 da primeira passada da revisão final.
 - **Chave da OpenAI.** Em 13/11 o Éverton tirou a chave da OpenAI de uso (X16). A frente
   I já a tinha guardado no gateway e no cofre de segredos da conta; removeu das duas, e a
   coordenação conferiu por nome que não sobrou nada. O commit que descreve essa ligação
@@ -258,7 +262,7 @@ Resultado das três rodadas: a preencher.
 | Provedor e modelo | O que fez | Fase |
 |---|---|---|
 | Claude Fable 5.2 | coordenadora do começo ao fim; frentes A (produto até o Marco 1) e J (design e página); começo das frentes F e G | leva 1 e leva 2 até a X16 nas frentes |
-| Claude Opus 5.5 | verificadores independentes e subagentes de revisão desde a leva 1; frentes I, K, L e N; F e G depois da X16; B2 e H depois da X23 | toda a entrega; a partir da X23, o único modelo das frentes e dos verificadores, com esforço médio, alto ou muito alto conforme a tarefa |
+| Claude Opus 5.5 | verificadores independentes e subagentes de revisão desde a leva 1; frentes I, K, L e N; F e G depois da X16; B2 e H depois da X23; S e T, como subagentes em worktree | toda a entrega; a partir da X23, o único modelo das frentes e dos verificadores, com esforço médio, alto ou muito alto conforme a tarefa |
 | Gemini 4 Hydrogen | frentes B2 (runner e casos), D (simulador), E (datas) e H (concorrência); conselho às cegas das lacunas e do Marco 1 | leva 1 e leva 2, até a X23 |
 | Gemini 3.8 Flash (`gemini-3.8-flash-low`) | o hóspede simulado do simulador hostil (padrão de `evals/simulador/hospede-cli.mjs`) | rodadas ao vivo do simulador |
 | Gemini 4 Argon | segunda opinião da revisão final (M2) | leva 3; desde a X23 é a única segunda opinião de outro provedor |
