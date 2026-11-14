@@ -60,7 +60,7 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 | J | agente-concierge | Página de chat em dois passos: design (canvas) e implementação | passo 1: nada; passo 2: Marco 1 e aprovação do Éverton | baixa | 0,7 + 1 | thread T3 · Fable 5.2 | passo 1 concluído (canvas aprovado pelo Éverton, com dois ajustes); passo 2 entregue (b8991ce) | `frente-j` |
 | M2 | agente-concierge | Revisão de código, segurança e segunda opinião | leva 2 integrada | alta | 1,5 | subagentes Opus 5.5 + segunda opinião do Gemini 4 Argon em esforço alto (X23) | primeira passada rodando desde 13/11 23h22, adiantada pela X24: segurança na `main` atual, código dos módulos estáveis e segunda opinião do Gemini sobre o cálculo; a segunda passada é só o delta, depois da leva 2 | — |
 | L | agente-concierge | Custo por conversa e monitor diário | leva 2 integrada | média | 1 | subagente em worktree · Opus 5.5, esforço médio (X23) | script de custo na `main` desde 13/11 23h47 (eec433a), verificador aprovado; falta o monitor diário, depois que `producao` existir; aberta em 13/11 23h22, adiantada pela X24: só `scripts/custo.mjs`; o monitor diário espera a K | `frente-l` |
-| K | agente-concierge | Produção com o envio real desligado | M2 | alta | 1,5 | thread T3 · Opus 5.5, esforço alto (X23) | gateway de `producao` criado e com o log desligado; `scripts/validar-producao.sh` na branch (33c8316), reprovado pelo verificador por um falso verde com argumentos extras, em correção; rota e primeiro deploy parados à espera do Éverton. Rodando desde 13/11 23h14, adiantada pela X24: só a infraestrutura de `producao` com o envio real desligado; o deploy final espera a M2 | `frente-k` |
+| K | agente-concierge | Produção com o envio real desligado | M2 | alta | 1,5 | thread T3 · Opus 5.5, esforço alto (X23) | gateway de `producao` criado e com o log desligado; `scripts/validar-producao.sh` na branch (33c8316), reprovado pelo verificador por um falso verde com argumentos extras, em correção; primeiro deploy autorizado em 14/11 00h07 (X26), só no endereço padrão do Worker e com o envio real desligado; a rota no hostname próprio segue à espera do Éverton. Rodando desde 13/11 23h14, adiantada pela X24: só a infraestrutura de `producao` com o envio real desligado; o deploy final espera a M2 | `frente-k` |
 | N | agente-concierge | Entregáveis de processo | K | alta | 2 | thread T3 · Opus 5.5, esforço alto (X23) | rascunho completo na branch (ede0c12), sem achado de sigilo; reprovado por uma garantia dada como certa antes da hora, em correção; verificação final no fim da leva 2. Aberta em 13/11 23h14, adiantada pela X24: rascunhos do README, do "Como foi feito", dos desenhos e do setup, com marcador no que se preenche no fim | `frente-n` |
 | S | agente-concierge | Gate de sigilo: achados da M2 | M2, primeira passada | alta | 0,5 | subagente em worktree · Opus 5.5, esforço alto (X23) | rodando desde 13/11 23h46: conteúdo do histórico, saída sem trecho do termo, sufixo composto e teste do gate; verificador antes do merge | `frente-gate` |
 | — | — | Correções entre leva 2 e 3 | evals | alta | 1,5 | frente dona do arquivo | — | — |
@@ -1099,6 +1099,21 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   `SIGILO OK` no repositório real em 1,2 s, `TESTE DO GATE OK`. Verificador independente rodando, só
   com termos falsos em repositórios descartáveis. Limites declarados pela frente: mensagem de tag
   anotada não é lida; IP e e-mail só no índice
+- 14/11 00h07 · Éverton · X26: a K publica `producao` no endereço padrão do Worker, com o envio real desligado,
+  sem esperar a decisão da rota; nada é escrito na zona. Rota, Bot Fight Mode, exports, nomes dos
+  modelos e P19 ele responde depois. A X25 (três suítes) foi repetida e já estava aplicada
+- 14/11 00h07 · K · "pode" da coordenadora para o primeiro deploy de `producao`, só no endereço padrão: de
+  cópia limpa da `main` na cabeça atual; prova de zero POST refeita nesse commit; segredos por
+  referência; depois `/saude`, um ou dois turnos sem confirmação com chamadas ao modelo maiores que
+  zero e log do Worker sem `principal_pulado` nem `modelo_falhou`, os quatro clientes e `LEADS REAIS: 0`
+  antes e depois. O modo completo (evals contra `producao`) espera a trava por negação do runner e a
+  aprovação do script. O hostname padrão entra no `sigilo-extra` para o gate passar a barrá-lo. A K
+  responde com medição se o endereço padrão serve como URL de entrega e de onde vem o 403 do urllib
+- 14/11 00h07 · G · relatórios das cabeças e2be4dd, 805513c e 29ae3aa recebidos (chegaram depois dos commits):
+  pergunta fechada aceita "não" sem acento, em qualquer caixa e com ponto final; contagem real das
+  chamadas com as 10 sondas da frente I passando; trava de valores só com campos de dinheiro que o
+  código escreve no resultado da ferramenta. A rodada integrada mostrou que a API aceita a pergunta
+  fechada sem ferramentas. Pendente com a frente: os 2 testes que falham com a F, agora na `main`
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
