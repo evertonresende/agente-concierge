@@ -51,13 +51,16 @@ cabeçalhos `x-uso-entrada`, `x-uso-saida` e `x-chamadas-modelo`, usados para me
   registro afirmado sem `201` e afirmação de disponibilidade não chegam ao hóspede (frente
   G). Os limites dessa conferência estão na lista do fim.
 - **Nome do lead.** Só pode ser formado por palavras que o hóspede escreveu na conversa
-  (P20); se não for, a ferramenta do resumo recusa e o modelo pede o nome.
+  (P20), sem dígito nem símbolo de moeda (P29); se não for, a ferramenta do resumo recusa e
+  o modelo pede o nome.
+- **Teto de chamadas de ferramenta** (P30): 16 por resposta do modelo, 32 por turno e no
+  máximo 2 buscas por comodidade por turno. As que passam do teto voltam ao modelo como
+  erro, sem executar.
 
-  > Estado deste rascunho: a `main` tem as frentes I, F, G e T, o script de validação de
-  > `producao` (K) e o gate de sigilo novo (S), todos verificados. Falta a frente H
-  > (concorrência e falha interna): o que depende dela (limite de corpo de 64 KB, P24) entra
-  > com ela. Conferir depois da entrada da H: a preencher.
-  > <!-- PREENCHER: conferir depois da entrada da H -->
+  > Estado deste rascunho: a `main` tem todas as frentes de produto (G com a P30, T, F com
+  > a P20 e a P29, H, B2, K e S). Falta uma correção da G no caminho do lead quando o teto
+  > corta uma chamada do mesmo lote da confirmação; está em verificação: a preencher.
+  > <!-- PREENCHER: conferir depois da correção R1 da G entrar na main -->
 - **Modelo.** Decidido pelo Éverton por medição (`DECISOES.md` X24 e X30;
   [`docs/revisoes/modelos.md`](docs/revisoes/modelos.md)). Principal: Claude Haiku 5.5, com
   o raciocínio em nível alto, direto do provedor pelo AI Gateway. Reserva: GLM-5.3 Flash,
@@ -192,9 +195,11 @@ chamadas). Bate com a rodada local (p50 2,5 s, p95 5,3 s). O número final sai d
 oficiais: a confirmar no congelamento.
 <!-- PREENCHER: latência final das rodadas oficiais (a confirmar no congelamento) -->
 
-`dev` está publicado com o código da `main` que tem G, T e F. Fumaças depois desse deploy,
-que não contam como rodada: bloco `marco1` com 100% (p50 1,2 s, p95 4,5 s) e bloco
-`funciona-leads` inteiro pelo proxy de registro com 100% (p50 1,6 s, p95 5,7 s).
+Fumaças em `dev`, que não contam como rodada: com G, T e F publicadas, bloco `marco1` com
+100% (p50 1,2 s, p95 4,5 s) e bloco `funciona-leads` inteiro pelo proxy de registro com 100%
+(p50 1,6 s, p95 5,7 s). Com a `main` de todas as frentes publicada, a sonda de pós-deploy
+respondeu 32 de 32 perguntas de ficha em dois minutos, sem contingência, e o `marco1` deu
+100%.
 
 Notas por bloco e do reservado: a preencher.
 <!-- PREENCHER: nota dos evals por bloco (três rodadas em dev) e agregado do conjunto reservado -->
@@ -206,9 +211,11 @@ A história da escolha do modelo, com a tabela de medições, está em
 
 Revisão do primeiro marco: [`docs/revisoes/m1.md`](docs/revisoes/m1.md). Primeira passada
 da revisão final (segurança da `main`, código dos módulos estáveis e segunda opinião sobre
-o cálculo de preço): [`docs/revisoes/m2.md`](docs/revisoes/m2.md). Segunda passada, só do
-delta da leva 2: a preencher.
-<!-- PREENCHER: resultado das revisões de código e de segurança (M2) -->
+o cálculo de preço): [`docs/revisoes/m2.md`](docs/revisoes/m2.md). Segunda passada, no
+mesmo arquivo, em duas partes sobre o delta da leva 2: nenhum achado crítico ou alto, e
+nenhum caminho sondado gera lead sem resumo visto, duplicado ou diferente do resumo. Os
+achados médios viraram correção (P29, P30 e a trava do runner por mensagem); os demais estão
+na lista de limites abaixo.
 
 ## Limites conhecidos
 
@@ -216,7 +223,7 @@ Pela X24, só bloqueia a entrada na `main` o que é determinístico ou gera lead
 resto fica listado aqui. A lista fecha no fim: a preencher.
 <!-- PREENCHER: lista final de limites -->
 
-Já decididos ou declarados, por área. Os de segurança vêm da primeira passada da revisão
+Já decididos ou declarados, por área. Os de segurança vêm das duas passadas da revisão
 ([`docs/revisoes/m2.md`](docs/revisoes/m2.md)); os demais, das decisões (P) e dos
 verificadores das frentes, no log do backlog.
 
@@ -275,9 +282,7 @@ verificadores das frentes, no log do backlog.
 20. **Disponibilidade.** O catálogo não informa datas livres. O agente cota, mas não diz que
     a data está disponível, e lead registrado é pedido encaminhado, não reserva garantida.
 
-**Pedido HTTP (dependem da frente H, ainda fora da `main`; conferir quando ela entrar: a
-preencher)**
-<!-- PREENCHER: conferir os itens 21 a 23 depois da entrada da H -->
+**Pedido HTTP**
 
 21. **Corpo muito grande.** Acima de 64 KB o Worker devolve `200` com o pedido para
     resumir, sem ler o resto (P12). Com corpo de vários megabytes, o cliente às vezes vê a
@@ -290,21 +295,26 @@ preencher)**
 **Segurança e dados**
 
 24. **Sem limite de gasto por cliente ou por sessão.** O custo de modelo não tem teto por
-    quem conversa.
+    quem conversa. A fila de uma sessão também não tem teto de quantidade, só de tempo:
+    mensagem que espera mais de 50 s não chama o modelo.
 25. **O `session_id` é a única credencial da conversa.**
 26. **Dados de terceiros nos leads.** Com o envio real ligado, nome e telefone do hóspede
     vão ao webhook do time comercial.
 27. **Página de chat sem cabeçalhos de proteção** do navegador.
-28. **Dados da sessão sem prazo de apagamento** no armazenamento do objeto.
+28. **Dados da sessão sem prazo de apagamento** no armazenamento do objeto. O histórico
+    nunca é podado; só a leitura usa a janela de 80 mensagens.
 29. **Log.** Até 4 dígitos de um dado podem ir para o log se a plataforma ecoar o pedido
     numa mensagem de erro.
 
 **Ferramentas de verificação**
 
-30. **Juiz de preço dos evals.** Reconhece pela forma da frase, não pelo sentido; os
-    formatos que ele não julga estão em `evals/README.md`. Em compensação, as rodadas
-    oficiais passam por um proxy local que só grava as conversas, e toda resposta com valor
-    em reais nos casos de preço e de desconto é lida à mão (P27).
+30. **Juiz de preço dos evals.** Reconhece pela forma da frase, não pelo sentido. A lista
+    dos formatos que ele erra está em `evals/README.md` (na `main`, 12 respostas certas
+    que reprovam e 9 erradas que aprovam; mais duas entram no próximo merge, a preencher). Em
+    compensação, as rodadas oficiais passam por um proxy local que só grava as conversas;
+    nos quatro casos de desconto, toda resposta das rodadas oficiais é lida à mão, e a
+    leitura confere também o tipo de noite contra a diária (P27, P31).
+    <!-- PREENCHER: contagem da lista do juiz depois do commit de documentação da B2 -->
 31. **Simulador.** O juiz de handoff do simulador não enxerga gatilho que o modelo do
     hóspede inventa; reprovação de handoff no simulador se lê à mão. O resultado também é
     lido no relatório, não só na linha final.
@@ -316,6 +326,49 @@ preencher)**
     sair com 2, do lado seguro. Lista completa no cabeçalho de `scripts/verificar-sigilo.sh`.
 34. **Medição do nível alto.** A comparação de níveis do Haiku teve uma rodada só no nível
     alto, e entre duas rodadas do mesmo nível 13 casos trocaram de resultado.
+
+**Fila da sessão (frente H)**
+
+35. **Reinício com o "sim" na fila.** Se o objeto reinicia com o "sim" ainda na fila, a marca
+    de reapresentação se perde, e o "sim" confirma o resumo criado no turno anterior (1 lead).
+36. **Pergunta e "sim" na fila.** O "sim" responde só "Certo.", sem lead.
+37. **Corpo enviado devagar** até o prazo do Worker: o hóspede recebe a contingência com
+    `handoff`, mas a sessão não fica marcada.
+38. **Worker desiste com o "sim" em curso.** O lead sai (um só, igual ao resumo) e o hóspede
+    recebe a contingência.
+39. **Cabeçalhos de uso.** Mostram a qualquer cliente os tokens e as chamadas ao modelo do
+    turno.
+
+**Lead (frente F)**
+
+40. **Valor por extenso no nome** passa ("Ana quinhentos reais"); dígito e símbolo de moeda
+    são recusados (P29).
+41. **Catálogo fora do ar e "sim" limpo.** Quando o modelo pede o resumo de novo em vez de
+    confirmar, o resumo pendente cai; o hóspede recebe a contingência e nada é enviado.
+
+**Teto de chamadas de ferramenta (P30, frente G)**
+
+42. **Chamada acima do teto** volta ao modelo como erro; o hóspede recebe o que já foi lido
+    ou o pedido para reduzir a busca.
+43. **Lote de 17 ou mais chamadas.** O resumo do pedido é cortado e o modelo precisa pedir
+    de novo.
+44. **Catálogo instável.** A nova tentativa dobra o pior turno: 168 pedidos ao catálogo na
+    sonda, contra 84 com ele saudável.
+
+**Segunda passada da revisão de segurança**
+
+45. **Valor sem marca de moeda** escrito pelo modelo ("consigo deixar o total em 1500")
+    chega ao hóspede sem corte (S2-2).
+46. **Mensagem do hóspede na pergunta fechada.** Entra crua; o ganho máximo é manter o
+    próprio resumo (S2-4).
+47. **Nome de imóvel de ficha hostil** vai para o resumo (S2-5).
+48. **Repetição das instruções.** A trava deixa passar tradução e frase curta (S2-7).
+
+**Catálogo**
+
+49. **Catálogo fora do ar.** O hóspede recebe a contingência com `handoff`, e a sessão fica
+    em `handoff`. Visto uma vez em `dev`, em 14/11, por 95 segundos (25 turnos); a causa não
+    foi determinada (P32).
 
 **Conferências com o modelo real** (servidor local com a `main`, a F e a branch da H; uma
 repetição de cada roteiro, não são rodadas de eval):
