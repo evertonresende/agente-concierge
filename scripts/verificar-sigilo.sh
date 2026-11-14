@@ -28,6 +28,10 @@
 # - Com achado no histórico, localizar commit:arquivo é lento em histórico grande
 #   (dezenas de segundos em 5.000 commits); sem achado, a varredura leva frações disso.
 #
+# Formatos do arquivo de ambiente que saem com 2 (falha do lado seguro, só o número da
+# linha): comentário colado à aspa ("valor"# nota), & sem aspas, BOM no começo, e $ ou
+# barra invertida entre aspas duplas.
+#
 # Depende de bash, gawk (tolower em UTF-8), grep e coreutils do GNU, e git 2.16+.
 set -u
 cd "$(git rev-parse --show-toplevel)" || exit 2
