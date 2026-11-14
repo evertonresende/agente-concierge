@@ -195,8 +195,9 @@ Modelo reserva final: a preencher.
 
 ## 8. Rodadas no código integrado
 
-Medidas da coordenadora no servidor local, com as branches mescladas sobre a `main`, já
-no Haiku:
+Medidas da coordenadora. As duas primeiras linhas são contra `dev`, com o modelo nativo do
+Marco 1; as demais, no servidor local, com as branches mescladas sobre a `main`, já no
+Haiku:
 
 | Hora | Código | Resultado | Observação |
 |---|---|---|---|
