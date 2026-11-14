@@ -623,8 +623,11 @@ verificadores das frentes, no log do backlog.
     - milhares de mensagens na fila de uma sessão podem estourar a memória do objeto dela;
     - a conta dos 64 KB supõe que a plataforma entrega o corpo em pedaços pequenos.
 63. **Achados baixos da primeira revisão que não foram conferidos de novo:** dia da semana
-    em inglês, telefone com zero de longa distância, ficha com diária zero e quatro
-    hipóteses sem sonda que falhe. O estado deles na árvore final não foi medido.
+    em inglês, ficha com diária zero e quatro hipóteses sem sonda que falhe. O estado deles
+    na árvore final não foi medido.
+64. **Telefone com zero de longa distância.** "011 98765-4321" não é aceito como telefone
+    (o DDD não pode começar com zero), e o agente pede o telefone de novo. Custa um turno;
+    "11 98765-4321" passa. Conferido executando a função da árvore final.
 
 **Conferências com o modelo real** (servidor local com a `main`, a F e a branch da H; uma
 repetição de cada roteiro, não são rodadas de eval):
