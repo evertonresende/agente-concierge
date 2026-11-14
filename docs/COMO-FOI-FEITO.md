@@ -428,6 +428,6 @@ O setup do ambiente do autor que rodou nesta entrega (regras, skills e subagente
   <!-- PREENCHER: fechamento da M2 -->
 - Exports de sessão em [`sessoes/`](sessoes/): a preencher.
   <!-- PREENCHER: exports de sessão -->
-- Roteiro do vídeo: a preencher. <!-- PREENCHER: roteiro do vídeo -->
+- Roteiro do vídeo: a preencher. <!-- PREENCHER: roteiro do vídeo; na confirmação, o hóspede responde só "sim" (limites 54 e 55 do README) -->
 - Custo por conversa no código final: US$ 0,0026 em média nas três rodadas oficiais (seção 8
   e [README](../README.md)).
