@@ -4,8 +4,8 @@ import { type Cofre, ESTADO_INICIAL, type EstadoLead } from "../src/lead";
 import { criarModelo } from "../src/modelo";
 import { criarContexto, criarMundo } from "./apoio";
 
-// `producao` hoje: Haiku de principal, mas sem gateway (P10) nem chave. Sem gateway o
-// adaptador nem chama o Haiku: o reserva responde direto, ou sai o aviso honesto.
+// Ambiente sem gateway (era `producao` antes do `concierge-producao`): o adaptador nem
+// chama o Haiku; o reserva responde direto, ou sai o aviso honesto.
 const HAIKU = "anthropic/claude-haiku-5.5";
 const RESERVA = "@cf/zai-org/glm-5.3-flash";
 
