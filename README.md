@@ -581,6 +581,36 @@ verificadores das frentes, no log do backlog.
     cotação nova", embora as datas fossem as do resumo. Visto uma vez; sem valor errado,
     sem lead e sem `handoff`.
 
+**Achados da revisão final que faltavam nesta lista** (fechamento em
+[`docs/revisoes/m2.md`](docs/revisoes/m2.md))
+
+58. **Data ano-mês-dia com mês ou dia de um dígito.** "2027-1-5" é chamada de data
+    inexistente, e o agente pede a data correta de novo. Custa um turno; não gera cotação
+    errada.
+59. **O webhook falso de `dev` não confere credencial.** Quem souber o endereço e o segmento
+    lê, grava e apaga leads nele. É o ambiente de teste, com dados sintéticos; o webhook real
+    de `producao` é outro.
+60. **Nome e telefone do hóspede no prompt de sistema.** Com resumo aberto, o código põe no
+    prompt de sistema os dados do resumo, entre eles o nome e o telefone que o hóspede
+    escreveu (`src/agente/prompt.ts`). O nome passa antes pela regra das palavras escritas
+    (P20) e pela recusa de dígito e símbolo de moeda (P29).
+61. **Instrução escrita numa ficha do catálogo.** O código entrega a ficha ao modelo dentro de
+    um campo `dados_do_catalogo`, com o aviso de que é dado e não instrução. Quem deixa de
+    obedecer é o modelo, pelo prompt: não há filtro por código do texto da ficha. O que o
+    modelo escrever depois passa pela mesma conferência do texto de qualquer resposta
+    (valor, concessão, registro e disponibilidade).
+62. **Quatro hipóteses não medidas da revisão da fila.** São hipóteses do revisor, não
+    medidas:
+    - mais de 20 desistências do Worker na mesma sessão em menos de 50 s tiram um pedido da
+      lista de desistidos;
+    - mais de 20 pedidos atendidos entre duas tentativas do mesmo pedido fazem a cópia rodar
+      de novo (o marcador por reserva impede lead duplicado);
+    - milhares de mensagens na fila de uma sessão podem estourar a memória do objeto dela;
+    - a conta dos 64 KB supõe que a plataforma entrega o corpo em pedaços pequenos.
+63. **Achados baixos da primeira revisão que não foram conferidos de novo:** dia da semana
+    em inglês, telefone com zero de longa distância, ficha com diária zero e quatro
+    hipóteses sem sonda que falhe. O estado deles na árvore final não foi medido.
+
 **Conferências com o modelo real** (servidor local com a `main`, a F e a branch da H; uma
 repetição de cada roteiro, não são rodadas de eval):
 oito roteiros de nome, nenhum travado em recusa, e os sete leads com o nome exatamente como
