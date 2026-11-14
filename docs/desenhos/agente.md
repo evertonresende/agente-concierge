@@ -1,98 +1,208 @@
-# Desenho do agente em produção (esboço)
+# Desenho do agente em produção
 
-Um agente só. Requisitos em [`docs/CONTRATO.md`](../CONTRATO.md). Os nomes de ferramenta
-abaixo são ilustrativos; os definitivos saem da frente A.
+Um agente só. Requisitos em [`docs/CONTRATO.md`](../CONTRATO.md); decisões citadas (L, P,
+X) em [`DECISOES.md`](../../DECISOES.md). Os desenhos descrevem a árvore final 9d37f9a,
+com as frentes F (até a P35), G (com a correção do teto no caminho do lead), H, I e T, todas
+verificadas. Os números do desenho foram conferidos contra o código dela: 6 voltas, 45 s de
+trabalho externo, 16 chamadas por resposta e 32 por turno, 2 buscas por comodidade, janela
+de 80 mensagens, 8.000 caracteres por mensagem e 64 KB de corpo.
 
-## Caminho de uma mensagem
+## 1. Um turno: do pedido à resposta
+
+Texto alternativo: o hóspede manda `session_id` e `message` ao Worker. O Worker valida o
+corpo e entrega a mensagem ao Durable Object daquela sessão, que a põe numa fila de uma
+mensagem por vez. Dois atalhos respondem por código, sem modelo: o "sim" com a marca de
+reapresentar mostra o resumo de novo (a marca é gravada com resumo aberto quando o Worker
+responde fora do turno, P24, quando o pedido chega repetido e quando a sessão responde a
+contingência; quando o Worker desiste, também com o pedido ainda em curso; e quando o
+resumo foi criado depois de a mensagem chegar, ainda sem ter sido visto), e o "sim"
+repetido logo depois de um registro recebe um texto fixo. Fora disso, o laço chama o modelo (o principal e, se ele falhar ou recusar por
+limite, o reserva). Se o modelo pede ferramentas, o código confere a chamada, executa,
+grava o resultado e volta ao modelo, até 6 voltas e com teto de chamadas (P30). Quando o modelo responde em texto, o
+código confere o texto, pede uma correção se achar problema, retira o que reconhece como
+proibido (por forma da frase, com os limites 8, 20, 46, 65 e 66 do README) e acrescenta o total e o pedido de confirmação gerados por código. A
+sessão grava histórico e estado e o Worker devolve `reply` e `handoff`. Qualquer falha
+vira o aviso de contingência com `handoff: true`, nunca erro 500.
 
 ```mermaid
-flowchart LR
-  CLI["Hóspede, página de chat<br/>ou bateria do avaliador"]
+flowchart TB
+  accTitle: Caminho de uma mensagem do hóspede
+  accDescr: Pedido HTTP, Worker, Durable Object da sessão com fila, laço de ferramentas com modelo principal e reserva, ferramentas determinísticas, conferência do texto e resposta.
 
-  subgraph WORKER["Worker"]
-    R["POST /chat<br/>valida o corpo<br/>acha a sessão pelo session_id"]
+  H["Hóspede, página de chat<br/>ou bateria do avaliador"]
+
+  subgraph W["Worker"]
+    V["POST /chat · valida o corpo<br/>acha a sessão pelo session_id<br/>JSON inválido ou campo faltando: 400<br/>mensagem vazia ou longa: 200 com texto fixo<br/>corpo acima de 64 KB: idem"]
   end
 
   subgraph DO["Durable Object: um por session_id"]
     direction TB
-    FILA["Fila: uma mensagem por vez"]
-    EST[("SQLite da sessão<br/>histórico · rascunho da reserva<br/>estado do lead · flag de handoff")]
-    LOOP["Loop de ferramentas<br/>limite de voltas e de tempo"]
-    FILA --> LOOP
-    LOOP <--> EST
+    F["Fila em memória<br/>uma mensagem por vez, na ordem de chegada"]
+    Q{"Sim com a marca de reapresentar?<br/>(resposta fora do turno, pedido repetido,<br/>contingência ou resumo ainda não visto)"}
+    J{"Sim repetido logo depois<br/>de um registro?"}
+    L["Laço de ferramentas<br/>até 6 voltas, 45 s de trabalho externo<br/>até 16 chamadas por resposta, 32 por turno (P30)"]
+    C{"O modelo pediu<br/>ferramentas?"}
+    B["Conferência da chamada<br/>imóvel não escolhido (L21)<br/>grupo menor que o cotado (L13a)<br/>sinal de desconto: chamada focada (P17)"]
+    X["Conferência do texto<br/>valor sem ferramenta, concessão,<br/>registro sem 201, disponibilidade"]
+    FE["Fechamento por código<br/>retira a frase que a conferência reconhece,<br/>anexa o total,<br/>pergunta do agente derruba o resumo (P18),<br/>pedido de confirmação fixo"]
+    S[("SQLite da sessão<br/>histórico · rascunho da reserva · estado do lead<br/>marcador de envio · flag de handoff")]
+    F --> Q
+    Q -->|"não"| J
+    J -->|"não"| L
+    L --> C
+    C -->|"sim"| B
+    C -->|"não"| X
+    X -->|"problema: uma correção"| L
+    X -->|"ok"| FE
+    FE --> S
   end
 
-  MOD["Modelo<br/>Workers AI ou AI Gateway"]
+  subgraph M["Modelos, pelo AI Gateway"]
+    P["Principal: Claude Haiku 5.5"]
+    R["Reserva: GLM-5.3 Flash<br/>outro fornecedor"]
+    P -.->|"falha, resposta inútil<br/>ou recusa por limite"| R
+  end
 
-  subgraph FERR["Ferramentas determinísticas (código)"]
+  subgraph T["Ferramentas (código)"]
     direction TB
-    T1["buscar imóveis · ver ficha"]
-    T2["cotar em centavos inteiros"]
-    T3["resumir a reserva"]
-    T4["confirmar e enviar o lead"]
-    T5["passar para humano"]
+    T1["listar_cidades · buscar_imoveis<br/>buscar_por_comodidade · ver_imovel"]
+    T2["cotar: centavos inteiros,<br/>recusas, texto em reais"]
+    T3["montar_resumo · confirmar_reserva<br/>texto fixo em português ou inglês"]
+    T4["passar_para_humano: liga a flag"]
   end
 
-  CAT["API do catálogo<br/>somente GET"]
-  WH["Webhook de leads<br/>dev: falso · produção: real"]
+  CAT["Catálogo<br/>só GET"]
+  WH["Webhook de leads<br/>dev: falso · producao: real"]
 
-  CLI -->|"session_id + message"| R
-  R --> FILA
-  LOOP <-->|"mensagens e pedidos de ferramenta"| MOD
-  LOOP --> FERR
+  H -->|"session_id + message"| V
+  V --> F
+  Q -->|"sim: reapresenta o resumo por código, sem modelo"| S
+  J -->|"sim: texto fixo, sem modelo"| S
+  L <-->|"mensagens e pedidos de ferramenta"| M
+  B --> T
+  T -->|"resultado delimitado:<br/>texto do catálogo é dado"| L
   T1 -->|"GET"| CAT
   T2 -->|"ficha fresca"| CAT
-  T4 -->|"POST só no estado<br/>resumo_apresentado + confirmação"| WH
-  T5 -->|"liga a flag"| EST
-  LOOP -->|"reply + handoff"| R
-  R -->|"200 em menos de 60 s"| CLI
+  T3 -->|"POST só no estado resumo apresentado<br/>+ confirmação em outro turno"| WH
+  T4 -->|"liga a flag"| S
+  S -->|"reply + handoff"| V
+  V -->|"200 em menos de 60 s"| H
+  L -.->|"falha ou prazo: contingência,<br/>handoff true"| S
 ```
 
-- A fila existe porque o Durable Object pode intercalar outro pedido enquanto espera o
-  modelo ou o catálogo. Duas mensagens da mesma sessão nunca correm juntas.
-- O texto que vem do catálogo entra na conversa como dado delimitado, nunca como instrução.
-- O estado do envio é gravado antes do POST. Um reinício no meio não gera segundo envio.
+- A fila existe porque o objeto intercala outro pedido enquanto espera o modelo ou o
+  catálogo, e o bloqueio nativo tem limite de 30 s (`docs/VERIFICACOES.md` §1).
+- O texto que vem do catálogo é saneado (uma linha por campo, até 300 caracteres, sem "$")
+  e entra na conversa como dado delimitado, com o aviso de que não é instrução. Não há
+  filtro de instrução no código: não obedecer é do modelo, pelo prompt (limite 61 do README).
+- O total sai pronto da ferramenta de cotação. A conferência retira do texto do modelo
+  valor em dinheiro que nenhuma ferramenta calculou, com "R$", "reais", outra moeda ou
+  centavos com vírgula ("1999,00") (frente G). Número por extenso, número solto sem marca
+  nem centavos com vírgula ("o total em 1500"), centavos com ponto ("1999.00") e gíria
+  ("1999 conto") passam (limites 8 e 46 do README). Sem resumo aberto, o total repetido depois que a cotação sai da janela de
+  80 mensagens é cortado, e o agente pede imóvel e datas de novo (P26).
 - Em `dev` o webhook é um falso que replica o contrato do real. O real não recebe nenhum
   POST antes da entrega.
+- Recusa por limite de pedidos vai direto ao reserva e não é repetida (L18). Sem gateway
+  configurado, o reserva responde direto (P16).
+- O resumo para confirmação, o resultado da confirmação e o aviso de falha são textos
+  fixos de código, em português ou em inglês (L15).
 
-## Trava de confirmação
+## 2. O lead: resumo, confirmação, envio e falha
+
+Texto alternativo: com imóvel, datas, hóspedes, nome e telefone, o código monta o resumo
+e o mostra num turno. No turno seguinte, só um sim inequívoco confirma; hesitação repete
+o pedido; um sim com anúncio de dúvida ("sim, uma dúvida") não envia nada (P19); condição de preço passa para humano; qualquer dado mudado, uma pergunta do
+próprio agente ou a recusa do nome (P28) derruba o resumo. Na confirmação, a ordem é a do
+código (`confirmar` em `src/lead.ts`): com o envio desligado, nada é relido e não há POST nem
+marcador. Com o envio ligado, o código relê a ficha e recalcula o total; se mudou, mostra um
+resumo novo, ainda sem marcador. Se o total não mudou, grava o marcador de envio e só então
+faz o POST. Resposta 201 é a única que vira "registrado". 5xx tem uma nova tentativa;
+422 com campo apontado (na primeira recusa da sessão) derruba o resumo e pede o dado
+corrigido e um resumo novo; tempo esgotado ou resultado incerto não se
+repete; qualquer outro código não registra, passa para humano e bloqueia a estadia já
+na primeira vez. A segunda falha, de qualquer tipo, para a mesma estadia passa para humano e
+bloqueia a estadia: no máximo 2 POSTs sem 201 por estadia.
 
 ```mermaid
 stateDiagram-v2
-  [*] --> sem_reserva
-  sem_reserva --> cotado: cotação válida (código)
+  accTitle: Estados do lead
+  accDescr: Do resumo à confirmação, envio, registro ou falha, com o teto de dois envios sem sucesso por estadia.
+
+  state "sem pedido" as sem
+  state "cotado" as cotado
+  state "resumo pendente<br/>(texto fixo de código)" as pendente
+  state "conferindo<br/>ficha relida, total recalculado, sem marcador" as conferindo
+  state "enviando<br/>marcador gravado, POST" as enviando
+  state "registrado" as registrado
+  state "não registrado<br/>handoff true" as nao
+  state "incerto<br/>handoff true, sem nova tentativa" as incerto
+  state "estadia bloqueada<br/>handoff true" as bloqueada
+
+  [*] --> sem
+  sem --> cotado: cotar válido (código)
   cotado --> cotado: algum dado mudou, recalcula
-  cotado --> resumo_apresentado: dados completos, resumo com total no turno N
-  resumo_apresentado --> cotado: qualquer dado mudou
-  resumo_apresentado --> enviando: confirmação inequívoca em turno posterior a N
-  enviando --> cotado: total recalculado ficou diferente, novo resumo
-  enviando --> registrado: webhook respondeu 201
-  enviando --> falhou: qualquer outra resposta, erro ou tempo esgotado
-  registrado --> registrado: mesma reserva de novo, não reenvia
-  registrado --> sem_reserva: outra reserva na mesma sessão
-  falhou --> [*]: nunca vira "registrado"
+  cotado --> pendente: dados completos, montar_resumo
+  pendente --> pendente: hesitação ou sim com dúvida, nada enviado (P15, P19)
+  pendente --> cotado: dado mudou (L10), pergunta do agente (P18) ou nome recusado (P28)
+  pendente --> nao: condição de preço (L9)
+  pendente --> nao: sim com ENVIO_LEADS desligado, nada relido, zero POST (L24)
+  pendente --> conferindo: sim inequívoco no turno seguinte, envio ligado (L9, P11, P13)
+  conferindo --> pendente: total mudou, resumo novo, sem marcador
+  conferindo --> cotado: a ficha relida recusa a estadia, o resumo cai
+  conferindo --> nao: catálogo fora do ar, zero POST
+  conferindo --> bloqueada: estadia já bloqueada, zero POST (P14)
+  conferindo --> enviando: total igual, grava o marcador
+  enviando --> registrado: 201
+  enviando --> enviando: 5xx, uma nova tentativa (L11)
+  enviando --> cotado: 422 com campo apontado, o resumo cai, pede o dado e um resumo novo
+  enviando --> incerto: tempo esgotado, 2xx diferente de 201
+  enviando --> bloqueada: segunda falha da mesma estadia (P14)
+  enviando --> bloqueada: outro código de resposta, não registrado (P14)
+  registrado --> registrado: mesmo sim de novo, "já registrado", sem POST
+  registrado --> sem: outra reserva (L7)
+  incerto --> bloqueada
+  nao --> cotado: o hóspede segue sem a condição
 ```
 
 - Resumo e confirmação ficam em turnos diferentes: a ferramenta de envio recusa se o resumo
-  não foi apresentado num turno anterior.
-- No envio, o total é recalculado com a ficha lida de novo. O valor do webhook sai desse
-  cálculo, não do texto da conversa.
+  não foi apresentado num turno anterior. A confirmação não recebe argumentos: envia só o
+  resumo gravado.
+- Se o teto de chamadas (P30) corta um `cotar` ou um `montar_resumo` no turno em que o
+  hóspede confirma, a confirmação daquele turno não roda; o hóspede confirma de novo.
+- Na confirmação com o envio ligado, o total é recalculado com a ficha lida de novo, antes
+  do marcador. O valor do webhook sai desse cálculo, não do texto da conversa.
 - Um lead por reserva: a confirmação é consumida uma vez.
-- O que acontece depois de `falhou` e como começa uma segunda reserva dependem de lacunas
-  ainda abertas (L-11 e L-7); o desenho final segue o que ficar registrado em `DECISOES.md`.
+- O marcador de envio é gravado antes do POST. Um reinício do objeto no meio não gera
+  segundo envio; marcador sem resultado conta como incerto.
+- Estadia bloqueada não gera novo POST, mesmo com outro nome, telefone ou número de
+  hóspedes. Outra estadia segue o fluxo normal (P14).
+- Só o código escreve o texto de registro, e só depois de um `201`; falha nunca vira
+  "registrado" no estado do lead. A conferência corta a afirmação de registro do modelo nas
+  formas que reconhece, enquanto há resumo aberto ou nenhum registro na conversa ("Seu
+  pedido foi registrado.", "Enviei o seu pedido", "Sua reserva
+  está confirmada!"); paráfrase como "O time comercial já recebeu o seu pedido." passa
+  (limite 65 do README). Lead registrado é pedido encaminhado, não reserva garantida.
+- O que acontece depois de uma falha e como começa uma segunda reserva eram lacunas
+  abertas no esboço; foram decididas: L11 e P14 para a falha, L7 para a segunda reserva.
 
-## Código decide, modelo conversa
+## 3. Código decide, modelo conversa
 
 | Do código | Do modelo |
 |---|---|
-| Preço, em centavos inteiros | Entender o que o hóspede quer |
-| Dia da semana e número de noites | Escolher qual ferramenta chamar e com quais dados |
-| As recusas (mínimo, capacidade, datas) e o motivo | Redigir a resposta em linguagem natural |
-| O texto do valor em reais (`R$ 2.156,00`) | Pedir o dado que falta |
-| O valor enviado ao webhook | Reconhecer reclamação, desconto e negociação e chamar o handoff |
-| Transições da trava de confirmação | |
-| Validação de entrada e de dados do lead | |
+| Preço, em centavos inteiros, com o acréscimo de sexta e sábado | Entender o que o hóspede quer |
+| Datas relativas no fuso de São Paulo, dia da semana e noites; saída sem ano a mais de 90 noites não cota (P21) | Escolher a ferramenta e os argumentos |
+| As recusas (mínimo, capacidade, datas) e o motivo | Redigir a resposta no idioma do hóspede |
+| O texto em reais (`R$ 2.156,00`) e o valor do webhook | Pedir o dado que falta |
+| Resumo, leitura do sim, transições do lead, teto de envios | Reconhecer reclamação, desconto e negociação e chamar o handoff |
+| Conferência do texto do modelo antes de sair | |
+| Validação do corpo do `POST /chat` e dos dados do lead | |
+| Nome do lead só com palavras que o hóspede escreveu (P20) | Pedir o nome quando a ferramenta recusa |
 | A flag `handoff` devolvida na resposta | |
 
-O modelo nunca escreve um total por conta própria: ele recebe o texto pronto da ferramenta.
-Não existe ferramenta que aceite desconto ou preço informado pelo hóspede.
+O total que o hóspede lê sai pronto da ferramenta. O modelo pode escrever outro valor; a
+conferência retira valor em dinheiro que nenhuma ferramenta calculou (com "R$", "reais",
+outra moeda ou centavos com vírgula ("1999,00")). Número por extenso, número solto sem
+marca nem centavos com vírgula ("o total em 1500"), centavos com ponto ("1999.00") e gíria
+("1999 conto") passam (limites 8 e 46 do README). Não existe ferramenta que
+aceite desconto ou preço informado pelo hóspede, e o valor do lead sai do cálculo do código.
