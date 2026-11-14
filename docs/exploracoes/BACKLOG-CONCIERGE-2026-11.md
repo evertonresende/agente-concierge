@@ -2219,6 +2219,19 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   de merge limpo. Ficaram de fora, por decisão do agente: registros de conversa, logs, scripts e
   versões intermediárias. Com a pasta no repositório, o runner lê o conjunto dali. Fato passado à
   N para o marcador do README
+- 14/11 06h57 · entrega · **`main` de entrega em 3b56fac: textos finais dentro, sem marcador no README nem no
+  "Como foi feito".** Última passada da N mesclada pelo hash bf180a9 (7514b2a), com o delta
+  conferido linha a linha pela coordenação: envio ligado como estado atual e a publicação com o
+  envio desligado como história; onde o "ligado" está gravado; P25 na configuração; decisões P
+  confirmadas (X33); exports fora (X33); marcador do setup resolvido; conjunto reservado no
+  repositório. Depois, a seção 11 do "Como foi feito" virou "Fechamento" (efeda4b) e a linha do
+  repositório ganhou o endereço dele (6a746b2, merge 3b56fac). O repositório continua privado.
+  **Único marcador que resta:** a revisão do Éverton da cópia da skill de orquestração em
+  `docs/setup` (perguntado a ele; sem resposta ainda). **Para a publicação:** gate verde na `main`
+  e em todas as refs publicáveis; 19 branches no remoto e nenhuma tag; a única branch com commits
+  fora da `main` é a `frente-n` (3 commits, só o arquivo `docs/rascunho-aberturas.md`, cujo texto
+  aprovado já está no `DECISOES.md` e no README). Ao tornar o repositório público, todas as
+  branches ficam públicas
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -2246,17 +2259,18 @@ M2 sem achado determinístico nem de lead errado na H (a primeira rodada oficial
 dela). Meta: 14/11 03h00. Limite: 06h00. Gatilho que já existia: 10h00 com o critério 4 não
 verde, parar e chamar o Éverton.
 
-**Estado do congelamento em 14/11 06h49. Código do agente igual ao da árvore final 9d37f9a; `producao` com o
-envio real ligado.** Depois de 9d37f9a a `main` recebeu documentos, relatórios e uma mudança de
-configuração (a97777b: `ENVIO_LEADS` ligado e `preview_urls: false` em `env.producao`, com o teste
-da configuração). `src/` não mudou. **Medidas na árvore final:** 310 de 312 nas três rodadas
+**Estado do congelamento em 14/11 06h57. `main` de entrega em 3b56fac; código do agente igual ao da árvore
+final 9d37f9a; `producao` com o envio real ligado; repositório privado.** Depois de 9d37f9a a
+`main` recebeu documentos, relatórios, o conjunto reservado e uma mudança de configuração
+(a97777b: `ENVIO_LEADS` ligado e `preview_urls: false` em `env.producao`, com o teste da
+configuração). `src/` não mudou. **Medidas na árvore final:** 310 de 312 nas três rodadas
 oficiais (todo bloco com 97% ou mais); reservado 110 de 120 (91,7%); simulador 6 de 10, nenhuma
 marca é erro de contrato (P36); rajada 40 de 40. **`producao`:** versão 4d457dc2, `ENTREGA OK`,
-`CLIENTES OK`, zero lead real até 06h43; validação completa anterior, com o envio desligado, em
-duas passadas (69 de 70 e 70 de 70, P37). **Decisões:** P1 a P38 confirmadas pelo Éverton (X33),
-menos a P23, revogada. **Em curso:** merge dos textos da frente N (a rodada 3 do verificador foi a
-última, X32), a última passada dela e a cópia de entrega do conjunto reservado. **Só com o
-Éverton:** tornar o repositório público, o vídeo e o e-mail da entrega.
+`CLIENTES OK`, zero lead real até 06h43. **Na `main`:** README, "Como foi feito", desenhos, setup,
+fechamento da M2, abertura do `DECISOES.md` com cortes e mais tempo, `docs/prompts/`, conjunto
+reservado com o diagnóstico. **Decisões:** P1 a P38 confirmadas (X33), menos a P23. **Só com o
+Éverton:** tornar o repositório público, o vídeo, o e-mail da entrega, agendar o monitor (P38) e
+a revisão da cópia da skill em `docs/setup`.
 
 **Plano B, decisão do Éverton (perguntado em 14/11).** Um ciclo de correção e verificação leva
 cerca de 85 minutos; cabem dois até as 06h00. Se a H ou o juiz não fecharem nesse prazo, a escolha
@@ -2320,8 +2334,10 @@ ligado (X32); URL pública no README (X32); vídeo só no e-mail (X32); P1 a P38
 P23 (X33); exports de sessão fora desta entrega (X33).
 
 Falta só com ele:
-1. Tornar o repositório público. Antes, a coordenação roda o gate na `main` de entrega e confere
-   que não sobrou marcador além do "repositório público".
+1. Tornar o repositório público. A `main` de entrega está em 3b56fac, com o gate verde em todas
+   as refs publicáveis e sem marcador no README nem no "Como foi feito". Todas as 19 branches do
+   remoto ficam públicas junto. Antes, decidir a revisão da cópia da skill de orquestração em
+   `docs/setup` (o único marcador que resta): revisar, ou mandar tirar o marcador.
 2. Gravar o vídeo e mandar o link no e-mail. Na confirmação do pedido, responder só "sim"
    (limites 54 e 55 do README).
 3. Responder o e-mail da entrega.
