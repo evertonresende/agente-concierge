@@ -76,7 +76,16 @@ describe("pedido de confirmação com a mensagem do turno: mudança de dado derr
     });
   }
 
-  for (const mensagem of ["tem wifi?", "qual o horário do check-in?", "o GRM-301 aceita pet?", "para 2 pessoas mesmo, certo?"]) {
+  // Valor do resumo repetido fora de um sim também derruba (B2).
+  for (const mensagem of ["o GRM-301 aceita pet?", "para 2 pessoas mesmo, certo?"]) {
+    it(`derruba: "${mensagem}"`, () => {
+      const { cofre, estado } = cofreCom(GRM301);
+      expect(pedidoDeConfirmacaoPendente(cofre, 3, "pt", mensagem)).toBeUndefined();
+      expect(estado().pendente).toBeNull();
+    });
+  }
+
+  for (const mensagem of ["tem wifi?", "qual o horário do check-in?", "aceita pet?"]) {
     it(`mantém e repete o pedido: "${mensagem}"`, () => {
       const { cofre, estado } = cofreCom(GRM301);
       expect(pedidoDeConfirmacaoPendente(cofre, 3, "pt", mensagem)).toMatch(/aguarda a sua confirmação/);

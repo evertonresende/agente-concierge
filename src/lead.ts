@@ -331,6 +331,11 @@ const SINAIS_DE_MUDANCA = [
   // Nome ou telefone.
   "meu nome|o nome|nome e|me chamo|telefone|celular|whats\\w*|zap|fone|contato|e-?mail|my name|name is|phone|mobile|cell"
     + "|contact",
+  // Buracos achados pelo verificador: sobrenome, período relativo, sozinho, mais/menos,
+  // adiar ou antecipar, abreviações de dia e de mês.
+  "sobrenome|surname|last name|que vem|seguinte|proxim\\w*|next|sozinh\\w*|so eu|only me|just me|mais|menos|more|less"
+    + "|tarde|cedo|later|earlier|longer|shorter|posterg\\w*|antecip\\w*|adi[ae]\\w*|fim do mes|end of the month|gente"
+    + "|seg|ter|qua|qui|sex|sab|dom|jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez|feb|apr|aug|sep|sept|oct|dec",
   // Verbo de mudança.
   "mud\\w*|troc\\w*|alter\\w*|corrig\\w*|corrij\\w*|correca\\w*|substitu\\w*|ajust\\w*|na verdade|melhor|vai ser|vamos ser|somos|seremos"
     + "|em vez|ao inves|chang\\w*|switch\\w*|instead|actually|rather|better|updat\\w*|we are|we'?re|make it",
@@ -358,10 +363,14 @@ const comValoresDoResumo = (textoMarcado: string) => textoMarcado.replace(VALOR_
  */
 export function mudaDadoDoResumo(mensagem: string, pendente: Pendente): boolean {
   if (mensagem.length > MAXIMO_DA_MENSAGEM) return true;
-  // Fora de um sim, palavra de novidade ("quero outra reserva") também derruba o resumo.
+  // Fora de um sim também derrubam: palavra de novidade ("quero outra reserva"), valor do
+  // resumo repetido ("não são 2 pessoas": a marca engole a palavra "pessoas") e negação.
   const texto = marcarDadosIguais(semAcento(mensagem), pendente);
-  return temSinalDeMudanca(texto) || NOVIDADE.test(texto);
+  return temSinalDeMudanca(texto) || NOVIDADE.test(texto) || new RegExp(`(?<![a-z0-9])(?:${MARCA})(?![a-z0-9])`).test(texto)
+    || NEGACAO.test(texto);
 }
+
+const NEGACAO = /(?<![a-z0-9])(?:nao|not|no|nope|errad\w*|wrong|incorret\w*|sem|without|tira\w*|remov\w*|exceto|except)(?![a-z0-9])/;
 
 /**
  * Lê a mensagem do hóspede diante do resumo pendente. Recusa por padrão: só é "sim" a

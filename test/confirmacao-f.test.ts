@@ -237,7 +237,8 @@ describe("leitura da mensagem diante do resumo pendente", () => {
       ["Sim, confirmo, e tem wifi?", "pergunta"],
       ["Sim, confirmo! Tem wifi?", "pergunta"],
       ["Pode fechar a reserva do SAO-501 de 15/01/2027 a 17/01/2027?", "pergunta"],
-      ["Sim, confirmo de 15/01/2027 a 17/01/2027. Dá para entrar mais cedo?", "pergunta"],
+      // "Mais cedo" é sinal de mudança (pode ser outro horário ou outro dia): derruba.
+      ["Sim, confirmo de 15/01/2027 a 17/01/2027. Dá para entrar mais cedo?", "outra"],
       ["Sim, confirmo! Pode fechar a reserva do SAO-501 de 15/01/2027 a 18/01/2027, por favor?", "outra"],
       ["Sim, confirmo por R$ 700,00", "condicao_de_preco"],
     ];
