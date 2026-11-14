@@ -1,11 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { CONTINGENCIA, rodarTurno } from "../src/agente/loop";
 import { type Cofre, ESTADO_INICIAL, type EstadoLead } from "../src/lead";
 import { criarModelo } from "../src/modelo";
 import { criarContexto, criarMundo } from "./apoio";
 
-// `producao` hoje: Haiku de principal, mas sem gateway (P10) nem chave. A binding recusa
-// modelo de terceiro sem gateway; o turno tem de cair no reserva ou no aviso honesto.
+// `producao` hoje: Haiku de principal, mas sem gateway (P10) nem chave. Sem gateway o
+// adaptador nem chama o Haiku: o reserva responde direto, ou sai o aviso honesto.
 const HAIKU = "anthropic/claude-haiku-5.5";
 const RESERVA = "@cf/zai-org/glm-5.3-flash";
 
@@ -30,12 +30,51 @@ function turno(ai: Ai) {
 }
 
 describe("producao sem gateway para o Haiku", () => {
-  it("o principal falha e o reserva responde", async () => {
+  it("sem gateway o principal não é chamado e o reserva responde", async () => {
+    const aviso = vi.spyOn(console, "warn").mockImplementation(() => {});
     const { ai, chamados } = aiDeProducao(true);
     const saida = await turno(ai);
+    const linhas = aviso.mock.calls.map((c) => String(c[0]));
+    aviso.mockRestore();
     expect(saida.reply).toBe("Resposta do reserva.");
     expect(saida.handoff).toBe(false);
-    expect(chamados).toEqual([HAIKU, RESERVA]);
+    expect(chamados).toEqual([RESERVA]);
+    expect(linhas.filter((l) => l.includes("principal_pulado"))).toHaveLength(1);
+    expect(linhas.join("\n")).toContain("sem AI_GATEWAY");
+  });
+
+  it("principal_pulado sai uma vez por turno, também quando o loop repete a primeira chamada", async () => {
+    const aviso = vi.spyOn(console, "warn").mockImplementation(() => {});
+    let n = 0;
+    const ai = { run: async () => (++n === 1 ? { choices: [{ message: { content: "" } }] } : { choices: [{ message: { content: "Resposta do reserva." } }] }) } as unknown as Ai;
+    const saida = await turno(ai);
+    const linhas = aviso.mock.calls.map((c) => String(c[0])).filter((l) => l.includes("principal_pulado"));
+    aviso.mockRestore();
+    expect(n).toBe(2);
+    expect(saida.reply).toBe("Resposta do reserva.");
+    expect(linhas).toHaveLength(1);
+  });
+
+  it("sem gateway, uso.chamadas conta só a chamada real ao reserva", async () => {
+    const { ai } = aiDeProducao(true);
+    const r = await criarModelo(ai, HAIKU, { reserva: RESERVA })([{ role: "user", content: "oi" }], []);
+    expect(r.uso.chamadas).toBe(1);
+  });
+
+  it("com gateway o principal é chamado", async () => {
+    const chamados: string[] = [];
+    const ai = { run: async (m: string) => { chamados.push(m); return { stop_reason: "end_turn", content: [{ type: "text", text: "do Haiku" }] }; } } as unknown as Ai;
+    const r = await criarModelo(ai, HAIKU, { reserva: RESERVA, gateway: "gw" })([{ role: "user", content: "oi" }], []);
+    expect(r.texto).toBe("do Haiku");
+    expect(chamados).toEqual([HAIKU]);
+  });
+
+  it("sem gateway, recusa por limite do reserva sai com porLimite: true e 1 chamada", async () => {
+    const chamados: string[] = [];
+    const ai = { run: async (m: string) => { chamados.push(m); throw new Error("AiError: 3021: rate limiting: inference request per min rate reached"); } } as unknown as Ai;
+    const erro = await criarModelo(ai, HAIKU, { reserva: RESERVA })([{ role: "user", content: "oi" }], []).catch((e: unknown) => e);
+    expect(erro).toMatchObject({ porLimite: true, chamadas: 1 });
+    expect(chamados).toEqual([RESERVA]);
   });
 
   it("o reserva também falha: aviso honesto com handoff, sem lançar", async () => {
