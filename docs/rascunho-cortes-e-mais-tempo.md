@@ -3,9 +3,8 @@
 Rascunho da frente N para duas seções do `DECISOES.md`. A coordenadora revisa e leva o
 texto para lá; depois este arquivo sai. Fontes: o log do
 [backlog](exploracoes/BACKLOG-CONCIERGE-2026-11.md), o [`DECISOES.md`](../DECISOES.md) e a
-lista de limites do [README](../README.md). Itens que dependem do fim da leva 2 estão
-marcados: a preencher.
-<!-- PREENCHER: estado final dos cortes depois da leva 2 (monitor diário, H) -->
+lista de limites do [README](../README.md). O estado final do monitor diário: a preencher.
+<!-- PREENCHER: estado final do monitor diário (frente L) -->
 
 ## Cortes: o que ficou de fora e por quê
 
@@ -59,5 +58,14 @@ marcados: a preencher.
 12. **Juiz de decisão (X11).** Medir um segundo modelo como juiz nos dois pontos de maior
     risco, se os evals finais mostrarem falha de handoff ou de confirmação.
 
-<!-- PREENCHER: acrescentar o que a leva 2 e as três rodadas finais mostrarem -->
-Itens do fim da leva 2: a preencher.
+13. **Juiz de preço que lê o valor, não a frase.** Cada remendo de redação abriu outro
+    buraco, e o juiz parou no último estado aprovado (P31, P34). Com mais tempo, o juiz
+    compararia os valores da resposta com a cotação estruturada, em vez de reconhecer a
+    forma da frase.
+14. **Leitura da redação.** Duas autocorreções confusas do modelo em cerca de 1.600
+    respostas passaram despercebidas por uma delas no juiz e na leitura à mão. Uma
+    conferência de redação nas rodadas pegaria isso.
+15. **Gramática do sim mais larga.** A P35 abriu só formas da mesma classe da L9 e da P13,
+    cada uma com matriz negativa. Confirmação natural fora dela ainda custa um turno.
+16. **Reservado maior.** Com 60 casos, duas leituras seguidas variaram de 88% a 95%; mais
+    casos dariam um número com menos variação (P33).
