@@ -1178,6 +1178,15 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
 - 14/11 00h21 · integração · ensaio das três cabeças juntas, fixadas por hash, sobre a `main` (G da64da4, H
   a58ff5e, B2 7f12107): merge limpo, 1401 testes, tipos sem erro, SIGILO OK. A junta entre a H e a G
   está verde
+- 14/11 00h22 · Éverton · X29, pelo celular: Bot Fight Mode e checagem de integridade desligados por ele na
+  zona inteira (a K confirma com o urllib no `/saude` do hostname); plano B do endereço autorizado
+  (domínio personalizado só para o hostname, se a rota falhar; hoje desnecessário); exports de todas
+  as sessões do T3, preparados pela N fora do repositório, nada versionado antes de ele olhar de
+  manhã; limite de gasto resolvido por ele. P23 revogada antes de ser aplicada: o passo do limite de
+  taxa saiu da fila da K. Continua só com ele: ligar o envio real e tornar o repositório público
+- 14/11 00h22 · N · tarefa nova: exportar todas as sessões para `~/.cache/agente-concierge/sessoes/`, com índice,
+  fechando os três furos do limpador, gate numa worktree descartável e marca de leitura humana nas
+  sessões com risco de trecho do enunciado. Sem commit
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
