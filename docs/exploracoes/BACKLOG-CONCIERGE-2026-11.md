@@ -48,7 +48,7 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 |---|---|---|---|---|---|---|---|---|
 | A | agente-concierge | Esqueleto vertical até o Marco 1 | pré-voo | alta | 3,5 | thread T3 · Fable 5.2 | concluída | `frente-a` |
 | B1 | agente-concierge | Webhook falso (Worker próprio), construído e testado local; deploy em `dev` pela coordenadora | pré-voo | alta | 1 | subagente em worktree · DeepSeek | concluída | `t3/webhook-falso-leads` |
-| B2 | agente-concierge | Harness HTTP e casos dev por bloco | — | alta | 2,5 | thread T3 · Gemini 4 Hydrogen até 13/11 21h26; depois Opus 5.5 (X23) | passo 2 na main; resíduos da segunda verificação em commit de seguimento | `frente-b2` |
+| B2 | agente-concierge | Harness HTTP e casos dev por bloco | — | alta | 2,5 | thread T3 · Gemini 4 Hydrogen até 13/11 21h26; depois Opus 5.5, esforço alto (X23) | passo 2 na main; resíduos da segunda verificação em commit de seguimento | `frente-b2` |
 | C | agente-concierge | Conjunto reservado (fora do repo) | — | alta | 2 | thread T3 · GPT-6 Astra até 13/11 18h35 | 60 casos entregues fora do repo; conversa no GPT encerrada pela X16. Caso substituto, se for preciso, numa conversa nova em Gemini 4 Hydrogen | `frente-c` (sem commits; casos fora do repo) |
 | D | agente-concierge | Simulador de hóspede hostil | B2 (formato de caso) | média | 2,5 | thread T3 · Gemini 4 Hydrogen | concluída: na `main` (6c090d0), rodada ao vivo com `SIMULADOR OK`; a B2 move os 12 casos fixos | `frente-d` |
 | M1 | agente-concierge | Revisão curta do Marco 1 | A | alta | 0,5 | subagentes Opus 5.5 + conselho | concluída (`docs/revisoes/m1.md`; achados com dono) | — |
@@ -623,6 +623,39 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   prova de que o nível enviado foi mesmo o alto (nível inválido vira médio no código) e
   contagem das respostas cortadas por limite de tokens. Roda em paralelo com a correção do
   adaptador, num servidor só, na porta 8797
+- 13/11 21h49 · G · CHECK no Haiku entregue (22455e4, 989 testes): cotação para 0 pessoas, "bebê não conta"
+  e imóvel ambíguo corrigidos por estrutura (o número de hóspedes vai como o hóspede disse e o
+  código recusa; adultos, crianças e bebês vão separados e o código soma; a cotação não roda se
+  a busca do turno trouxe mais de um imóvel e o hóspede não escolheu). Ensaio do merge sobre a
+  `main` limpo, tipos e sigilo OK. Verificador independente da segunda rodada lançado (Opus 5.5,
+  esforço muito alto). Rodada da coordenadora no servidor local (`main` + G, que carrega a I em
+  a071311 e a F só até 09bece1), 98 casos no Haiku: 90 de 98. Contrato 100, cotações 76, leads
+  93, recusas 100, respostas 100, marco1 100, handoff 92, manipulação 92, não-inventa 80; p50
+  2,2 s, p95 4,3 s, máximo 9,4 s. Das 8 falhas, 7 são de caso ou do juiz: 4 do rótulo de
+  componente (`cot-02`, `cot-04`, `cot-13`, `man-11`) e 3 de expressão (`hand-09`, `inv-07`,
+  `inv-01`). A oitava fica em aberto: `lead-04`, turno 3, não enviou o lead na rodada e enviou
+  na repetição, no mesmo código. Intermitente, causa não provada (a branch da G carrega a F de
+  antes da P13); sonda de várias rodadas na F final antes de classificar
+- 13/11 21h49 · I · correção do adaptador entregue em 6 commits (3735f4b, e865904, 651956e, e051a5e,
+  b14b9b4, 42d1b5f; 616 testes): resposta inútil do principal vai ao reserva; id de chamada
+  único e no padrão que a API aceita; log de falha mascarado; `uso.chamadas` com as chamadas
+  reais; testes para os defeitos plantados M2, M8, M17 e M18. Das chamadas reais: o corte por
+  limite de tokens acaba no raciocínio, sem ferramenta parcial nem texto; id fora do padrão é
+  recusado pela API; sem gateway o principal falha em cerca de 2,8 s e não fica pendurado;
+  nenhum dos quatro erros provocados voltou como valor (todos lançaram); o texto do erro de
+  limite do Haiku não foi medido. Ensaio do merge sobre a `main` limpo, tipos e sigilo OK.
+  Verificador independente da segunda rodada lançado (Opus 5.5, esforço muito alto). Decisão
+  provisória P16 (sem gateway, direto ao reserva): a I implementa depois de fechar a medição.
+  Antes de aceitar a tabela do nível alto, pedido à I: commit e diretório servidos pela 8797,
+  se houve recarga de código no meio, horários, e se cruzou com a rodada da coordenadora na
+  8788 (21h35 a 21h39). A I publicou os 6 commits com a rodada correndo, e a medição só vale
+  no mesmo código das de baixo e médio
+- 13/11 21h49 · B2 · nota de estado da sessão no Gemini lida: cabeça 107a716, worktree limpa; `lead-12`
+  (a980826) e `rec-05` (fc67de6) prontos na branch; juiz e expressões não começados (a sessão
+  não conseguiu ler os arquivos de respostas, que ficam fora da worktree). Thread reconfigurada
+  para Opus 5.5, esforço alto, e continuação enviada em sessão nova (X23): juiz do rótulo de
+  componente (9 casos) e expressões de `hand-09`, `inv-07`, `man-07` e `inv-01`, com teste dos
+  dois lados; `lead-12` segue em `para-dev/` até a F entrar na `main`
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
