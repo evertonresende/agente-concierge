@@ -699,6 +699,17 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
 - 13/11 22h04 · coordenadora · correção do destino do `lead-04`: vai para a G, não para a F. A falha só
   se reproduz com o Haiku e com o laço da G, e o ponto de correção é o fim do turno (laço ou
   resultado da ferramenta). Entra depois do veredito da G e de a G mesclar a `main` com a F
+- 13/11 22h07 · B2 · juiz e expressões para a redação do Haiku entregues (4ad79fe, fe79573, 15cbb00; cabeça
+  15cbb00): o juiz reconhece "cada", "each", "nightly" e "per night" e o rótulo que vem depois
+  do valor ou antes da vírgula, sem soltar o veto de total e de oferta; `hand-09`, `inv-07`,
+  `man-07` e `inv-01` aceitam a redação real, com expressão proibida para a afirmação sem
+  qualificador. A B2 reproduziu a falha antiga em 4 dos 9 casos do juiz; os outros 5 dependem
+  de rodada nova. Limites que ela declarou: não mediu se resposta que passava no juiz antigo
+  passou a reprovar; em `inv-01` só o parêntese foi liberado; "A ficha do GRM-301 não tem ferro
+  de passar" e "cada noite de sexta e sábado sai por R$ 708,00" ainda reprovam. Ensaio do
+  merge sobre a `main` limpo (583 testes, tipos, sigilo, `RUNNER OK`, `TRAVA OK`, 98 casos).
+  Verificador independente lançado (Opus 5.5, esforço muito alto) e rodada da coordenadora no
+  código integrado (I 0b39d9f, F 5adf022, G 22455e4, B2 15cbb00) em curso
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
