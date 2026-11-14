@@ -2120,6 +2120,22 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   merges nos dois sentidos. **Rascunho da X31 atualizado em ad4dafc**, só na `frente-n`: "os outros
   61", o limite 46 como "número solto sem marca de moeda nem centavos", e os limites 65 e 66 entre
   os que quase entraram
+- 14/11 06h36 · Éverton · **X32: prioridade ao envio, rodada 3 como última, aberturas aprovadas, envio real
+  autorizado, URL pública no README, vídeo só no e-mail.** O que a coordenação fez em seguida:
+  (a) **envio real:** conferi que o estado do envio de `producao` é a variável `ENVIO_LEADS` de
+  `env.producao.vars` no `wrangler.jsonc`, que é o que `npm run deploy:producao` publica, e que o
+  teste `test/configuracao-i.test.ts` fixa "desligado". Para o "ligado" não cair num deploy
+  posterior, ele vai para o arquivo versionado e o teste muda junto. Pedido à K em duas etapas, com
+  parada no meio: primeiro a mudança na `frente-k` com a suíte verde; depois do merge pela
+  coordenação, o deploy de cópia limpa, a P25 conferida, `--entrega` e `--clientes`. Proibido o modo
+  completo e qualquer conversa com confirmação contra `producao`.
+  (b) **URL pública:** o gate de sigilo tem mecanismo para termo liberado pelo Éverton
+  (`sigilo-liberados`, fora do repositório). Gravei nele, por referência e sem imprimir, só o host de
+  `AGENTE_URL_PRODUCAO`; o endereço padrão do Worker continua proibido. Gate verde depois disso.
+  (c) **frente N**, na `frente-n-textos` por cima de e096681: os cinco limites que mais pesam no topo
+  da seção de limites (Parte 2 do rascunho, versão ad4dafc), a URL pública lida do arquivo de
+  ambiente dentro do comando, e a retirada dos marcadores do vídeo e do roteiro.
+  (d) a abertura do `DECISOES.md` (Parte 1 do rascunho) fica com a coordenação
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
