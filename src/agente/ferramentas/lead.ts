@@ -218,6 +218,16 @@ async function tentarResumir(argumentos: Argumentos, contexto: Contexto): Promis
   if (!nome || !informado || faltando.length > 0) {
     return { paraOModelo: { erro: `Falta: ${faltando.join(", ")}. Pergunte ao hóspede; não invente.` } };
   }
+  // Nome de pessoa não tem dígito nem símbolo de moeda (P29): com eles, o campo levaria um
+  // preço falso a quem lê o lead. Algarismo romano e sufixo por extenso passam.
+  if (/[\p{Nd}\p{No}\p{Sc}]/u.test(inteiro)) {
+    return {
+      paraOModelo: {
+        erro: "O nome informado tem número ou símbolo de moeda, e nome de pessoa não tem. Peça ao hóspede o nome dele "
+          + "sem número nem valor. Não invente, não corrija por conta própria e não monte resumo sem isso.",
+      },
+    };
+  }
   // O nome do lead só pode ser formado por palavras que o hóspede escreveu (P20). Conferido
   // antes do corte de tamanho: palavra cortada ao meio não é palavra que ele escreveu.
   const estranhas = palavrasQueOHospedeNaoEscreveu(inteiro, contexto);
