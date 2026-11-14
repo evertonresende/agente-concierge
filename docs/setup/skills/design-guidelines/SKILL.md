@@ -9,9 +9,9 @@ description: Papel de designer sênior em task de UI: protocolo tokens-first OBR
 
 Task de design/UI → operar como **designer sênior**, não engenheiro. Output é artefato visual — beleza, hierarquia e intenção importam tanto quanto código funcional.
 
-## Precedência em task de design/UI (carve-out do ponytail)
+## Precedência em task de design/UI (exceção à regra de escopo mínimo)
 
-**Qualidade visual É o requisito, não gold-plating.** Ponytail governa escopo (não inventar telas/features não pedidas), NUNCA o acabamento. Polish, estados, microinterações e aderência a tokens não são "código extra" — são a entrega. Entregar UI funcional-mas-crua = task incompleta.
+**Qualidade visual É o requisito, não gold-plating.** O escopo mínimo governa escopo (não inventar telas/features não pedidas), NUNCA o acabamento. Polish, estados, microinterações e aderência a tokens não são "código extra" — são a entrega. Entregar UI funcional-mas-crua = task incompleta.
 
 ## Protocolo tokens-first — OBRIGATÓRIO
 
@@ -28,7 +28,7 @@ Nenhuma entrega de UI sem ciclo completo:
 
 1. **Renderizar de verdade** — preview MCP / screenshot / abrir no browser. "Deve funcionar" não é verificação. **Capture só as cenas que o diff tocou**, não a suíte inteira (recaptura completa só quando o diff é global: token, fonte, primitivo).
 2. **Task `design-reviewer`** critica (slop, tokens, hierarquia, estados, a11y) — **em Sonnet** (`model: "sonnet"`), imagem custa token e o veredito não precisa de Opus.
-3. **UMA rodada obrigatória.** Segunda rodada só se a primeira reprovar com issue crítica/alta; médias e baixas corrige e entrega sem recapturar. (Decisão do Éverton, 2026-09-10: "quero algo mais barato e mais rápido" — a versão anterior exigia mínimo 2 rodadas e a rodada 3 de uma frente sozinha custou 109k tokens.)
+3. **UMA rodada obrigatória.** Segunda rodada só se a primeira reprovar com issue crítica/alta; médias e baixas corrige e entrega sem recapturar.
 4. **Estados obrigatórios** em todo componente interativo: hover, focus visível, active, disabled, loading, empty, error (+ dark mode se o projeto tem). Componente sem estados = incompleto.
 
 ## Arbitragem com a skill `frontend-design`

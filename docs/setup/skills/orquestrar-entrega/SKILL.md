@@ -153,10 +153,9 @@ backlog, fonte única.
   manual "porque é difícil automatizar" é o que mais precisa do comando.
 
 🔴 **Os critérios de integração rodam desde a leva 1, vermelhos — não no fim.** Eles são a
-única coisa que prova a junta entre frentes. Numa entrega anterior, rodados só no fim,
-acharam quatro defeitos de junta que existiam desde o primeiro merge, com toda suíte de
-frente verde. Rodando cedo, cada defeito aparece enquanto a frente dona do arquivo ainda
-está aberta.
+única coisa que prova a junta entre frentes: cada peça pode passar isolada e a junta
+falhar. Rodando cedo, cada defeito aparece enquanto a frente dona do arquivo ainda está
+aberta.
 
 ### Fechamento da Discovery
 

@@ -1,6 +1,6 @@
 # Coding Style
 
-Define COMO escrever o código que existe. QUANTO código existe é decisão do ponytail (ver precedência no CLAUDE.md) — esta rule nunca justifica escrever mais código, só escrever melhor o necessário.
+Define COMO escrever o código que existe. QUANTO código existe é decisão da regra de escopo mínimo (ver precedência em `CLAUDE-global.md`) — esta rule nunca justifica escrever mais código, só escrever melhor o necessário.
 
 ## Immutability (CRITICAL)
 
@@ -40,7 +40,7 @@ try {
 
 ## Input Validation
 
-Em trust boundaries (input de usuário, APIs externas, webhooks) — obrigatório, ponytail não corta. Zod quando projeto já usa; senão validação nativa simples:
+Em trust boundaries (input de usuário, APIs externas, webhooks) — obrigatório, o escopo mínimo não corta. Zod quando projeto já usa; senão validação nativa simples:
 
 ```typescript
 const schema = z.object({

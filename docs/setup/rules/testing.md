@@ -8,7 +8,7 @@ Objetivo: task futura não quebra o que esta task fez. Teste que protege é test
 
 - Feature nova → teste do happy path + 1 edge crítico. Mais que isso só se a lógica pedir.
 - **Bug fix → teste que reproduz o bug ANTES do fix** (vermelho → fix → verde). Sem exceção — é o teste de regressão clássico.
-- O "check rodável" do ponytail gradua pra teste no repo: assert solto em demo() não protege task futura; teste na suite sim.
+- O "check rodável" da regra de escopo mínimo gradua pra teste no repo: assert solto em demo() não protege task futura; teste na suite sim.
 
 ## Trust boundaries (OBRIGATÓRIO)
 
@@ -63,7 +63,7 @@ Primeira task de código em repo sem testes → **propor setup mínimo** (uma ve
 - Setup mínimo: 1 arquivo de config + 1 teste real da task atual, nada de boilerplate especulativo
 - Documentar comando no CLAUDE.md do projeto (`npm test`, `pytest`, etc.) — sem isso, sessão futura não roda o gate
 
-Usuário recusou → seguir sem, mas deixar o check rodável do ponytail (demo/assert) como fallback.
+Usuário recusou → seguir sem, mas deixar o check rodável da regra de escopo mínimo (demo/assert) como fallback.
 
 ## Escalação
 
@@ -72,7 +72,7 @@ Usuário recusou → seguir sem, mas deixar o check rodável do ponytail (demo/a
 
 ## Anti-padrões
 
-- ❌ Suite de 40 testes pra função de 10 linhas — teste também é código que ponytail poda
+- ❌ Suite de 40 testes pra função de 10 linhas — teste também é código que o escopo mínimo poda
 - ❌ Teste que testa mock em vez de comportamento
 - ❌ Coverage% como meta em vez de comportamento coberto
 - ❌ Skipar/comentar teste quebrado pra "destravar" commit
