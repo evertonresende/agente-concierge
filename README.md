@@ -512,8 +512,9 @@ verificadores das frentes, no log do backlog.
 31. **Simulador.** O juiz de handoff do simulador não enxerga gatilho que o modelo do
     hóspede inventa, e o gatilho de "pedido de humano" casa "pessoa" no sentido de
     acompanhante; a regra de "afirma disponibilidade" casa frase em que o agente nega saber
-    a disponibilidade. O relatório não guarda o texto do agente. Por isso reprovação do
-    simulador se lê à mão, no relatório e não só na linha final (P36).
+    a disponibilidade. O relatório não guarda o texto do agente. `SIMULADOR OK` só diz que a
+    CLI do hóspede falhou em até 20% dos turnos; não olha o resultado das conversas. Por isso
+    reprovação do simulador se lê à mão, no relatório e não só na linha final (P36).
 32. **Validação de `producao`.** No modo completo, interromper o script com Ctrl-\ ou
     `kill -9` deixa o runner das conversas rodando sozinho (só conversas sem confirmação).
 33. **Gate de sigilo.** Procura IP e e-mail só nos arquivos atuais, não em commits antigos
