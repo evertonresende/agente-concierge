@@ -2099,7 +2099,7 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   pedido." passa. Viram texto exato e limite no README (o 20 reescrito e um 65 novo); não reabrem a
   `main` (X24: depende do modelo, não gera lead). Médios: a descrição do código do simulador de
   13/11; quatro merges sem verificador aprovado fora da lista de exceções (B2 passo 1, F passo 1,
-  D e S); a linha do "Como foi feito" sobre o próprio verificador. Tudo devolvido à N às 06h13, com
+  D e S); a linha do "Como foi feito" sobre o próprio verificador. Tudo devolvido à N às 06h12, com
   uma varredura pedida: toda frase do mesmo tipo é conferida executando a função com a forma
   citada e duas paráfrases. **Branch:** como a `frente-n` está em 3a6b9d7, com o rascunho da X31, as
   correções vão numa branch nova, `frente-n-textos`, aberta em f015880; o merge na `main` será pelo
