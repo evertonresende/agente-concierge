@@ -709,6 +709,4 @@ mistura mudança e pergunta, zero lead com dado velho e zero nome sujo.
 Exports de sessão, com dados pessoais e segredos removidos: a preencher.
 <!-- PREENCHER: exports de sessão (docs/sessoes/), se o Éverton decidir publicar -->
 
-Vídeo da fábrica rodando: a preencher. <!-- PREENCHER: link e roteiro do vídeo -->
-
 Contato: contato@evertonresende.com
