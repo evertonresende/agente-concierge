@@ -226,6 +226,7 @@ describe("rearme passa pela pergunta fechada ao modelo (item 10, complemento da 
     const r = roteiro(diz(AFIRMA), diz("SIM"));
     const t2 = await c.turno("vou levar minha sogra tem estacionamento?", r.modelo);
     expect(r.recebidas).toHaveLength(2);
+    expect(r.recebidas[1]![0]!.content).toContain("Responda só SIM ou NÃO");
     expect(t2.reply).toBe(AFIRMA);
     expect(c.estado().pendente).toBeNull();
     const sim = await c.turno("sim", roteiro(pedeFerramentas(chamar("confirmar_reserva")), diz("Quantas pessoas vão ao todo?")).modelo);
@@ -240,9 +241,11 @@ describe("rearme passa pela pergunta fechada ao modelo (item 10, complemento da 
     ["erro do modelo", new Error("fora do ar")],
   ])("(c) %s: igual ao SIM, sem rearme e sem envio", async (_nome, resposta) => {
     const c = await comResumo();
+    // Mensagem sem dado mudado que a F leia: o caminho é o da pergunta fechada (chamada 2).
     const r = roteiro(diz("There is 1 parking spot."), resposta);
-    const t2 = await c.turno("I'll bring my mom, is there parking?", r.modelo);
+    const t2 = await c.turno("Is there parking?", r.modelo);
     expect(r.recebidas).toHaveLength(2);
+    expect(r.recebidas[1]![0]!.content).toContain("Responda só SIM ou NÃO");
     expect(t2.reply).toBe("There is 1 parking spot.");
     expect(c.estado().pendente).toBeNull();
     await c.turno("yes", roteiro(pedeFerramentas(chamar("confirmar_reserva")), diz("How many guests in total?")).modelo);
