@@ -170,8 +170,8 @@ O custo das duas primeiras está declarado como limite no [README](../README.md)
   hóspede confirmava de um jeito que a L9 e a P13 aceitam, e o agente repetia o resumo sem
   enviar. Pela regra 6 de `docs/EVALS.md`, os 4 casos foram revelados, migraram para o
   conjunto de desenvolvimento e ganharam substitutos, conferidos duas vezes pelo segundo
-  revisor. A correção (P35) foi pequena e verificada a fundo: 4 minutos de mudança, 20
-  linhas na gramática do sim, e um verificador independente com 11.829 leituras de 3.943
+  revisor. A correção (P35) foi pequena e verificada a fundo: a frente F foi reaberta às
+  04h05 e entregou às 04h07 (a4b13fa), com 20 linhas na gramática do sim, e um verificador independente com 11.829 leituras de 3.943
   mensagens em três estados.
 - O conjunto mede com as expectativas originais. **Número final, pela P33: 110 de 120
   (91,7%)**, soma de duas leituras seguidas na árvore final; o limiar é 90%. A leitura 1 deu
