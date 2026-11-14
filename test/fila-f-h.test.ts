@@ -70,15 +70,17 @@ describe("fila da sessão com a F atual (frente H)", () => {
     const respostas = { sim: (await r1.json<{ reply: string }>()).reply, confirmo: (await r2.json<{ reply: string }>()).reply };
     expect(s.posts).toHaveLength(1);
 
-    // Um turno inteiro por vez: o modelo da 2ª mensagem só é chamado depois que o POST da 1ª terminou.
-    const confirmacoes = s.eventos.filter((e) => e !== "modelo:quero fechar");
-    const primeira = confirmacoes[0]!.slice("modelo:".length) as "sim" | "confirmo";
-    const segunda = primeira === "sim" ? "confirmo" : "sim";
-    expect(confirmacoes.slice(0, 3)).toEqual([`modelo:${primeira}`, "post:inicio", "post:fim"]);
-    expect(confirmacoes.indexOf(`modelo:${segunda}`)).toBeGreaterThan(confirmacoes.indexOf("post:fim"));
-
     // Histórico na ordem da fila, cada resposta logo depois da sua mensagem, e cada pedido recebe a sua.
     const historico = await s.historico();
+    const primeira = historico[2]!.content as "sim" | "confirmo";
+    const segunda = primeira === "sim" ? "confirmo" : "sim";
+
+    // Um turno inteiro por vez: nada da 2ª mensagem acontece antes de o POST da 1ª terminar. Se o
+    // código responde ao sim repetido sem chamar o modelo (L7), a 2ª mensagem não deixa evento.
+    const confirmacoes = s.eventos.filter((e) => e !== "modelo:quero fechar");
+    expect(confirmacoes.slice(0, 3)).toEqual([`modelo:${primeira}`, "post:inicio", "post:fim"]);
+    expect(confirmacoes.slice(3).every((e) => e === `modelo:${segunda}`)).toBe(true);
+
     const depoisDoResumo = historico.slice(2).map((m) => `${m.role}:${m.role === "user" ? m.content : ""}`);
     expect(depoisDoResumo).toEqual([`user:${primeira}`, "assistant:", `user:${segunda}`, "assistant:"]);
     expect(historico[3]!.content).toBe(respostas[primeira]);
