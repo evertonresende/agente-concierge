@@ -124,3 +124,60 @@ describe("teto de chamadas de ferramenta (P30)", () => {
     expect(c.mundo.leads).toHaveLength(1);
   });
 });
+
+describe("invalidador cortado pelo teto não deixa a confirmação do turno rodar (R1 da rodada 4)", () => {
+  const DADOS = { ...ESTADIA, nome: "Ana Lima", telefone: "(11) 98888-0000" };
+  const INVALIDADORES = {
+    "cotar com datas novas": () => chamar("cotar", { ...ESTADIA, checkin: "22/01/2027", checkout: "25/01/2027" }),
+    "montar_resumo com dado novo": () => chamar("montar_resumo", { ...DADOS, checkin: "22/01/2027", checkout: "25/01/2027", hospedes: 3 }),
+  };
+  const ARRANJOS = {
+    "16 fichas + invalidador + confirmar": (inv: () => ReturnType<typeof chamar>) => [pedeFerramentas(...fichas(N), inv(), chamar("confirmar_reserva"))],
+    "depois do teto do turno": (inv: () => ReturnType<typeof chamar>) =>
+      [pedeFerramentas(...fichas(N)), pedeFerramentas(...fichas(N)), pedeFerramentas(inv(), chamar("confirmar_reserva"))],
+  };
+  const CASOS = Object.entries(INVALIDADORES).flatMap(([ni, inv]) => Object.entries(ARRANJOS).map(([na, arranjo]) => [`${ni}, ${na}`, () => arranjo(inv)] as const));
+
+  async function comResumo() {
+    const c = conversa();
+    await c.turno("quanto fica o GRM-301 de 15/01/2027 a 18/01/2027 para 2?", roteiro(pedeFerramentas(chamar("cotar", ESTADIA)), diz("Fica R$ 2.156,00.")).modelo);
+    await c.turno("quero fechar, Ana Lima, (11) 98888-0000", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
+    return c;
+  }
+
+  it.each(CASOS)("%s: 0 envio, nada de \"registrado\", o resumo visto continua e o sim seguinte envia o resumo visto", async (_nome, lotes) => {
+    const c = await comResumo();
+    const saida = await c.turno("sim", roteiro(...lotes(), diz("Não consegui concluir agora."), diz("NÃO")).modelo);
+    expect(c.mundo.leads).toEqual([]);
+    expect(saida.reply).not.toMatch(/registrad/i);
+    expect(resultados(saida.novas).at(-1)).toContain(LIMITE);
+    // Nem o invalidador nem a confirmação rodaram: o resumo visto continua e é repetido no fim.
+    expect(c.estado().pendente?.reserva).toMatchObject({ checkin: "2027-01-15", hospedes: 2 });
+    expect(saida.reply).toContain("O seu pedido de reserva ainda aguarda a sua confirmação");
+    await c.turno("sim", roteiro(pedeFerramentas(chamar("confirmar_reserva"))).modelo);
+    expect(c.mundo.leads.map((l) => `${l.checkin}/${l.hospedes}`)).toEqual(["2027-01-15/2"]);
+  });
+
+  it("invalidador cortado num lote anterior do mesmo turno também segura a confirmação", async () => {
+    const c = await comResumo();
+    const lotes = [pedeFerramentas(...fichas(N), INVALIDADORES["cotar com datas novas"]()), pedeFerramentas(chamar("confirmar_reserva"))];
+    await c.turno("sim", roteiro(...lotes, diz("Não consegui concluir agora."), diz("NÃO")).modelo);
+    expect(c.mundo.leads).toEqual([]);
+  });
+
+  it.each([
+    ["confirmação em 17º, sem invalidador", () => [pedeFerramentas(...fichas(N), chamar("confirmar_reserva"))]],
+    ["confirmação depois do teto do turno, sem invalidador", () => [pedeFerramentas(...fichas(N)), pedeFerramentas(...fichas(N)), pedeFerramentas(chamar("confirmar_reserva"))]],
+    ["50 confirmações", () => [pedeFerramentas(...Array.from({ length: 50 }, () => chamar("confirmar_reserva")))]],
+  ])("controle (%s): 1 envio", async (_nome, lotes) => {
+    const c = await comResumo();
+    await c.turno("sim", roteiro(...lotes()).modelo);
+    expect(c.mundo.leads).toHaveLength(1);
+  });
+
+  it.each(Object.entries(INVALIDADORES))("controle (%s dentro do teto, com a confirmação): 0 envio, como antes do teto", async (_nome, inv) => {
+    const c = await comResumo();
+    await c.turno("sim", roteiro(pedeFerramentas(inv(), chamar("confirmar_reserva")), diz("ok"), diz("NÃO")).modelo);
+    expect(c.mundo.leads).toEqual([]);
+  });
+});
