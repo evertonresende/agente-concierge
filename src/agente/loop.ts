@@ -64,6 +64,31 @@ async function executar(chamada: ChamadaDeFerramenta, contexto: Contexto): Promi
   return ferramenta.executar(argumentos, contexto);
 }
 
+const ESCOLHA_PENDENTE = "Há mais de um imóvel compatível e o hóspede ainda não escolheu. Liste as opções (nome, id, bairro, "
+  + "cidade e capacidade) e peça a escolha. Não cote antes.";
+
+/**
+ * Cotação de um imóvel que o hóspede não escolheu (L21): a busca deste turno trouxe mais
+ * de um imóvel e a mensagem dele não cita o id nem o nome do escolhido pelo modelo.
+ */
+export function escolhaPendente(chamada: ChamadaDeFerramenta, turno: Mensagem[], mensagem: string): boolean {
+  if (chamada.function.name !== "cotar") return false;
+  const id = String(lerArgumentos(chamada)?.imovel_id ?? "").trim().toLowerCase();
+  const listas = turno.filter((m) => m.role === "tool").map((m) => {
+    try {
+      return (JSON.parse(m.content) as { dados_do_catalogo?: { imoveis?: unknown } })?.dados_do_catalogo?.imoveis;
+    } catch {
+      return undefined;
+    }
+  }).filter((l): l is { id?: unknown; nome?: unknown }[] => Array.isArray(l));
+  const ultima = listas.at(-1);
+  if (!ultima || ultima.length < 2) return false;
+  const escolhido = ultima.find((imovel) => String(imovel.id).toLowerCase() === id);
+  if (!escolhido) return false;
+  const texto = mensagem.toLowerCase();
+  return !texto.includes(id) && !texto.includes(String(escolhido.nome).toLowerCase());
+}
+
 /**
  * Acerta o que o modelo escreve e que quebraria a leitura literal da resposta: hífen e
  * espaço especiais (um "GRM‑301" com hífen não separável não casa com "GRM-301") e
@@ -566,7 +591,9 @@ export async function rodarTurno(entrada: EntradaDoTurno): Promise<SaidaDoTurno>
         } else {
           usadas.push(chamada.function.name);
           try {
-            resultado = await comPrazo(executar(chamada, contexto), entrada.prazo - agora());
+            resultado = escolhaPendente(chamada, novas, entrada.mensagem)
+              ? { recusa: true, paraOModelo: { erro: ESCOLHA_PENDENTE } }
+              : await comPrazo(executar(chamada, contexto), entrada.prazo - agora());
           } catch {
             falhou = true;
             resultado = { paraOModelo: { erro: "Falha interna ao executar a ferramenta." } };
