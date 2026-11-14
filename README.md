@@ -57,8 +57,10 @@ cabeçalhos `x-uso-entrada`, `x-uso-saida` e `x-chamadas-modelo`, usados para me
   máximo 2 buscas por comodidade por turno. As que passam do teto voltam ao modelo como
   erro, sem executar.
 
-  > Estado deste rascunho: a `main` tem todas as frentes de produto, verificadas (G com a
-  > P30 e a correção do teto no caminho do lead, T, F com a P20 e a P29, H, B2, K e S).
+  > Estado deste rascunho: a árvore final é 9d37f9a, com todas as frentes de produto
+  > verificadas (G com a P30 e a correção do teto no caminho do lead, T, F com a P20, a P29
+  > e as formas de confirmação da P35, H, B2, K e S). Juiz e runner são idênticos byte a
+  > byte aos de 193d1bf (P34).
 - **Modelo.** Decidido pelo Éverton por medição (`DECISOES.md` X24 e X30;
   [`docs/revisoes/modelos.md`](docs/revisoes/modelos.md)). Principal: Claude Haiku 5.5, com
   o raciocínio em nível alto, direto do provedor pelo AI Gateway. Reserva: GLM-5.3 Flash,
@@ -129,7 +131,7 @@ gateway da conta com a chave da Anthropic guardada nele. Sem isso, responde o re
   `dev`.
 - `LEADS_URL_DEV` aponta para o webhook falso, para o runner conferir os leads de cada
   conversa. Ela nunca é impressa.
-- O conjunto de desenvolvimento tem 98 casos em 9 blocos. O reservado tem 60 casos, fica
+- O conjunto de desenvolvimento tem 104 casos em 9 blocos. O reservado tem 60 casos, fica
   fora do repositório até a entrega e só mostra o agregado por bloco. Caminho no
   repositório depois da entrega: a preencher.
   <!-- PREENCHER: caminho do reservado no repositório depois da cópia de entrega -->
@@ -197,9 +199,8 @@ oficiais: a confirmar no congelamento.
 
 Fumaças em `dev`, que não contam como rodada: com G, T e F publicadas, bloco `marco1` com
 100% (p50 1,2 s, p95 4,5 s) e bloco `funciona-leads` inteiro pelo proxy de registro com 100%
-(p50 1,6 s, p95 5,7 s). Com a `main` de todas as frentes publicada, a sonda de pós-deploy
-respondeu 32 de 32 perguntas de ficha em dois minutos, sem contingência, e o `marco1` deu
-100%.
+(p50 1,6 s, p95 5,7 s). Com a árvore final publicada, a sonda de pós-deploy respondeu 32
+de 32 perguntas de ficha em dois minutos, sem contingência, e o `marco1` deu 100%.
 
 Conjunto reservado: as duas primeiras leituras do agregado em `dev`, na árvore b5af852,
 deram 83% e 80%, abaixo do limiar de 90%. Ficam registradas como estão. A telemetria do
@@ -208,8 +209,18 @@ depois foi escrita antes de alguém ver quais casos falharam (P33): a conferênc
 contra o contrato cobre todos os casos, uma expectativa só muda com a cláusula ou a decisão
 citada, há uma passada única de correção com um segundo revisor com veto, e o número final é
 a soma de duas leituras seguidas na árvore congelada. Se a soma ficar abaixo de 90%, o
-número vai ao Éverton como está. Casos corrigidos, por quê, e o número depois: a preencher.
-<!-- PREENCHER: reservado, casos corrigidos e motivo, soma das duas leituras finais (P33) -->
+número vai ao Éverton como está.
+
+O segundo revisor vetou as 9 mudanças de expectativa da passada única, e os casos voltaram
+ao original: nas 7 afrouxadas, a expressão nova aprovava respostas erradas; das 2
+apertadas, uma reprovava respostas certas e a outra ficou em dúvida. Ele apertou 3 casos
+frouxos. O conjunto mede com as expectativas originais. Ele também achou um erro real do
+agente: em 4 casos o hóspede confirmava de um jeito que a L9 e a P13 aceitam, e o agente
+repetia o resumo sem enviar. Pela regra 6 de `docs/EVALS.md`, esses 4 casos foram revelados,
+corrigidos no agente (P35), migraram para o conjunto de desenvolvimento e ganharam
+substitutos conferidos por dois revisores. O agregado final sai de duas leituras na árvore
+final e vai ao Éverton como estiver: a preencher.
+<!-- PREENCHER: soma das duas leituras finais do reservado na árvore 9d37f9a (P33) -->
 
 Notas por bloco das rodadas oficiais: a preencher.
 <!-- PREENCHER: nota dos evals por bloco (três rodadas em dev) e agregado do conjunto reservado -->
@@ -319,14 +330,26 @@ verificadores das frentes, no log do backlog.
 **Ferramentas de verificação**
 
 30. **Juiz de preço dos evals.** Reconhece pela forma da frase, não pelo sentido. Pela P34
-    ele volta ao estado de 193d1bf, o último aprovado por verificador independente, e não é
-    mais corrigido nesta entrega. Redação certa que ele reprova entra na lista de
-    `evals/README.md`; entre elas, a contagem por tipo de noite sem repetir "noite" depois
-    de "N noites" (com dois-pontos e com parêntese) e "multa em caso de" no caso de
-    cancelamento. Lista final depois da volta do juiz: a preencher. Em compensação, as rodadas oficiais passam por um proxy local que só grava as conversas;
-    nos quatro casos de desconto, toda resposta das rodadas oficiais é lida à mão, e a
-    leitura confere também o tipo de noite contra a diária (P27, P31).
-    <!-- PREENCHER: lista de limites do juiz depois que a volta a 193d1bf entrar na main (P34) -->
+    ele fica no estado de 193d1bf, o último aprovado por verificador independente, e não é
+    mais corrigido nesta entrega. A lista completa, com um exemplo cada, está em
+    `evals/README.md`:
+    - **15 formatos de resposta certa que ele reprova:** conta com "×" ou com "+";
+      subtotal ou conta entre parênteses; subtotal chamado de total ou com verbo de total;
+      "em vez de"; tabela com vírgula no rótulo; concessão hipotética; diária comum "por
+      noite" com o acréscimo só descrito; nos casos de desconto, negação longe da palavra
+      ou com vírgula colada; no caso de cancelamento, "nem se"/"ou se" seguido de
+      afirmação e "multa em caso de"; contagem por tipo de noite sem repetir "noite"
+      depois de "N noites".
+    - **10 formatos de resposta errada que ele aprova:** "a partir de"; noites entre
+      parênteses; total sem a limpeza sem a palavra "total"; componente trocado com o
+      total certo; limpeza por noite; contagem em inglês por extenso; valor por pessoa;
+      contagem que cabe na estadia sem ser a dela; negação solta antes da concessão nos
+      casos de desconto; tipo de noite trocado só dentro do parêntese.
+
+    Em compensação, as rodadas oficiais passam por um proxy local que só grava as
+    conversas; nos quatro casos de desconto, toda resposta é lida à mão, e a leitura
+    confere também o tipo de noite contra a diária (P27, P31). Falso vermelho conta como
+    falha na soma do bloco (P34).
 31. **Simulador.** O juiz de handoff do simulador não enxerga gatilho que o modelo do
     hóspede inventa; reprovação de handoff no simulador se lê à mão. O resultado também é
     lido no relatório, não só na linha final.
@@ -385,6 +408,14 @@ verificadores das frentes, no log do backlog.
 50. **Catálogo fora do ar.** O hóspede recebe a contingência com `handoff`, e a sessão fica
     em `handoff`. Visto uma vez em `dev`, em 14/11, por 95 segundos (25 turnos); a causa não
     foi determinada (P32).
+
+**Confirmação (P35, frente F)**
+
+51. **Palavra de preço junto do sim.** Mesmo sem número ("pelo valor normal"), não
+    confirma: o agente repete o resumo, que mostra o total, e pede o sim.
+52. **Confirmação natural fora da gramática** também repete o resumo e pede o sim. Custa
+    um turno; nunca gera lead errado.
+53. **"Pode encaminhar" sozinho** confirma quando há resumo pendente.
 
 **Conferências com o modelo real** (servidor local com a `main`, a F e a branch da H; uma
 repetição de cada roteiro, não são rodadas de eval):
