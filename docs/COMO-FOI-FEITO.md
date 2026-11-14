@@ -46,9 +46,10 @@ hora de coordenação, 12 horas no total. Prazo de entrega:
   diferente da recomendação na L1, na L11 e na L17, e depois no acréscimo da L15, na
   leva 1. A regra de cada uma
   está no [contrato](CONTRATO.md), seção 10.
-- **Frente não decide produto.** Lacuna nova parava a frente. Enquanto o Éverton estava
-  fora, valeu a recomendação da coordenação como provisória (X15): são as decisões P do
-  `DECISOES.md`, cada uma com o motivo e quem levantou.
+- **Frente não decide produto.** Lacuna nova parava a frente. Lacuna aberta durante a
+  execução foi decidida pela coordenação como provisória, para o Éverton confirmar ou
+  reverter (X15, X27 e X28): são as decisões P do `DECISOES.md`, cada uma com o motivo e
+  quem levantou.
 
 ## 2. Frentes, levas e dono por arquivo
 

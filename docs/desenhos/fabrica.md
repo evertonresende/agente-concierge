@@ -93,8 +93,8 @@ flowchart TB
   corrige o agente só vê o agregado.
 - **Sessão revisora do Éverton**: uma segunda sessão de IA, independente, que ele usa para
   revisar as entregas. Não recebe ordens da coordenadora e devolve os achados a ele.
-- **Decisão provisória.** Lacuna nova com o Éverton fora segue a recomendação da
-  coordenação, marcada como provisória (as decisões P) até ele confirmar (X15).
+- **Decisão provisória.** Lacuna aberta durante a execução é decidida pela coordenação como
+  provisória (as decisões P), para o Éverton confirmar ou reverter (X15, X27 e X28).
 
 ## 2. Portões e laços
 
