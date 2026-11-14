@@ -26,4 +26,8 @@ describe("configuração do modelo por ambiente (wrangler.jsonc)", () => {
       ENVIO_LEADS: envio,
     });
   });
+
+  it.each(["dev", "producao"])("%s: URLs de pré-visualização desligadas (preview_urls: false)", (nome) => {
+    expect((env[nome] as unknown as { preview_urls?: unknown }).preview_urls).toBe(false);
+  });
 });

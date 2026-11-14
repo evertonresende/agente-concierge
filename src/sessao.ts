@@ -1,6 +1,7 @@
 // Uma sessão de conversa = um Durable Object. Guarda o histórico e o estado do lead
 // em SQLite e garante uma mensagem por vez.
 import { DurableObject } from "cloudflare:workers";
+import { FERRAMENTAS } from "./agente/ferramentas";
 import { CONTINGENCIA, rodarTurno } from "./agente/loop";
 import { criarCatalogo } from "./catalogo";
 import type { Env } from "./env";
@@ -510,7 +511,8 @@ export class Sessao extends DurableObject<Env> {
         chamadas_modelo: saida.uso.chamadas,
         tokens_entrada: saida.uso.entrada,
         tokens_saida: saida.uso.saida,
-        ferramentas: saida.ferramentas,
+        // Nome fora da lista fechada vem do modelo: no log sai só um rótulo fixo.
+        ferramentas: saida.ferramentas.map((nome) => (FERRAMENTAS.some((f) => f.definicao.function.name === nome) ? nome : "desconhecida")),
         handoff: handoffFinal,
         contingencia: contingenciaFinal,
         ...(causa ?? {}),

@@ -48,6 +48,39 @@ export class ErroDoCatalogo extends Error {}
 const TEMPO_POR_PEDIDO_MS = 8_000;
 const TENTATIVAS = 2;
 const ID_VALIDO = /^[A-Za-z0-9-]{1,32}$/;
+// Teto do corpo de um 200 do catálogo, 1 MiB: as respostas reais ficam muito abaixo
+// disso. Acima dele a leitura para e o pedido vira erro, sem guardar o resto na memória.
+const TETO_DO_CORPO_BYTES = 1_048_576;
+
+/** Lê o JSON de um 200 por fluxo, parando ao passar do teto. JSON inválido lança como antes. */
+async function lerJsonComTeto(resposta: Response): Promise<unknown> {
+  const grandeDemais = () => new ErroDoCatalogo("o catálogo devolveu uma resposta grande demais");
+  if (Number(resposta.headers.get("content-length")) > TETO_DO_CORPO_BYTES) {
+    await resposta.body?.cancel();
+    throw grandeDemais();
+  }
+  const leitor = resposta.body?.getReader();
+  if (!leitor) return JSON.parse("");
+  const partes: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await leitor.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > TETO_DO_CORPO_BYTES) {
+      await leitor.cancel();
+      throw grandeDemais();
+    }
+    partes.push(value);
+  }
+  const corpo = new Uint8Array(total);
+  let posicao = 0;
+  for (const parte of partes) {
+    corpo.set(parte, posicao);
+    posicao += parte.byteLength;
+  }
+  return JSON.parse(new TextDecoder().decode(corpo));
+}
 
 function inteiroPositivo(v: unknown): v is number {
   return typeof v === "number" && Number.isInteger(v) && v > 0;
@@ -80,7 +113,9 @@ function sanearTexto(texto: string): string {
   // nenhum texto do catálogo se pareça com um valor escrito pelo código: valor em reais
   // só existe nos campos numéricos, formatados por nós.
   // Corte antes dos replace: sem ele, texto longo do catálogo custa tempo quadrático.
-  return texto.slice(0, MAX_TEXTO * 2).replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]+/g, " ").replace(/R?\s*\$+/gi, "").replace(/ {2,}/g, " ").trim().slice(0, MAX_TEXTO);
+  // Formatação invisível e controle de direção (largura zero, marcas e isolamentos
+  // bidirecionais, BOM) somem antes de tudo: esconderiam ou inverteriam texto na tela.
+  return texto.slice(0, MAX_TEXTO * 2).replace(/[\u200b-\u200f\u202a-\u202e\u2066-\u2069\ufeff]/g, "").replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]+/g, " ").replace(/R?\s*\$+/gi, "").replace(/ {2,}/g, " ").trim().slice(0, MAX_TEXTO);
 }
 
 /**
@@ -115,11 +150,13 @@ export function criarCatalogo(base: string | undefined, buscar: typeof fetch): C
       const controle = new AbortController();
       const relogio = setTimeout(() => controle.abort(), TEMPO_POR_PEDIDO_MS);
       try {
-        const resposta = await buscar(`${base}${caminho}`, { signal: controle.signal });
+        // Redirecionamento não é seguido: um 3xx cai abaixo como status inesperado, sem nova tentativa.
+        const resposta = await buscar(`${base}${caminho}`, { signal: controle.signal, redirect: "manual" });
         status = resposta.status;
-        if (status === 200) return sanear(await resposta.json());
+        if (status === 200) return sanear(await lerJsonComTeto(resposta));
         await resposta.body?.cancel();
-      } catch {
+      } catch (erro) {
+        if (erro instanceof ErroDoCatalogo) throw erro; // corpo grande demais: não é transitório
         status = 0;
       } finally {
         clearTimeout(relogio);
