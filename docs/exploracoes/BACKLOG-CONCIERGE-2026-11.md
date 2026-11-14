@@ -847,6 +847,22 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   p50 2,1 s, p95 4,6 s, máximo 9,3 s, zero falha do modelo e zero contingência em 164 turnos
   (vale a mesma ressalva do juiz da B2). Quinta rodada do verificador lançada, só do delta
   (Opus 5.5, esforço alto), com ordem de procurar estadia legítima bloqueada sem falha
+- 13/11 23h03 · G · correções da segunda rodada entregues (811ff77, 0c62099, 2714e5d, 5f18cd9, 3e10551;
+  1046 testes): palavra do hóspede só provoca uma chamada focada ao modelo (P17); a
+  conferência não corta mais a explicação do acréscimo; o resumo é recusado quando tem menos
+  pessoas que o grupo cotado; formas diretas de registro, concessão, regra e disponibilidade
+  cobertas; pergunta do agente com resumo pendente derruba o resumo (P18). Números da G: 27
+  dos 30 testes do verificador passam (os 3 de controle esperavam handoff forçado e ficam
+  vermelhos por desenho da P17); nas 80 mensagens comuns, 0 handoff por código e 0 texto fixo,
+  com chamada focada em 28; os 40 pedidos reais passam quando o modelo chama a ferramenta; 0
+  de 121 respostas reais do Haiku alteradas pela conferência; 22 defeitos plantados, todos
+  pegos. Limites declarados: concessão sem palavra de desconto nem valor quando o modelo erra
+  duas vezes (19 de 40 no modelo falso); trava de grupo solta se o modelo recotar com menos
+  pessoas; `lead-04` depende de pedido da conferência. Respostas da coordenadora às 8
+  leituras: hesitação do hóspede não derruba o resumo mesmo com pergunta do agente
+  (complemento da P18); com a ferramenta já chamada pelo modelo, a palavra de desconto define
+  o motivo (complemento da P17); o resto aceito. Rodada integrada e sonda da P18 em curso;
+  terceira rodada do verificador sai depois dos dois ajustes
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
