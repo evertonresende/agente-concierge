@@ -16,7 +16,7 @@ const { env } = lerJsonc(cru);
 describe("configuração do modelo por ambiente (wrangler.jsonc)", () => {
   it.each([
     ["dev", "concierge-dev", "ligado"],
-    ["producao", "concierge-producao", "desligado"],
+    ["producao", "concierge-producao", "ligado"],
   ])("%s: Haiku 5.5 em nível alto, reserva GLM-5.3 Flash, gateway %s, envio de leads %s", (nome, gateway, envio) => {
     expect(env[nome]!.vars).toMatchObject({
       MODELO: "anthropic/claude-haiku-5.5",
