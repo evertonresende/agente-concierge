@@ -80,7 +80,7 @@ cabeçalhos `x-uso-entrada`, `x-uso-saida` e `x-chamadas-modelo`, usados para me
   limite de pedidos vai direto ao reserva, sem nova tentativa (L18).
 - **AI Gateway** da Cloudflare entre o Worker e os modelos (X21 e X24): guarda a chave do
   provedor do principal, registra qual modelo respondeu e os erros de limite. Sem gateway
-  configurado, o reserva responde direto (decisão provisória P16).
+  configurado, o reserva responde direto (decisão P16, confirmada em 14/11).
 - **Dois ambientes.** `dev` usa o catálogo real e um webhook falso, nosso (`falso/`), que
   replica o contrato do real. `producao` usa o webhook real, com o envio real ligado
   desde 14/11 (`ENVIO_LEADS=ligado`, L24 e X32).
@@ -711,7 +711,7 @@ mistura mudança e pergunta, zero lead com dado velho e zero nome sujo.
 | Arquivo | Para quê |
 |---|---|
 | [`docs/CONTRATO.md`](docs/CONTRATO.md) | requisitos e decisões de comportamento (lacunas L1 a L24) |
-| [`DECISOES.md`](DECISOES.md) | decisões e motivos: produto, execução (X), provisórias (P), engenharia |
+| [`DECISOES.md`](DECISOES.md) | decisões e motivos: produto, execução (X), da coordenação (P), confirmadas em 14/11, engenharia |
 | [`docs/COMO-FOI-FEITO.md`](docs/COMO-FOI-FEITO.md) | o processo de construção, com o que deu errado |
 | [`docs/EVALS.md`](docs/EVALS.md) | plano de evals, blocos, conjunto reservado, limiares |
 | [`docs/VERIFICACOES.md`](docs/VERIFICACOES.md) | fatos de plataforma verificados, com fonte |

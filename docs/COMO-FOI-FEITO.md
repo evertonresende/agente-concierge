@@ -51,7 +51,7 @@ hora de coordenação, 12 horas no total. Prazo de entrega:
 - **Frente não decide produto.** Lacuna nova parava a frente. Lacuna aberta durante a
   execução foi decidida pela coordenação como provisória, para o Éverton confirmar ou
   reverter (X15, X27 e X28): são as decisões P do `DECISOES.md`, cada uma com o motivo e
-  quem levantou.
+  quem levantou. Ele confirmou todas em 14/11, menos a P23 (X33).
 
 ## 2. Frentes, levas e dono por arquivo
 
