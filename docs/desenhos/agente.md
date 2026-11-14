@@ -92,7 +92,7 @@ flowchart TB
 
 Texto alternativo: com imóvel, datas, hóspedes, nome e telefone, o código monta o resumo
 e o mostra num turno. No turno seguinte, só um sim inequívoco confirma; hesitação repete
-o pedido; condição de preço passa para humano; qualquer dado mudado, ou uma pergunta do
+o pedido; um sim com anúncio de dúvida ("sim, uma dúvida") não envia nada; condição de preço passa para humano; qualquer dado mudado, ou uma pergunta do
 próprio agente, derruba o resumo. Na confirmação, o código grava o marcador de envio,
 relê a ficha e recalcula o total; se mudou, mostra um resumo novo. Com o envio desligado
 não há POST. Resposta 201 é a única que vira "registrado". 5xx tem uma nova tentativa;
@@ -117,7 +117,7 @@ stateDiagram-v2
   [*] --> sem
   sem --> cotado: cotar válido (código)
   cotado --> pendente: dados completos, montar_resumo
-  pendente --> pendente: hesitação, repete o pedido (P15)
+  pendente --> pendente: hesitação ou sim com dúvida, nada enviado (P15, P19)
   pendente --> cotado: dado mudou (L10) ou pergunta do agente (P18)
   pendente --> nao: condição de preço (L9)
   pendente --> enviando: sim inequívoco no turno seguinte (L9, P11, P13)
