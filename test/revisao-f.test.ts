@@ -442,3 +442,23 @@ describe("B6: o teto de 300 caracteres vale antes de qualquer leitura", () => {
     expect(estado.pendente).toBeNull();
   });
 });
+
+describe("rearme: afirmação só mantém o resumo se for sim ou hesitação; ajustes do B3, do P15 e do check-out", () => {
+  const rearma = (mensagem: string) => {
+    let estado: EstadoLead = { ...ESTADO_INICIAL, pendente: GRM301 };
+    const cofre: Cofre = { ler: () => estado, salvar: (e) => { estado = e; } };
+    return { pedido: pedidoDeConfirmacaoPendente(cofre, 3, "pt", mensagem), pendente: estado.pendente };
+  };
+  for (const mensagem of ["quero cancelar", "desisti", "vou com o João", "quero entrar antes", "fico a semana inteira", "add my brother"]) {
+    it(`derruba: "${mensagem}"`, () => expect(rearma(mensagem)).toEqual({ pedido: undefined, pendente: null }));
+  }
+  for (const mensagem of ["obrigado!", "acho que sim", "qual o horário do check-out?", "tem wifi?"]) {
+    it(`mantém: "${mensagem}"`, () => expect(rearma(mensagem).pendente).not.toBeNull());
+  }
+  for (const mensagem of ["sim, se for uma noite a menos", "sim, se puder pagar no cartão", "sim, se tiver vista para a costa"]) {
+    it(`não é condição de preço: "${mensagem}"`, () => expect(lerConfirmacao(mensagem, GRM301, 3)).toBe("outra"));
+  }
+  for (const mensagem of ["ｓｉｍ", "нет"]) {
+    it(`texto com letra fora da gramática é "outra", não repete: "${mensagem}"`, () => expect(lerConfirmacao(mensagem, GRM301, 3)).toBe("outra"));
+  }
+});

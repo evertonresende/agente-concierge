@@ -212,8 +212,8 @@ const PRECO = new RegExp(
     + "|\\b(por|for)\\s+\\d[\\d.,]{2,}|\\b(por|for)\\s+(\\d+|um|dois|tres|quatro|cinco|one|two|three|four|five)\\s*(mil|k)\\b"
     + "|\\bpagar menos\\b|\\bpay less\\b|\\bem conta\\b|\\bmetade do (valor|preco)\\b|\\bhalf price\\b"
     // Condição com qualquer coisa com cara de valor ou de preço (B3): "sim, se fizer 2 mil".
-    + "|\\b(se|desde que|contanto que|caso|if|unless|provided|as long as)\\b.*(\\b(valor|preco|total|price|mil|metade|half|desconto"
-    + "|barat|cheap|baix|menos|less|lower|orcamento|budget|pagar|pay|cost)|\\d+\\s*k\\b|\\d{3,})",
+    + "|\\b(se|desde que|contanto que|caso|if|unless|provided|as long as)\\b.*(\\b(valor|preco|total|price|mil|metade|half|desconto\\w*"
+    + "|barat\\w*|cheap\\w*|baixar|baixe|baixa o|orcamento|budget|cost|costs)\\b|\\d+\\s*k\\b|\\d{3,})",
 );
 const HESITA = /\b(acho|achando|talvez|pode ser|nao sei|sei la|quase|provavel|provavelmente|depende|vou pensar|vou ver|pensando|maybe|i think|i guess|probably|perhaps|not sure|might|kind of|sort of)\b/;
 // As palavras de hesitação e o que só as acompanha ("acho que", "i think so", "ainda"). O que
@@ -366,7 +366,7 @@ const SINAIS_DE_MUDANCA = [
   // adiar ou antecipar, abreviações de dia e de mês.
   "sobrenome|surname|last name|que vem|seguinte|proxim\\w*|next|sozinh\\w*|so eu|only me|just me|mais|menos|more|less"
     + "|tarde|cedo|later|earlier|longer|shorter|posterg\\w*|antecip\\w*|adi[ae]\\w*|fim do mes|end of the month|gente"
-    + "|seg|ter|qua|qui|sex|sab|dom|jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez|feb|apr|aug|sep|sept|oct|dec",
+    + "|seg|ter|qua|qui|sex|sab|dom|jan|fev|mar|abr|mai|jun|jul|ago|set|nov|dez|feb|apr|aug|sep|sept|oct|dec",
   // Verbo de mudança.
   "mud\\w*|troc\\w*|alter\\w*|corrig\\w*|corrij\\w*|correca\\w*|substitu\\w*|ajust\\w*|na verdade|melhor|vai ser|vamos ser|somos|seremos"
     + "|em vez|ao inves|chang\\w*|switch\\w*|instead|actually|rather|better|updat\\w*|we are|we'?re|make it",
@@ -397,6 +397,9 @@ export function mudaDadoDoResumo(mensagem: string, pendente: Pendente): boolean 
   // Fora de um sim também derrubam: palavra de novidade ("quero outra reserva"), valor do
   // resumo repetido ("não são 2 pessoas": a marca engole a palavra "pessoas") e negação.
   const texto = marcarDadosIguais(semAcento(mensagem), pendente);
+  // Afirmação (sem "?") só mantém o resumo se for um sim ou uma hesitação: a lista de
+  // sinais nunca fica completa ("quero cancelar", "vou com o João"). Pergunta segue pela lista.
+  if (!/[?？؟]/.test(mensagem) && !["sim", "hesitacao"].includes(lerConfirmacao(mensagem, pendente))) return true;
   return temSinalDeMudanca(texto) || NOVIDADE.test(texto) || new RegExp(`(?<![a-z0-9])(?:${MARCA})(?![a-z0-9])`).test(texto)
     || NEGACAO.test(texto);
 }
@@ -437,7 +440,7 @@ export function lerConfirmacao(mensagem: string, pendente: Pendente, turno?: num
   }
   if (FRACA.test(limpo)) return "hesitacao";
   // Só emoji ou símbolo: não confirma nem derruba; repete o pedido com o resumo (P15).
-  if (limpo === "") return bruto.trim() === "" ? "outra" : "hesitacao";
+  if (limpo === "") return bruto.trim() === "" || /\p{L}/u.test(bruto) ? "outra" : "hesitacao";
   if (!SIM.test(limpo)) return "outra";
   // Sim com caractere fora da lista permitida (emoji, ❓, ‽, o ";" grego): não é sim limpo, repete o pedido.
   if (!SO_CARACTERES_COMUNS.test(bruto.replace(EMOJI_POSITIVO_NO_FIM, ""))) return "hesitacao";
