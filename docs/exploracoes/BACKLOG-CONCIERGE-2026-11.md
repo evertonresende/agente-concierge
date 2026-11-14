@@ -2174,6 +2174,25 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   dos limites 20, 65 e 46. Médios: "13 casos" sem fonte (o verificador contou 10 e listou); três
   merges a mais para a tabela (27c3093, fcb7dc2 e 45ca6ef, com código que entrou depois do
   veredito). Devolvido à N às 06h43, por cima de 9ff03bd
+- 14/11 06h43 · K · **`producao` publicada com o envio real LIGADO: `ENTREGA OK`, `CLIENTES OK`, `LEADS REAIS: 0`
+  antes e depois.** Versão 4d457dc2, de cópia limpa da `main` a97777b (cópia conferida blob por blob
+  em `src`, `wrangler.jsonc`, `package.json` e lockfile). Passos: 06h40 `--so-leitura` com
+  `LEADS REAIS: 0`; `--dry-run` com `ENVIO_LEADS` ligado, sem rota nem domínio; 06h41 deploy, sem o
+  aviso de pré-visualização; leitura pela API com `previews_enabled: false` sem reaplicar (o
+  `preview_urls: false` da configuração bastou), segredos por referência e rota do hostname
+  intacta; 06h42 `/saude` nos dois endereços com ambiente `producao`, destino real e envio ligado;
+  `--entrega` com `ENVIO: ligado`, `LEADS REAIS: 0`, `ENTREGA OK`; `--clientes` com os quatro
+  clientes em 200 e `CLIENTES OK`; 06h43 `--entrega` de novo, mesma contagem. Não rodou o modo
+  completo, não houve conversa com resumo nem "sim", nenhum POST ao webhook real por sessão
+  nossa. **Onde o "ligado" está:** `wrangler.jsonc`, `env.producao.vars.ENVIO_LEADS`, com o teste
+  `test/configuracao-i.test.ts` exigindo o valor; um novo deploy publica esse arquivo e mantém o
+  envio ligado
+- 14/11 06h49 · Éverton · **X33: confirmadas as decisões P1 a P38 (menos a P23, já revogada), inclusive a P17;
+  exports de sessão fora desta entrega.** O `DECISOES.md` passou a dizer "confirmada em 14/11" em
+  cada linha (be58ccc). Os marcadores de exports saem do README e do "Como foi feito" na última
+  passada da frente N, junto com o envio ligado e o caminho do reservado. **Frente N em 62f7583**
+  (`frente-n-textos`): os achados da rodada 3 suavizados com o texto do verificador, nada apagado;
+  a tabela de merges sem verificador aprovado foi a 24 linhas
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -2201,19 +2220,17 @@ M2 sem achado determinístico nem de lead errado na H (a primeira rodada oficial
 dela). Meta: 14/11 03h00. Limite: 06h00. Gatilho que já existia: 10h00 com o critério 4 não
 verde, parar e chamar o Éverton.
 
-**Estado do congelamento em 14/11 05h25. Árvore final congelada em 9d37f9a, medida e publicada.** Código do agente: o de
-b5af852 mais a correção da G (eb5c7d4) e as formas de confirmação da F (a4b13fa, P35), as duas
-aprovadas por verificador independente. Juiz e runner idênticos byte a byte aos de 193d1bf (P34).
-Conjunto de desenvolvimento com 104 casos. **Critério dos 95%: verde**, 310 de 312 em três rodadas
-oficiais consecutivas (04h35 a 04h51), todo bloco com 97% ou mais na soma. **Reservado: 110 de 120
-(91,7%)** em duas leituras do agregado (P33). **Simulador hostil: 6 de 10**, cinco marcas
-classificadas, nenhuma erro de contrato do agente (P36). **Rajada: 40 de 40.** Em `dev`: versão
-b80a0f91. **Em `producao`: versão 9e309710, envio real desligado, zero lead real**; validação
-completa com duas passadas, 69 de 70 e 70 de 70 (P37). Depois de 9d37f9a a `main` só recebeu
-documentos e relatórios. **Falta:** fechar os entregáveis da frente N (verificador final em curso),
-`docs/prompts/`, e o que só o Éverton faz: ligar o envio real, tornar o repositório público,
-escolher as sessões a exportar, gravar o vídeo e responder o e-mail. As árvores 0567371 (296 de
-300) e b5af852 ficam registradas como histórico, não como resultado.
+**Estado do congelamento em 14/11 06h49. Código do agente igual ao da árvore final 9d37f9a; `producao` com o
+envio real ligado.** Depois de 9d37f9a a `main` recebeu documentos, relatórios e uma mudança de
+configuração (a97777b: `ENVIO_LEADS` ligado e `preview_urls: false` em `env.producao`, com o teste
+da configuração). `src/` não mudou. **Medidas na árvore final:** 310 de 312 nas três rodadas
+oficiais (todo bloco com 97% ou mais); reservado 110 de 120 (91,7%); simulador 6 de 10, nenhuma
+marca é erro de contrato (P36); rajada 40 de 40. **`producao`:** versão 4d457dc2, `ENTREGA OK`,
+`CLIENTES OK`, zero lead real até 06h43; validação completa anterior, com o envio desligado, em
+duas passadas (69 de 70 e 70 de 70, P37). **Decisões:** P1 a P38 confirmadas pelo Éverton (X33),
+menos a P23, revogada. **Em curso:** merge dos textos da frente N (a rodada 3 do verificador foi a
+última, X32), a última passada dela e a cópia de entrega do conjunto reservado. **Só com o
+Éverton:** tornar o repositório público, o vídeo e o e-mail da entrega.
 
 **Plano B, decisão do Éverton (perguntado em 14/11).** Um ciclo de correção e verificação leva
 cerca de 85 minutos; cabem dois até as 06h00. Se a H ou o juiz não fecharem nesse prazo, a escolha
@@ -2270,49 +2287,31 @@ fatos; lista para o Éverton.
 - 20: **atendido** nos prompts (`docs/prompts/`). Exports de sessão dependem do Éverton.
 - 21 a 24: do Éverton (vídeo, e-mail, repositório público, envio real).
 
-**Lista para o Éverton** (o que só ele faz, e o que ele confirma ou reverte).
+**Lista para o Éverton, em 14/11 06h49.**
 
-Só ele faz, nesta ordem sugerida:
-1. Ler o README e o "Como foi feito" depois do merge da frente N, e os marcadores `PREENCHER` que
-   sobraram (URL pública, repositório público, envio ligado, caminho do reservado, exports, vídeo).
-   E ler `docs/rascunho-aberturas.md` na branch `frente-n` (X31): decidir se a abertura curta do
-   `DECISOES.md` e os cinco limites primeiro entram, e como. Não está na `main`.
-2. Escolher as sessões a exportar. Nada entra em `docs/sessoes/` antes de ele ler. Aviso: o registro
-   desta sessão coordenadora tem uma saída de ferramenta, de 14/11 às 05h05, com o endereço de `dev`;
-   o gate pega, e o trecho precisa sair antes de qualquer export.
-3. Dar a ordem de ligar o envio real. O que a ordem dispara: deploy de `producao` com o envio
-   ligado, P25 reaplicada e conferida por leitura, `scripts/validar-producao.sh --entrega`, cópia do
-   conjunto reservado para o repositório com o último agregado, marcadores do README preenchidos.
-4. Tornar o repositório público, depois do gate na árvore de entrega.
-5. Gravar o vídeo. Na confirmação do pedido, responder só "sim" (limites 54 e 55 do README).
-6. Responder o e-mail da entrega.
-7. Monitor dos 7 dias (P38): agendar uma vez por dia `scripts/validar-producao.sh --clientes` e
+Já decidido por ele: aberturas do `DECISOES.md` e dos limites aprovadas (X31, X32); envio real
+ligado (X32); URL pública no README (X32); vídeo só no e-mail (X32); P1 a P38 confirmadas, menos a
+P23 (X33); exports de sessão fora desta entrega (X33).
+
+Falta só com ele:
+1. Tornar o repositório público. Antes, a coordenação roda o gate na `main` de entrega e confere
+   que não sobrou marcador além do "repositório público".
+2. Gravar o vídeo e mandar o link no e-mail. Na confirmação do pedido, responder só "sim"
+   (limites 54 e 55 do README).
+3. Responder o e-mail da entrega.
+4. Monitor dos 7 dias (P38): agendar uma vez por dia `scripts/validar-producao.sh --clientes` e
    `scripts/validar-producao.sh --entrega`, e escolher por onde chega o aviso de falha.
 
-Ele confirma ou reverte:
-- Todas as provisórias, P1 a P38 (a P23 já foi revogada por ele). As de 14/11: P32 (catálogo
-  fora do ar em rodada oficial), P33 (regra do reservado), P34 (juiz volta ao estado aprovado), P35
-  (formas novas de confirmação), P36 (simulador: nada reabre a `main`), P37 (duas passadas em
-  `producao`), P38 (monitor), e a correção do texto da P25.
-- A pergunta "tira", aplicada como provisória pela convenção que ele deu em 14/11 (decisão só com
-  a data, sem circunstância pessoal): nos prompts versionados, duas frases sobre a disponibilidade
-  dele foram omitidas e marcadas; a X15 foi reescrita em commit novo, como a X28 e a X29; e a frente
-  N tira as duas frases que o verificador achou nos textos dela. O histórico não foi reescrito.
-- O plano B perguntado em 14/11 não foi preciso: a H e o juiz fecharam por verificador.
-
-Números que ele precisa saber sem abrir relatório:
-- Conjunto de desenvolvimento: 310 de 312 (99,4%); as duas falhas são um falso vermelho do juiz e
-  uma descrição de dia errada, corrigida no próprio texto do agente.
-- Conjunto reservado: 110 de 120 (91,7%), leituras de 88% e 95%; antes da correção da P35, 83% e 80%.
-- Simulador: 6 de 10, nenhuma marca é erro de contrato; dois limites de confirmação no README.
-- `producao`: uma passada reprovada por 1 caso em 70, sem texto para classificar; a seguinte, 70 de 70.
-- Custo: US$ 0,0026 por conversa em média. Latência: p50 3,0 s, p95 6,2 s, máximo 13,8 s.
+O que ele deve saber antes de publicar:
+- A tabela "Merges de código sem verificador aprovado" do "Como foi feito" lista 24 merges.
+- Os textos da frente N foram reprovados três vezes pelo verificador final, sem número de
+  resultado errado em nenhuma; o que não passou na terceira foi suavizado com o texto do verificador.
+- O registro desta sessão coordenadora tem uma saída de ferramenta, de 14/11 às 05h05, com o
+  endereço de `dev`. Os exports não entram agora; se um dia entrarem, esse trecho sai antes.
 - Correção possível e não feita: aceitar o sim com o destino do envio ("pode enviar ao time
-  comercial"). Custa cerca de duas horas e refaz as três rodadas, o reservado e `producao`.
-
-O que ele deve saber do processo: cinco erros da coordenação, contados na seção 9 do "Como foi
-feito" e registrados neste log na hora em que foram vistos; a frente F rodou em Fable 5.2 de 13/11 23h28 a 14/11 02h55 por desvio não
-percebido, e o que ela entregou nesse período passou por verificador em Opus 5.5.
+  comercial"), cerca de duas horas, refazendo rodadas, reservado e validação (P36).
+- Cinco erros da coordenação estão contados na seção 9 do "Como foi feito"; a frente F rodou em
+  Fable 5.2 de 13/11 23h28 a 14/11 02h55 por desvio não percebido.
 
 ## Pré-voo (antes da leva 1)
 
