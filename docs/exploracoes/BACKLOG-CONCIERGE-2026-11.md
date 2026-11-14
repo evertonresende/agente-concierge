@@ -723,6 +723,27 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   verificador como critério de saída. Decisão provisória, complemento da P16: no caminho sem
   gateway a recusa por limite do reserva não é repetida. Risco anotado para o Éverton: sem o
   gateway de `producao`, todo turno vai ao reserva, que tem limite de 20 pedidos por minuto
+- 13/11 22h14 · coordenadora · primeira rodada no código integrado (I 0b39d9f + F 5adf022 + G 22455e4 +
+  B2 15cbb00 mesclados sobre a `main`, servidor local, Haiku): 96 de 98. Contrato, cotações,
+  recusas, respostas, marco1, handoff e manipulação em 100%; leads 93%; não-inventa 90%; p50
+  2,1 s, p95 4,5 s, máximo 7,6 s; nenhuma contingência. As duas falhas são de caso: o turno 4
+  de `lead-12-troca-resumo` é "Sim, confirmo o GRM-302", que pela P13 não confirma (sim com
+  código de imóvel repete o pedido); `inv-01` reprovou numa redação que a rodada não guardou.
+  Achado de integração: 4 chamadas ao Haiku recusadas pelo gateway com erro de entrada, em
+  turnos em que o laço da G refaz a chamada; o reserva respondeu. A correção de id da I não
+  cobre essa forma. Diagnóstico pedido à I pelo log do gateway, com correção no adaptador;
+  critério: zero falha do modelo na rodada integrada. A coordenadora passou a gravar as
+  conversas da própria rodada (proxy local fora do repositório), para ler a resposta que
+  reprovou em vez de uma repetição
+- 13/11 22h14 · F · correções da terceira rodada entregues (8167f09, 196df07, e0c1211; cabeça 7a3f50d,
+  851 testes): afirmação com pergunta derruba o resumo no rearme e na leitura do sim (os 18
+  testes do verificador entraram na suíte); teto de 2 POSTs por estadia em qualquer combinação
+  de falha, com bloqueio que vale para outro telefone, nome ou número de hóspedes; testes dos
+  defeitos plantados que tinham escapado. Leituras da F aceitas: abertura neutra curta antes
+  de pergunta pura mantém o resumo; resultado incerto bloqueia a estadia; sim com pergunta
+  mantém sem enviar; texto de bloqueio conforme a origem. Quarta rodada do verificador
+  lançada (Opus 5.5, esforço muito alto), com ordem de atacar as aberturas neutras e a
+  separação por pontuação como atalho; ensaio do merge e rodada integrada em curso
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
