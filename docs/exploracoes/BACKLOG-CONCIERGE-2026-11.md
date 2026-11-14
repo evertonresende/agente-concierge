@@ -2159,6 +2159,21 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   `evals/casos/reservado/`, o material do diagnóstico em `docs/revisoes/reservado/` e os dois
   agregados finais. A coordenação segue sem abrir os casos; confere contagem, fechamento e gate, e
   mescla por hash. O repositório continua privado: torná-lo público segue só com ordem do Éverton
+- 14/11 06h43 · N · **rodada 3 do verificador dos textos, sobre e096681: REPROVADO**, 0 críticos, 3 altos, 2
+  médios, 4 baixos. É a última (X32): o que não passou é suavizado ou apagado com o texto que o
+  verificador deu, sem reescrever, e a coordenação mescla depois de conferir o delta contra o
+  relatório. Passou: os 11 achados da rodada 2 corrigidos; todos os exemplos citados conferem na
+  execução, no contexto que o texto supõe; as 21 linhas da tabela de merges conferem com o git e
+  com o log; fechamento da M2; gate; desenhos; rascunho de aberturas ausente do hash. **Os três
+  altos são condições que o texto não declarava, achadas executando a conferência:** (1) o corte de
+  "tem vaga sim" só acontece quando a mensagem do hóspede traz a data em número ou por extenso com
+  mês; com "tem vaga no réveillon?", a frase passa; (2) depois do primeiro `201` da conversa, sem
+  resumo aberto, nenhuma afirmação de registro é cortada (o teste `test/conferencia-g.test.ts` fixa
+  isso de propósito): "Seu pedido foi registrado." sobre uma segunda estadia ainda não enviada
+  passa; (3) "centavos" só é reconhecido com vírgula: "1999.00" passa. Os três viram redação exata
+  dos limites 20, 65 e 46. Médios: "13 casos" sem fonte (o verificador contou 10 e listou); três
+  merges a mais para a tabela (27c3093, fcb7dc2 e 45ca6ef, com código que entrou depois do
+  veredito). Devolvido à N às 06h43, por cima de 9ff03bd
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
