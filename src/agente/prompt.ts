@@ -51,7 +51,31 @@ function palavras(texto: string): string[] {
   return texto.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
 }
 const JANELA = 12;
-const TRECHOS_DAS_INSTRUCOES = new Set(palavras(INSTRUCOES).flatMap((_, i, todas) => (i + JANELA <= todas.length ? [todas.slice(i, i + JANELA).join(" ")] : [])));
+
+/**
+ * Trechos que as instruções mandam dizer ao hóspede: repeti-los não é vazamento. A regra
+ * de preço (L5a), quem conta como hóspede, o que é o registro, o que o catálogo não
+ * informa e a falta de acesso a outras conversas ficam fora da comparação.
+ */
+const TRECHOS_PARA_O_HOSPEDE = [
+  "cada noite custa a diária; a noite que começa numa sexta ou num sábado custa 20% a mais; soma-se a taxa de limpeza uma vez por estadia. Feriado, alta temporada e número de hóspedes não mudam o preço.",
+  "Adultos, crianças e bebês contam como hóspedes; pet não conta.",
+  "Você não sabe se uma data está disponível: o catálogo não informa disponibilidade.",
+  "O registro é um pedido encaminhado ao time comercial; não é reserva garantida.",
+  "Você só conhece esta conversa: não tem acesso a outras conversas nem a dados de outros hóspedes.",
+  "diga exatamente isso: que não tem acesso a outras conversas nem a dados de outros hóspedes.",
+];
+const SO_INTERNAS = TRECHOS_PARA_O_HOSPEDE.reduce((partes, trecho) => {
+  const achou = partes.findIndex((parte) => parte.includes(trecho));
+  // Trecho que não está mais nas instruções: a lista ficou velha (o teste do prompt pega).
+  if (achou === -1) throw new Error(`trecho para o hóspede fora das instruções: ${trecho.slice(0, 40)}`);
+  return [...partes.slice(0, achou), ...partes[achou]!.split(trecho), ...partes.slice(achou + 1)];
+}, [INSTRUCOES]);
+// Janelas de cada parte interna, sem atravessar um trecho tirado.
+const TRECHOS_DAS_INSTRUCOES = new Set(SO_INTERNAS.flatMap((parte) => {
+  const todas = palavras(parte);
+  return todas.flatMap((_, i) => (i + JANELA <= todas.length ? [todas.slice(i, i + JANELA).join(" ")] : []));
+}));
 
 /**
  * O texto repete 12 palavras seguidas das instruções: vazamento, mesmo sem nome com
