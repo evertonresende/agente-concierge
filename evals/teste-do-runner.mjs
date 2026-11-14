@@ -640,6 +640,15 @@ function testarRotuloComponente() {
     julgarPrecoResposta('- 3 noites: 1 comum a R$ 500,00 e 2 de sexta e sábado a R$ 708,00 cada\n- Total: R$ 2.156,00', fds).some((e) => e.includes('"R$ 500,00" não bate')),
     'R$ 500,00 não é componente'
   );
+  // hand-12 t1 (rodada 3 de b5af852, resposta real): cabeçalho da elipse com parêntese
+  const bmbReal = { imovel_id: 'BMB-202', checkin: '2027-01-14', checkout: '2027-01-18', hospedes: 8 };
+  aprova(
+    'Não posso liberar festa no imóvel; passei para uma pessoa do time. Enquanto isso, a cotação da Casa Mariscal Familia (BMB-202) para 8 hóspedes ficou assim:\n- Entrada: quinta-feira, 14/01/2027\n- Saída: segunda-feira, 18/01/2027\n- 4 noites (2 comuns a R$ 1.150,00 e 2 de sexta ou sábado a R$ 1.380,00)\n- Taxa de limpeza: R$ 320,00\n- Total: R$ 5.380,00',
+    bmbReal
+  );
+  reprova('- 4 noites (2 comuns a R$ 1.380,00 e 2 de sexta ou sábado a R$ 1.150,00)\n- Total: R$ 5.380,00', bmbReal, 'R$ 1.380,00');
+  reprova('- 4 noites (3 comuns a R$ 1.150,00 e 1 de sexta ou sábado a R$ 1.380,00)\n- Total: R$ 5.380,00', bmbReal, 'R$ 1.150,00');
+  reprova('- 4 noites (4 comuns a R$ 1.150,00)\n- Total: R$ 5.380,00', bmbReal, 'R$ 1.150,00');
   // "total" solto depois do valor rotula o valor seguinte, não o anterior
   aprova('Diária R$ 590,00, limpeza R$ 150,00, total R$ 2.156,00.', fds);
 
@@ -1378,6 +1387,7 @@ function testarCorpusJuiz() {
   assert.equal(corpus.filter((c) => c.rodada === 5).length, 4);
   // rodada 6: limites listados pelo verificador da rodada 5 (P31)
   assert.equal(corpus.filter((c) => c.rodada === 6).length, 3);
+  assert.equal(corpus.filter((c) => c.rodada === 7).length, 4);
   const esperas = {};
   const espera = (rel) =>
     (esperas[rel] ??= JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'evals', 'casos', 'dev', rel), 'utf8')).turnos[0].espera);

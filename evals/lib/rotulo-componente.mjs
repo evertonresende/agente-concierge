@@ -101,11 +101,12 @@ const REGEX_NEGACAO_DEPOIS = /^\s*(?:n[aã]o|is\s+not|isn'?t|not)(?!\p{L})/iu;
 // "2 Friday/Saturday nights") ou depois dos dois-pontos ("Noites: 2").
 const REGEX_CONTAGEM =
   /(?<!\p{L})(\d+|uma?|dois|duas|tr[eê]s|quatro|cinco)\s+(?:[\p{L}/-]+\s+)?(?:noites?|nights?|weeknights?)(?!\p{L})|(?<!\p{L})(?:noites?|nights?)\s*:\s*(\d+)(?!\d)/giu;
-// Contagem elíptica, sem repetir "noite", numa frase que abre com a contagem total
-// ("3 noites: 1 comum a R$ 590,00 e 2 de sexta e sábado a R$ 708,00 cada").
+// Contagem elíptica, sem repetir "noite", numa frase que abre com a contagem total seguida
+// de ":", "(", vírgula ou travessão ("3 noites: 1 comum a R$ 590,00 e 2 de sexta e sábado a
+// R$ 708,00 cada", "4 noites (2 comuns a R$ 1.150,00 e 2 de sexta ou sábado a R$ 1.380,00)").
 const REGEX_CONTAGEM_ELIPTICA =
   /(?<!\p{L})(\d+|uma?|dois|duas|tr[eê]s|quatro|cinco)\s+(?:comu(?:m|ns)|de\s+(?:sexta|s[aá]bado|fim\s+de\s+semana)|regular|weekday|weekend|friday(?:\/saturday)?)(?!\p{L})/giu;
-const REGEX_CABECALHO_NOITES = /(?<!\p{L})(?:noites?|nights?)\s*:/iu;
+const REGEX_CABECALHO_NOITES = /(?<!\p{L})(?:noites?|nights?)\s*[:(,—–-]/iu;
 const NUMEROS = { um: 1, uma: 1, dois: 2, duas: 2, tres: 3, 'três': 3, quatro: 4, cinco: 5 };
 
 const REGEX_SO_CONECTOR = /^[\s(]*(?:de|a|por|at|of)?\s*$/iu;
