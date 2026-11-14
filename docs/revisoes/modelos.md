@@ -174,42 +174,61 @@ aviso sem repetir o turno (`porLimite`, testado em `test/modelo.test.ts`).
   `AiError: 5007` e o reserva respondeu (log do gateway: 400 do principal, 200 do
   reserva). A prova em `dev` publicado fica com a coordenadora.
 
-## O que falta para `producao` usar o Haiku (frente K, autorizado pelo Éverton em 13/11)
+## Gateway de `producao` para o Haiku (frente K, autorizado pelo Éverton em 13/11)
 
-Hoje `producao` tem o Haiku em `MODELO` e `MODELO_ESFORCO: "high"`, mas não tem
-`AI_GATEWAY`: o adaptador pula o Haiku (uma linha `principal_pulado` por turno no log do
-Worker) e o GLM-5.3 Flash responde. Os passos copiam o `concierge-dev`, que funciona.
+Estado: o gateway `concierge-producao` existe e guarda a chave (frente K, passos 1 e 2), e
+o `wrangler.jsonc` nomeia `"AI_GATEWAY": "concierge-producao"` em `env.producao.vars`
+(passo 3, commit `d561a05`, com teste de configuração por ambiente). Falta publicar
+`producao` com esse código e fazer a prova do passo 4. Até a publicação, `producao` no ar
+segue sem gateway: o adaptador pula o Haiku (uma linha `principal_pulado` por turno no
+log do Worker) e o GLM-5.3 Flash responde.
 
 Em todas as chamadas: credencial da Cloudflare só por referência (`$(cat ~/.cf-token)`),
-conta lida do arquivo de ambiente no mesmo comando, e da resposta da API só `success` e
-`errors` na tela.
+conta e store lidos no mesmo comando, nunca escritos em arquivo, e da resposta da API só
+`success` e `errors` na tela.
 
 1. **Criar o gateway** `concierge-producao` (`POST /accounts/{conta}/ai-gateway/gateways`)
-   com as mesmas opções do `concierge-dev`: `authentication: true`, `collect_logs: true`,
-   `cache_ttl: 0`, sem limite de taxa no gateway. Associar o Secrets Store da conta
+   com as mesmas opções do `concierge-dev` **menos o log**: `authentication: true`,
+   `collect_logs: false`, `cache_ttl: 0`, sem limite de taxa no gateway. O log fica
+   desligado porque o gateway guarda o pedido inteiro, com nome e telefone do hóspede
+   íntegros, e o contrato L22 não admite isso (achado da revisão de segurança; a frente K
+   desligou e conferiu por leitura). Não se religa o log em `producao`. O de `dev` segue
+   ligado: só tem dados sintéticos e é de onde sai a prova do nível. Associar o Secrets Store da conta
    (`store_id`, o mesmo do `concierge-dev`, visto com `GET .../gateways/concierge-dev`): a
-   API recusa guardar chave em gateway sem store. Hoje `GET .../gateways/concierge-producao`
-   responde erro 7002 (não existe).
-2. **Guardar a chave da Anthropic por referência.** `POST
-   .../gateways/concierge-producao/provider_configs` com o corpo
-   `{"alias": "default", "default_config": true, "provider_slug": "anthropic", "secret": <chave>}`
-   montado por um programa que lê a chave da variável de ambiente e manda pela entrada
-   padrão (`curl --data-binary @-`). Nunca em argumento de linha de comando, `.dev.vars`,
-   `--var`, `wrangler secret`, log ou relatório. Conferir com `GET .../provider_configs`:
-   uma entrada `anthropic`, apelido `default`, `default_config: true`. O Secrets Store
-   passa a ter o secret `concierge-producao_anthropic_default`, escopo `ai_gateway`.
+   API recusa guardar chave em gateway sem store.
+2. **Guardar a chave da Anthropic por referência, em duas chamadas, nesta ordem** (a
+   frente K provou a ordem; sem a primeira, a segunda devolve 400 com erro 7001):
+   1. **Criar o secret no Secrets Store:** `POST
+      /accounts/{conta}/secrets_store/stores/{store}/secrets`, com o nome
+      `concierge-producao_anthropic_default` (o padrão é `<gateway>_anthropic_default`),
+      escopo `ai_gateway` e a chave no corpo.
+   2. **Configurar o provedor no gateway:** `POST
+      .../ai-gateway/gateways/concierge-producao/provider_configs` com
+      `{"alias": "default", "default_config": true, "provider_slug": "anthropic", "secret": <chave>}`.
+   Nas duas, o corpo é montado por um programa que lê a chave da variável de ambiente e
+   manda pela entrada padrão (`curl --data-binary @-`). Nunca em argumento de linha de
+   comando, `.dev.vars`, `--var`, `wrangler secret`, log ou relatório. Conferir com
+   `GET .../provider_configs` (uma entrada `anthropic`, apelido `default`,
+   `default_config: true`) e com a lista de secrets do store (o nome acima, escopo
+   `ai_gateway`).
 3. **Nomear o gateway em `producao`:** `"AI_GATEWAY": "concierge-producao"` em
-   `env.producao.vars` do `wrangler.jsonc` e publicar (`npm run deploy:producao`, com
-   `ENVIO_LEADS` desligado). Só depois do passo 1: um gateway nomeado que não existe
+   `env.producao.vars` (feito em `d561a05`) e publicar (`npm run deploy:producao`, com
+   `ENVIO_LEADS` desligado). Só com o gateway já criado: um gateway nomeado que não existe
    derruba também o reserva, que passa pelo mesmo gateway (erro 2001).
 4. **Provar que o Haiku respondeu em `producao`**, com uma conversa sem confirmação de
-   lead:
-   - log do gateway `concierge-producao` (`GET .../gateways/concierge-producao/logs`):
-     chamadas de `anthropic/claude-haiku-5.5` com status 200 e `byok: default`, e o pedido
-     (`.../logs/{id}/request`) com `output_config: {"effort": "high"}`;
-   - nenhuma chamada do GLM-5.3 Flash nesse turno, salvo falha do Haiku;
-   - no log do Worker (`wrangler tail --env producao`), nenhuma linha `principal_pulado`
-     nem `modelo_falhou`.
+   lead. Sem log no gateway de `producao`, a prova é outra:
+   - o nível fica provado em `dev` (log do gateway `concierge-dev`, seção abaixo) e preso
+     pelo teste de configuração (`test/configuracao-i.test.ts`: os dois ambientes com
+     `MODELO_ESFORCO: "high"`);
+   - no log do Worker (`wrangler tail --env producao`), durante a validação, nenhuma linha
+     `principal_pulado` nem `modelo_falhou`;
+   - o cabeçalho `x-chamadas-modelo` das respostas maior que zero.
+
+### Prova do nível em `dev` publicado (fumaça de 13/11, 23h17m50 a 23h18m27)
+
+No log do gateway `concierge-dev`, nessa janela: 41 chamadas ao Haiku, as 41 com status
+200 e com `output_config: {"effort": "high"}` no pedido (lidos os 41 pedidos, sem
+amostra), e nenhuma chamada ao GLM-5.3 Flash.
 
 ## Opinião da frente (não é decisão)
 
