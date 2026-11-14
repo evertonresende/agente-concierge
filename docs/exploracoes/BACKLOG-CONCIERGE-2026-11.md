@@ -1305,6 +1305,20 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   existe na `main` sem a H, então não é regressão dela e congelar sem a H não o evita. Baixos novos:
   nenhum teste afirma que o corpo não é lido acima do teto; `handoff` não gravado em reinício no meio
   do turno. 12 de 16 defeitos plantados pegos. A frente já publicou correções; espero o relatório dela
+- 14/11 00h59 · Éverton · o desenho da fábrica na `frente-n` perdeu a segunda sessão de IA revisora (decisão 20);
+  pediu para manter a caixa e a linha como estão na `main`. Conferido: sumiu no commit 3e9e5f6. A N
+  restaurou em 6be2655 (caixa, duas ligações e o item da lista, texto igual ao da `main`) e listou mais
+  cinco coisas da `main` que o desenho dela não tinha: o laço da revisora até a coordenadora, o pedido e
+  a ordem do envio real, o laço de robustez, a cadeia de portões com o laço do reservado e duas linhas
+  da legenda. Pedido à N: voltar as cinco, corrigindo só o que ficou desatualizado (na G6, a segunda
+  opinião da revisão final foi só do Gemini 4 Argon, pela X16), e fazer a mesma comparação no desenho do
+  agente. Regra para a frente: nada que existe na `main` some
+- 14/11 00h59 · G · teste do P07 na `main`: merge `--no-ff` de 2d13951 (só `test/foco-g.test.ts`, 12 linhas;
+  ensaio com 1368 testes verdes). A frente G está fechada
+- 14/11 00h59 · T · baixos da verificação na `main`: merge `--no-ff` de ec36bed, main em 1a9b8d5. Em `src/` muda
+  só uma frase do texto da recusa da P21 (o modelo não completa o ano sozinho); entra o teste da ordem
+  das recusas. Ensaio com 1368 testes verdes. Falta ver com o modelo real se ele obedece a frase: entra
+  no ensaio local da árvore congelada. `dev` publicado continua em 472277c (sem a T)
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -1330,8 +1344,8 @@ e o runner da B2, a P20 (nome do lead, frente F) e a P21 (datas sem ano, frente 
 casos fixo. Meta: 14/11 03h00. Limite: 06h00. Gatilho que já existia: 10h00 com o critério 4 não
 verde, parar e chamar o Éverton.
 
-**Estado do congelamento em 14/11 00h56.** G: na `main` (a8da5d6). T (P21): na `main` (c9217dc); falta
-um commit pequeno com a frase da recusa e um teste. H: reprovada na rodada 3, corrigindo B1 e B2 (P24
+**Estado do congelamento em 14/11 00h56.** G: na `main` (a8da5d6). T (P21): na `main`, completa
+(1a9b8d5, com a frase da recusa e o teste da ordem). H: reprovada na rodada 3, corrigindo B1 e B2 (P24
 por último e dispensável). Juiz da B2: reprovado na rodada 2, corrigindo com critério fechado. F
 (P20): frente trabalhando. Só o que muda o comportamento do agente ou o juiz reinicia a contagem das
 rodadas: o gate da S, o script da K e o commit de teste da G (P07) podem entrar depois que as rodadas
