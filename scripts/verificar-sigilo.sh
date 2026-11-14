@@ -103,8 +103,10 @@ TEMPO="${SIGILO_TEMPO:-120}"
 command -v timeout >/dev/null || TEMPO=""
 le() { # $1 = arquivo de saída; o resto = subcomando do git e argumentos
   local arq="$tmpd/$1" st; shift
-  ${TEMPO:+timeout "$TEMPO"} git -c core.quotePath=false "$@" > "$arq" 2>/dev/null; st=$?
-  [ "$st" -eq 0 ] || { [ "$st" -eq 1 ] && [ "$1" = grep ]; } \
+  # Erro no stderr também reprova: com o índice corrompido, o git grep escreve o erro
+  # e sai com 1, o mesmo código de "nada achado". O stderr nunca é impresso.
+  ${TEMPO:+timeout "$TEMPO"} git -c core.quotePath=false "$@" > "$arq" 2> "$arq.err"; st=$?
+  { [ "$st" -eq 0 ] || { [ "$st" -eq 1 ] && [ "$1" = grep ]; }; } && [ ! -s "$arq.err" ] \
     || { echo "SIGILO: falha ao ler o repositório (git $1)"; exit 2; }
 }
 

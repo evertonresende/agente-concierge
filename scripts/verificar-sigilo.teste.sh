@@ -113,6 +113,14 @@ falhando ls-files; espera_codigo 2
 novo_repo l4; echo "$TOKEN" > b.txt; git add b.txt; git commit -q -m b; git rm -q b.txt; git commit -q -m rm
 falhando --batch=; espera_codigo 2
 
+caso="l5) índice corrompido: blob em stage ausente e índice truncado"
+novo_repo l5; echo "$TOKEN" > b.txt; git add b.txt; obj=$(git rev-parse :b.txt)
+rm -f ".git/objects/${obj:0:2}/${obj:2}"
+rodar; espera_codigo 2; sem_pedaco "$TOKEN"
+novo_repo l6; echo "$TOKEN" > b.txt; git add b.txt
+head -c 40 .git/index > "$TMP/indice"; mv "$TMP/indice" .git/index
+rodar; espera_codigo 2; sem_pedaco "$TOKEN"
+
 caso="s) pasta temporária que não pode ser criada"
 novo_repo s; git switch -q --orphan vazia; echo "$TOKEN" > b.txt; git add b.txt
 rodar TMPDIR="$TMP/nao-existe"; espera_codigo 2
