@@ -1603,6 +1603,18 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   à mão (P27, P31)
 - 14/11 02h28 · G · primeiro commit da P30 no remoto (b43ac7b: 16 por resposta, 32 por turno, a confirmação
   nunca é cortada). Falta o teto de 2 buscas por comodidade e o merge da `main` com a F
+- 14/11 02h33 · G · P30 entregue em a723dcd (b43ac7b: 16 chamadas de ferramenta por resposta e 32 por turno;
+  f485eef: no máximo 2 buscas por comodidade por turno; merge da `main` com a F). A frente diz 1514
+  testes, zero dos 11 turnos reais de 26 e 27 chamadas cortado, e pior turno em cerca de 84 pedidos ao
+  catálogo. Dois testes antigos dela faziam 3 buscas por comodidade num turno; a terceira passou para o
+  turno seguinte. Verificador curto da rodada 4 lançado, com barra fechada de nove itens; o principal é
+  o caminho do lead (confirmação nunca cortada e nenhum caminho novo para o POST)
+- 14/11 02h33 · B2 · cabeça final 193d1bf: saída (a) do rótulo (fb29d43), trava de `producao` por mensagem
+  (9f53470, com 70 executados e 30 recusados mantidos), vírgula desfeita (d080ddf), os dois limites e a
+  regra da trava no `evals/README.md` (a72ba49, facdbb0) e o merge da `main` com a F. Verificador da
+  rodada 5 lançado, o último do juiz (P31), com barra fechada de oito itens
+- 14/11 02h33 · ensaio · ensaio local do conjunto inteiro com o modelo real na árvore candidata (`main` +
+  G a723dcd + B2 193d1bf), pelo proxy de registro, em curso. Não conta como rodada
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -1630,12 +1642,11 @@ M2 sem achado determinístico nem de lead errado na H (a primeira rodada oficial
 dela). Meta: 14/11 03h00. Limite: 06h00. Gatilho que já existia: 10h00 com o critério 4 não
 verde, parar e chamar o Éverton.
 
-**Estado do congelamento em 14/11 02h28.** Na `main` (a7eedd7): G, T (P21), F (P20, "sim" limpo e P29), H
-(fila da sessão e P24), o script da K e o gate da S. A parte 2 da M2 fechou sem achado que bloqueie.
-Abertos: G (P30, teto de chamadas de ferramenta; primeiro commit em b43ac7b, falta o teto da busca por
-comodidade; corte às 02h45) e B2 (juiz e runner: saída (a) do rótulo, trava por mensagem e a vírgula
-a desfazer; depois o verificador curto, o último). Só o que muda o comportamento do agente ou o juiz
-reinicia a contagem das rodadas.
+**Estado do congelamento em 14/11 02h33.** Na `main` (a7eedd7 em código): G, T (P21), F (P20, "sim" limpo e
+P29), H (fila da sessão e P24), o script da K e o gate da S. A parte 2 da M2 fechou sem achado que
+bloqueie. Entregues e no verificador curto, os dois últimos: G (P30, a723dcd) e B2 (juiz e runner,
+193d1bf). O ensaio local da árvore candidata com o modelo real está em curso. Com os dois vereditos, a
+`main` congela. Só o que muda o comportamento do agente ou o juiz reinicia a contagem das rodadas.
 
 **Plano B, decisão do Éverton (perguntado em 14/11).** Um ciclo de correção e verificação leva
 cerca de 85 minutos; cabem dois até as 06h00. Se a H ou o juiz não fecharem nesse prazo, a escolha
