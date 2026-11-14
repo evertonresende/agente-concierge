@@ -683,6 +683,22 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   local em `dev`: contrato 88% (a única falha é do juiz do rótulo, `con-03`), marco1 100%; 28
   turnos e 42 chamadas ao modelo, com 0 falha do modelo, 0 principal pulado e 0 contingência,
   ou seja, o Haiku respondeu todas. O verificador da segunda rodada revisa também esse commit
+- 13/11 22h04 · F · verificador independente, terceira rodada (5adf022): REPROVADO. C1 (médio): um "?" em
+  qualquer ponto da mensagem fazia o rearme tratá-la toda como pergunta; "vou levar minha sogra,
+  tem estacionamento?" mantinha o resumo e o "sim" seguinte enviava o lead com 2 hóspedes (11
+  de 15 mensagens do tipo). C3: depois da segunda recusa e do handoff, voltar ao telefone
+  original gerava um terceiro POST para a mesma estadia. C4: combinações de `422` com campo e
+  `5xx` na mesma reserva somavam 3 e 4 POSTs. C2 (baixo): 4 defeitos plantados passaram pela
+  suíte. Passou: lista da P15 (125 ataques, nenhum envia no próprio turno), hesitações (30 de
+  30), mudanças e negações, 49 de 50 confirmações naturais, tabela da P14 por código simples.
+  Leituras fechadas pela coordenadora, provisórias: (1) afirmação junto com pergunta é tratada
+  pela afirmação, e só a mensagem que é toda pergunta mantém o resumo (restringe a leitura (b));
+  (2) P14 pela letra, com o texto completado no `DECISOES.md`: teto de 2 POSTs por estadia,
+  somando as falhas, e estadia bloqueada não envia de novo com outro telefone. Lista de
+  correção enviada à F, agora em esforço alto; depois, quarta rodada do verificador
+- 13/11 22h04 · coordenadora · correção do destino do `lead-04`: vai para a G, não para a F. A falha só
+  se reproduz com o Haiku e com o laço da G, e o ponto de correção é o fim do turno (laço ou
+  resultado da ferramenta). Entra depois do veredito da G e de a G mesclar a `main` com a F
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
