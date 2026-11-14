@@ -1,10 +1,11 @@
 # Desenho do agente em produção
 
 Um agente só. Requisitos em [`docs/CONTRATO.md`](../CONTRATO.md); decisões citadas (L, P,
-X) em [`DECISOES.md`](../../DECISOES.md). Os desenhos descrevem o código da integração da
-leva 2. As frentes F, G (com a correção do teto no caminho do lead), H, I e T estão na
-`main`, verificadas. Conferir contra a `main` final: a preencher.
-<!-- PREENCHER: conferir os desenhos contra a main congelada final -->
+X) em [`DECISOES.md`](../../DECISOES.md). Os desenhos descrevem a árvore final 9d37f9a,
+com as frentes F (até a P35), G (com a correção do teto no caminho do lead), H, I e T, todas
+verificadas. Os números do desenho foram conferidos contra o código dela: 6 voltas, 45 s de
+trabalho externo, 16 chamadas por resposta e 32 por turno, 2 buscas por comodidade, janela
+de 80 mensagens, 8.000 caracteres por mensagem e 64 KB de corpo.
 
 ## 1. Um turno: do pedido à resposta
 
