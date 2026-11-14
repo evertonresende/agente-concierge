@@ -52,7 +52,7 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 | C | agente-concierge | Conjunto reservado (fora do repo) | — | alta | 2 | thread T3 · GPT-6 Astra até 13/11 18h35 | 60 casos entregues fora do repo; conversa no GPT encerrada pela X16. Caso substituto, se for preciso, numa conversa nova em Gemini 4 Hydrogen | `frente-c` (sem commits; casos fora do repo) |
 | D | agente-concierge | Simulador de hóspede hostil | B2 (formato de caso) | média | 2,5 | thread T3 · Gemini 4 Hydrogen | concluída: na `main` (6c090d0), rodada ao vivo com `SIMULADOR OK`; a B2 move os 12 casos fixos | `frente-d` |
 | M1 | agente-concierge | Revisão curta do Marco 1 | A | alta | 0,5 | subagentes Opus 5.5 + conselho | concluída (`docs/revisoes/m1.md`; achados com dono) | — |
-| I | agente-concierge | Escolha do modelo por eval | A, B2 | alta | 1 | subagente em worktree · Opus 5.5, esforço médio desde a X16 | adaptador na `main` desde 13/11 23h18 (27c3093), com o Haiku 5.5 em nível alto (X24); `dev` publicado dessa versão. Fica viva para a fase 2 (medição no código final) e para a linha do gateway de `producao` | `t3/modelo-evals-fallback` |
+| I | agente-concierge | Escolha do modelo por eval | A, B2 | alta | 1 | subagente em worktree · Opus 5.5, esforço médio desde a X16 | adaptador na `main` desde 13/11 23h18 (27c3093), com o Haiku 5.5 em nível alto (X24); `dev` publicado dessa versão. Delta do log de falha e gateway de `producao` na `main` desde 13/11 23h59 (fcb7dc2), verificador aprovado. Fica viva para a fase 2 (medição no código final) e para a linha do gateway de `producao` | `t3/modelo-evals-fallback` |
 | E | agente-concierge | Datas | Marco 1, L1, L1a, L1b, L2 | alta | 1,5 | subagente em worktree · Gemini 4 Hydrogen | concluída: na `main` (81873fa) | `t3/datas-relativas-sao-paulo` |
 | F | agente-concierge | Lead robusto | Marco 1, L6, L7, L9, L10, L11, L15 (textos fixos), L20 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16) | primeira parte na `main` (801c8a2); o complemento (P14 por estadia, P18, C7 a C11) está em 28109d8, com o ensaio limpo e a sexta rodada do verificador rodando | `frente-f` |
 | G | agente-concierge | Robustez e handoff | Marco 1, L3, L4, L5, L5a, L12, L13a, L15, L16, L16a, L19, L21 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16) | rodando | `frente-g` |
@@ -1059,6 +1059,30 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   provado é o do turno abandonado. Teste "item 1b" reescrito como autorizado. A frente relata 918
   testes na branch e os quatro arquivos dela verdes em quatro árvores. Verificador independente,
   terceira rodada, rodando sobre a H sozinha e sobre a F nova com a H
+- 13/11 23h59 · I · delta NA `main` (fcb7dc2): log de falha sem dígito solto e com nome de erro de
+  lista fechada, motivo da resposta inútil, `AI_GATEWAY` de `producao` e o roteiro do gateway com o
+  log desligado. A regressão baixa do verificador foi corrigida em 4a63568 com a troca que ele provou.
+  Ensaio da coordenadora: merge limpo, 740 testes, tipos sem erro, SIGILO OK; a sonda de 910 casos
+  do verificador, repetida na cabeça nova, dá os 140 que já existiam na `main` e nenhum novo. A
+  frente fica viva só para a fase 2 (medição no código final)
+- 14/11 00h02 · integração · sonda do resumo pendente com o modelo real em nível alto, na árvore das cinco
+  branches: 20 mensagens que misturam mudança e pergunta, depois "sim". 14 não enviaram (lado
+  seguro). 6 enviaram: em 4 o agente tinha remontado o resumo com o dado novo e o lead saiu certo;
+  em 1 ("esquece qual o horário do check-in?") o agente respondeu, repetiu o pedido e o hóspede
+  confirmou o que viu; em 1 o lead saiu com o campo nome errado. Nenhum lead com dado velho (na
+  sonda anterior, sem a pergunta fechada, havia). Ensaio da F com a H: merge limpo, 1089 testes,
+  tipos sem erro, SIGILO OK
+- 14/11 00h02 · F · achado da sonda, lead errado: com "o titular é o Pedro tudo bem?", o modelo chamou
+  `montar_resumo` com o nome "Pedro (se puder, me diga também o sobrenome)", o resumo saiu assim e o
+  "sim" enviou o lead com esse texto no nome. Segunda vez que aparece. Decisão provisória P20: o nome
+  do lead só pode ser formado por palavras que o hóspede escreveu; fora disso a ferramenta recusa.
+  Pedido à frente F, em commit separado por cima de 28109d8, com conferência própria depois
+- 14/11 00h02 · K · correções da rodada 1 na `frente-k` (f28ce3e, cinco commits): argumentos extras em lista
+  fechada e mínimo de 60 casos executados para o `PRODUCAO OK`; nenhum cliente segue redirecionamento;
+  `--clientes` exige chamadas ao modelo maiores que zero; autoteste com servidores locais de mentira
+  (a frente relata 21 de 21 defeitos plantados pegos). Verificador independente, segunda rodada (só
+  o delta), rodando. A conferir entre a K e a B2: o mínimo de 60 casos depois que a trava do runner
+  passar a ser por negação
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
