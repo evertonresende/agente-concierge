@@ -656,6 +656,17 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   para Opus 5.5, esforço alto, e continuação enviada em sessão nova (X23): juiz do rótulo de
   componente (9 casos) e expressões de `hand-09`, `inv-07`, `man-07` e `inv-01`, com teste dos
   dois lados; `lead-12` segue em `para-dev/` até a F entrar na `main`
+- 13/11 21h55 · coordenadora · `lead-04` classificado: defeito intermitente do agente, sem risco de envio
+  indevido. No log do servidor da rodada, a sessão do caso fez `cotar` e `montar_resumo` no
+  turno 1, só `cotar` no turno 2 (o modelo cotou as datas novas e não remontou o resumo) e
+  `montar_resumo` no turno 3, em vez de enviar. O hóspede confirma uma vez a mais; nenhum lead
+  sai sem resumo. 1 falha em 20 execuções do caso: a rodada, a repetição, 8 sondas no código
+  integrado (I + F + G) e 10 sondas só na G. Vai para a F depois do veredito do verificador:
+  quando uma mudança derruba o resumo e os dados estão completos, o código remonta o resumo no
+  mesmo turno (L10). Na mesma rodada, 5 chamadas ao Haiku falharam com erro de entrada no
+  gateway e o reserva respondeu: é o id de chamada fora do padrão, que a I corrigiu em 651956e;
+  no código integrado foram 0 falhas em 24 turnos. Ensaio do merge das três branches juntas
+  (I, F e G) sobre a `main`: limpo
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
