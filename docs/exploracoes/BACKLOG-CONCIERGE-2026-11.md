@@ -1546,6 +1546,25 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   do hóspede de um teste da H que deixou de montar o resumo (`test/concorrencia-h.test.ts`) e duas
   mensagens de teste da G que não servem mais. Limites declarados pela F: valor por extenso no nome
   passa; com o catálogo fora do ar o "sim" limpo por `montar_resumo` derruba o resumo pendente
+- 14/11 02h21 · dev · correção do registro anterior sobre o catálogo, com o que os dados mostram: as 25
+  contingências com `origem: catalogo` são todas da versão publicada no primeiro deploy com a H, entre
+  02h04min46 e 02h06min18; o primeiro turno bom com ferramenta de catálogo veio às 02h06min41. Nas 23
+  horas anteriores, as outras 12 versões publicadas em `dev` somam cerca de 800 turnos e 2
+  contingências. Um segundo deploy do mesmo código não repetiu a falha. **A causa não foi determinada**:
+  pode ter sido o catálogo ou o primeiro deploy desse código; o log não guarda o status da resposta. O
+  próximo deploy que muda código é o do congelamento: a sonda de pós-deploy roda antes da fumaça, e a
+  primeira rodada só começa depois de dois minutos limpos. Se a falha voltar, a causa é o deploy, e
+  isso muda o deploy final de `producao` e a hora de rodar o script de validação. Leads da sonda da
+  fila conferidos no webhook falso: 1 lead por sessão registrada (2 de 2), 0 nas três sessões em
+  contingência. Duas regras provisórias novas no `DECISOES.md`: P31 (fim do ciclo de correção do juiz)
+  e P32 (catálogo fora do ar durante rodada oficial)
+- 14/11 02h21 · F · conferência com o modelo real em 248f479 (servidor local): o roteiro do
+  `lead-12-troca-hospedes-apos-resumo` registra no turno 4 em 5 de 5; nome com número ou valor não gerou
+  lead ("Pedro 2": o agente pede o nome, "Pedro Alves" recebe o resumo e o lead sai certo; nome com
+  total ditado: recusa do desconto com `handoff`, depois o lead sai com "Carla Mendes" e R$ 2.156,00);
+  "João Paulo II" e "Carlos Jr." aceitos; os oito roteiros de nome da P20 seguem iguais (sete leads com
+  o nome exato; o roteiro em inglês com data em formato americano continua sem cotar, limite já
+  conhecido); as quatro sondas da P21 recusam sem valor
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -1568,7 +1587,9 @@ usou.
 
 **Congelamento da `main` para a prova.** A `main` congela quando tiver, com veredito: H, G, o juiz
 e o runner da B2, a P20 (nome do lead, frente F) e a P21 (datas sem ano, frente T), e o conjunto de
-casos fixo. Meta: 14/11 03h00. Limite: 06h00. Gatilho que já existia: 10h00 com o critério 4 não
+casos fixo. Entram também, pedidos em 14/11: a P29 (F) e a P30 (G), e a parte 2 da segunda passada da
+M2 sem achado determinístico nem de lead errado na H (a primeira rodada oficial não começa antes
+dela). Meta: 14/11 03h00. Limite: 06h00. Gatilho que já existia: 10h00 com o critério 4 não
 verde, parar e chamar o Éverton.
 
 **Estado do congelamento em 14/11 02h14.** Na `main` (6daffb1 em código, publicado em `dev`): G, T (P21), F
@@ -1591,8 +1612,9 @@ correção e não escolhe.
 **Antes da primeira rodada oficial (não conta como rodada).** Ensaio local na árvore congelada, com
 o modelo real em nível alto: o conjunto de desenvolvimento inteiro, a sonda do resumo pendente e o
 bloco de leads de novo, para ver a P20 com o modelo de verdade (nome abreviado, corrigido ou
-puxado do contexto não pode virar laço de recusa). Depois do deploy de `dev`, uma fumaça declarada
-só com `--bloco marco1`.
+puxado do contexto não pode virar laço de recusa). Depois do deploy de `dev`, primeiro a sonda de
+pós-deploy (uma pergunta de ficha a cada 4 s, dois minutos sem contingência) e só então uma fumaça
+declarada só com `--bloco marco1`.
 
 **O que conta como rodada oficial (X24, item 4).** `node evals/rodar.mjs --conjunto dev`, o conjunto
 inteiro, sem `--bloco`, contra `dev` publicado do commit congelado. O `--alvo` é o proxy de registro
