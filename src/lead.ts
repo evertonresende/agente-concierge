@@ -620,16 +620,19 @@ export async function confirmar(cofre: Cofre, turnoAtual: number, mensagem: stri
     cofre.salvar({ ...estado, pendente: { ...pendente, turno: turnoAtual }, envios: { ...estado.envios, [chave]: "registrado" } });
     return { tipo: "registrado", pendente };
   }
-  // Com certeza não registrou: a confirmação foi gasta, mas a reserva não fica bloqueada.
-  // Um novo resumo (com o dado corrigido, ou mais tarde) pode ser confirmado e enviado.
-  // Já houve recusa nesta sessão (mesma reserva ou a de antes da correção): pedir a
-  // correção de novo vira laço; a conversa passa para humano. Segunda recusa da mesma
-  // reserva: ela fica bloqueada na sessão.
+  // 2xx diferente de 201 (200, 204): pode ter entrado. Incerto, sem novo envio (P14).
+  if (resposta.status >= 200 && resposta.status < 300) {
+    marcar(cofre, chave, "incerto");
+    return { tipo: "nao_registrado", motivo: "incerto" };
+  }
+  // Com certeza não registrou. Só o 422 que aponta dado do hóspede, e na primeira recusa
+  // da sessão, pede a correção e deixa a reserva ser enviada de novo com novo resumo.
+  // Qualquer outra resposta (5xx depois da nova tentativa, 3xx, 400, 401, 404, 422 sem
+  // campo ou repetido) bloqueia a reserva na sessão e passa para humano (P14).
+  const corrigivel = resposta.status === 422 && resposta.campos.length > 0 && !recusaNaSessao;
   const estado = cofre.ler();
-  cofre.salvar({ ...estado, pendente: null, envios: { ...estado.envios, [chave]: recusadaAntes ? "recusado" : "nao_registrado" } });
-  return resposta.campos.length > 0 && !recusaNaSessao
-    ? { tipo: "campo_recusado", campos: resposta.campos }
-    : { tipo: "nao_registrado", motivo: "resposta" };
+  cofre.salvar({ ...estado, pendente: null, envios: { ...estado.envios, [chave]: corrigivel ? "nao_registrado" : "recusado" } });
+  return corrigivel ? { tipo: "campo_recusado", campos: resposta.campos } : { tipo: "nao_registrado", motivo: "resposta" };
 }
 
 /** "real" quando o webhook mora no mesmo host do catálogo (contrato seção 8); senão "falso". */
