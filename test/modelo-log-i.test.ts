@@ -49,6 +49,11 @@ describe("log de falha: código só da posição de código, nome de lista fecha
     expect((await rodar(lanca(new Error("1234, apto 502")))).falhas).toEqual(["Error"]);
   });
 
+  it.each(["502B ecoado", "1234abc", "2024Maria", "9876x5432", "1234_x"])("dígito colado em letra ou _ não é código: %s", async (mensagem) => {
+    expect((await rodar(lanca(comNome("AiGatewayError", mensagem)))).falhas).toEqual(["AiGatewayError"]);
+    expect((await rodar(lanca(new Error(`AiError: ${mensagem}`)))).falhas).toEqual(["Error"]);
+  });
+
   it("valor lançado que não é Error sai como ErroDesconhecido", async () => {
     expect((await rodar(() => { throw "AiError: 3021"; })).falhas).toEqual(["ErroDesconhecido"]);
   });
@@ -67,6 +72,7 @@ describe("log de falha: motivo da resposta inútil numa palavra", () => {
     ["fim desconhecido", { stop_reason: "pause_turn", content: [{ type: "text", text: "x" }] }, "fim_desconhecido"],
     ["fim que não bate", { stop_reason: "tool_use", content: [{ type: "text", text: "vou consultar" }] }, "fim_nao_bate"],
     ["vazia", { stop_reason: "end_turn", content: [] }, "vazia"],
+    ["erro devolvido como valor", { type: "error", error: { type: "overloaded_error" } }, "erro_como_valor"],
   ])("%s", async (_n, bruto, motivo) => {
     const { r, falhas } = await rodar(() => bruto);
     expect(r.texto).toBe("Resposta do reserva.");

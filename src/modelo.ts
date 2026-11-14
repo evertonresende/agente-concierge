@@ -297,7 +297,7 @@ const NOMES_DE_ERRO = new Set(["Error", "TypeError", "AiError", "AiGatewayError"
 function registrarFalha(modelo: string, erro: unknown): void {
   const nome = erro instanceof Error && NOMES_DE_ERRO.has(erro.name) ? erro.name : "ErroDesconhecido";
   // Erro de classe própria da plataforma traz o código no começo da mensagem ("7003: …").
-  const padrao = CLASSES_DA_PLATAFORMA.has(nome) ? /^(?:[A-Za-z]{1,40}Error: ?)?(\d{3,4})(?!\d)/ : /^[A-Za-z]{1,40}Error: ?(\d{3,4})(?!\d)/;
+  const padrao = CLASSES_DA_PLATAFORMA.has(nome) ? /^(?:[A-Za-z]{1,40}Error: ?)?(\d{3,4})\b/ : /^[A-Za-z]{1,40}Error: ?(\d{3,4})\b/;
   const codigo = (erro instanceof Error ? erro.message : "").match(padrao)?.[1];
   const motivo = erro instanceof RespostaInutil ? erro.motivo : undefined;
   console.warn(JSON.stringify({ evento: "modelo_falhou", modelo, erro: [nome, codigo, motivo].filter(Boolean).join(" ") }));
