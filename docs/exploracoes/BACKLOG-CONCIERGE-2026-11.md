@@ -1261,6 +1261,18 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   linhas em `src/agente/loop.ts`, lidas pela coordenadora). Ensaio por hash sobre a `main`, com a sonda
   da janela do verificador, em curso. **A ordem da leva 2 muda: a G entra antes da H**, porque uma não
   depende da outra e o ensaio conjunto não teve conflito
+- 14/11 00h45 · K · P25 aplicada: `previews_enabled: false` no Worker de `producao`, endereço padrão mantido,
+  `/saude` 200 nos dois endereços, `LEADS REAIS: 0`. Correção do relatório 8: não existia URL de
+  pré-visualização (Worker com Durable Object não ganha URL por versão; o endereço já dava 404 antes). O
+  motivo da P25 no `DECISOES.md` foi corrigido: é só proteção
+- 14/11 00h45 · N · cabeça 7a7146c: horas de decisão retiradas do "Como foi feito" (4 ocorrências); limpador dos
+  exports troca frase pessoal por marcador (4 frases em 2 sessões, listadas no índice); exports
+  refeitos fora do repositório: 70 sessões (os subagentes saíam em dobro), 35 para leitura humana;
+  latência, teste de clientes e P25 nos rascunhos, marcados "a confirmar no congelamento"
+- 14/11 00h45 · G · ensaio por hash de 4515061 sobre a `main`: merge limpo, 42 arquivos e 1355 testes verdes,
+  tipos e gate verdes. Sonda da janela do verificador: com resumo aberto o total não é mais cortado
+  (antes, turno 42); sem resumo aberto continua cortado no turno 41 e o agente cota de novo (limite
+  para o README). Faltam os três defeitos plantados que escapavam (P06, P07, P08), em curso
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
