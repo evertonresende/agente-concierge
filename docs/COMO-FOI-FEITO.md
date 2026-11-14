@@ -497,6 +497,9 @@ registros de sessão está em [`setup/README.md`](setup/README.md).
 - Revisões (M2): as duas passadas estão em [`revisoes/m2.md`](revisoes/m2.md). O estado
   final de cada achado na árvore 9d37f9a, com a prova, está na seção "Fechamento" do mesmo
   arquivo: nenhum achado crítico ou alto aberto.
+- Exports de sessão em [`sessoes/`](sessoes/README.md): as 12 sessões de trabalho, só com o
+  texto das mensagens e com máscaras de sigilo (X40). Ninguém leu os arquivos inteiros: o que
+  há é checagem automática, descrita no índice.
 - Custo por conversa no código final: US$ 0,0026 em média nas três rodadas oficiais (seção 8
   e [README](../README.md)).
 - Auditoria de segurança (14/11, com a entrega já no ar): uma passada rápida e parcial com a
