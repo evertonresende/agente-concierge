@@ -839,6 +839,14 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   resumo (correção no laço da G, item novo da lista dela); a rede de texto da F fica como
   está e o C5 e o C6 viram limite conhecido. Para a F ficam o C7, o C9 e os testes do C8;
   depois, conferência só do delta e a F entra na `main`
+- 13/11 23h02 · F · correções da quarta rodada entregues (c87d3a9, a9c8a8f, 9ceeeb1; cabeça 0e6a29c, 869
+  testes): marcador de envio sem resultado bloqueia a estadia como resultado incerto; aberturas
+  "uma dúvida" e "só uma pergunta" não derrubam mais a pergunta pura; testes dos defeitos
+  plantados que tinham escapado. Ensaio do merge sobre a `main`: limpo, 869 testes, tipos e
+  sigilo OK. Quarta rodada integrada (I 64f0526, F 0e6a29c, G 22455e4, B2 15cbb00): 98 de 98,
+  p50 2,1 s, p95 4,6 s, máximo 9,3 s, zero falha do modelo e zero contingência em 164 turnos
+  (vale a mesma ressalva do juiz da B2). Quinta rodada do verificador lançada, só do delta
+  (Opus 5.5, esforço alto), com ordem de procurar estadia legítima bloqueada sem falha
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
