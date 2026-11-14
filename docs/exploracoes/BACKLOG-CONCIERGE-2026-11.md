@@ -2206,6 +2206,19 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   P25 na configuração, decisões confirmadas (X33), marcador do setup, e o caminho do reservado
   quando a branch da cópia existir. Depois dela só sobra marcador de repositório público e da
   revisão da cópia da skill
+- 14/11 06h53 · reservado · **conjunto reservado NA `main` (bff888b), pela regra 8 de `docs/EVALS.md`**, pelo hash
+  c561e40 da branch `entrega-reservado`, feita por um agente no papel da frente C (Opus 5.5,
+  esforço alto). Entraram: 60 casos em 8 blocos em `evals/casos/reservado/` (8, 8, 8, 7, 7, 8, 7 e
+  7), com um `LEIA.md`; o diagnóstico em `docs/revisoes/reservado/` (auditoria, correções e vetos,
+  classificação, substitutos, os 7 originais dos casos que mudaram ou foram revelados e os
+  arquivos de fechamento); e as duas leituras finais do agregado em `evals/relatorios/`. Composição
+  declarada pelo agente: 53 idênticos aos originais, 3 com expectativa apertada, 4 substitutos,
+  nenhum afrouxado. **A coordenação não abriu os casos.** Conferiu na árvore mesclada: só essas
+  três pastas tocadas; contagem por bloco pelo `--listar`; fechamento recalculado igual ao das duas
+  leituras finais (2183265e…); `RUNNER OK`; 54 arquivos e 1565 testes, tipos e gate verdes; ensaio
+  de merge limpo. Ficaram de fora, por decisão do agente: registros de conversa, logs, scripts e
+  versões intermediárias. Com a pasta no repositório, o runner lê o conjunto dali. Fato passado à
+  N para o marcador do README
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
