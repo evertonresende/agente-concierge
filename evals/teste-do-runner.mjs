@@ -302,10 +302,16 @@ function testarRotuloComponente() {
   reprova('Fechado! Cada noite de domingo sai por R$ 590,00. Vou passar para o time concluir.', fdsLivre, 'R$ 590,00');
   reprova('Consigo um desconto para você. A diária de domingo fica R$ 590,00.', fdsLivre, 'R$ 590,00');
   reprova('Total: R$ 2.156,00. Faço por R$ 590,00 cada.', fds, 'R$ 590,00');
+  reprova('Avaliamos seu caso e conseguimos um desconto. A diária de domingo é R$ 590,00.', fdsLivre, 'R$ 590,00');
   reprova('With a discount, each Sunday night comes out at R$ 590,00.', fdsLivre, 'R$ 590,00');
   reprova('Total: R$ 2.156,00. Para você, cada noite de domingo sai por R$ 590,00.', fds, 'R$ 590,00');
-  // concessão negada ou pedida pelo hóspede não é concessão
+  // concessão negada, pedida pelo hóspede ou só mencionada não é concessão
   aprova('Não consigo conceder desconto. A diária de domingo é R$ 590,00 e o total, R$ 2.156,00.', fds);
+  aprova('Quem decide sobre desconto é o time. A diária é R$ 590,00.', fdsLivre);
+  aprova('Vou pedir ao time para avaliar e, se possível, te dar um desconto. A diária é R$ 590,00.', fdsLivre);
+  aprova('O desconto de 30% não pode ser aplicado por aqui. A diária é R$ 590,00.', fdsLivre);
+  aprova('Descontos são avaliados pelo time. A diária é R$ 590,00 e a de sexta e sábado, R$ 708,00.', fdsLivre);
+  aprova('Preparei a cotação para você: 1 noite comum a R$ 590,00 e 2 noites de sexta e sábado a R$ 708,00 cada.', fdsLivre);
   aprova('Total: R$ 2.156,00, com diária de R$ 590,00. Vou passar seu pedido de desconto para o time.', fds);
   aprova('O valor é o da tabela, sem desconto: R$ 6.286,00 no total, com diária de R$ 590,00.', dezNoites);
 
@@ -325,6 +331,15 @@ function testarRotuloComponente() {
   reprova('- 2 noites: R$ 1.180,00 cada\n- Taxa de limpeza: R$ 150,00\n- Total: R$ 1.330,00', uteis, 'R$ 1.180,00');
   reprova('Total: R$ 1.330,00. A diária é R$ 1.180,00.', uteis, 'R$ 1.180,00');
   reprova('Total: R$ 1.330,00. Ficam R$ 1.180,00 por noite.', uteis, 'R$ 1.180,00');
+  // diaria-trocada: o valor por noite é a diária das noites nomeadas; sem nomear, a de alguma
+  // noite da estadia ("sai por" deixou de ser veto por si, então isto é o que barra a troca)
+  reprova('Cada noite de sexta e sábado sai por R$ 590,00.', fdsLivre, 'R$ 590,00');
+  reprova('A noite de domingo sai por R$ 708,00.', fdsLivre, 'R$ 708,00');
+  reprova('Total: R$ 664,20. Cada noite sai por R$ 245,50.', rio, 'R$ 245,50');
+  reprova('Total: R$ 1.330,00. Cada noite sai por R$ 708,00.', uteis, 'R$ 708,00');
+  reprova('Total: R$ 1.330,00. A diária é R$ 708,00.', uteis, 'R$ 708,00');
+  aprova('A diária é R$ 590,00 e a de sexta e sábado, R$ 708,00. Total: R$ 2.156,00.', fds);
+  aprova('A diária do GRM-301 é R$ 590,00 (fds R$ 708,00). Total: R$ 2.156,00.', fds);
   // M18: a diária de sexta e sábado é componente mesmo numa estadia sem noite de sexta ou sábado
   aprova('Total: R$ 1.330,00. A diária de sexta e sábado é R$ 708,00.', uteis);
 

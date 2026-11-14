@@ -32,9 +32,11 @@ const REGEX_POR_NOITE_ANTES =
 const REGEX_UNIVERSAL_ANTES = /(?<!\p{L})(?:cada\s+(?:uma|noite|di[aá]ria)|each\s+night)(?!\p{L})/iu;
 const REGEX_UNIVERSAL_POSPOSTO = /^\s*(?:cada|each)(?!\p{L})/iu;
 
-// Diz quais noites ("de sexta e sábado", "comum", "de domingo").
-const REGEX_QUALIFICA_NOITE =
-  /(?<!\p{L})(?:sexta|s[aá]bado|domingo|segunda|ter[cç]a|quarta|quinta|comu(?:m|ns)|norma(?:l|is)|fim\s+de\s+semana|fds|[uú]te(?:l|is)|weekends?|weekdays?|friday|saturday|sunday|monday|tuesday|wednesday|thursday|regular)(?!\p{L})/iu;
+// Diz quais noites: de sexta e sábado (diária com acréscimo) ou comuns.
+const REGEX_NOITE_FDS =
+  /(?<!\p{L})(?:sexta|s[aá]bado|fim\s+de\s+semana|fds|weekends?|friday|saturday)(?!\p{L})/iu;
+const REGEX_NOITE_COMUM =
+  /(?<!\p{L})(?:domingo|segunda|ter[cç]a|quarta|quinta|comu(?:m|ns)|norma(?:l|is)|[uú]te(?:l|is)|weekdays?|sunday|monday|tuesday|wednesday|thursday|regular)(?!\p{L})/iu;
 
 // Componente nomeado logo depois do valor ("de diárias", "pelas 2 noites", "de limpeza").
 const REGEX_ROTULO_ANEXO =
@@ -56,16 +58,33 @@ const REGEX_TOTAL_DEPOIS =
 const REGEX_POSPOSTO_ANTERIOR =
   /^\s*(?:cada\s+(?:uma|noite|di[aá]ria)|cada|each(?:\s+night)?|(?:por|per|a|\/)\s*(?:noite|night)|nightly|(?:no|in)\s+total|total)(?!\p{L})/iu;
 
-// Concessão de preço. Vale na resposta inteira, exceto negada ("não consigo desconto",
-// "sem desconto") ou como pedido do hóspede ("seu pedido de desconto").
-const REGEX_CONCESSAO =
-  /(?<!\p{L})(?:descontos?|abatimento|promo[cç]\p{L}*|pre[cç]o\s+especial|condi[cç][aã]o\s+especial|valor\s+especial|ofertas?|fa[cç]o\s+por|fecho\s+por|fechamos|fechad[oa]|discounts?|special\s+(?:price|rate|deal|offer)|deal)(?!\p{L})/giu;
-// "Para você, cada uma sai por..." só conta na frase do valor.
+// Concessão de preço: a construção de conceder, não a palavra solta ("Quem decide sobre
+// desconto é o time" não concede). Vale na resposta inteira, exceto negada ("não consigo
+// dar desconto") ou como pedido do hóspede ("seu pedido de desconto").
+const ALVO_CONCESSAO = String.raw`(?:descontos?|abatimento|promo[cç]\p{L}*|pre[cç]o\s+especial|condi[cç][aã]o\s+especial|valor\s+especial|ofertas?)`;
+const REGEX_CONCESSAO = new RegExp(
+  String.raw`(?<!\p{L})(?:` +
+    // "com desconto", "já com o desconto de gerente"
+    String.raw`com\s+(?:o\s+|um\s+|uma\s+|esse\s+|este\s+|seu\s+)?(?:descontos?|abatimento|promo[cç]\p{L}*)` +
+    // "consigo um desconto", "posso te dar um preço especial", "aplicamos uma promoção"
+    String.raw`|(?:consigo|consegui\p{L}*|posso|podemos|vou|dou|damos|dar|fazer|fa[cç]o|fazemos|aplic\p{L}*|conced\p{L}*|ofere[cç]\p{L}*|libero|liberamos|temos|tenho|h[aá]|existe)\s+(?:(?:te|lhe|voc[eê]|a\s+voc[eê]|para\s+voc[eê]|dar|fazer|aplicar|oferecer|conceder|liberar)\s+)*(?:(?:um|uma|o|a|esse|este|essa|esta|de)\s+)?` +
+    ALVO_CONCESSAO +
+    // "desconto aplicado", "desconto de 10% liberado"
+    String.raw`|(?:descontos?|promo[cç]\p{L}*)\s+(?:de\s+\d+\s*%\s+)?(?:aplicad|concedid|liberad|garantid|confirmad)\p{L}*` +
+    String.raw`|pre[cç]o\s+especial|condi[cç][aã]o\s+especial|valor\s+especial` +
+    String.raw`|fa[cç]o\s+por|fecho\s+por|fechamos\s+por|fechad[oa](?=\s*[!.,])` +
+    String.raw`|with\s+(?:a\s+|the\s+|your\s+)?discount|(?:give|offer|apply|got|get)\s+(?:you\s+)?(?:a\s+)?discount|special\s+(?:price|rate|deal|offer)` +
+    String.raw`)(?!\p{L})`,
+  'giu'
+);
+// "Para você, cada uma sai por..." só conta antes do valor, na mesma frase e depois de ":".
 const REGEX_PARA_VOCE = /(?<!\p{L})(?:para|pra)\s+voc[eê](?!\p{L})/giu;
 const REGEX_NEGACAO =
   /(?<!\p{L})(?:n[aã]o|sem|nem|nenhuma?|not|without|never|cannot|can'?t|isn'?t)(?!\p{L})/iu;
-const REGEX_PEDIDO_ANTES =
-  /(?<!\p{L})(?:pedido|pedidos|pedir|pede|pediu|solicita\p{L}*|avaliar|avalia|request\p{L}*|ask\p{L}*)\s+(?:(?:de|do|da|um|uma|o|a|seu|sua|por|for|an?)\s+)*$/iu;
+// Pedido ou consulta ao time na mesma frase: "Vou pedir ao time para avaliar e, se
+// possível, te dar um desconto" não concede.
+const REGEX_PEDIDO_NA_FRASE =
+  /(?<!\p{L})(?:pedid\p{L}*|pedi(?:r|u)|pede|solicit\p{L}*|avaliar|verificar|consultar|request\p{L}*|ask\p{L}*)(?!\p{L})/iu;
 const REGEX_NEGACAO_DEPOIS = /^\s*(?:n[aã]o|is\s+not|isn'?t|not)(?!\p{L})/iu;
 
 const REGEX_CONTAGEM =
@@ -124,8 +143,10 @@ function concessaoEm(texto, regex) {
     const antes = texto.slice(0, m.index);
     let ini = antes.length;
     while (ini > 0 && !ehQuebraDeFrase(antes, ini - 1) && antes[ini - 1] !== ',') ini--;
+    let iniFrase = ini;
+    while (iniFrase > 0 && !ehQuebraDeFrase(antes, iniFrase - 1)) iniFrase--;
     const clausulaAntes = antes.slice(ini).split(/(?<!\p{L})(?:mas|por[eé]m|but|however)(?!\p{L})/iu).pop();
-    if (REGEX_NEGACAO.test(clausulaAntes) || REGEX_PEDIDO_ANTES.test(antes)) continue;
+    if (REGEX_NEGACAO.test(clausulaAntes) || REGEX_PEDIDO_NA_FRASE.test(antes.slice(iniFrase))) continue;
     if (REGEX_NEGACAO_DEPOIS.test(texto.slice(m.index + m[0].length))) continue;
     return true;
   }
@@ -154,28 +175,34 @@ function cabeNaContagem(perfil, centavos, n, porNoite) {
 }
 
 /**
+ * Diz por que um valor que coincide com um componente da estadia NÃO está apresentado como
+ * componente, ou `null` quando está.
+ *
  * @param {string} texto resposta inteira
  * @param {{ texto: string, centavos: number, indice: number }} valor
  * @param {Array<{ diaria: number, diariaFds: number, limpeza: number, noitesNormais: number|null, noitesFds: number|null }>} perfis
  *   uma entrada por estadia esperada; `noites*` nulos quando só o imóvel é conhecido (sem_total)
  * @param {{ concede?: boolean }} [contexto] resultado de `respostaConcedePreco(texto)`, para não recalcular
+ * @returns {string|null}
  */
-export function componenteIdentificado(texto, valor, perfis, contexto = {}) {
+export function motivoNaoComponente(texto, valor, perfis, contexto = {}) {
   const concede = contexto.concede ?? respostaConcedePreco(texto);
-  if (concede) return false;
+  if (concede) return 'a resposta concede preço (desconto, preço especial, "faço por")';
 
   const tam = valor.texto.length;
   const clausula = limitesAoRedor(texto, valor.indice, tam, true);
   const frase = limitesAoRedor(texto, valor.indice, tam, false);
-  if (concessaoEm(texto.slice(frase.ini, frase.fim), REGEX_PARA_VOCE)) return false;
+  const antesNaFrase = cortarAposValorAnterior(texto.slice(frase.ini, valor.indice));
+  if (concessaoEm(antesNaFrase.slice(antesNaFrase.lastIndexOf(':') + 1), REGEX_PARA_VOCE)) {
+    return 'oferecido "para você"';
+  }
 
   // Rótulo: na cláusula do valor; se antes dele, depois da vírgula, só vem conector
   // ("2 noites, de R$ 590,00 cada"), vale a cláusula anterior da mesma frase.
   const antesCurto = cortarAposValorAnterior(texto.slice(clausula.ini, valor.indice));
-  const antes = REGEX_SO_CONECTOR.test(antesCurto)
-    ? cortarAposValorAnterior(texto.slice(frase.ini, valor.indice))
-    : antesCurto;
-  const depois = ateProximoValor(texto.slice(valor.indice + tam, clausula.fim));
+  const antes = REGEX_SO_CONECTOR.test(antesCurto) ? antesNaFrase : antesCurto;
+  const restoDaClausula = texto.slice(valor.indice + tam, clausula.fim);
+  const depois = ateProximoValor(restoDaClausula);
   const restoDaFrase = texto.slice(valor.indice + tam, frase.fim);
   const depoisNaFrase = ateProximoValor(restoDaFrase);
   const totalDepois =
@@ -184,35 +211,61 @@ export function componenteIdentificado(texto, valor, perfis, contexto = {}) {
 
   const porNoite = REGEX_POR_NOITE_POSPOSTO.test(depois) || REGEX_POR_NOITE_ANTES.test(antes);
   const anexo = REGEX_ROTULO_ANEXO.test(depois);
-  if (!porNoite && !anexo && !REGEX_TERMO_COMPONENTE.test(`${antes} ${depois}`)) return false;
+  if (!porNoite && !anexo && !REGEX_TERMO_COMPONENTE.test(`${antes} ${depois}`)) return 'sem rótulo';
 
-  const ehDiaria = (p) => valor.centavos === p.diaria || valor.centavos === p.diariaFds;
+  // Diária certa para as noites nomeadas: "de sexta e sábado" pede a diária com acréscimo,
+  // "comum"/"de domingo" a diária comum; nomeando as duas, qualquer uma.
+  // O tipo de noite vem antes do valor. Depois dele só vale o que é do próprio valor: até o
+  // primeiro " e " e sem outro valor na cláusula ("A diária é R$ 590,00 e a de sexta e
+  // sábado, R$ 708,00" e "R$ 590,00 (fds R$ 708,00)" nomeiam o valor seguinte).
+  const depoisProprio = depois === restoDaClausula ? depois.split(/\s(?:e|and|mas|but)\s/iu)[0] : '';
+  const nomeiaAntes = REGEX_NOITE_FDS.test(antes) || REGEX_NOITE_COMUM.test(antes);
+  const trechoTipo = nomeiaAntes ? antes : depoisProprio;
+  const nomeiaFds = REGEX_NOITE_FDS.test(trechoTipo);
+  const nomeiaComum = REGEX_NOITE_COMUM.test(trechoTipo);
+  const conhecidas = perfis.filter((p) => p.noitesNormais !== null);
+  const diariaCabe = (p) => {
+    if (nomeiaFds && !nomeiaComum) return valor.centavos === p.diariaFds;
+    if (nomeiaComum && !nomeiaFds) return valor.centavos === p.diaria;
+    if (nomeiaFds && nomeiaComum) return valor.centavos === p.diaria || valor.centavos === p.diariaFds;
+    // Sem dizer quais noites: a diária de alguma noite da estadia (ou do imóvel, em sem_total).
+    if (p.noitesNormais === null) return valor.centavos === p.diaria || valor.centavos === p.diariaFds;
+    return (valor.centavos === p.diaria && p.noitesNormais > 0) || (valor.centavos === p.diariaFds && p.noitesFds > 0);
+  };
+  const ehDiaria = perfis.some((p) => valor.centavos === p.diaria || valor.centavos === p.diariaFds);
 
-  // Valor dito por noite tem de ser uma diária.
-  if (porNoite && !perfis.some(ehDiaria)) return false;
+  // Valor dito por noite tem de ser a diária dessas noites.
+  if (porNoite && !perfis.some(diariaCabe)) return 'dito por noite, mas não é a diária dessas noites';
+  // Valor igual a uma diária e rotulado com o tipo de noite tem de ser a diária desse tipo
+  // ("A noite de domingo sai por R$ 708,00" é a diária de sexta e sábado).
+  if (!porNoite && ehDiaria && (nomeiaFds || nomeiaComum) && !perfis.some(diariaCabe)) {
+    return 'não é a diária das noites nomeadas';
+  }
 
   // Valor com "total" ao lado é total, e o total certo é conferido à parte. Só cede quando o
   // próprio valor vem nomeado como componente ("No total, R$ 1.180,00 de diárias") ou é uma
   // diária dita por noite, já conferida acima ("No total são 2 noites, de R$ 590,00 cada").
-  if ((REGEX_TOTAL_ANTES.test(antes) || totalDepois) && !anexo && !porNoite) return false;
+  if ((REGEX_TOTAL_ANTES.test(antes) || totalDepois) && !anexo && !porNoite) return 'apresentado como total';
 
-  const conhecidas = perfis.filter((p) => p.noitesNormais !== null);
-  if (conhecidas.length === 0) return true;
+  if (conhecidas.length === 0) return null;
 
   // Contagem de noites ao lado do valor ("2 noites, de R$ 590,00 cada", "pelas 2 noites").
   const n = ultimaContagem(antes) ?? (anexo ? ultimaContagem(depois) : null);
-  if (n !== null && !conhecidas.some((p) => cabeNaContagem(p, valor.centavos, n, porNoite))) return false;
+  if (n !== null && !conhecidas.some((p) => cabeNaContagem(p, valor.centavos, n, porNoite))) {
+    return `não corresponde a ${n} noite(s) da estadia`;
+  }
 
   // "Cada noite sai por R$ 590,00" numa estadia com noites comuns e de sexta e sábado.
   const universal = REGEX_UNIVERSAL_ANTES.test(antes) || REGEX_UNIVERSAL_POSPOSTO.test(depois);
   if (
     universal &&
     n === null &&
-    !REGEX_QUALIFICA_NOITE.test(`${antes} ${depois}`) &&
+    !nomeiaFds &&
+    !nomeiaComum &&
     conhecidas.every((p) => p.noitesNormais > 0 && p.noitesFds > 0)
   ) {
-    return false;
+    return '"cada noite" sem dizer quais, numa estadia com diárias diferentes';
   }
 
-  return true;
+  return null;
 }

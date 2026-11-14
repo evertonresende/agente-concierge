@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { componenteIdentificado, respostaConcedePreco } from './rotulo-componente.mjs';
+import { motivoNaoComponente, respostaConcedePreco } from './rotulo-componente.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TARIFAS = JSON.parse(
@@ -434,8 +434,9 @@ export function julgarPrecoResposta(texto, estadiasInput, opcoes = {}) {
   for (const v of encontrados) {
     if (totaisOuTolerados.has(v.centavos)) continue;
     if (componentesPermitidos.has(v.centavos)) {
-      if (!componenteIdentificado(texto, v, perfis, contexto)) {
-        erros.push(`Valor "${v.texto}" aparece sem rótulo de componente (diária/taxa)`);
+      const motivo = motivoNaoComponente(texto, v, perfis, contexto);
+      if (motivo) {
+        erros.push(`Valor "${v.texto}" aparece sem rótulo de componente (diária/taxa): ${motivo}`);
       }
       continue;
     }
@@ -491,8 +492,9 @@ export function julgarSemTotal(texto, imovelId = null, valoresTolerados = []) {
   for (const v of valores) {
     if (tolerados.has(v.centavos)) continue;
     if (componentes.has(v.centavos)) {
-      if (!componenteIdentificado(texto, v, perfis, contexto)) {
-        erros.push(`não deveria citar valor em R$ sem rótulo de componente (${v.texto})`);
+      const motivo = motivoNaoComponente(texto, v, perfis, contexto);
+      if (motivo) {
+        erros.push(`não deveria citar valor em R$ sem rótulo de componente (${v.texto}): ${motivo}`);
       }
       continue;
     }
