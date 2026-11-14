@@ -57,10 +57,8 @@ cabeçalhos `x-uso-entrada`, `x-uso-saida` e `x-chamadas-modelo`, usados para me
   máximo 2 buscas por comodidade por turno. As que passam do teto voltam ao modelo como
   erro, sem executar.
 
-  > Estado deste rascunho: a `main` tem todas as frentes de produto (G com a P30, T, F com
-  > a P20 e a P29, H, B2, K e S). Falta uma correção da G no caminho do lead quando o teto
-  > corta uma chamada do mesmo lote da confirmação; está em verificação: a preencher.
-  > <!-- PREENCHER: conferir depois da correção R1 da G entrar na main -->
+  > Estado deste rascunho: a `main` tem todas as frentes de produto, verificadas (G com a
+  > P30 e a correção do teto no caminho do lead, T, F com a P20 e a P29, H, B2, K e S).
 - **Modelo.** Decidido pelo Éverton por medição (`DECISOES.md` X24 e X30;
   [`docs/revisoes/modelos.md`](docs/revisoes/modelos.md)). Principal: Claude Haiku 5.5, com
   o raciocínio em nível alto, direto do provedor pelo AI Gateway. Reserva: GLM-5.3 Flash,
@@ -201,7 +199,17 @@ Fumaças em `dev`, que não contam como rodada: com G, T e F publicadas, bloco `
 respondeu 32 de 32 perguntas de ficha em dois minutos, sem contingência, e o `marco1` deu
 100%.
 
-Notas por bloco e do reservado: a preencher.
+Conjunto reservado: as duas primeiras leituras do agregado em `dev`, na árvore b5af852,
+deram 83% e 80%, abaixo do limiar de 90%. Ficam registradas como estão. A telemetria do
+Worker nas duas janelas não tem contingência nem falha do catálogo. A regra para o que vem
+depois foi escrita antes de alguém ver quais casos falharam (P33): a conferência dos casos
+contra o contrato cobre todos os casos, uma expectativa só muda com a cláusula ou a decisão
+citada, há uma passada única de correção com um segundo revisor com veto, e o número final é
+a soma de duas leituras seguidas na árvore congelada. Se a soma ficar abaixo de 90%, o
+número vai ao Éverton como está. Casos corrigidos, por quê, e o número depois: a preencher.
+<!-- PREENCHER: reservado, casos corrigidos e motivo, soma das duas leituras finais (P33) -->
+
+Notas por bloco das rodadas oficiais: a preencher.
 <!-- PREENCHER: nota dos evals por bloco (três rodadas em dev) e agregado do conjunto reservado -->
 
 A história da escolha do modelo, com a tabela de medições, está em
@@ -354,19 +362,23 @@ verificadores das frentes, no log do backlog.
     de novo.
 44. **Catálogo instável.** A nova tentativa dobra o pior turno: 168 pedidos ao catálogo na
     sonda, contra 84 com ele saudável.
+45. **Teto e confirmação no mesmo turno.** Quando o teto corta um `cotar` ou um
+    `montar_resumo` no turno em que o hóspede confirma, a confirmação daquele turno não
+    roda, mesmo que a chamada cortada não mudasse a reserva. O hóspede confirma de novo no
+    turno seguinte. Fica do lado seguro.
 
 **Segunda passada da revisão de segurança**
 
-45. **Valor sem marca de moeda** escrito pelo modelo ("consigo deixar o total em 1500")
+46. **Valor sem marca de moeda** escrito pelo modelo ("consigo deixar o total em 1500")
     chega ao hóspede sem corte (S2-2).
-46. **Mensagem do hóspede na pergunta fechada.** Entra crua; o ganho máximo é manter o
+47. **Mensagem do hóspede na pergunta fechada.** Entra crua; o ganho máximo é manter o
     próprio resumo (S2-4).
-47. **Nome de imóvel de ficha hostil** vai para o resumo (S2-5).
-48. **Repetição das instruções.** A trava deixa passar tradução e frase curta (S2-7).
+48. **Nome de imóvel de ficha hostil** vai para o resumo (S2-5).
+49. **Repetição das instruções.** A trava deixa passar tradução e frase curta (S2-7).
 
 **Catálogo**
 
-49. **Catálogo fora do ar.** O hóspede recebe a contingência com `handoff`, e a sessão fica
+50. **Catálogo fora do ar.** O hóspede recebe a contingência com `handoff`, e a sessão fica
     em `handoff`. Visto uma vez em `dev`, em 14/11, por 95 segundos (25 turnos); a causa não
     foi determinada (P32).
 
