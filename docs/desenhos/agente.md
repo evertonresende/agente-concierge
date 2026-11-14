@@ -2,10 +2,10 @@
 
 Um agente só. Requisitos em [`docs/CONTRATO.md`](../CONTRATO.md); decisões citadas (L, P,
 X) em [`DECISOES.md`](../../DECISOES.md). Os desenhos descrevem o código da integração da
-leva 2. As frentes F, G, I e T estão na `main`, verificadas; a H ainda não: o limite de
-corpo de 64 KB (P12) e a reapresentação do resumo depois de resposta fora do turno (P24)
-são desenho, não garantia, até ela entrar. Conferir contra a `main` final: a preencher.
-<!-- PREENCHER: conferir os desenhos contra a main depois da entrada da H -->
+leva 2. As frentes F, G, H, I e T estão na `main`; falta uma correção da G no caminho do
+lead quando o teto de chamadas corta parte do lote. Conferir contra a `main` final: a
+preencher.
+<!-- PREENCHER: conferir os desenhos contra a main depois da correção R1 da G -->
 
 ## 1. Um turno: do pedido à resposta
 
@@ -13,7 +13,7 @@ Texto alternativo: o hóspede manda `session_id` e `message` ao Worker. O Worker
 corpo e entrega a mensagem ao Durable Object daquela sessão, que a põe numa fila de uma
 mensagem por vez. O laço chama o modelo (o principal e, se ele falhar ou recusar por
 limite, o reserva). Se o modelo pede ferramentas, o código confere a chamada, executa,
-grava o resultado e volta ao modelo, até 6 voltas. Quando o modelo responde em texto, o
+grava o resultado e volta ao modelo, até 6 voltas e com teto de chamadas (P30). Quando o modelo responde em texto, o
 código confere o texto, pede uma correção se achar problema, retira o que não pode
 chegar ao hóspede e acrescenta o total e o pedido de confirmação gerados por código. A
 sessão grava histórico e estado e o Worker devolve `reply` e `handoff`. Qualquer falha
@@ -27,14 +27,14 @@ flowchart TB
   H["Hóspede, página de chat<br/>ou bateria do avaliador"]
 
   subgraph W["Worker"]
-    V["POST /chat · valida o corpo<br/>acha a sessão pelo session_id<br/>JSON inválido ou campo faltando: 400<br/>mensagem vazia ou longa: 200 com texto fixo<br/>corpo acima de 64 KB: idem (com a H)"]
+    V["POST /chat · valida o corpo<br/>acha a sessão pelo session_id<br/>JSON inválido ou campo faltando: 400<br/>mensagem vazia ou longa: 200 com texto fixo<br/>corpo acima de 64 KB: idem"]
   end
 
   subgraph DO["Durable Object: um por session_id"]
     direction TB
     F["Fila em memória<br/>uma mensagem por vez, na ordem de chegada"]
     J{"Sim repetido logo depois<br/>de um registro?"}
-    L["Laço de ferramentas<br/>até 6 voltas, 45 s de trabalho externo"]
+    L["Laço de ferramentas<br/>até 6 voltas, 45 s de trabalho externo<br/>até 16 chamadas por resposta, 32 por turno (P30)"]
     C{"O modelo pediu<br/>ferramentas?"}
     B["Conferência da chamada<br/>imóvel não escolhido (L21)<br/>grupo menor que o cotado (L13a)<br/>sinal de desconto: chamada focada (P17)"]
     X["Conferência do texto<br/>valor sem ferramenta, concessão,<br/>registro sem 201, disponibilidade"]
