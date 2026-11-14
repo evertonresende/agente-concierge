@@ -63,6 +63,7 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 | K | agente-concierge | Produção com o envio real desligado | M2 | alta | 1,5 | thread T3 · Opus 5.5, esforço alto (X23) | gateway de `producao` criado e com o log desligado; `scripts/validar-producao.sh` na branch (33c8316), reprovado pelo verificador por um falso verde com argumentos extras, em correção; primeiro deploy autorizado em 14/11 00h07 (X26), só no endereço padrão do Worker e com o envio real desligado; a rota no hostname próprio segue à espera do Éverton. Rodando desde 13/11 23h14, adiantada pela X24: só a infraestrutura de `producao` com o envio real desligado; o deploy final espera a M2 | `frente-k` |
 | N | agente-concierge | Entregáveis de processo | K | alta | 2 | thread T3 · Opus 5.5, esforço alto (X23) | rascunho completo na branch (ede0c12), sem achado de sigilo; reprovado por uma garantia dada como certa antes da hora, em correção; verificação final no fim da leva 2. Aberta em 13/11 23h14, adiantada pela X24: rascunhos do README, do "Como foi feito", dos desenhos e do setup, com marcador no que se preenche no fim | `frente-n` |
 | S | agente-concierge | Gate de sigilo: achados da M2 | M2, primeira passada | alta | 0,5 | subagente em worktree · Opus 5.5, esforço alto (X23) | rodando desde 13/11 23h46: conteúdo do histórico, saída sem trecho do termo, sufixo composto e teste do gate; verificador antes do merge | `frente-gate` |
+| T | agente-concierge | Datas sem ano (P21) | G | alta | 0,5 | subagente em worktree · Opus 5.5, esforço alto (X23) | rodando desde 14/11 00h13: saída sem ano a mais de 90 noites da entrada não cota; por cima da branch da G; verificador antes do merge | `frente-datas` |
 | — | — | Correções entre leva 2 e 3 | evals | alta | 1,5 | frente dona do arquivo | — | — |
 
 Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `bloqueada` ·
@@ -1135,6 +1136,19 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   trabalha por cima; a F está autorizada a mudar só a mensagem do hóspede simulado nos testes das
   outras frentes, em commit próprio e neutro (verde sem a regra), e a regra entra no commit seguinte.
   As sondas antigas dos verificadores usam o nome só no argumento e precisam do nome na mensagem
+- 14/11 00h13 · Éverton · X27: enquanto ele não responde, a coordenadora segue a própria recomendação e marca
+  como provisória. Rota de `producao` (P22): rota do Worker no hostname exato, pela API, só depois da
+  validação no endereço padrão; `/saude` com 200 ou a rota é apagada; nada no DNS. Datas sem ano
+  (P21): saída sem ano a mais de 90 noites da entrada não cota, o agente pede as datas de novo.
+  Continuam só com ele: Bot Fight Mode e regra de integridade, limite de gasto, exports, nomes dos
+  modelos e ligar o envio real
+- 14/11 00h13 · K · rota (P22) pedida como passo seguinte ao primeiro deploy, com as condições do Éverton e
+  mais duas: listar antes as rotas da zona e conferir que um novo deploy não apaga a rota criada
+  pela API
+- 14/11 00h13 · T · frente nova para a P21 (datas sem ano), subagente em worktree, branch `frente-datas`, por
+  cima da `origin/frente-g` (a G mexe nos mesmos arquivos e entra antes). Arquivos: `src/nucleo/datas.ts`,
+  `src/agente/ferramentas/pedido.ts` e um teste novo. Verificador antes do merge. Falta um caso de
+  eval para esse caminho, a pedir à B2 depois do veredito do juiz
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -1180,7 +1194,7 @@ mexer na configuração.
 | `src/env.ts` | A | I, que roda junto com a leva 2; outra frente pede à coordenadora | — |
 | `test/apoio.ts` | A | congelado: ninguém altera; apoio novo vai em `test/apoio-<frente>.ts` da própria frente | — |
 | `src/nucleo/dinheiro.ts`, `src/nucleo/preco.ts` | A | — | — |
-| `src/nucleo/datas.ts` | A | E (exceção: a G acrescenta `dataComDia(data, idioma)`, sem tocar no resto) | — |
+| `src/nucleo/datas.ts` | A | E (exceção: a G acrescenta `dataComDia(data, idioma)`, sem tocar no resto) | T (P21: só `resolverSaida` e o que ela usa; em `pedido.ts`, só a recusa nova) |
 | `src/nucleo/telefone.ts`, `src/nucleo/idioma.ts` (detector único de idioma: `idiomaDoHospede(textos): "pt" \| "en"`; G importa) | — | F | — |
 | `src/pagina.ts` | A (mínima) | J (passo 2) | — |
 | `docs/desenhos/pagina-canvas.html` | J (passo 1) | — | — |
