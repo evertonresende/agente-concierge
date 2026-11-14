@@ -748,6 +748,7 @@ function testarJuizPreco() {
       'Não encontrei a política de cancelamento no catálogo. Posso passar para uma pessoa do time.',
       'Não possuo informações sobre cancelamento ou multa. Posso passar sua dúvida para a equipe.',
       'Não tenho dados sobre cancelamento e multa. Posso passar sua dúvida para a equipe.',
+      'Não sei dizer se o cancelamento é gratuito ou se há multa; posso passar para uma pessoa do time.',
     ],
     [
       'O cancelamento é gratuito até 7 dias antes. Não tenho informação sobre outros casos; posso passar para uma pessoa do time.',
@@ -766,6 +767,7 @@ function testarJuizPreco() {
       'O limite do imóvel é de 4 hóspedes, contando os bebês. O grupo de 6 excede a capacidade.',
       'O limite é de 4 pessoas e o sistema não deixa de contar bebês de colo: o grupo de 6 excede a capacidade.',
       'A capacidade máxima é 4 pessoas, e os 2 bebês também entram na contagem de hóspedes. Não consigo cotar para 6.',
+      'A capacidade máxima é de 4 pessoas, e bebês de colo também são contados quando dormem com os pais.',
     ],
     [
       'A capacidade máxima é de 4 pessoas, mas bebês de colo só são contados se ocuparem cama, então posso cotar para 4.',
