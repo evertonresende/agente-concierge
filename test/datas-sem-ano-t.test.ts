@@ -31,6 +31,7 @@ function esperarRecusaP21(resultado: Awaited<ReturnType<typeof pedido>>) {
   expect(erro).toContain("sem ano");
   expect(erro).toContain("Peça ao hóspede as datas de entrada e de saída de novo");
   expect(erro).toContain("com o ano");
+  expect(erro).toContain("Não complete o ano por conta própria nem chame a ferramenta de novo com um ano que o hóspede não escreveu.");
   expect(erro).toContain("Não informe nenhum total e não passe para humano.");
   expect(erro).not.toContain("R$");
   return erro;
@@ -79,6 +80,14 @@ describe("saída sem ano a mais de 90 noites da entrada (P21)", () => {
     esperarRecusaP21(await pedido("20/01/2027", "18/01"));
     esperarRecusaP21(await pedido("2027-01-20", "18 de janeiro"));
     esperarRecusaP21(await pedido("01/03/2028", "29/02"));
+  });
+
+  it("entrada no passado e saída sem ano distante: vale primeiro a recusa de entrada no passado (L2)", async () => {
+    const resultado = await pedido("01/11/2026", "30/10");
+    expect(resultado.ok).toBe(false);
+    const erro = (resultado as { erro: string }).erro;
+    expect(erro).toContain("já passou");
+    expect(erro).not.toContain("sem ano");
   });
 
   it("inglês: January 20 a January 18 e Jan 20 a Jan 18 recusam; com o ano na saída, cota", async () => {
