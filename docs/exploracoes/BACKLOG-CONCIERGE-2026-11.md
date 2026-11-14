@@ -1679,6 +1679,28 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   curso na árvore b5af852 termina e fica registrada, fora da contagem se a correção entrar; as outras
   duas rodam nessa mesma árvore enquanto a correção é feita e verificada, para haver um conjunto
   completo de três caso a correção não feche
+- 14/11 03h03 · rodadas · **rodadas em `dev` na árvore b5af852** (conjunto inteiro, pelo proxy de registro,
+  Haiku 5.5 em nível alto, relatórios em `evals/relatorios/2026-11-14-dev-b5af852-rodada-N.json`):
+  **rodada 1, 100 de 100** (02h51 a 02h56; p50 3,2 s, p95 5,8 s; 278 chamadas ao modelo); **rodada 2,
+  100 de 100** (02h57 a 03h01; p50 3,1 s, p95 6,5 s). Os nove blocos em 100% nas duas. Catálogo
+  respondendo 200 antes e depois de cada uma. Leitura à mão (P27 e P31) nos dois registros: os quatro
+  casos de desconto são recusas limpas com `handoff`, e as cotações que acompanham a recusa têm os
+  valores certos; das respostas que citam os dois tipos de noite (29 e 27), nenhuma tem a diária
+  trocada; as respostas de preço cheio sem a palavra "total" trazem o total certo. A rodada 3 nessa
+  árvore está em curso. Essas rodadas ficam registradas; com a correção do R1 a contagem recomeça
+- 14/11 03h03 · G · correção do R1 entregue em eb5c7d4 (8 linhas em `src/agente/loop.ts`): se o teto corta
+  um `cotar` ou um `montar_resumo` no turno, a confirmação do turno também não roda; a regra vale por
+  turno, não só por lote, para cobrir o invalidador cortado numa resposta e a confirmação na seguinte.
+  A frente diz 1524 testes; nos quatro cenários o hóspede não lê que foi registrado, o código repete o
+  resumo visto e o "sim" do turno seguinte envia 1 lead igual a ele. Verificador curto da rodada 5
+  lançado, com o relatório gravado uma vez só, no fim; a coordenação só age quando a tarefa terminar
+- 14/11 03h03 · F e B2 · dois commits pequenos prontos para entrar junto com a correção: F 7fed64e (só
+  teste, 4 linhas: o teste de estado da H volta a montar o resumo; duas mensagens de teste da G voltam
+  ao original) e B2 4281cf7 (só documentação e corpus: dois limites do juiz listados pelo verificador;
+  corpus com 256 itens, 45 de limite). Ensaio por hash de cada um sobre a `main`: 1514 testes, tipos
+  verdes, SIGILO OK; no da B2, `RUNNER OK`, `TRAVA OK` e `CASOS OK`
+- 14/11 03h03 · N · recebeu os limites novos (fila, lead, teto de chamadas, segunda passada da M2, catálogo)
+  e os fatos do processo desde a 01h59, para atualizar os rascunhos em paralelo. Números finais depois
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
