@@ -63,7 +63,7 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 | K | agente-concierge | Produção com o envio real desligado | M2 | alta | 1,5 | thread T3 · Opus 5.5, esforço alto (X23) | gateway de `producao` criado e com o log desligado; `scripts/validar-producao.sh` na branch (33c8316), reprovado pelo verificador por um falso verde com argumentos extras, em correção; `producao` no ar no endereço padrão (3e053cb) e no hostname próprio por rota (P22), envio desligado, zero lead; faltam o teste por agente de usuário, a latência, o limite de taxa e o deploy final. Primeiro deploy autorizado em 14/11 00h07 (X26), só no endereço padrão do Worker e com o envio real desligado; a rota no hostname próprio segue à espera do Éverton. Rodando desde 13/11 23h14, adiantada pela X24: só a infraestrutura de `producao` com o envio real desligado; o deploy final espera a M2 | `frente-k` |
 | N | agente-concierge | Entregáveis de processo | K | alta | 2 | thread T3 · Opus 5.5, esforço alto (X23) | rascunho completo na branch (ede0c12), sem achado de sigilo; reprovado por uma garantia dada como certa antes da hora, em correção; verificação final no fim da leva 2. Aberta em 13/11 23h14, adiantada pela X24: rascunhos do README, do "Como foi feito", dos desenhos e do setup, com marcador no que se preenche no fim | `frente-n` |
 | S | agente-concierge | Gate de sigilo: achados da M2 | M2, primeira passada | alta | 0,5 | subagente em worktree · Opus 5.5, esforço alto (X23) | rodando desde 13/11 23h46: conteúdo do histórico, saída sem trecho do termo, sufixo composto e teste do gate; verificador antes do merge | `frente-gate` |
-| T | agente-concierge | Datas sem ano (P21) | G | alta | 0,5 | subagente em worktree · Opus 5.5, esforço alto (X23) | rodando desde 14/11 00h13: saída sem ano a mais de 90 noites da entrada não cota; por cima da branch da G; verificador antes do merge | `frente-datas` |
+| T | agente-concierge | Datas sem ano (P21) | G | alta | 0,5 | subagente em worktree · Opus 5.5, esforço alto (X23) | pronta na branch (e53e777, por cima da G em da64da4) em 14/11 00h24; verificador do delta rodando; entra na `main` depois da G | `frente-datas` |
 | — | — | Correções entre leva 2 e 3 | evals | alta | 1,5 | frente dona do arquivo | — | — |
 
 Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `bloqueada` ·
@@ -1187,6 +1187,13 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
 - 14/11 00h22 · N · tarefa nova: exportar todas as sessões para `~/.cache/agente-concierge/sessoes/`, com índice,
   fechando os três furos do limpador, gate numa worktree descartável e marca de leitura humana nas
   sessões com risco de trecho do enunciado. Sem commit
+- 14/11 00h24 · T · P21 pronta na `frente-datas` (e53e777, por cima da G em da64da4): saída sem ano a mais de
+  90 noites da entrada é recusada em `prepararPedido`, sem total e sem handoff, pelas duas
+  ferramentas; `resolverSaida` não mudou. A frente relata 1364 testes e nenhum teste existente
+  alterado. Verificador independente rodando, só o delta `da64da4..e53e777`. Lacunas que a frente
+  apontou: entrada sem ano com saída com ano continua cotando a estadia longa (fora da regra); o
+  modelo real pode chamar a cotação de novo pondo o ano por conta própria, a conferir no ensaio local
+  com o modelo real e num caso de eval novo
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
