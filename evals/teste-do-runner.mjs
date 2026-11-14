@@ -315,6 +315,63 @@ async function testarTrava() {
       fs.rmSync(tmpM3Dir, { recursive: true, force: true });
     }
 
+    // 8. M4: leads_ate_agora dentro de turno paralelo é conferido depois do Promise.all.
+    // Sonda do revisor: o agente grava um lead assim que recebe o telefone (antecipado).
+    const leadsM4 = [];
+    const webhookM4 = await iniciarServidorMock((req, res) => {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ leads: leadsM4 }));
+    });
+    const agenteM4 = await iniciarServidorMock(async (req, res) => {
+      if (req.method === 'GET' && req.url === '/saude') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, ambiente: 'dev', leads_destino: 'falso', envio_leads: 'ligado' }));
+        return;
+      }
+      const { message } = JSON.parse(await lerCorpo(req));
+      const tel = /\(\d{2}\) \d{5}-\d{4}/.exec(message);
+      if (tel) leadsM4.push({ nome: 'x', telefone: tel[0], imovel_id: 'GRM-301', checkin: '2027-01-15', checkout: '2027-01-18', hospedes: 2, valor_total: 2156 });
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ reply: 'Certo.', handoff: false }));
+    });
+    const tmpM4Dir = fs.mkdtempSync(path.join(os.tmpdir(), 'trava-m4-'));
+    try {
+      const bM4 = path.join(tmpM4Dir, 'sonda-m4');
+      fs.mkdirSync(bM4, { recursive: true });
+      const casoParalelo = (leadsAteAgora) => ({
+        id: 'm4-paralelo-leads',
+        bloco: 'sonda-m4',
+        confirma: false,
+        turnos: [
+          {
+            paralelo: [
+              { mensagem: 'Sou {{nome}}, telefone {{telefone}}.', espera: { handoff: false, leads_ate_agora: leadsAteAgora } },
+              { mensagem: 'Qual a capacidade do GRM-301?', espera: { handoff: false, leads_ate_agora: leadsAteAgora } },
+            ],
+          },
+        ],
+      });
+      fs.writeFileSync(path.join(bM4, 'paralelo.json'), JSON.stringify(casoParalelo(0)));
+      const rM4 = await rodarCli(['--alvo', agenteM4.url, '--conjunto', 'reservado', '--sem-relatorio'], {
+        LEADS_URL_DEV: `${webhookM4.url}/leads/teste`,
+        RESERVADO_DIR: tmpM4Dir,
+      });
+      assert.equal(rM4.code, 1, `M4: lead antecipado num turno paralelo com leads_ate_agora 0 deve reprovar: ${rM4.stdout}`);
+      assert.match(rM4.stdout, /RESERVADO REPROVADO/);
+
+      // Com o número certo declarado (1 lead), o mesmo turno paralelo passa
+      fs.writeFileSync(path.join(bM4, 'paralelo.json'), JSON.stringify(casoParalelo(1)));
+      const rM4Ok = await rodarCli(['--alvo', agenteM4.url, '--conjunto', 'reservado', '--sem-relatorio'], {
+        LEADS_URL_DEV: `${webhookM4.url}/leads/teste`,
+        RESERVADO_DIR: tmpM4Dir,
+      });
+      assert.equal(rM4Ok.code, 0, `M4: leads_ate_agora 1 com 1 lead deve passar: ${rM4Ok.stdout}${rM4Ok.stderr}`);
+    } finally {
+      fs.rmSync(tmpM4Dir, { recursive: true, force: true });
+      await webhookM4.fechar();
+      await agenteM4.fechar();
+    }
+
     console.log('TRAVA OK');
   } finally {
     fs.rmSync(tmpRel, { force: true });

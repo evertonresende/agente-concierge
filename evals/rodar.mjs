@@ -1035,6 +1035,20 @@ async function executarCaso({ caso, indice, args, ehDev, leadsUrlDev, runId, tel
     });
   };
 
+  // Confere no webhook falso a quantidade de leads do telefone do caso logo após um turno.
+  const conferirLeadsAteAgora = async (esperado, rotulo) => {
+    if (esperado === undefined || !ehDev || !leadsUrlDev) return;
+    try {
+      const leadsAgora = await buscarLeadsPorTelefones(leadsUrlDev, conjuntoDigitos);
+      if (leadsAgora.length !== esperado) {
+        falhas.push(`${rotulo}: leads_ate_agora=${leadsAgora.length}, esperado=${esperado}`);
+        if (leadsAgora.length > esperado) violacaoLead = true;
+      }
+    } catch (err) {
+      falhas.push(`${rotulo}: ${err.message}`);
+    }
+  };
+
   let modoLigado = false;
   const modoCaso =
     caso.webhook_modo && typeof caso.webhook_modo === 'object' ? caso.webhook_modo : null;
@@ -1107,6 +1121,14 @@ async function executarCaso({ caso, indice, args, ehDev, leadsUrlDev, runId, tel
             Boolean(args.soAgregado)
           )
         );
+        // Subturnos simultâneos: os leads só podem ser contados depois de todos responderem,
+        // então vale o maior leads_ate_agora declarado entre eles.
+        const esperadosParalelo = turno.paralelo
+          .map((sub) => sub?.espera?.leads_ate_agora)
+          .filter((v) => v !== undefined);
+        if (esperadosParalelo.length > 0) {
+          await conferirLeadsAteAgora(Math.max(...esperadosParalelo), `turno ${numTurno}`);
+        }
       } else {
         const sid = obterSessionId(turno.sessao || 'principal');
         const corpo = prepararCorpo(turno, sid);
@@ -1128,21 +1150,7 @@ async function executarCaso({ caso, indice, args, ehDev, leadsUrlDev, runId, tel
           )
         );
 
-        if (turno.espera?.leads_ate_agora !== undefined && ehDev && leadsUrlDev) {
-          try {
-            const leadsAgora = await buscarLeadsPorTelefones(leadsUrlDev, conjuntoDigitos);
-            if (leadsAgora.length !== turno.espera.leads_ate_agora) {
-              falhas.push(
-                `turno ${numTurno}: leads_ate_agora=${leadsAgora.length}, esperado=${turno.espera.leads_ate_agora}`
-              );
-              if (leadsAgora.length > turno.espera.leads_ate_agora) {
-                violacaoLead = true;
-              }
-            }
-          } catch (err) {
-            falhas.push(`turno ${numTurno}: ${err.message}`);
-          }
-        }
+        await conferirLeadsAteAgora(turno.espera?.leads_ate_agora, `turno ${numTurno}`);
       }
     }
 

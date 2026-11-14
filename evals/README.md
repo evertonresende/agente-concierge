@@ -128,7 +128,7 @@ Gerados de forma única a cada execução e caso, substituídos em `mensagem`, `
 - `formato_total_estrito` (booleano, padrão `true` em `200`): verifica que toda menção `R$ ...` segue `R$ d.ddd,dd`, inclusive em turnos sem `espera`, e acusa valores monetários escritos sem `R$`.
 - `valores_tolerados` (array de números ou strings BRL, opcional): valores extras legítimos na resposta (ex.: valor citado pelo hóspede ao recusar total ditado ou cotação anterior ao alterar datas).
 - `estadia` (objeto ou array de `{ imovel_id, checkin, checkout, hospedes?, obrigatorio? }`): aciona o juiz determinístico independente em centavos inteiros (`evals/lib/juiz-preco.mjs`). Se `obrigatorio` for `true` (padrão), exige o total exato na resposta e aceita apenas os componentes/subtotais coerentes nomeados como componente no texto (ex.: diárias, taxa de limpeza) e `valores_tolerados`; se `false`, valida apenas se algum `R$` aparecer.
-- `leads_ate_agora` (número, opcional): em `dev`, consulta `GET` no webhook falso logo após o turno e exige exatamente essa quantidade de leads para o telefone do caso.
+- `leads_ate_agora` (número, opcional): em `dev`, consulta `GET` no webhook falso logo após o turno e exige exatamente essa quantidade de leads para o telefone do caso. Dentro de um turno `paralelo`, a consulta é feita depois de todos os subturnos responderem e vale o maior `leads_ate_agora` declarado entre eles.
 
 ## Trava e sigilo nos relatórios
 
