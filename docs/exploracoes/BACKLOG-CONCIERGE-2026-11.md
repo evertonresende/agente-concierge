@@ -1420,6 +1420,16 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   F e a H juntas sobre a `main`: 1464 testes verdes. Lacuna de teste (o aviso gravar `handoff` não é
   pego) pedida à frente. Limite para o README: `session_id` novo com mensagem vazia instancia o objeto
   e cria as tabelas vazias
+- 14/11 01h31 · F · verificador da rodada 7: APROVADO o delta da P20 (8f8fbd5). Nome dito 1, 5, 30 e 40 turnos
+  antes dá resumo pelo caminho da sessão, também em pedaços e com reinício do objeto; modelo que insiste
+  no nome errado esgota 6 chamadas e o hóspede recebe a contingência com `handoff`, sem resumo, sem
+  "registrado" e sem POST; o cenário do nome com valor continua fechado; os commits de teste só mudam o
+  texto do hóspede; 6 de 6 defeitos plantados pegos; 1402 testes e tipos verdes sobre a `main` 0e68247.
+  Dois achados deixados para a coordenação, aceitos como limite (P28): a recusa do nome derruba o resumo
+  pendente; nome chinês, japonês ou coreano grudado na frase é recusado. Observação: turno com ferramenta
+  gasta 4 ou mais mensagens, então numa conversa com cotações o nome sai da janela de 80 bem antes de 40
+  turnos. **Entrou na `main`: merge `--no-ff` de 8f8fbd5, main em fca00c9** (a `main` não tinha mudado em
+  `src/`, `test/` nem `evals/` desde a árvore que o verificador rodou). A H foi avisada para mesclar
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -1447,7 +1457,7 @@ verde, parar e chamar o Éverton.
 
 **Estado do congelamento em 14/11 01h30.** Na `main`: G, T (P21), o script da K e o gate da S (5a06b7b).
 H: terceiro ciclo da fila, corrigindo o B6 em cima de a4abacb; B1, B2 e a P24 já têm veredito
-favorável. F (P20): 8f8fbd5 no verificador; conferida com o modelo real. Juiz da B2: f4ee189 no
+favorável. F (P20): na `main` (fca00c9), aprovada e conferida com o modelo real. Juiz da B2: f4ee189 no
 verificador da rodada 3, com barra fechada. Só o que muda o comportamento do agente ou o juiz
 reinicia a contagem das rodadas.
 
