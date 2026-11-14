@@ -364,9 +364,18 @@ primeira.
 
 Ainda em 14/11, `producao` foi publicada de novo, da `main` a97777b, com o envio real ligado
 (X32). `--entrega` deu `ENTREGA OK` duas vezes, com `--clientes` no meio (`CLIENTES OK`) e
-`LEADS REAIS: 0` antes e depois. Nenhuma conversa com confirmação foi feita contra
-`producao`, e o modo completo não rodou com o envio ligado. O "ligado" está gravado em
+`LEADS REAIS: 0` antes e depois. Até ali, nenhuma conversa com confirmação tinha sido feita
+contra `producao`, e o modo completo não rodou com o envio ligado. O "ligado" está gravado em
 `wrangler.jsonc`, e o teste `test/configuracao-i.test.ts` exige esse valor.
+
+Às 07h26 do mesmo dia saiu o único POST ao webhook real desta entrega: um lead de teste que
+o Éverton autorizou (X36), para provar a comunicação antes da avaliação. Foi uma conversa em
+`producao`, pelo caminho real do agente, com o exemplo do Marco 1: cotação, resumo e "sim".
+A lista real, lida por GET, foi de 0 para 1, com os sete campos iguais aos do resumo. O
+agente devolveu o texto fixo de registrado, que o código só escreve depois de um `201`.
+`--entrega` passou a dar `LEADS REAIS: 1`. Qualquer outro POST continua proibido, e o modo
+completo e o `--so-leitura` do script, que exigem zero lead real, passam a reprovar por
+construção.
 
 O monitor diário dos 7 dias no ar foi cortado como código (P38), segundo item da linha de
 corte: o que ele faria já existe em dois modos do script de validação. Agendar e escolher o
