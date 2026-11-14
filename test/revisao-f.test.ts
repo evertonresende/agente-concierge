@@ -236,7 +236,7 @@ describe("rearme negado por padrão: mensagem com sinal de mudança derruba o re
 });
 
 describe("sim só com caracteres comuns; \"?\" só com verbo de envio (A4)", () => {
-  const ESTRANHOS = ["sim❓", "sim❔", "sim﹖", "sim⁇", "sim‽", "sim;", "¿sim", "sim 🤔", "sim 👎", "sim ❌", "confirmo 👍"];
+  const ESTRANHOS = ["sim❓", "sim❔", "sim﹖", "sim⁇", "sim‽", "sim;", "¿sim", "sim 🤔", "sim 👎", "sim ❌"]; // "confirmo 👍" confirma desde a P15
   for (const mensagem of ESTRANHOS) {
     it(`repete o pedido: ${JSON.stringify(mensagem)}`, () => expect(lerConfirmacao(mensagem, GRM301)).toBe("hesitacao"));
   }
@@ -372,4 +372,23 @@ describe("B1: a hesitação não engole a mudança; só é hesitação o que, se
   for (const mensagem of ["acho que sim", "Acho que sim, talvez pode ser.", "pode ser", "talvez", "não sei ainda", "I think so", "not sure", "acho que sim, ok"]) {
     it(`continua hesitação: "${mensagem}"`, () => expect(lerConfirmacao(mensagem, GRM301, 3)).toBe("hesitacao"));
   }
+});
+
+describe("P15: formas de confirmação", () => {
+  const DADOS = { imovel_id: "GRM-301", checkin: "15/01/2027", checkout: "18/01/2027", hospedes: 2, nome: "Ana Lima", telefone: "(11) 98888-0000" };
+  for (const mensagem of ["tá ótimo, confirma", "Sim! 😊", "sim 👍", "manda ver", "bora", "isso aí", "show, pode mandar", "beleza, confirma", "confirma",
+    "sim, quero", "quero sim", "perfect, go ahead", "please confirm", "all correct", "confirme", "confirm", "correct", "go ahead", "Sim 🙏", "confirmo ✅"]) {
+    it(`envia: "${mensagem}"`, async () => {
+      const mundo = criarMundo();
+      let estado: EstadoLead = ESTADO_INICIAL;
+      const cofre: Cofre = { ler: () => estado, salvar: (e) => { estado = e; } };
+      await montarResumo.executar(DADOS, criarContexto(mundo, cofre, 2, "quero fechar"));
+      expect((await confirmarReserva.executar({}, criarContexto(mundo, cofre, 3, mensagem))).respostaFinal).toMatch(/registrado|registered/);
+      expect(mundo.leads).toHaveLength(1);
+    });
+  }
+  for (const mensagem of ["👍", "😊", "ok", "perfeito", "ótimo", "tá ótimo", "beleza", "show", "perfect", "great", "sim 🤔", "sim ❓"]) {
+    it(`repete o pedido com o resumo, sem derrubar: "${mensagem}"`, () => expect(lerConfirmacao(mensagem, GRM301, 3)).toBe("hesitacao"));
+  }
+  it("\"confirma?\" continua pergunta", () => expect(lerConfirmacao("confirma?", GRM301, 3)).toBe("pergunta"));
 });

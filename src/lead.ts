@@ -221,7 +221,7 @@ const HESITA_E_NEUTRAS = new RegExp("\\b(?:(?:acho|achando)(?: que)?|talvez|pode
 // Só um "ok", "perfeito", "certo" ou "s", mesmo com um "obrigado": o hóspede pode estar
 // apenas acusando o recebimento, ou ter digitado sem querer. Vale como hesitação (P11).
 const FRACA = new RegExp("^(?:(?:ok|okay|ta bom|ta|beleza|blz|bom|legal|show|joia|fine|alright|good|great|k"
-  + "|certo|certinho|perfeito|claro|obrigad[oa]|obg|valeu|thanks|thank you|s)(?: |$))+$");
+  + "|certo|certinho|perfeito|claro|obrigad[oa]|obg|valeu|thanks|thank you|s|otimo|ta otimo|perfect|top|massa)(?: |$))+$");
 
 // O sim é uma gramática fechada de frases, não uma lista de palavras soltas: palavras
 // que valem numa frase ("pode enviar", "confirmo o resumo") não podem ser recombinadas em
@@ -229,9 +229,11 @@ const FRACA = new RegExp("^(?:(?:ok|okay|ta bom|ta|beleza|blz|bom|legal|show|joi
 // 1. Afirmações completas por si.
 const AFIRMA = "s+i+m+|s|ss|si|yes|yep|yeah|yup|isso(?: mesmo)?|exato|exatamente|corret[oa]|certo|certinho|perfeito|claro|com certeza"
   + "|positivo|fechado|combinado|(?:esta |ta )?tudo (?:certo|correto)|esta (?:certo|correto)|correct|thats? (?:s )?(?:right|correct)"
-  + "|sure|absolutely|definitely|(?:it )?(?:looks|sounds) good|all good|go ahead|proceed|please do";
+  + "|sure|absolutely|definitely|(?:it )?(?:looks|sounds) good|all good|go ahead|proceed|please do"
+  // Formas da P15.
+  + "|isso ai|manda ver|bora|sim quero|quero sim|please confirm|all correct";
 // 2. "Confirmo", que pode dizer o que confirma: o resumo, a reserva, os dados.
-const CONFIRMA = "(?:(?:eu )?confirm(?:o|ado|ada|ar)|i confirm|confirm(?:ed)?)"
+const CONFIRMA = "(?:(?:eu )?confirm(?:o|a|e|ado|ada|ar)|i confirm|confirm(?:ed)?)"
   + "(?: (?:o |esse |este |the |this |that |my )?(?:resumo|pedido|summary|request|booking|reservation)"
   // "Segunda", "nova" ou "outra" reserva só com demonstrativo: "confirmo a outra reserva"
   // pode ser uma reserva que ainda não teve resumo; "essa segunda reserva" é a do resumo.
@@ -253,7 +255,8 @@ const CORTESIA = "por favor|pfv|obrigad[oa]|obg|valeu|please|thanks|thank you|ta
   + "|com (?:esses|estes|os) dados|with (?:these|those|the) details";
 const AFIRMA_OU_CONFIRMA = `(?:${AFIRMA}|${CONFIRMA})`;
 const FRASE = `(?:${AFIRMA_OU_CONFIRMA}|${PODE})${DADOS}`;
-const INICIO = "(?:(?:ok|okay|entao|bom|ah) )*";
+// Interjeição positiva na frente do sim (P15): "tá ótimo, confirma", "show, pode mandar".
+const INICIO = "(?:(?:ok|okay|entao|bom|ah|perfeito|otimo|ta otimo|beleza|blz|show|perfect|great|top|massa) )*";
 const SIM = new RegExp(`^${INICIO}${FRASE}(?: (?:${FRASE}|${CORTESIA}))*$`);
 const COMECA_AFIRMANDO = new RegExp(`^${INICIO}${AFIRMA_OU_CONFIRMA}(?: |$)`);
 // Frase com "?" que é só um pedido educado de envio ("pode fechar a reserva, por favor?"):
@@ -264,6 +267,8 @@ const PEDIDO_DE_ENVIO = new RegExp(`^(?:${AFIRMA_OU_CONFIRMA}${DADOS} )*${PODE_E
 // O que pode aparecer numa confirmação limpa: letra latina (com acento), dígito, espaço,
 // pontuação básica e os símbolos dos dados do resumo (telefone, data, valor). Emoji,
 // símbolo e pontuação de outra escrita (❓, ‽, ¿, o ";" grego) fazem a mensagem não ser um sim.
+// Emoji positivo no fim de um sim não o torna estranho (P15): "Sim! 😊", "sim 👍".
+const EMOJI_POSITIVO_NO_FIM = /(?:\s*(?:😊|🙂|😀|😃|😄|😁|☺|👍|👌|✅|✔|🙏|🥰|😍|💯|🤝|👏)[\u{1F3FB}-\u{1F3FF}\uFE0F]*)+\s*$/u;
 const SO_CARACTERES_COMUNS = /^[A-Za-zÀ-ÖØ-öø-ÿ\u0300-\u036f0-9\s.,!;:?'’"()\-+/$]*$/;
 
 const MAXIMO_DO_SIM = 120;
@@ -405,9 +410,11 @@ export function lerConfirmacao(mensagem: string, pendente: Pendente, turno?: num
     return resto === "" || FRACA.test(resto) || SIM.test(resto) ? "hesitacao" : "outra";
   }
   if (FRACA.test(limpo)) return "hesitacao";
+  // Só emoji ou símbolo: não confirma nem derruba; repete o pedido com o resumo (P15).
+  if (limpo === "") return bruto.trim() === "" ? "outra" : "hesitacao";
   if (!SIM.test(limpo)) return "outra";
   // Sim com caractere fora da lista permitida (emoji, ❓, ‽, o ";" grego): não é sim limpo, repete o pedido.
-  if (!SO_CARACTERES_COMUNS.test(bruto)) return "hesitacao";
+  if (!SO_CARACTERES_COMUNS.test(bruto.replace(EMOJI_POSITIVO_NO_FIM, ""))) return "hesitacao";
   // Sim com valor junto, mesmo igual ao do resumo: repete o pedido com o resumo (P13).
   if (comValores.includes("ovalor")) return "hesitacao";
   // Palavra de novidade só confirma o resumo criado ou alterado no turno anterior, e que

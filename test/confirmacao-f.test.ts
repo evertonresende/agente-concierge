@@ -184,7 +184,8 @@ describe("leitura da mensagem diante do resumo pendente", () => {
     ["sim, confirmo por R$ 2.000,00", "condicao_de_preco"],
     ["Obrigado, por enquanto não vou fechar ainda.", "outra"],
     ["", "outra"],
-    ["👍", "outra"],
+    // Emoji sozinho repete o pedido com o resumo, sem confirmar nem derrubar (P15).
+    ["👍", "hesitacao"],
     ["2", "outra"],
   ];
   for (const [mensagem, esperado] of naoSao) {
