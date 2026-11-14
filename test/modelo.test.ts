@@ -178,6 +178,9 @@ describe("modelos da Anthropic (formato Messages)", () => {
     expect(pedidoAnthropic(historico, [], "").output_config).toEqual({ effort: "medium" });
     expect(pedidoAnthropic(historico, [], "altíssimo").output_config).toEqual({ effort: "medium" });
     expect(pedidoAnthropic(historico, [], "high").output_config).toEqual({ effort: "high" });
+    expect(pedidoAnthropic(historico, [], "xhigh").output_config).toEqual({ effort: "xhigh" });
+    expect(pedidoAnthropic(historico, [], "max").output_config).toEqual({ effort: "max" });
+    expect(pedidoAnthropic(historico, [], "low").output_config).toEqual({ effort: "low" });
   });
 
   it("devolve todos os resultados de ferramenta do turno numa única mensagem do usuário", () => {
