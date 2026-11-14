@@ -17,7 +17,7 @@ function sessao(hoje = HOJE) {
   const mundo = criarMundo();
   let estado: EstadoLead = ESTADO_INICIAL;
   const cofre: Cofre = { ler: () => estado, salvar: (e) => { estado = e; } };
-  return { mundo, cofre, ctx: (turno: number) => criarContexto(mundo, cofre, turno, "datas", hoje), estado: () => estado };
+  return { mundo, cofre, ctx: (turno: number) => criarContexto(mundo, cofre, turno, "datas, sou Ana Lima", hoje), estado: () => estado };
 }
 
 async function pedido(checkin: string, checkout: string, hoje = HOJE, imovel_id = "GRM-301") {
