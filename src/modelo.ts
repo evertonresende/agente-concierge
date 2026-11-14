@@ -36,6 +36,9 @@ function objeto(valor: unknown): Record<string, unknown> {
   return valor && typeof valor === "object" ? (valor as Record<string, unknown>) : {};
 }
 
+/** Id de chamada de ferramenta para quando o modelo não manda um: único na conversa inteira. */
+const idNovo = () => `chamada_${crypto.randomUUID().replace(/-/g, "")}`;
+
 function numero(valor: unknown): number {
   return typeof valor === "number" && Number.isFinite(valor) ? valor : 0;
 }
@@ -59,7 +62,7 @@ export function normalizarResposta(bruto: unknown): RespostaDoModelo {
     const argumentos = funcao.arguments ?? chamada.arguments ?? {};
     if (typeof nome !== "string" || nome === "") return [];
     return [{
-      id: typeof chamada.id === "string" && chamada.id !== "" ? chamada.id : `chamada-${i + 1}`,
+      id: typeof chamada.id === "string" && chamada.id !== "" ? chamada.id : idNovo(),
       type: "function",
       function: { name: nome, arguments: typeof argumentos === "string" ? argumentos : JSON.stringify(argumentos) },
     }];
@@ -102,6 +105,17 @@ export const esforcoValido = (esforco?: string) => (esforco && ESFORCOS.has(esfo
 
 export function pedidoAnthropic(mensagens: Mensagem[], ferramentas: DefinicaoDeFerramenta[], esforco?: string): Record<string, unknown> {
   const sistema = mensagens.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
+  // A API recusa id fora de [a-zA-Z0-9_-] (erro 7003, medido): o reserva pode devolver
+  // outro formato. Cada id também sai único no pedido, e o resultado segue o seu id.
+  const usados = new Set<string>();
+  let doTurno = new Map<string, string>();
+  const idParaAnthropic = (original: string) => {
+    const base = original.replace(/[^a-zA-Z0-9_-]/g, "_") || "chamada";
+    let id = base;
+    for (let n = 2; usados.has(id); n++) id = `${base}_${n}`;
+    usados.add(id);
+    return id;
+  };
   const conversa: { role: "user" | "assistant"; content: Bloco[] }[] = [];
   const acrescentar = (role: "user" | "assistant", blocos: Bloco[]) => {
     const ultima = conversa.at(-1);
@@ -110,13 +124,21 @@ export function pedidoAnthropic(mensagens: Mensagem[], ferramentas: DefinicaoDeF
   };
   for (const m of mensagens) {
     if (m.role === "user") acrescentar("user", [{ type: "text", text: m.content }]);
-    else if (m.role === "tool") acrescentar("user", [{ type: "tool_result", tool_use_id: m.tool_call_id, content: m.content }]);
+    else if (m.role === "tool") {
+      const id = doTurno.get(m.tool_call_id) ?? m.tool_call_id.replace(/[^a-zA-Z0-9_-]/g, "_");
+      acrescentar("user", [{ type: "tool_result", tool_use_id: id, content: m.content }]);
+    }
     else if (m.role === "assistant") {
       // Os blocos de raciocínio não voltam: a API aceita sem eles e a medição não mostrou
       // ganho em devolvê-los (docs/revisoes/modelos.md).
+      doTurno = new Map();
       const blocos: Bloco[] = [
         ...(m.content.trim() ? [{ type: "text", text: m.content }] : []),
-        ...(m.tool_calls ?? []).map((c) => ({ type: "tool_use", id: c.id, name: c.function.name, input: argumentosComoObjeto(c.function.arguments) })),
+        ...(m.tool_calls ?? []).map((c) => {
+          const id = idParaAnthropic(c.id);
+          doTurno.set(c.id, id);
+          return { type: "tool_use", id, name: c.function.name, input: argumentosComoObjeto(c.function.arguments) };
+        }),
       ];
       if (blocos.length > 0) acrescentar("assistant", blocos);
     }
@@ -145,8 +167,8 @@ export function lerRespostaAnthropic(bruto: unknown): RespostaDoModelo {
   if (!FINS_COMPLETOS.has(fim)) throw new Error(`resposta inútil do modelo (stop_reason ${fim})`);
   const blocos = (Array.isArray(raiz.content) ? raiz.content : []).map(objeto);
   const texto = blocos.filter((b) => b.type === "text" && typeof b.text === "string").map((b) => b.text as string).join("\n").trim();
-  const chamadas = blocos.filter((b) => b.type === "tool_use" && typeof b.name === "string").map((b, i): ChamadaDeFerramenta => ({
-    id: typeof b.id === "string" && b.id !== "" ? b.id : `chamada-${i + 1}`,
+  const chamadas = blocos.filter((b) => b.type === "tool_use" && typeof b.name === "string").map((b): ChamadaDeFerramenta => ({
+    id: typeof b.id === "string" && b.id !== "" ? b.id : idNovo(),
     type: "function",
     function: { name: b.name as string, arguments: JSON.stringify(b.input ?? {}) },
   }));

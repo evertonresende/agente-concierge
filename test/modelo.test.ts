@@ -22,7 +22,7 @@ describe("adaptador do modelo", () => {
   it("lê o formato antigo, com argumentos em objeto e sem id", () => {
     const r = normalizarResposta({ response: "ok", tool_calls: [{ name: "cotar", arguments: { imovel_id: "GRM-301" } }] });
     expect(r.texto).toBe("ok");
-    expect(r.chamadas).toEqual([{ id: "chamada-1", type: "function", function: { name: "cotar", arguments: '{"imovel_id":"GRM-301"}' } }]);
+    expect(r.chamadas).toEqual([{ id: expect.stringMatching(/^chamada_[0-9a-f]{32}$/), type: "function", function: { name: "cotar", arguments: '{"imovel_id":"GRM-301"}' } }]);
     expect(r.uso).toEqual({ entrada: 0, saida: 0 });
   });
 
@@ -244,5 +244,30 @@ describe("resposta inútil do Haiku vai ao reserva", () => {
   it("resposta completa com texto e ferramenta continua valendo", () => {
     expect(lerRespostaAnthropic({ stop_reason: "stop_sequence", content: [{ type: "text", text: "ok" }] }).texto).toBe("ok");
     expect(lerRespostaAnthropic({ stop_reason: "tool_use", content: [{ type: "tool_use", id: "toolu_1", name: "cotar", input: {} }] }).chamadas).toHaveLength(1);
+  });
+});
+
+describe("ids de chamada de ferramenta no pedido ao Haiku", () => {
+  it("dois turnos do reserva e o terceiro do Haiku: ids únicos, no padrão da API, resultado casando", () => {
+    const semId = { choices: [{ message: { content: null, tool_calls: [{ function: { name: "cotar", arguments: "{}" } }] } }] };
+    const r1 = normalizarResposta(semId).chamadas[0]!;
+    const r2 = normalizarResposta(semId).chamadas[0]!;
+    expect(r1.id).not.toBe(r2.id);
+    const historico: Mensagem[] = [
+      { role: "user", content: "a" },
+      { role: "assistant", content: "", tool_calls: [{ ...r1, id: "chamada-1" }] }, { role: "tool", tool_call_id: "chamada-1", content: "1" },
+      { role: "assistant", content: "x" },
+      { role: "user", content: "b" },
+      { role: "assistant", content: "", tool_calls: [{ ...r2, id: "chamada-1" }, { ...r2, id: "functions.cotar:0" }] },
+      { role: "tool", tool_call_id: "chamada-1", content: "2" }, { role: "tool", tool_call_id: "functions.cotar:0", content: "3" },
+      { role: "assistant", content: "y" },
+      { role: "user", content: "c" },
+    ];
+    const { messages } = pedidoAnthropic(historico, [], undefined) as { messages: { role: string; content: Record<string, unknown>[] }[] };
+    const usos = messages.flatMap((m) => m.content).filter((b) => b.type === "tool_use").map((b) => b.id as string);
+    const resultados = messages.flatMap((m) => m.content).filter((b) => b.type === "tool_result").map((b) => b.tool_use_id as string);
+    expect(new Set(usos).size).toBe(usos.length);
+    for (const id of [...usos, ...resultados]) expect(id).toMatch(/^[a-zA-Z0-9_-]+$/);
+    expect(resultados).toEqual(usos);
   });
 });
