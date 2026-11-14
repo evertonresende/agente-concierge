@@ -113,7 +113,9 @@ function sanearTexto(texto: string): string {
   // nenhum texto do catálogo se pareça com um valor escrito pelo código: valor em reais
   // só existe nos campos numéricos, formatados por nós.
   // Corte antes dos replace: sem ele, texto longo do catálogo custa tempo quadrático.
-  return texto.slice(0, MAX_TEXTO * 2).replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]+/g, " ").replace(/R?\s*\$+/gi, "").replace(/ {2,}/g, " ").trim().slice(0, MAX_TEXTO);
+  // Formatação invisível e controle de direção (largura zero, marcas e isolamentos
+  // bidirecionais, BOM) somem antes de tudo: esconderiam ou inverteriam texto na tela.
+  return texto.slice(0, MAX_TEXTO * 2).replace(/[\u200b-\u200f\u202a-\u202e\u2066-\u2069\ufeff]/g, "").replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]+/g, " ").replace(/R?\s*\$+/gi, "").replace(/ {2,}/g, " ").trim().slice(0, MAX_TEXTO);
 }
 
 /**

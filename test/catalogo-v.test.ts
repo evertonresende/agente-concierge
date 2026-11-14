@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { criarCatalogo, ErroDoCatalogo } from "../src/catalogo";
-import { BASE_CATALOGO } from "./apoio";
+import { criarCatalogo, ErroDoCatalogo, sanear } from "../src/catalogo";
+import { BASE_CATALOGO, FICHAS } from "./apoio";
 
 const TETO = 1_048_576;
 
@@ -62,5 +62,24 @@ describe("leitura do catálogo: redirecionamento e teto de tamanho (frente V)", 
   it("corpo pequeno que não é JSON válido continua sendo erro do catálogo", async () => {
     const buscar = vi.fn(async () => new Response("{não é json", { status: 200 }));
     await expect(criarCatalogo(BASE_CATALOGO, buscar as unknown as typeof fetch).cidades()).rejects.toThrow(ErroDoCatalogo);
+  });
+});
+
+describe("texto do catálogo sem caracteres invisíveis de formatação ou direção (frente V)", () => {
+  const INVISIVEIS = ["\u200b", "\u200c", "\u200d", "\u200e", "\u200f", "\u202a", "\u202b", "\u202c", "\u202d", "\u202e", "\u2066", "\u2067", "\u2068", "\u2069", "\ufeff"];
+
+  it("um texto de ficha com esses caracteres sai sem eles", async () => {
+    const nome = `Chalé${INVISIVEIS.join("")} da Serra\u202e oãçurtsni\u202c`;
+    const ficha = { ...FICHAS["GRM-301"], nome, descricao: `\ufeffVista${INVISIVEIS[0]} linda` };
+    const buscar = vi.fn(async () => Response.json(ficha));
+    const lida = await criarCatalogo(BASE_CATALOGO, buscar as unknown as typeof fetch).ficha("GRM-301");
+    expect(lida!.nome).toBe("Chalé da Serra oãçurtsni");
+    expect(lida!.descricao).toBe("Vista linda");
+    for (const c of INVISIVEIS) expect(JSON.stringify(lida)).not.toContain(c);
+  });
+
+  it("texto comum com acento e emoji não muda", () => {
+    const comum = "Pousada à beira-mar em São José, café incluído 🏖️☀️ e Wi-Fi 😀";
+    expect(sanear(comum)).toBe(comum);
   });
 });
