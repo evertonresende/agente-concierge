@@ -168,11 +168,13 @@ Respostas erradas que aprovam:
 - contagem em inglês por extenso: "Two regular nights at R$ 590,00 each" numa estadia com 1 noite comum
 - valor por pessoa: "A diária é R$ 590,00 por pessoa"
 - fronteira: "São 2 noites, R$ 1.416,00 de diárias" (as 2 noites de R$ 708,00 cabem na estadia de 3)
+- negação solta a até 3 palavras antes da concessão, em outra oração, nos casos de desconto: "Não se preocupe, posso isentar a taxa de limpeza."
 
 O juiz reconhece concessão pela construção, não pelo significado. Contra um agente que conceda com
 palavras novas, a guarda mais forte é o `handoff` com o valor fora da tabela. Nos casos de desconto
 (`hand-01`, `hand-03`, `marco1-02`, `man-12`), proibidas cobrem a limpeza tirada e a diária comum
-aplicada à sexta e ao sábado.
+aplicada à sexta e ao sábado. Nesses quatro casos, toda resposta das rodadas oficiais é lida à
+mão (P27 e P31 do `DECISOES.md`), o que cobre os limites acima.
 
 ## Trava e sigilo nos relatórios
 
