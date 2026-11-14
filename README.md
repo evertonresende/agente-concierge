@@ -52,10 +52,12 @@ cabeçalhos `x-uso-entrada`, `x-uso-saida` e `x-chamadas-modelo`, usados para me
   semana, as recusas, o texto em reais (`R$ 2.156,00`), o valor enviado ao webhook, as
   transições do lead, o resumo para confirmação e o aviso de falha. O modelo entende o
   pedido, escolhe a ferramenta e redige. Antes de sair, o texto do modelo passa por uma
-  conferência de código (frente G), que retira o que reconhece: valor com "R$" que nenhuma
-  ferramenta calculou, concessão, registro afirmado sem `201` e afirmação de
-  disponibilidade. Número por extenso e valor sem marca de moeda passam (limites 8 e 46); os
-  demais limites dessa conferência estão na lista do fim.
+  conferência de código (frente G), que retira o que reconhece: valor em dinheiro que
+  nenhuma ferramenta calculou (com "R$", "reais", outra moeda ou centavos), concessão,
+  registro afirmado sem `201` e afirmação de disponibilidade. Número por extenso e número
+  solto sem marca nem centavos passam, e concessão, registro e disponibilidade são
+  reconhecidos pela forma da frase (limites 8, 20, 46 e 65); os demais limites dessa
+  conferência estão na lista do fim.
 - **Nome do lead.** Só pode ser formado por palavras que o hóspede escreveu na conversa
   (P20), sem dígito nem símbolo de moeda (P29); se não for, a ferramenta do resumo recusa e
   o modelo pede o nome.
@@ -422,8 +424,9 @@ verificadores das frentes, no log do backlog.
 
 **Conferência do texto do modelo**
 
-8. **Número por extenso** fica fora da conferência de valores, e o total citado é amarrado
-   à estadia só pelo rótulo e pelas datas.
+8. **Número por extenso** fica fora da conferência de valores: "O total fica dois mil cento e
+   cinquenta e seis reais." passa. O total citado é amarrado à estadia só pelo rótulo e pelas
+   datas.
 9. **Milhar com espaço.** Um valor escrito com espaço no lugar do ponto ("R$ 2 156,00") é
    cortado, mesmo quando certo.
 10. **Contagem de chamadas.** Quando o prazo do turno vence com o modelo reserva rodando, o
@@ -556,8 +559,11 @@ verificadores das frentes, no log do backlog.
 
 **Segunda passada da revisão de segurança**
 
-46. **Valor sem marca de moeda** escrito pelo modelo ("consigo deixar o total em 1500")
-    chega ao hóspede sem corte (S2-2).
+46. **Número solto sem marca de moeda nem centavos** escrito pelo modelo ("consigo deixar o
+    total em 1500") chega ao hóspede sem corte (S2-2). Com marca ou centavos, é cortado
+    quando nenhuma ferramenta o calculou: "1999 reais", "US$ 300", "o total fica 1.500" e
+    "R$ 1.999,00" saem; um valor calculado escrito de outro jeito ("2156 reais", "2.156,00")
+    é reescrito como "R$ 2.156,00".
 47. **Mensagem do hóspede na pergunta fechada.** Entra crua; o ganho máximo é manter o
     próprio resumo (S2-4).
 48. **Nome de imóvel de ficha hostil** vai para o resumo (S2-5).
