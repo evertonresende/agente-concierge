@@ -171,8 +171,11 @@ stateDiagram-v2
   segundo envio; marcador sem resultado conta como incerto.
 - Estadia bloqueada não gera novo POST, mesmo com outro nome, telefone ou número de
   hóspedes. Outra estadia segue o fluxo normal (P14).
-- O agente só diz que registrou depois de um `201`; falha nunca vira "registrado". Lead
-  registrado é pedido encaminhado, não reserva garantida.
+- Só o código escreve o texto de registro, e só depois de um `201`; falha nunca vira
+  "registrado" no estado do lead. A conferência corta a afirmação de registro do modelo nas
+  formas que reconhece ("Seu pedido foi registrado.", "Enviei o seu pedido", "Sua reserva
+  está confirmada!"); paráfrase como "O time comercial já recebeu o seu pedido." passa
+  (limite 65 do README). Lead registrado é pedido encaminhado, não reserva garantida.
 - O que acontece depois de uma falha e como começa uma segunda reserva eram lacunas
   abertas no esboço; foram decididas: L11 e P14 para a falha, L7 para a segunda reserva.
 

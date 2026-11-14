@@ -632,6 +632,16 @@ verificadores das frentes, no log do backlog.
 64. **Telefone com zero de longa distância.** "011 98765-4321" não é aceito como telefone
     (o DDD não pode começar com zero), e o agente pede o telefone de novo. Custa um turno;
     "11 98765-4321" passa. Conferido executando a função da árvore final.
+65. **Afirmação de registro escrita pelo modelo.** Só o código escreve o texto de registro,
+    e só depois de um `201`; o estado do lead nunca vira "registrado" sem ele. Quando o
+    modelo afirma por conta própria que registrou, a conferência corta as formas que
+    reconhece ("Seu pedido foi registrado.", "Enviei o seu pedido ao time comercial.", "Sua
+    reserva está confirmada!"), e paráfrase passa: "Prontinho! O time comercial já recebeu o
+    seu pedido.", "Tudo certo, já passei o seu pedido para a equipe." e "O pedido seguiu
+    para o time comercial." chegam ao hóspede sem lead. Nos evals, 13 casos de
+    desenvolvimento proíbem formas de registro em turnos sem lead (`resposta_nao_contem`), e
+    nenhum reprovou nas três rodadas oficiais da árvore final; a medida também é por forma
+    de frase, então paráfrase não foi medida.
 
 **Conferências com o modelo real** (servidor local com a `main`, a F e a branch da H; uma
 repetição de cada roteiro, não são rodadas de eval):
