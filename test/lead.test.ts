@@ -188,31 +188,50 @@ describe("resposta do webhook (L11)", () => {
     return { postar, posts: () => posts };
   }
 
-  for (const status of [200, 202, 204, 301, 400, 404, 422]) {
-    it(`status ${status}: não registrado com certeza, 1 POST, e a reserva não fica bloqueada`, async () => {
+  for (const status of [200, 202, 204]) {
+    it(`status ${status}: 2xx diferente de 201 é incerto, 1 POST, e a reserva não é enviada de novo (P14)`, async () => {
+      const { cofre, estado } = cofreEmMemoria();
+      const w = webhook(status);
+      const { deps } = ambiente({ postar: w.postar });
+      apresentarResumo(cofre, RESERVA, TOTAL, 2);
+      expect(await confirmar(cofre, 3, "sim", deps)).toEqual({ tipo: "nao_registrado", motivo: "incerto" });
+      expect(estado().envios[chaveDaReserva(RESERVA)]).toBe("incerto");
+      apresentarResumo(cofre, RESERVA, TOTAL, 4);
+      expect(await confirmar(cofre, 5, "sim", deps)).toEqual({ tipo: "nao_registrado", motivo: "ja_tentado" });
+      expect(w.posts()).toBe(1);
+    });
+  }
+
+  for (const status of [301, 400, 401, 403, 404, 422]) {
+    it(`status ${status}: não registrado, 1 POST, e a reserva fica bloqueada na sessão (P14)`, async () => {
       const { cofre, estado } = cofreEmMemoria();
       const w = webhook(status);
       const { deps } = ambiente({ postar: w.postar });
       apresentarResumo(cofre, RESERVA, TOTAL, 2);
       expect(await confirmar(cofre, 3, "sim", deps)).toEqual({ tipo: "nao_registrado", motivo: "resposta" });
-      expect(w.posts()).toBe(1);
-      expect(estado().envios[chaveDaReserva(RESERVA)]).toBe("nao_registrado");
+      expect(estado().envios[chaveDaReserva(RESERVA)]).toBe("recusado");
       // A confirmação foi gasta: outro sim, sem novo resumo, não envia.
       expect(estado().pendente).toBeNull();
       expect(await confirmar(cofre, 4, "sim", deps)).toEqual({ tipo: "sem_resumo" });
+      // Novo resumo da mesma reserva também não envia.
+      apresentarResumo(cofre, RESERVA, TOTAL, 5);
+      expect(await confirmar(cofre, 6, "sim", deps)).toEqual({ tipo: "nao_registrado", motivo: "ja_recusado" });
       expect(w.posts()).toBe(1);
     });
   }
 
   for (const status of [500, 502, 503]) {
-    it(`status ${status} persistente: exatamente uma nova tentativa, depois não registrado`, async () => {
+    it(`status ${status} persistente: exatamente uma nova tentativa, depois não registrado e reserva bloqueada (P14)`, async () => {
       const { cofre, estado } = cofreEmMemoria();
       const w = webhook(status, status);
       const { deps } = ambiente({ postar: w.postar });
       apresentarResumo(cofre, RESERVA, TOTAL, 2);
       expect(await confirmar(cofre, 3, "sim", deps)).toEqual({ tipo: "nao_registrado", motivo: "resposta" });
       expect(w.posts()).toBe(2);
-      expect(estado().envios[chaveDaReserva(RESERVA)]).toBe("nao_registrado");
+      expect(estado().envios[chaveDaReserva(RESERVA)]).toBe("recusado");
+      apresentarResumo(cofre, RESERVA, TOTAL, 4);
+      expect(await confirmar(cofre, 5, "sim", deps)).toEqual({ tipo: "nao_registrado", motivo: "ja_recusado" });
+      expect(w.posts()).toBe(2);
     });
   }
 

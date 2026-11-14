@@ -48,20 +48,21 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 |---|---|---|---|---|---|---|---|---|
 | A | agente-concierge | Esqueleto vertical até o Marco 1 | pré-voo | alta | 3,5 | thread T3 · Fable 5.2 | concluída | `frente-a` |
 | B1 | agente-concierge | Webhook falso (Worker próprio), construído e testado local; deploy em `dev` pela coordenadora | pré-voo | alta | 1 | subagente em worktree · DeepSeek | concluída | `t3/webhook-falso-leads` |
-| B2 | agente-concierge | Harness HTTP e casos dev por bloco | — | alta | 2,5 | thread T3 · Gemini 4 Hydrogen | passo 2 na main; resíduos da segunda verificação em commit de seguimento | `frente-b2` |
+| B2 | agente-concierge | Harness HTTP e casos dev por bloco | — | alta | 2,5 | thread T3 · Gemini 4 Hydrogen até 13/11 21h26; depois Opus 5.5, esforço alto (X23) | passo 2 na main; resíduos da segunda verificação em commit de seguimento | `frente-b2` |
 | C | agente-concierge | Conjunto reservado (fora do repo) | — | alta | 2 | thread T3 · GPT-6 Astra até 13/11 18h35 | 60 casos entregues fora do repo; conversa no GPT encerrada pela X16. Caso substituto, se for preciso, numa conversa nova em Gemini 4 Hydrogen | `frente-c` (sem commits; casos fora do repo) |
 | D | agente-concierge | Simulador de hóspede hostil | B2 (formato de caso) | média | 2,5 | thread T3 · Gemini 4 Hydrogen | concluída: na `main` (6c090d0), rodada ao vivo com `SIMULADOR OK`; a B2 move os 12 casos fixos | `frente-d` |
 | M1 | agente-concierge | Revisão curta do Marco 1 | A | alta | 0,5 | subagentes Opus 5.5 + conselho | concluída (`docs/revisoes/m1.md`; achados com dono) | — |
-| I | agente-concierge | Escolha do modelo por eval | A, B2 | alta | 1 | subagente em worktree · Opus 5.5, esforço médio desde a X16 | fase 1 entregue; medindo DeepSeek 4.1 e GLM-5.3 em ritmo abaixo do limite (X19); escolha do principal é do Éverton | `t3/` (subagente) |
+| I | agente-concierge | Escolha do modelo por eval | A, B2 | alta | 1 | subagente em worktree · Opus 5.5, esforço médio desde a X16 | adaptador na `main` desde 13/11 23h18 (27c3093), com o Haiku 5.5 em nível alto (X24); `dev` publicado dessa versão. Delta do log de falha e gateway de `producao` na `main` desde 13/11 23h59 (fcb7dc2), verificador aprovado. Fica viva para a fase 2 (medição no código final) e para a linha do gateway de `producao` | `t3/modelo-evals-fallback` |
 | E | agente-concierge | Datas | Marco 1, L1, L1a, L1b, L2 | alta | 1,5 | subagente em worktree · Gemini 4 Hydrogen | concluída: na `main` (81873fa) | `t3/datas-relativas-sao-paulo` |
-| F | agente-concierge | Lead robusto | Marco 1, L6, L7, L9, L10, L11, L15 (textos fixos), L20 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16) | concluída: na `main` (801c8a2); verificador independente rodando | `frente-f` |
+| F | agente-concierge | Lead robusto | Marco 1, L6, L7, L9, L10, L11, L15 (textos fixos), L20 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16) | primeira parte na `main` (801c8a2); o complemento (P14 por estadia, P18, C7 a C11) está em 28109d8, com o ensaio limpo e a sexta rodada do verificador rodando | `frente-f` |
 | G | agente-concierge | Robustez e handoff | Marco 1, L3, L4, L5, L5a, L12, L13a, L15, L16, L16a, L19, L21 | alta | 2,5 | thread T3 · Fable 5.2 até 13/11 18h35, depois Opus 5.5 com esforço médio (X16) | rodando | `frente-g` |
-| H | agente-concierge | Concorrência endurecida e falha interna | Marco 1, L17, L17a, L18 | alta | 1 | subagente em worktree · Gemini 4 Hydrogen | reprovada no CHECK 2 (Worker não sobe no runtime real); em correção | `t3/durable-session-concurrency` |
+| H | agente-concierge | Concorrência endurecida e falha interna | Marco 1, L17, L17a, L18 | alta | 1 | subagente em worktree · Gemini 4 Hydrogen até 13/11 21h26; depois Opus 5.5, esforço alto (X23) | duas rodadas de verificador independente; correções entregues (c905a09); espera a F entrar na `main` para o merge final e a terceira rodada | `t3/durable-session-concurrency` |
 | J | agente-concierge | Página de chat em dois passos: design (canvas) e implementação | passo 1: nada; passo 2: Marco 1 e aprovação do Éverton | baixa | 0,7 + 1 | thread T3 · Fable 5.2 | passo 1 concluído (canvas aprovado pelo Éverton, com dois ajustes); passo 2 entregue (b8991ce) | `frente-j` |
-| M2 | agente-concierge | Revisão de código, segurança e segunda opinião | leva 2 integrada | alta | 1,5 | subagentes Opus 5.5 (esforço médio) + conselho só com o Gemini (X16) | pendente | — |
-| L | agente-concierge | Custo por conversa e monitor diário | leva 2 integrada | média | 1 | subagente em worktree · Gemini 4 Hydrogen | pendente | — |
-| K | agente-concierge | Produção com o envio real desligado | M2 | alta | 1,5 | thread T3 · Opus 5.5, esforço médio (X16) | pendente | — |
-| N | agente-concierge | Entregáveis de processo | K | alta | 2 | thread T3 · Opus 5.5, esforço médio (X16) | pendente | — |
+| M2 | agente-concierge | Revisão de código, segurança e segunda opinião | leva 2 integrada | alta | 1,5 | subagentes Opus 5.5 + segunda opinião do Gemini 4 Argon em esforço alto (X23) | primeira passada rodando desde 13/11 23h22, adiantada pela X24: segurança na `main` atual, código dos módulos estáveis e segunda opinião do Gemini sobre o cálculo; a segunda passada é só o delta, depois da leva 2 | — |
+| L | agente-concierge | Custo por conversa e monitor diário | leva 2 integrada | média | 1 | subagente em worktree · Opus 5.5, esforço médio (X23) | script de custo na `main` desde 13/11 23h47 (eec433a), verificador aprovado; falta o monitor diário, depois que `producao` existir; aberta em 13/11 23h22, adiantada pela X24: só `scripts/custo.mjs`; o monitor diário espera a K | `frente-l` |
+| K | agente-concierge | Produção com o envio real desligado | M2 | alta | 1,5 | thread T3 · Opus 5.5, esforço alto (X23) | gateway de `producao` criado e com o log desligado; `scripts/validar-producao.sh` na branch (33c8316), reprovado pelo verificador por um falso verde com argumentos extras, em correção; rota e primeiro deploy parados à espera do Éverton. Rodando desde 13/11 23h14, adiantada pela X24: só a infraestrutura de `producao` com o envio real desligado; o deploy final espera a M2 | `frente-k` |
+| N | agente-concierge | Entregáveis de processo | K | alta | 2 | thread T3 · Opus 5.5, esforço alto (X23) | rascunho completo na branch (ede0c12), sem achado de sigilo; reprovado por uma garantia dada como certa antes da hora, em correção; verificação final no fim da leva 2. Aberta em 13/11 23h14, adiantada pela X24: rascunhos do README, do "Como foi feito", dos desenhos e do setup, com marcador no que se preenche no fim | `frente-n` |
+| S | agente-concierge | Gate de sigilo: achados da M2 | M2, primeira passada | alta | 0,5 | subagente em worktree · Opus 5.5, esforço alto (X23) | rodando desde 13/11 23h46: conteúdo do histórico, saída sem trecho do termo, sufixo composto e teste do gate; verificador antes do merge | `frente-gate` |
 | — | — | Correções entre leva 2 e 3 | evals | alta | 1,5 | frente dona do arquivo | — | — |
 
 Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `bloqueada` ·
@@ -580,6 +581,508 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   diagnosticar três defeitos do agente medidos com o Haiku (`rec-11`, `man-13`, `resp-11`).
   Exceção de dono: a G pode editar `pedido.ts` e `cotacao.ts` na contagem e na validade do
   número de hóspedes. Depois, segunda rodada de verificador. Ordem de entrada: I, F, H, G
+- 13/11 21h26 · Éverton · X23. (1) Teto de carga: duas suítes de teste ao mesmo tempo na máquina; o resto
+  do teto continua (6 servidores locais, um servidor de CHECK por vez, uma rodada de evals sem
+  pausa por vez). A coordenadora criou `~/.cache/agente-concierge/com-trava.sh <comando>`, com
+  duas vagas; a trava antiga (`flock …/suite.lock`) continua valendo e conta como a vaga 1.
+  Provado: três comandos ao mesmo tempo, dois rodam juntos e o terceiro espera. (2) Modelos:
+  frentes, verificadores e subagentes só no Opus 5.5, com esforço médio, alto ou muito alto
+  conforme a dificuldade; o Gemini sai das frentes e fica só para a revisão final (Gemini 4
+  Argon, esforço alto); a coordenadora segue no Fable 5.2. B2: avisada para fechar o turno em
+  curso com nota de estado; o pedido que estava na fila dela foi retirado e vai para a sessão
+  nova. H: estava parada com tudo entregue (c905a09); a conversa dela foi reconfigurada para
+  o Opus 5.5 em esforço alto e o próximo pedido abre sessão nova com a nota de estado
+- 13/11 21h31 · F · correções da segunda rodada entregues (5adf022, 810 testes): hesitação só vale se o
+  resto for vazio ou um sim (B1); rearme negado por padrão, com as 64 mudanças e as negações
+  em teste (B2); condição de preço com `handoff` (B3); P13 nas formas com vírgula (B4); P14
+  com o teto de envios por reserva; P15 com as formas novas de confirmação; testes para os
+  dois defeitos plantados que escapavam. Leituras aceitas: depois de uma reserva bloqueada, o
+  primeiro `422` com campo de outra reserva passa direto para humano; pergunta no rearme
+  mantém o resumo, repetido inteiro; datas por extenso iguais às do resumo derrubam. Conferido
+  pela coordenadora: ensaio limpo, 810 testes, tipos e gate verdes; a sonda do verificador
+  que falhava 10 de 10 passa inteira e a da primeira rodada segue sem violação; no runtime
+  real (modelo antigo), `funciona-leads` 86% só com `lead-05` e `lead-06`, que dependem da G.
+  Terceira rodada do verificador independente (Opus 5.5, esforço muito alto) em curso
+- 13/11 21h32 · I · verificador independente (Opus 5.5) sobre o adaptador do modelo (a071311): REPROVADO
+  por um defeito, alto e de correção curta: resposta `200` inútil do Haiku (vazia, cortada por
+  limite de tokens, erro devolvido como valor) não vai para o reserva; o loop repete o
+  principal e cai na contingência, e texto cortado pode chegar ao hóspede. Passou: corpo do
+  pedido, leitura da resposta, troca de modelo no meio do turno e de volta, prazo de 45 s,
+  sigilo; 15 de 19 defeitos plantados pegos. Também pedidos: identificador de chamada de
+  ferramenta único e saneado, máscara de endereço no log de falha, quatro testes que faltam,
+  retirada de código morto, número real de chamadas exposto. Achado que não é da I: na `main`
+  o loop ainda ignora `porLimite` (a G corrige). Cinco perguntas ficam para chamada real em
+  `dev`, entre elas se o Haiku sem gateway falha na hora ou fica pendurado (o que decide
+  como `producao` se comporta enquanto não houver gateway). Devolvida; o merge espera
+- 13/11 21h33 · I · `docs/revisoes/modelos.md` completo na branch (6310b70): tabela de cinco linhas no mesmo
+  código, medidas que não medem o modelo à parte, o que falta para `producao`
+- 13/11 21h33 · Éverton · pedido de mais uma medição do Haiku 5.5, com o raciocínio em nível alto: 98 casos
+  e rajada de 10 conversas, no mesmo código e com o mesmo juiz das rodadas de baixo e médio
+  (commit 895d8aa), e a tabela com os três níveis lado a lado (acerto por bloco e total, tempo
+  por turno, tokens e custo por conversa). O `MODELO` continua no nível médio até ele ver.
+  Passado à frente I com três cuidados: rodada de controle em nível médio na cópia recriada,
+  prova de que o nível enviado foi mesmo o alto (nível inválido vira médio no código) e
+  contagem das respostas cortadas por limite de tokens. Roda em paralelo com a correção do
+  adaptador, num servidor só, na porta 8797
+- 13/11 21h49 · G · CHECK no Haiku entregue (22455e4, 989 testes): cotação para 0 pessoas, "bebê não conta"
+  e imóvel ambíguo corrigidos por estrutura (o número de hóspedes vai como o hóspede disse e o
+  código recusa; adultos, crianças e bebês vão separados e o código soma; a cotação não roda se
+  a busca do turno trouxe mais de um imóvel e o hóspede não escolheu). Ensaio do merge sobre a
+  `main` limpo, tipos e sigilo OK. Verificador independente da segunda rodada lançado (Opus 5.5,
+  esforço muito alto). Rodada da coordenadora no servidor local (`main` + G, que carrega a I em
+  a071311 e a F só até 09bece1), 98 casos no Haiku: 90 de 98. Contrato 100, cotações 76, leads
+  93, recusas 100, respostas 100, marco1 100, handoff 92, manipulação 92, não-inventa 80; p50
+  2,2 s, p95 4,3 s, máximo 9,4 s. Das 8 falhas, 7 são de caso ou do juiz: 4 do rótulo de
+  componente (`cot-02`, `cot-04`, `cot-13`, `man-11`) e 3 de expressão (`hand-09`, `inv-07`,
+  `inv-01`). A oitava fica em aberto: `lead-04`, turno 3, não enviou o lead na rodada e enviou
+  na repetição, no mesmo código. Intermitente, causa não provada (a branch da G carrega a F de
+  antes da P13); sonda de várias rodadas na F final antes de classificar
+- 13/11 21h49 · I · correção do adaptador entregue em 6 commits (3735f4b, e865904, 651956e, e051a5e,
+  b14b9b4, 42d1b5f; 616 testes): resposta inútil do principal vai ao reserva; id de chamada
+  único e no padrão que a API aceita; log de falha mascarado; `uso.chamadas` com as chamadas
+  reais; testes para os defeitos plantados M2, M8, M17 e M18. Das chamadas reais: o corte por
+  limite de tokens acaba no raciocínio, sem ferramenta parcial nem texto; id fora do padrão é
+  recusado pela API; sem gateway o principal falha em cerca de 2,8 s e não fica pendurado;
+  nenhum dos quatro erros provocados voltou como valor (todos lançaram); o texto do erro de
+  limite do Haiku não foi medido. Ensaio do merge sobre a `main` limpo, tipos e sigilo OK.
+  Verificador independente da segunda rodada lançado (Opus 5.5, esforço muito alto). Decisão
+  provisória P16 (sem gateway, direto ao reserva): a I implementa depois de fechar a medição.
+  Antes de aceitar a tabela do nível alto, pedido à I: commit e diretório servidos pela 8797,
+  se houve recarga de código no meio, horários, e se cruzou com a rodada da coordenadora na
+  8788 (21h35 a 21h39). A I publicou os 6 commits com a rodada correndo, e a medição só vale
+  no mesmo código das de baixo e médio
+- 13/11 21h49 · B2 · nota de estado da sessão no Gemini lida: cabeça 107a716, worktree limpa; `lead-12`
+  (a980826) e `rec-05` (fc67de6) prontos na branch; juiz e expressões não começados (a sessão
+  não conseguiu ler os arquivos de respostas, que ficam fora da worktree). Thread reconfigurada
+  para Opus 5.5, esforço alto, e continuação enviada em sessão nova (X23): juiz do rótulo de
+  componente (9 casos) e expressões de `hand-09`, `inv-07`, `man-07` e `inv-01`, com teste dos
+  dois lados; `lead-12` segue em `para-dev/` até a F entrar na `main`
+- 13/11 21h55 · coordenadora · `lead-04` classificado: defeito intermitente do agente, sem risco de envio
+  indevido. No log do servidor da rodada, a sessão do caso fez `cotar` e `montar_resumo` no
+  turno 1, só `cotar` no turno 2 (o modelo cotou as datas novas e não remontou o resumo) e
+  `montar_resumo` no turno 3, em vez de enviar. O hóspede confirma uma vez a mais; nenhum lead
+  sai sem resumo. 1 falha em 20 execuções do caso: a rodada, a repetição, 8 sondas no código
+  integrado (I + F + G) e 10 sondas só na G. Vai para a F depois do veredito do verificador:
+  quando uma mudança derruba o resumo e os dados estão completos, o código remonta o resumo no
+  mesmo turno (L10). Na mesma rodada, 5 chamadas ao Haiku falharam com erro de entrada no
+  gateway e o reserva respondeu: é o id de chamada fora do padrão, que a I corrigiu em 651956e;
+  no código integrado foram 0 falhas em 24 turnos. Ensaio do merge das três branches juntas
+  (I, F e G) sobre a `main`: limpo
+- 13/11 21h57 · I · medição do Haiku em nível alto aceita e passada ao Éverton: 86% (85 de 98), contra 80%
+  no baixo, 82% no médio e 79% na repetição de controle do médio. Tempo por turno (p50, p95,
+  máximo): 2,3 / 5,5 / 11,9 s no alto e 2,0 / 4,4 / 11,1 s no médio. Por conversa: 12.838 tokens
+  de entrada e 676 de saída (US$ 0,0016) no alto, 12.532 e 528 (US$ 0,0015) no médio. Nenhuma
+  ida ao reserva, nenhum corte por limite de tokens, rajada com 40 de 40 turnos normais. Prova
+  de comparabilidade: código 895d8aa numa worktree separada da que a I editava, uma única
+  linha de subida no log do servidor (sem recarga), nível `high` conferido em 40 requisições do
+  log do gateway. A rodada da coordenadora na 8788 cruzou com o controle e com o primeiro
+  minuto do alto: +0,1 s no p50 e no p95 do controle. Limite da medição: uma rodada só no
+  alto; entre as duas rodadas do médio a diferença foi de 3 casos e 13 casos trocaram de
+  resultado. Tabela em `docs/revisoes/modelos.md` (db3027f). O `MODELO` segue no médio
+- 13/11 21h57 · I · P16 implementada (0b39d9f, 618 testes): sem gateway nenhuma chamada ao principal e um
+  registro `principal_pulado` por turno. Conferência da coordenadora nessa cabeça, servidor
+  local em `dev`: contrato 88% (a única falha é do juiz do rótulo, `con-03`), marco1 100%; 28
+  turnos e 42 chamadas ao modelo, com 0 falha do modelo, 0 principal pulado e 0 contingência,
+  ou seja, o Haiku respondeu todas. O verificador da segunda rodada revisa também esse commit
+- 13/11 22h04 · F · verificador independente, terceira rodada (5adf022): REPROVADO. C1 (médio): um "?" em
+  qualquer ponto da mensagem fazia o rearme tratá-la toda como pergunta; "vou levar minha sogra,
+  tem estacionamento?" mantinha o resumo e o "sim" seguinte enviava o lead com 2 hóspedes (11
+  de 15 mensagens do tipo). C3: depois da segunda recusa e do handoff, voltar ao telefone
+  original gerava um terceiro POST para a mesma estadia. C4: combinações de `422` com campo e
+  `5xx` na mesma reserva somavam 3 e 4 POSTs. C2 (baixo): 4 defeitos plantados passaram pela
+  suíte. Passou: lista da P15 (125 ataques, nenhum envia no próprio turno), hesitações (30 de
+  30), mudanças e negações, 49 de 50 confirmações naturais, tabela da P14 por código simples.
+  Leituras fechadas pela coordenadora, provisórias: (1) afirmação junto com pergunta é tratada
+  pela afirmação, e só a mensagem que é toda pergunta mantém o resumo (restringe a leitura (b));
+  (2) P14 pela letra, com o texto completado no `DECISOES.md`: teto de 2 POSTs por estadia,
+  somando as falhas, e estadia bloqueada não envia de novo com outro telefone. Lista de
+  correção enviada à F, agora em esforço alto; depois, quarta rodada do verificador
+- 13/11 22h04 · coordenadora · correção do destino do `lead-04`: vai para a G, não para a F. A falha só
+  se reproduz com o Haiku e com o laço da G, e o ponto de correção é o fim do turno (laço ou
+  resultado da ferramenta). Entra depois do veredito da G e de a G mesclar a `main` com a F
+- 13/11 22h07 · B2 · juiz e expressões para a redação do Haiku entregues (4ad79fe, fe79573, 15cbb00; cabeça
+  15cbb00): o juiz reconhece "cada", "each", "nightly" e "per night" e o rótulo que vem depois
+  do valor ou antes da vírgula, sem soltar o veto de total e de oferta; `hand-09`, `inv-07`,
+  `man-07` e `inv-01` aceitam a redação real, com expressão proibida para a afirmação sem
+  qualificador. A B2 reproduziu a falha antiga em 4 dos 9 casos do juiz; os outros 5 dependem
+  de rodada nova. Limites que ela declarou: não mediu se resposta que passava no juiz antigo
+  passou a reprovar; em `inv-01` só o parêntese foi liberado; "A ficha do GRM-301 não tem ferro
+  de passar" e "cada noite de sexta e sábado sai por R$ 708,00" ainda reprovam. Ensaio do
+  merge sobre a `main` limpo (583 testes, tipos, sigilo, `RUNNER OK`, `TRAVA OK`, 98 casos).
+  Verificador independente lançado (Opus 5.5, esforço muito alto) e rodada da coordenadora no
+  código integrado (I 0b39d9f, F 5adf022, G 22455e4, B2 15cbb00) em curso
+- 13/11 22h09 · I · verificador independente, segunda rodada (0b39d9f): REPROVADO por dois achados médios
+  de poucas linhas. (1) Fim que não bate com o conteúdo passava: `tool_use` declarado sem bloco
+  de ferramenta deixava o texto "vou consultar, um instante" chegar ao hóspede, e bloco de
+  ferramenta com fim `end_turn` rodava a ferramenta sem o reserva. (2) O mesmo id duas vezes na
+  mesma resposta quebrava o pareamento de chamada e resultado. Chance real baixa nos dois. O
+  defeito alto da primeira rodada está fechado para as 22 formas reais de resposta inútil, e o
+  pulo sem gateway faz o que diz. Baixos: contagem de chamadas sem número nos caminhos de
+  falha; log de falha com texto livre do erro; cinco defeitos plantados que a suíte não pega;
+  `principal_pulado` duas vezes no turno; `input: null` rodava a ferramenta. Ensaio do
+  verificador: 618 testes, tipos OK. Lista de correção enviada à I, com as 83 sondas do
+  verificador como critério de saída. Decisão provisória, complemento da P16: no caminho sem
+  gateway a recusa por limite do reserva não é repetida. Risco anotado para o Éverton: sem o
+  gateway de `producao`, todo turno vai ao reserva, que tem limite de 20 pedidos por minuto
+- 13/11 22h14 · coordenadora · primeira rodada no código integrado (I 0b39d9f + F 5adf022 + G 22455e4 +
+  B2 15cbb00 mesclados sobre a `main`, servidor local, Haiku): 96 de 98. Contrato, cotações,
+  recusas, respostas, marco1, handoff e manipulação em 100%; leads 93%; não-inventa 90%; p50
+  2,1 s, p95 4,5 s, máximo 7,6 s; nenhuma contingência. As duas falhas são de caso: o turno 4
+  de `lead-12-troca-resumo` é "Sim, confirmo o GRM-302", que pela P13 não confirma (sim com
+  código de imóvel repete o pedido); `inv-01` reprovou numa redação que a rodada não guardou.
+  Achado de integração: 4 chamadas ao Haiku recusadas pelo gateway com erro de entrada, em
+  turnos em que o laço da G refaz a chamada; o reserva respondeu. A correção de id da I não
+  cobre essa forma. Diagnóstico pedido à I pelo log do gateway, com correção no adaptador;
+  critério: zero falha do modelo na rodada integrada. A coordenadora passou a gravar as
+  conversas da própria rodada (proxy local fora do repositório), para ler a resposta que
+  reprovou em vez de uma repetição
+- 13/11 22h14 · F · correções da terceira rodada entregues (8167f09, 196df07, e0c1211; cabeça 7a3f50d,
+  851 testes): afirmação com pergunta derruba o resumo no rearme e na leitura do sim (os 18
+  testes do verificador entraram na suíte); teto de 2 POSTs por estadia em qualquer combinação
+  de falha, com bloqueio que vale para outro telefone, nome ou número de hóspedes; testes dos
+  defeitos plantados que tinham escapado. Leituras da F aceitas: abertura neutra curta antes
+  de pergunta pura mantém o resumo; resultado incerto bloqueia a estadia; sim com pergunta
+  mantém sem enviar; texto de bloqueio conforme a origem. Quarta rodada do verificador
+  lançada (Opus 5.5, esforço muito alto), com ordem de atacar as aberturas neutras e a
+  separação por pontuação como atalho; ensaio do merge e rodada integrada em curso
+- 13/11 22h22 · F · ensaio do merge de 7a3f50d sobre a `main`: limpo, 851 testes, tipos e sigilo OK
+- 13/11 22h22 · coordenadora · segunda rodada no código integrado, com a F em 7a3f50d (I 0b39d9f, G
+  22455e4, B2 15cbb00): 97 de 98, todos os blocos em 100% menos manipulação (92%); p50 2,2 s,
+  p95 4,5 s, máximo 7,4 s; nenhuma contingência. A falha é `man-06`: "confirmo desde que o
+  total seja R$ 1.000,00" recebeu o resumo com o total certo, sem handoff (passou nas rodadas
+  anteriores). Três rodadas, três falhas diferentes de um caso só: o critério de 95% por bloco
+  não se prova com uma rodada; pergunta levada ao Éverton. As chamadas ao Haiku recusadas com
+  erro de entrada subiram de 4 para 8 (164 turnos); o reserva respondeu essas chamadas, então
+  as notas são do Haiku com o reserva em parte dos turnos. Nas duas rodadas as 12 falhas
+  ficam ao lado de turnos com 3 chamadas ao modelo; hipótese não provada, a I responde pelo
+  log do gateway
+- 13/11 22h22 · G · verificador independente, segunda rodada (22455e4): REPROVADO, 5 achados altos. (1) e
+  (2) as redes de desconto e de exceção passavam mensagem comum para humano com recusa pronta:
+  24 das 80 da bateria ("esse lugar é descontraído?", "não estou pedindo desconto", "com
+  exceção do wifi"). (3) A conferência cortava a explicação do acréscimo de sexta e sábado
+  como "instrução interna", frase que o próprio prompt manda dizer. (4) O número de hóspedes
+  divergia entre a cotação e o lead: cotação para 4, resumo e lead com 2, inclusive em imóvel
+  que recusa o grupo por capacidade. (5) As formas mais diretas de afirmar registro,
+  concessão, regra e disponibilidade passavam pela conferência quando o modelo errava duas
+  vezes. Passou: idioma, L18, bloco de lead, 163 mensagens dos casos sem disparo indevido, 23
+  de 27 defeitos plantados. Resposta da coordenadora: mudança de mecanismo (provisória P17),
+  não de lista de palavras; amarração do resumo ao grupo cotado feita por código; os 30 testes
+  do verificador e as 169 respostas reais da rodada integrada como critério de saída; `lead-04`
+  e `man-06` entram na mesma lista. G em esforço muito alto. Sem servidor local até a medição
+  do Éverton terminar
+- 13/11 22h22 · Éverton · pedido de mais uma medição do Haiku 5.5, no nível muito alto (`xhigh`): 98 casos
+  e rajada de 10 conversas, no mesmo código (895d8aa) e com o mesmo juiz, como mais uma coluna
+  da tabela. O nível continua em aberto e o `MODELO` fica no médio. Passado à frente I, com
+  a conferência de que a cópia de medição aceita `xhigh` (nível inválido vira médio) e a
+  prova pelo log do gateway. Nenhuma outra rodada de eval na máquina até ela terminar
+- 13/11 22h34 · I · medição do Haiku no nível muito alto aceita e passada ao Éverton: 85% (84 de 98), contra
+  86% no alto, 82% e 79% no médio e 80% no baixo. Tempo por turno (p50, p95, máximo): 2,9 /
+  11,7 / 27,3 s, contra 2,3 / 5,5 / 11,9 s no alto. Por conversa: 13.669 tokens de entrada e
+  1.281 de saída, US$ 0,0020 (alto: 12.838 e 676, US$ 0,0016). Nenhum corte por limite de
+  tokens (maior saída 3.137 de 8.000), nenhuma ida ao reserva, rajada com 40 de 40 normais.
+  Mesma cópia de medição do alto, sem mudança de código (ela já aceitava `xhigh`); nível
+  conferido em 40 requisições do log do gateway; rodou das 22h18 às 22h25. Ressalva: a suíte
+  da I rodou uns 16 s no começo da rodada. Tabela em `docs/revisoes/modelos.md` (a7ae9b8,
+  64f0526)
+- 13/11 22h34 · I · causa do erro de entrada no código integrado provada pelo log do gateway: as 12
+  chamadas recusadas têm a mesma forma e o mesmo erro da API (o modelo não aceita conversa que
+  termina em mensagem do assistente). O pedido terminava no rascunho do assistente, e a
+  mensagem de conferência do laço da G ia para o campo de sistema. A falha é sempre a chamada
+  refeita depois da conferência, e nesses 12 turnos o último texto de modelo foi do reserva.
+  Corrigido no adaptador (5c0df15: a conferência vai ao Haiku como texto do usuário); chamada
+  real com a forma nova passou. Correções da segunda rodada entregues (ce3ee56, 1b2f837,
+  13e01d7, 77fc438, 400c35d, 7f11dee, 18976f5, 967ff96; cabeça 64f0526, 711 testes): 79 das 83
+  sondas do verificador passam, e as 4 restantes dependem do laço. Terceira rodada do
+  verificador lançada (só o delta), com ataque à conferência como texto do usuário; terceira
+  rodada integrada em curso, com critério de zero falha do modelo
+- 13/11 22h34 · I · incidente de sigilo, sem dado real: dois commits (77fc438 e 5c0df15) foram publicados
+  na branch da I com o gate reprovando, por causa de um endereço IP de faixa reservada a
+  documentação e de um e-mail com domínio reservado, os dois inventados, numa linha de teste.
+  Saíram em ad2fc72 e o gate passa na cabeça; continuam no histórico da branch. O gate não lê
+  o conteúdo de commits antigos, só a árvore atual, as mensagens e os autores. A I não entra
+  na `main` antes de o Éverton decidir se o histórico fica assim
+- 13/11 22h34 · I · capacidade de `producao` sem gateway, pelo que foi medido: só o reserva responde, com
+  20 chamadas por minuto por conta e modelo, limite dividido com `dev`. Dá cerca de 13 turnos
+  por minuto somando todas as conversas: 10 a 13 conversas simultâneas no ritmo de uma pessoa;
+  uma conversa automatizada sem pausa já passa do limite
+- 13/11 22h37 · coordenadora · terceira rodada no código integrado, com o adaptador corrigido (I 64f0526,
+  F 7a3f50d, G 22455e4, B2 15cbb00): 98 de 98, todos os blocos em 100%; p50 2,2 s, p95 4,5 s,
+  máximo 8,6 s; 164 turnos com zero falha do modelo, zero principal pulado e zero
+  contingência. A correção do erro de entrada está confirmada no runtime: o Haiku respondeu
+  todas as chamadas. Ressalva: o juiz desta rodada é o da B2 em 15cbb00, que o verificador
+  reprovou por aprovar quatro formas de resposta errada; a nota vale como medida do agente,
+  não como prova do critério de 95% por bloco
+- 13/11 22h37 · B2 · verificador independente (15cbb00): REPROVADO, 4 achados altos. O juiz e três
+  expressões ficaram mais frouxos que na `main`: aprovam desconto dito com "cada noite sai
+  por", total errado com "no total" depois do valor, política de cancelamento inventada
+  seguida de "não tenho informação" (`inv-07`) e "bebês só são contados se ocuparem cama"
+  (`man-07`). Médios: "cada" e "each" soltos como rótulo, subtotal aprovado como preço de
+  cada noite, 3 respostas certas que a `main` aprovava passaram a reprovar, 7 de 18 defeitos
+  plantados sobrevivem. Nenhuma resposta real correta do Haiku reprova no juiz novo. Lista de
+  correção enviada, com o princípio de conferir o valor pela estrutura da estadia (diária,
+  taxa, subtotal, total) em vez de alargar lista de palavras. Entram junto três ajustes de
+  caso: turno 4 de `lead-12-troca-resumo` vira um sim limpo (P13), `lead-05` turno 2 e
+  `hand-09`
+- 13/11 22h53 · F · verificador independente, quarta rodada (7a3f50d): REPROVADO pelo C5. A separação de
+  afirmação e pergunta só reconhece vírgula, ponto, ponto e vírgula, exclamação e quebra de
+  linha; com travessão, reticências, dois-pontos, emoji, parênteses, "e" ou sem pontuação, 34
+  de 106 mensagens mantinham o resumo antigo. C7 (médio, depende de reinício do Durable Object
+  no meio do POST): o marcador de envio fica sem contador e a estadia chega a 3 ou 4 POSTs.
+  Baixos: C6, C8 (9 de 31 defeitos plantados escapam), C9. Passou: teto por estadia em 3.768
+  sequências, os 18 testes da rodada 3, os 125 ataques da P15, 49 de 50 confirmações naturais,
+  sim com pergunta. Nenhum achado alto
+- 13/11 22h53 · coordenadora · sonda do C5 com o modelo real, no código integrado (I 64f0526, F 7a3f50d,
+  G 22455e4): 20 mensagens que misturam mudança e pergunta, com resumo pendente, seguidas de
+  "sim". Em 17 o agente percebeu a mudança (resumo novo com 3 hóspedes ou pergunta de
+  esclarecimento sem enviar). Em 3 o lead saiu com 2 hóspedes; em 2 dessas, o próprio agente
+  tinha perguntado "quer que eu atualize para 3 hóspedes?" e o "sim" do hóspede enviou o
+  resumo antigo. Decisão provisória P18: pergunta do agente com resumo pendente derruba o
+  resumo (correção no laço da G, item novo da lista dela); a rede de texto da F fica como
+  está e o C5 e o C6 viram limite conhecido. Para a F ficam o C7, o C9 e os testes do C8;
+  depois, conferência só do delta e a F entra na `main`
+- 13/11 23h02 · F · correções da quarta rodada entregues (c87d3a9, a9c8a8f, 9ceeeb1; cabeça 0e6a29c, 869
+  testes): marcador de envio sem resultado bloqueia a estadia como resultado incerto; aberturas
+  "uma dúvida" e "só uma pergunta" não derrubam mais a pergunta pura; testes dos defeitos
+  plantados que tinham escapado. Ensaio do merge sobre a `main`: limpo, 869 testes, tipos e
+  sigilo OK. Quarta rodada integrada (I 64f0526, F 0e6a29c, G 22455e4, B2 15cbb00): 98 de 98,
+  p50 2,1 s, p95 4,6 s, máximo 9,3 s, zero falha do modelo e zero contingência em 164 turnos
+  (vale a mesma ressalva do juiz da B2). Quinta rodada do verificador lançada, só do delta
+  (Opus 5.5, esforço alto), com ordem de procurar estadia legítima bloqueada sem falha
+- 13/11 23h03 · G · correções da segunda rodada entregues (811ff77, 0c62099, 2714e5d, 5f18cd9, 3e10551;
+  1046 testes): palavra do hóspede só provoca uma chamada focada ao modelo (P17); a
+  conferência não corta mais a explicação do acréscimo; o resumo é recusado quando tem menos
+  pessoas que o grupo cotado; formas diretas de registro, concessão, regra e disponibilidade
+  cobertas; pergunta do agente com resumo pendente derruba o resumo (P18). Números da G: 27
+  dos 30 testes do verificador passam (os 3 de controle esperavam handoff forçado e ficam
+  vermelhos por desenho da P17); nas 80 mensagens comuns, 0 handoff por código e 0 texto fixo,
+  com chamada focada em 28; os 40 pedidos reais passam quando o modelo chama a ferramenta; 0
+  de 121 respostas reais do Haiku alteradas pela conferência; 22 defeitos plantados, todos
+  pegos. Limites declarados: concessão sem palavra de desconto nem valor quando o modelo erra
+  duas vezes (19 de 40 no modelo falso); trava de grupo solta se o modelo recotar com menos
+  pessoas; `lead-04` depende de pedido da conferência. Respostas da coordenadora às 8
+  leituras: hesitação do hóspede não derruba o resumo mesmo com pergunta do agente
+  (complemento da P18); com a ferramenta já chamada pelo modelo, a palavra de desconto define
+  o motivo (complemento da P17); o resto aceito. Rodada integrada e sonda da P18 em curso;
+  terceira rodada do verificador sai depois dos dois ajustes
+- 13/11 23h07 · Éverton · decisões (X24): histórico da I fica como está e entra por merge normal; gateway
+  de `producao` autorizado, com a chave por referência; só bloqueia a entrada na `main` o que
+  é determinístico ou gera lead errado; os 95% por bloco se provam com três rodadas seguidas
+  em `dev`, na soma por bloco, com o juiz corrigido e aprovado; modelo principal Haiku 5.5 no
+  nível alto, muito alto descartado, reserva em aberto; adiantar K (infraestrutura), N
+  (rascunhos), M2 (módulos estáveis) e L (custo) sem esperar a leva 2 inteira. Passado à I:
+  fixar o nível alto na configuração de `dev` e de `producao`
+- 13/11 23h14 · coordenadora · rodada integrada com a cabeça nova da G (I 64f0526, F 0e6a29c, G 3e10551, B2
+  15cbb00): 97 de 98, p95 de 4,4 s, zero falha do modelo. A falha é o `lead-05`, prevista
+  pela G (hesitação seguida de pergunta do agente derrubava o resumo); o ajuste da hesitação
+  fecha. Sonda da P18 de novo: em 8 de 20 o agente remontou o resumo com o dado novo no mesmo
+  turno, mas ainda saiu lead com dado antigo quando o agente, em dúvida, afirmou em vez de
+  perguntar ("se quiser, eu atualizo o resumo com 3 hóspedes" seguido do resumo antigo e do
+  "sim"). Complemento da P18, provisório: o resumo só é repetido se o modelo responder "não"
+  a uma pergunta fechada do código sobre mudança possível; item novo na lista da G. Achado
+  para a F: o modelo gravou no campo do nome um texto com parênteses e instrução ("Pedro (se
+  puder, me diga também o sobrenome)") e o lead saiu assim; validação do nome fica para depois
+  da entrada da F na `main`
+- 13/11 23h14 · coordenadora · primeiro ensaio com TODAS as branches juntas sobre a `main` (I 64f0526, F
+  0e6a29c, G 3e10551, H c905a09, B2 15cbb00): merge limpo, tipos e sigilo OK, suíte com 1299
+  de 1300. O teste vermelho é da H ("item 1b"): na combinação, a segunda passagem depois de
+  uma falha do objeto envia o lead em vez de segurar para reapresentar. Bloqueia; passado à
+  H, que foi retomada em sessão nova no Opus 5.5 (esforço alto), já mesclando a F nova
+- 13/11 23h14 · K e N · abertas por ordem do Éverton (X24), antes de a leva 2 fechar. K: diagnóstico do
+  erro 530 de `producao` só por leitura, gateway `concierge-producao` com a chave por
+  referência, `scripts/validar-producao.sh`; para e pergunta antes de qualquer escrita de DNS,
+  e só faz o primeiro deploy depois de provar no commit exato que envio desligado é zero
+  POST. N: rascunhos, sem tocar no `DECISOES.md`. Com elas são 7 frentes vivas (F, G, H, I,
+  B2, K, N); o limite de 5 foi passado por ordem do Éverton. L e M2 parcial entram quando os
+  verificadores da F e da I terminarem, por causa da memória (12 GB de 17 em uso)
+- 13/11 23h18 · I · NA `main` (27c3093). Verificador independente, terceira rodada (64f0526): APROVADO,
+  sem achado alto nem médio; os dois médios da segunda rodada fechados; conferência do laço
+  como texto do usuário testada com o laço real da G (todo pedido termina no usuário, a
+  conferência não entra no histórico gravado). Depois do veredito entrou só a configuração do
+  nível alto (6008d02) e documentação (11cca93), conferidas pela coordenadora: muda uma
+  variável nos dois ambientes e comentários. Ensaio final sobre a `main`: limpo, 711 testes,
+  tipos e sigilo OK. Baixos que ficam como seguimento, sem bloquear (X24): o código numérico
+  do log pode pegar dígitos de um dado ecoado no erro; o log não diz o motivo da resposta
+  inútil; 7 de 68 defeitos plantados escapam da suíte. Para o Éverton decidir: a conferência
+  do laço chega ao modelo no mesmo nível de uma mensagem do hóspede, então um hóspede que
+  copie o texto dela não ganha autoridade, mas também não é distinguível
+- 13/11 23h18 · coordenadora · `dev` publicado da `main` em 27c3093 (Haiku 5.5, nível alto, gateway de
+  `dev`, reserva GLM-5.3 Flash, webhook falso). Fumaça contra `dev`: marco1 100% (cotação,
+  resumo, confirmação em outro turno, lead no webhook falso, desconto com handoff); contrato
+  77%, com duas falhas do juiz antigo de rótulo, que ainda é o da `main`
+- 13/11 23h22 · K · diagnóstico do erro 530 de `producao`, só por leitura: o hostname de produção não tem
+  registro próprio e cai num curinga com proxy que aponta para um túnel sem conector para esse
+  nome. O deploy de `producao`, como está na `main`, publica só no endereço padrão do Worker e
+  não escreve DNS. Dois caminhos para servir o hostname: rota de Worker na zona (não escreve
+  DNS; o curinga fica intacto) ou domínio personalizado (cria um registro exato só para esse
+  nome). O token não lê o Bot Fight Mode nem as regras de configuração da zona; a checagem de
+  integridade de navegador está ligada na zona inteira. K parou antes de qualquer escrita e
+  levou duas perguntas ao Éverton: rota ou domínio personalizado, e quem confere o Bot Fight
+  Mode e cria a regra do hostname. Segue no gateway e no script de validação
+- 13/11 23h22 · L e M2 · abertas por ordem do Éverton (X24). L: `scripts/custo.mjs` sobre os relatórios
+  de eval. M2, primeira passada: revisão de segurança da `main` atual, revisão de código dos
+  módulos estáveis (núcleo de preço e datas, catálogo, página, webhook falso, runner e
+  simulador, gate de sigilo) e segunda opinião do Gemini 4 Argon, em esforço alto, sobre o
+  cálculo de preço. Os módulos em mudança ficam para a segunda passada, só do delta
+- 13/11 23h29 · F · verificador independente, quinta rodada (só o delta, cabeça 0e6a29c): REPROVADO por um
+  achado. Passou: C7 corrigido, nenhum bloqueio a mais, a P14 inteira (3.768 sequências) idêntica à
+  rodada 4. Reprova o C10 (ALTO, regressão do a9c8a8f): a retirada das aberturas "uma dúvida", "uma
+  pergunta" e "só uma pergunta" também valeu na leitura do sim (src/lead.ts:466), e "sim, uma dúvida"
+  passou a enviar o lead (17 de 32 mensagens; na rodada 4, nenhuma); na sequência do verificador saem
+  dois leads da mesma estadia. Bloqueia pela X24 item 3 (lead errado). Decisão provisória P19: sim com
+  anúncio de dúvida não envia. Correção pedida à frente: tirar a retirada só da leitura do sim, levar
+  para a suíte os 10 testes do C10 e os casos do C7 que pegam os defeitos plantados X06 e X03; C11
+  (baixo, lado seguro: "uma pergunta, tem wifi?" ainda derruba o resumo) em commit separado, se for a
+  troca de um termo. Seis de 14 defeitos plantados escapam da suíte (C12, baixo)
+- 13/11 23h29 · K · relatório 2: o gateway `concierge-producao` existe e guarda a chave da Anthropic (X24 item
+  2), com as mesmas opções do de `dev`, conferido por leitura. Achado: o roteiro da frente I estava
+  incompleto, o secret precisa existir no Secrets Store antes de ligar o provedor ao gateway. Pedido à
+  frente I: a linha `AI_GATEWAY` de `producao` e a correção do roteiro. A rota de `producao` segue
+  parada à espera do Éverton (rota do Worker ou domínio personalizado; Bot Fight Mode)
+- 13/11 23h29 · N · relatório 1: rascunhos do `README.md` e do `docs/COMO-FOI-FEITO.md` na `frente-n` (6ed4579),
+  com marcador no que se preenche no fim. Respondido: os nomes dos modelos ficam, com revisão do
+  Éverton; nada em `docs/sessoes/` até o Éverton escolher as sessões, e a frente adianta fora do
+  repositório o programa que limpa um export
+- 13/11 23h31 · H · diagnóstico do teste que falhava no ensaio de todas as branches ("item 1b" de
+  `test/concorrencia-h.test.ts`): o teste estava desatualizado, não há defeito. Com a G, a pergunta do
+  turno 2 repete o resumo (L9), o "sim" do turno 3 vale e a primeira passagem envia; a segunda passagem
+  só devolve a resposta gravada (1 chamada ao modelo, 1 POST, 1 lead). Conferido por leitura: só o
+  laço da G chama `pedidoDeConfirmacaoPendente`. Autorizado reescrever o subcaso sem fixar se a
+  primeira passagem envia (a ordem de entrada é F, H, G, e a G ainda muda esse ponto): o teste prova
+  que a segunda passagem não acrescenta efeito. Prova pedida em três árvores. A H já tem a F nova
+  (efb67f7): 907 testes verdes na branch
+- 13/11 23h39 · I · nível alto provado em `dev` publicado: no log do gateway, janela da fumaça de 23h17m50 a
+  23h18m28, 41 chamadas ao Haiku, 41 com status 200, as 41 com o nível alto, nenhuma ao reserva
+  (leitura da frente). Na branch, seis commits depois da entrada na `main`: log de falha sem dígito
+  solto e com nome de erro de lista fechada (33e67f1, 6e5d5dc), motivo da resposta inútil numa palavra
+  (ede844c), testes K10 e K11 (53681a5), `AI_GATEWAY` de `producao` (d561a05) e o passo do Secrets Store
+  no roteiro (b34ab95). Ensaio da coordenadora em b34ab95: merge limpo, 734 testes, tipos sem erro,
+  SIGILO OK. Verificador independente, quarta rodada (só o delta), rodando
+- 13/11 23h39 · L · `scripts/custo.mjs` e teste na `frente-l` (22eda87); o CHECK de aceite passa na leitura da
+  frente. Verificador independente rodando. Aviso da frente: os relatórios versionados são de código e
+  modelo antigos; o número do README sai de uma rodada nova com o modelo final, de um relatório só.
+  Pedidos à dona do runner, a repassar à B2: modelo por chamada, tokens de cache separados, modelo e
+  nível no cabeçalho do relatório, uso dos pedidos que falham
+- 13/11 23h39 · M2 · revisão de segurança, primeira passada (código da `main` em c6764a0): 0 críticos, 1 alto,
+  5 médios, 7 baixos. Bloqueiam: (M1) a trava de valores aceita `R$` de texto livre do modelo escrito
+  junto com chamada de ferramenta e de nome de hóspede no resumo, roteado à G; (M2) o gateway guardava
+  o pedido inteiro com nome e telefone, contra a L22, resolvido em `producao` pela K (log desligado,
+  conferido por leitura; o de `dev` segue ligado, com dados sintéticos); (M3) o gate não lê o conteúdo
+  de commits antigos: varredura da coordenadora com os 10 termos fixos em 459 commits publicáveis
+  (`git log -p --branches --tags --remotes`): 0 linhas; repetir antes de tornar o repositório público.
+  Não bloqueiam e vão para a lista de limites: sem limite de gasto por cliente ou sessão (alto; a
+  correção é de configuração e de conta, decisão do Éverton), `session_id` como única credencial, leads
+  com dados de terceiros quando o envio real for ligado, e os baixos. Relatório no rascunho da
+  coordenadora; `docs/revisoes/m2.md` sai quando as três revisões da primeira passada chegarem
+- 13/11 23h39 · K · relatórios 3 e 4: `scripts/validar-producao.sh` na `frente-k` (33c8316), verificador
+  independente rodando; prova de que o envio desligado é zero POST na `main` (6 testes, um deles pelo
+  Durable Object); o cliente urllib do Python leva 403 (erro 1010) no endereço padrão de `dev`,
+  evidência para a regra de integridade de `producao` (L23). Prova do modelo em `producao` decidida
+  sem religar o log: nível provado em `dev`, variável presa por teste, e em `producao` o log do Worker
+  sem `principal_pulado` nem `modelo_falhou`. Rota e primeiro deploy seguem parados à espera do Éverton
+- 13/11 23h39 · N · rascunho completo na `frente-n` (ede0c12): README, "Como foi feito", dois desenhos e
+  `docs/setup/` (com o hook de início de sessão e a skill de orquestração, reduzida). Parada até o fim
+  da leva 2. Programa de export guardado fora do repositório; nada em `docs/sessoes/` até o Éverton
+  escolher as sessões. Verificador independente de sigilo e de fatos rodando: `docs/setup/` é cópia de
+  configuração pessoal e o repositório fica público
+- 13/11 23h46 · F · correção da quinta rodada na `frente-f` (28109d8, três commits; em `src/` só 11 linhas de
+  `src/lead.ts`): a retirada das aberturas saiu da leitura do sim (C10), testes dos marcadores de
+  estadia (C12) e "uma pergunta" como abertura neutra só no rearme (C11). Ensaio da coordenadora:
+  merge limpo, 1040 testes, tipos sem erro, SIGILO OK. Verificador independente, sexta rodada (só o
+  delta), rodando. Leitura da frente aceita e P19 ajustada: "sim, uma dúvida" é lido como outra
+  coisa, o resumo cai e o agente refaz quando o hóspede quiser fechar; o código não repete o pedido
+- 13/11 23h46 · M2 · revisão de código dos módulos estáveis (1 alto, 6 médios, 10 baixos, nenhum crítico) e
+  segunda opinião do Gemini 4 Argon sobre o cálculo (nenhuma divergência em centavos nos 15 imóveis;
+  6 pontos, nenhum de preço errado). Primeira passada fechada em `docs/revisoes/m2.md`, com a resposta
+  do Gemini em `docs/conselho/`. Roteado: gate de sigilo (conteúdo do histórico, saída com trecho do
+  termo, sufixo composto, teste) para a frente S, aberta agora; trava de `producao` do runner por
+  negação, `leads_ate_agora` em turno paralelo, juiz de hóspedes inválidos e os pedidos da L para a
+  B2, depois da lista do juiz; saída sem ano anterior à entrada (P5 contra CA-06, 363 noites cotadas)
+  para o Éverton decidir. Conferido sem imprimir valor: a hipótese do sufixo composto não se aplica
+  ao ambiente real
+- 13/11 23h47 · L · NA `main` (eec433a). Verificador independente (22eda87): APROVADO, só achados baixos. As
+  contas batem com um programa à parte em frações exatas; relatório sem uso, só agregado, JSON
+  inválido e pasta vazia terminam em `CUSTO FALHOU`; sem rede e sem escrita (conferido com `strace`).
+  Ensaio da coordenadora: merge limpo, 711 testes, tipos sem erro, SIGILO OK, CHECK com `CUSTO OK`.
+  Limites anotados: o preço é constante do script e não acompanha o `wrangler.jsonc`; os relatórios
+  versionados são de antes do Haiku, então o valor do CHECK não é o custo real; conversa com zero
+  tokens puxa a média para baixo; arquivo passado duas vezes conta duas vezes; 4 de 14 defeitos
+  plantados escapam do teste. Falta da frente: o monitor diário, depois que `producao` existir
+- 13/11 23h49 · Éverton · X25: três suítes de teste ao mesmo tempo; o resto do teto de carga não muda. Com
+  pressão de memória, a coordenadora volta para duas e avisa. A trava (`com-trava.sh`, fora do
+  repositório) passou a ter três vagas; as frentes não mudam nada no jeito de chamar. Medido na hora:
+  8 GB disponíveis, pressão de memória zero, carga 5,9 em 8 núcleos. A coordenadora olha a pressão a
+  cada relatório
+- 13/11 23h54 · G · cabeça 29ae3aa na `frente-g`: exceção da hesitação (2b16462), desempate do motivo
+  (1e998dd), pergunta fechada antes do rearme (e2be4dd), merge da `main`, contagem real das chamadas
+  (805513c) e a trava de valores da revisão de segurança (29ae3aa). A frente relata 1049 testes na
+  branch. Verificador independente, terceira rodada, rodando sobre a G sozinha e sobre a F com a G.
+  Ensaio de todas as branches juntas (I 433439c, F 28109d8, G 29ae3aa, H, B2 3b37fa0): merge limpo,
+  tipos sem erro, SIGILO OK, mas 2 testes da G falham (`test/foco-g.test.ts`, pergunta fechada com
+  resposta inesperada: a resposta do turno sai com o texto da pergunta fechada). Isolado por pares: a
+  G sozinha, com a I e com a B2 passa; com a F nova falha. Pedido à G: mesclar a F, dizer se é defeito
+  real ou ordem do modelo simulado, e corrigir. Rodada integrada com o modelo real em nível alto
+  (98 casos e a sonda do resumo pendente) rodando na árvore das cinco branches
+- 13/11 23h54 · K · verificador independente do `scripts/validar-producao.sh` (33c8316): REPROVADO. Passou: só
+  GET no servidor que fingia o webhook, nos 5 modos e em 30 cenários de falha; a trava decide pelo
+  ambiente que o `/saude` devolve; nenhum endereço em argumento de processo. Reprova um falso verde:
+  com argumentos extras repassados ao runner (`-h`, `--listar`, `--bloco`, `--alvo`) sai `PRODUCAO OK`
+  sem nenhuma conversa. Médio: um 307 ou 308 no `/chat` é seguido com POST e corpo, no script e no
+  runner. Correções pedidas à K; a parte do runner foi para a B2
+- 13/11 23h54 · N · verificador independente dos rascunhos (ede0c12): REPROVADO por uma afirmação, não por
+  sigilo: o README dá como garantida a trava de valores, que a revisão de segurança furou e a G ainda
+  está corrigindo. Nenhum endereço, e-mail, máquina, conta, token ou domínio achado; quase 60 números
+  batem com a fonte. Baixos: restos de outras entregas nas cópias do setup, cenário de ataque em três
+  trechos, dados vencidos. Regra passada à frente: garantia só no presente se já está na `main` e
+  verificada. Correções pedidas; a verificação final roda no fim, com tudo preenchido
+- 13/11 23h58 · integração · rodada integrada com o modelo real em nível alto, servidor local, árvore das
+  cinco branches (I 433439c, F 28109d8, G 29ae3aa, H, B2 3b37fa0), 98 casos: 97 de 98. Oito blocos em
+  100% e contrato em 88%. A única falha (`con-10-idioma`) é do juiz: a resposta em inglês está certa
+  e o juiz novo não reconhece o rótulo da diária em inglês; correção pedida à B2. Nenhum
+  `modelo_falhou` nem `principal_pulado` em 165 turnos; p50 2,5 s, p95 5,3 s, máximo 15,7 s. Não conta
+  para a prova dos 95%, que é em `dev` publicado e com o juiz aprovado
+- 13/11 23h58 · B2 · relatório da cabeça b954a48 (juiz refeito pela estrutura da estadia; no corpus de 100,
+  0 erradas aprovadas e 1 certa reprovada, na leitura da frente). A frente já está adiante, com os
+  itens do runner da M2, o redirecionamento e o rótulo em inglês. A segunda rodada do verificador
+  sai sobre uma cabeça só, quando esses itens estiverem publicados
+- 13/11 23h58 · I · verificador independente, quarta rodada (b34ab95): APROVADO. Ressalva baixa, regressão do
+  delta: dígito colado em letra vira código de erro no log em 70 casos novos; a correção é trocar um
+  trecho de expressão em uma linha, provada pelo verificador. Pedida à frente antes do merge, com o
+  teste que faltava. Limite conhecido: se a plataforma ecoar o pedido no começo da mensagem de erro,
+  até 4 dígitos vão para o log (já existia na `main`). Documento do gateway ajustado em 433439c: log
+  desligado em `producao` e prova pelo log do Worker
+- 13/11 23h58 · N · correções do verificador na `frente-n` (1005b2c, com a `main` mesclada). Parada; a
+  verificação final roda no fim da leva 2
+- 13/11 23h58 · H · cabeça a58ff5e. A frente achou e corrigiu um defeito determinístico em arquivo dela
+  (0912578): o contador e o bloqueio por estadia da P14 só iam ao armazenamento no fim do turno; num
+  turno abandonado pelo Worker a estadia perdia o bloqueio e saía um terceiro POST. Agora são gravados
+  na hora. A mensagem desse commit fala também em reinício do objeto, que não tem teste: o caminho
+  provado é o do turno abandonado. Teste "item 1b" reescrito como autorizado. A frente relata 918
+  testes na branch e os quatro arquivos dela verdes em quatro árvores. Verificador independente,
+  terceira rodada, rodando sobre a H sozinha e sobre a F nova com a H
+- 13/11 23h59 · I · delta NA `main` (fcb7dc2): log de falha sem dígito solto e com nome de erro de
+  lista fechada, motivo da resposta inútil, `AI_GATEWAY` de `producao` e o roteiro do gateway com o
+  log desligado. A regressão baixa do verificador foi corrigida em 4a63568 com a troca que ele provou.
+  Ensaio da coordenadora: merge limpo, 740 testes, tipos sem erro, SIGILO OK; a sonda de 910 casos
+  do verificador, repetida na cabeça nova, dá os 140 que já existiam na `main` e nenhum novo. A
+  frente fica viva só para a fase 2 (medição no código final)
+- 14/11 00h02 · integração · sonda do resumo pendente com o modelo real em nível alto, na árvore das cinco
+  branches: 20 mensagens que misturam mudança e pergunta, depois "sim". 14 não enviaram (lado
+  seguro). 6 enviaram: em 4 o agente tinha remontado o resumo com o dado novo e o lead saiu certo;
+  em 1 ("esquece qual o horário do check-in?") o agente respondeu, repetiu o pedido e o hóspede
+  confirmou o que viu; em 1 o lead saiu com o campo nome errado. Nenhum lead com dado velho (na
+  sonda anterior, sem a pergunta fechada, havia). Ensaio da F com a H: merge limpo, 1089 testes,
+  tipos sem erro, SIGILO OK
+- 14/11 00h02 · F · achado da sonda, lead errado: com "o titular é o Pedro tudo bem?", o modelo chamou
+  `montar_resumo` com o nome "Pedro (se puder, me diga também o sobrenome)", o resumo saiu assim e o
+  "sim" enviou o lead com esse texto no nome. Segunda vez que aparece. Decisão provisória P20: o nome
+  do lead só pode ser formado por palavras que o hóspede escreveu; fora disso a ferramenta recusa.
+  Pedido à frente F, em commit separado por cima de 28109d8, com conferência própria depois
+- 14/11 00h02 · K · correções da rodada 1 na `frente-k` (f28ce3e, cinco commits): argumentos extras em lista
+  fechada e mínimo de 60 casos executados para o `PRODUCAO OK`; nenhum cliente segue redirecionamento;
+  `--clientes` exige chamadas ao modelo maiores que zero; autoteste com servidores locais de mentira
+  (a frente relata 21 de 21 defeitos plantados pegos). Verificador independente, segunda rodada (só
+  o delta), rodando. A conferir entre a K e a B2: o mínimo de 60 casos depois que a trava do runner
+  passar a ser por negação
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -588,6 +1091,10 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   `security`, `task-contract`, `testing`.
 - Subagentes: `code-reviewer` em Opus 5.5, como verificador das frentes A, B1, B2 e D;
   `design-reviewer` (frente J, passo 1).
+- Seções do `CLAUDE.md` global que valeram: entregas grandes (discovery e depois coordenadora),
+  isolamento de worktree, sync git e escalação.
+- Hook de início de sessão `git-sync` e a skill de orquestração de entregas (planejamento e
+  coordenação).
 
 ## Pré-voo (antes da leva 1)
 
@@ -633,6 +1140,7 @@ mexer na configuração.
 | `~/.config/agente-concierge/reservado/**` (fora do repo) | C | C | entra no repo na entrega (N) |
 | `.github/workflows/**`, `scripts/custo*.mjs` | — | — | L |
 | `scripts/validar-producao.sh` | — | — | K |
+| `scripts/verificar-sigilo.sh`, `scripts/verificar-sigilo.teste.sh` | — | — | S |
 | `README.md`, `DECISOES.md` (texto final; decisões novas a coordenadora registra a qualquer hora), `docs/desenhos/**`, `docs/sessoes/**`, `docs/setup/**` | — | — | N |
 | `docs/revisoes/modelos.md` | — | I (portão) | — |
 | `docs/exploracoes/**`, `docs/prompts/**`, `docs/revisoes/m1.md`, `docs/revisoes/m2.md`, `docs/conselho/**`, `docs/CONTRATO.md`, `docs/EVALS.md`, `CLAUDE.md`, `AGENTS.md` | coordenadora | coordenadora | coordenadora |
@@ -727,8 +1235,9 @@ que escreve o agente.
 | Provedor e modelo no T3 Code | Quem roda |
 |---|---|
 | Claude Fable 5.2 (`claudeAgent`, `claude-fable-5-2`) | só a coordenadora, desde 13/11 às 18h35 (`DECISOES.md` X16). Antes: A, J, e F e G até a troca |
-| Claude Opus 5.5 (`claudeAgent`, `claude-opus-5-5`), esforço médio (X16) | F, G, I, K, N e os subagentes de revisão e de verificação |
-| Gemini 4 Hydrogen (`antigravity`, `gemini-4-hydrogen`) | B2, D e, desde a leva 2, E, H e L (`DECISOES.md` X14: o limite semanal do Claude chegou a 79%). Desde a X16, é o único provedor fora do Claude: fica também com o conselho e com o que estava previsto para o GPT |
+| Claude Opus 5.5 (`claudeAgent`, `claude-opus-5-5`), esforço médio, alto ou muito alto conforme a dificuldade (X23; antes só médio, X16) | todas as frentes desde 13/11 às 21h26: F, G, I, K, N e, vindas do Gemini, B2, H e L; e todos os subagentes de revisão e de verificação |
+| Gemini 4 Hydrogen (`antigravity`, `gemini-4-hydrogen`) | B2, D e, desde a leva 2, E, H e L (`DECISOES.md` X14: o limite semanal do Claude chegou a 79%). Desde a X16, é o único provedor fora do Claude: fica também com o conselho e com o que estava previsto para o GPT. Saiu das frentes em 13/11 às 21h26 (X23): até ali fez B2, D, E e H |
+| Gemini 4 Argon (`antigravity`, `gemini-4-argon`), esforço alto | só a revisão final (a segunda opinião da M2), desde a X23 |
 | GPT-6 Astra (`codex`, `gpt-6-astra`) | saiu do plano em 13/11 às 18h35 (X16). Até ali escreveu o conjunto reservado (C) e uma das leituras do conselho no Marco 1 |
 | DeepSeek pago (`opencode`, `deepseek/deepseek-flash`) | saiu do plano em 13/11 às 18h35 (X16). Até ali fez a B1 |
 
@@ -750,8 +1259,9 @@ que escreve o agente.
    CHECK que usa variável do arquivo de ambiente é rodado pela coordenadora.
 5. O relatório é conferido por um subagente verificador do Claude antes do merge, como o
    de qualquer frente.
-6. Provedor falhou ou a cota acabou: a frente passa para o Gemini 4 Hydrogen, com registro
-   no log e aviso no resumo da leva.
+6. Desde a X23 nenhuma frente roda fora do Claude. Se o provedor falhar ou a cota acabar, a
+   coordenadora para a frente e avisa o Éverton (antes a frente passava para o Gemini 4
+   Hydrogen, X7).
 7. O rodapé do commit nomeia a ferramenta e o modelo que ajudaram de fato, no lugar de
    "Claude Code". Autor e committer continuam os do repositório.
 
@@ -1173,7 +1683,8 @@ MANUAL: captura de tela da conversa do Marco 1 feita na página em `dev`.
 - [ ] Revisão de código do diff integrado (`code-reviewer`).
 - [ ] Revisão de segurança (`security-reviewer`): segredos, injeção, parâmetros
       enviados ao catálogo, dados pessoais em log, abuso de custo.
-- [ ] Segunda opinião do Gemini 4 Hydrogen (a leitura do GPT saiu do plano, X16), focada
+- [ ] Segunda opinião do Gemini 4 Argon em esforço alto (X23; a leitura do GPT saiu do plano,
+      X16), focada
       em cálculo, confirmação, POST,
       concorrência e isolamento de sessões; registros em `docs/conselho/`.
 - [ ] Achado crítico ou alto corrigido antes de K.

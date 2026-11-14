@@ -11,6 +11,9 @@ export default defineConfig({
         bindings: {
           CATALOGO_URL: "https://catalogo.teste/catalogo/token-de-teste",
           LEADS_URL: "https://leads.teste/leads/token-de-teste",
+          // Fixos aqui: um .dev.vars.dev local (usado na medição de modelos) não muda o teste.
+          MODELO_RESERVA: "@cf/zai-org/glm-5.3-flash",
+          AI_GATEWAY: "concierge-dev",
         },
       },
     }),
