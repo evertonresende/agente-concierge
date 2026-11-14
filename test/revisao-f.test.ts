@@ -429,3 +429,16 @@ describe("B3: condição de preço sem número de três dígitos também é cond
     expect(lerConfirmacao("sim, se tiver wifi", GRM301, 3)).toBe("outra");
   });
 });
+
+describe("B6: o teto de 300 caracteres vale antes de qualquer leitura", () => {
+  it("pergunta neutra acima de 300 caracteres não é pergunta: é \"outra\" e derruba; abaixo, continua pergunta", () => {
+    const longa = "tem wifi? ".repeat(31);
+    expect(longa.length).toBeGreaterThan(300);
+    expect(lerConfirmacao(longa, GRM301, 3)).toBe("outra");
+    expect(lerConfirmacao("tem wifi? ".repeat(29), GRM301, 3)).toBe("pergunta");
+    let estado: EstadoLead = { ...ESTADO_INICIAL, pendente: GRM301 };
+    const cofre: Cofre = { ler: () => estado, salvar: (e) => { estado = e; } };
+    expect(pedidoDeConfirmacaoPendente(cofre, 3, "pt", longa)).toBeUndefined();
+    expect(estado.pendente).toBeNull();
+  });
+});
