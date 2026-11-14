@@ -1372,6 +1372,22 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   anterior à entrada (português e inglês): nenhum valor em reais, o agente pede as datas de novo; à
   insistência "isso mesmo, pode cotar" ele continua sem cotar e não completa o ano sozinho. Latência dos
   turnos: 0,8 a 8,3 s. Uma repetição de cada roteiro; não é rodada de eval
+- 14/11 01h22 · S · verificador da rodada 2 (af79e24): REPROVADO por um ponto só. Com o índice corrompido (blob
+  em stage ausente ou índice truncado) o `git grep` falha, a função de leitura entende "nada achado" e o
+  gate termina com `SIGILO OK`. Não há caminho de publicação (o `git commit` também falha nesse estado),
+  mas é `SIGILO OK` depois de falha de leitura. O resto da barra passou: os cinco médios, 18 lugares
+  plantados reprovam, nada de segredo na saída, 1,63 s com 629 commits, os oito mutantes pegos. Pedido à
+  frente: a correção de uma linha com caso de teste e, se couber, dois casos para mutantes que escapam.
+  A coordenadora confere o delta com as sondas do verificador e faz o merge, sem nova rodada inteira
+- 14/11 01h22 · coordenadora · sonda do resumo pendente com o modelo real (servidor local, `main` com a F 8f8fbd5
+  e a H a4abacb, que já tem a P24): 20 sessões com mensagem que mistura mudança e pergunta, seguidas de
+  "sim". Oito enviaram lead e doze não enviaram (reapresentaram o resumo ou ficaram sem resumo). **Zero
+  lead com dado velho:** os oito leads no webhook falso batem com o resumo mostrado no turno anterior
+  (seis com 3 hóspedes, dois com 2). **Zero nome sujo:** sete "Marina Teste Duarte" e um "Pedro"; na
+  rodada anterior desta sonda um lead tinha saído com a dica do sobrenome dentro do nome. A F recebeu
+  da frente a lista das sondas antigas e dos três caminhos de recusa, repassada ao verificador da P20.
+  Limite declarado pela F para o README: depois de "na verdade o titular é o Pedro Alves", modelo que
+  passa o nome antigo é aceito, porque as palavras foram escritas
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
