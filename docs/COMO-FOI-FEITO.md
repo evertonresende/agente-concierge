@@ -115,7 +115,7 @@ ela ter veredito.
 | T (datas sem ano, P21) | 1 | aprovada: 82.102 casos comparados com a árvore anterior; só mudaram as saídas sem ano a mais de 90 noites, que passaram a ser recusadas; 11 de 12 defeitos plantados pegos |
 | K (validação de `producao`) | 3, aprovada na terceira | R1: falso verde, `PRODUCAO OK` sem nenhuma conversa quando o script recebia argumentos extras; um redirecionamento no `/chat` era seguido com POST e corpo. R2: no modo completo, o runner ainda seguia o redirecionamento. R3: aprovada |
 | L (custo) | 1, aprovada | só achados baixos; as contas batem com um programa à parte em frações exatas |
-| N (estes textos) | 1 até aqui | R1: reprovada por uma afirmação, a trava de valores dada como garantida quando a G ainda a corrigia. O verificador final dos textos roda depois dos números finais: a preencher <!-- PREENCHER: verificador final da frente N --> |
+| N (estes textos) | veja o log | R1: reprovada por uma afirmação, a trava de valores dada como garantida quando a G ainda a corrigia. O verificador final dos textos reprovou duas vezes em 14/11, sem número de resultado errado em nenhuma: rodada 1 sobre 4a9ece4, com 4 altos, 7 médios e 3 baixos; rodada 2 sobre f015880, com 2 altos, 3 médios e 6 baixos. As rodadas seguintes e o resultado estão no log do backlog |
 | I (modelo) | 3, aprovada na terceira | R1: resposta `200` inútil do Haiku (vazia, cortada, erro como valor) não ia ao reserva. R2: fim de resposta que não batia com o conteúdo passava, e o mesmo id duas vezes quebrava o pareamento de chamada e resultado. R3: aprovada, sem achado alto nem médio; 7 de 68 defeitos plantados escapam, como seguimento |
 
 ### Merges de código sem verificador aprovado
@@ -449,7 +449,7 @@ canal do aviso ficaram com o Éverton.
 | Provedor e modelo | O que fez | Fase |
 |---|---|---|
 | Claude Fable 5.2 | coordenadora do começo ao fim; frentes A (produto até o Marco 1) e J (design e página); começo das frentes F e G; a frente F de novo de 13/11 23h28 a 14/11 02h55 (regra do nome, "sim" limpo e P29), por um desvio de modelo, contra a X23, que a coordenação não percebeu e cuja causa não foi determinada | leva 1 e leva 2 até a X16 nas frentes; as entregas da F do desvio passaram por verificador em Opus 5.5 |
-| Claude Opus 5.5 | verificadores independentes e subagentes de revisão desde a leva 1; frentes I, K, L e N; F (fora do desvio citado acima) e G depois da X16; B2 e H depois da X23; S e T, como subagentes em worktree; o revisor do reservado no papel da frente C (P33) | toda a entrega; a partir da X23, o único modelo das frentes e dos verificadores, com esforço médio, alto ou muito alto conforme a tarefa |
+| Claude Opus 5.5 | verificadores independentes e subagentes de revisão desde a leva 1; frentes I, K, L e N; F (fora do desvio citado acima) e G depois da X16; B2 e H depois da X23; S e T, como subagentes em worktree; os dois revisores do reservado no papel da frente C (P33), com esforço alto | toda a entrega; a partir da X23, o único modelo das frentes e dos verificadores, com esforço médio, alto ou muito alto conforme a tarefa |
 | Gemini 4 Hydrogen | frentes B2 (runner e casos), D (simulador), E (datas) e H (concorrência); conselho às cegas das lacunas e do Marco 1 | leva 1 e leva 2, até a X23 |
 | Gemini 3.8 Flash (`gemini-3.8-flash-low`) | o hóspede simulado do simulador hostil (padrão de `evals/simulador/hospede-cli.mjs`) | rodadas ao vivo do simulador |
 | Gemini 4 Argon | segunda opinião da revisão final (M2) | leva 3; desde a X23 é a única segunda opinião de outro provedor |
