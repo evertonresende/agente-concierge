@@ -144,9 +144,8 @@ gateway da conta com a chave da Anthropic guardada nele. Sem isso, responde o re
 - `LEADS_URL_DEV` aponta para o webhook falso, para o runner conferir os leads de cada
   conversa. Ela nunca é impressa.
 - O conjunto de desenvolvimento tem 104 casos em 9 blocos. O reservado tem 60 casos, fica
-  fora do repositório até a entrega e só mostra o agregado por bloco. Caminho no
-  repositório depois da entrega: a preencher.
-  <!-- PREENCHER: caminho do reservado no repositório depois da cópia de entrega -->
+  fora do repositório até a entrega e só mostra o agregado por bloco. O conjunto está em
+  `evals/casos/reservado/`, e o material do diagnóstico em `docs/revisoes/reservado/`.
 - O simulador usa um modelo de outro provedor no papel do hóspede, por uma ferramenta de
   linha de comando (`--cli`, padrão `agy`).
 
