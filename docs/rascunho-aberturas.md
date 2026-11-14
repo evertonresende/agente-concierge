@@ -38,7 +38,7 @@ leads.
 >
 > - Juiz de preço que compara valores com a cotação, não a forma da frase (P31, P34).
 > - Handoff sem depender só do modelo, com bateria negativa antes (P17).
-> - Número por extenso e valor sem moeda na conferência (README, limites 8 e 46).
+> - Número por extenso e número solto sem moeda na conferência (README, limites 8 e 46).
 > - Gramática do sim mais larga, com matriz negativa e verificador (P35, P36).
 > - Limite de gasto e credencial por sessão (`docs/revisoes/m2.md`).
 > - Mais rodadas e reservado maior, para cada número ter intervalo (P33).
@@ -55,8 +55,8 @@ dinheiro, em lead ou em dado pessoal. Raridade não conta a favor.
 > 1. **Handoff depende do modelo** (limite 1). O que a pessoa vê: um pedido de desconto ou
 >    de negociação que não passa para humano. Custo: se o modelo errar também na chamada
 >    focada, o handoff não acontece.
-> 2. **Valor sem marca de moeda passa pela conferência** (limite 46). O que a pessoa vê: um
->    valor como "consigo deixar o total em 1500" chega sem corte. Custo: um valor que não
+> 2. **Número solto sem marca de moeda nem centavos passa pela conferência** (limite 46). O
+>    que a pessoa vê: "consigo deixar o total em 1500" chega sem corte. Custo: um valor que não
 >    saiu do código na conversa; o valor do lead continua sendo o do código.
 > 3. **Sim com o destino do envio não confirma** (limite 55). O que a pessoa vê: "Sim, pode
 >    enviar o pedido ao time comercial" faz o agente repetir o resumo, embora o próprio
@@ -68,7 +68,7 @@ dinheiro, em lead ou em dado pessoal. Raridade não conta a favor.
 >    como data, e o agente pede as datas de novo. Custo: um turno, e a conversa em inglês
 >    não chega à cotação enquanto a data vier nesse formato.
 >
-> Os outros 59 limites seguem abaixo, por grupo, com o número e o texto de sempre.
+> Os outros 61 limites seguem abaixo, por grupo, com o número e o texto de sempre.
 
 Quase entraram:
 - **Pedido de humano depende do modelo** (limite 2): pesa como o 1, mas o 1 já cobre o
@@ -77,3 +77,6 @@ Quase entraram:
   avaliador não vê nada na conversa.
 - **Sem limite de gasto por cliente ou por sessão** (limite 24): toca em dinheiro, mas não
   aparece numa conversa normal.
+- **Concessão e registro escritos pelo modelo em paráfrase** (limites 66 e 65): tocam em
+  dinheiro e em lead e passam pela conferência, mas dependem de o modelo escrever assim; o
+  valor do lead e o estado "registrado" continuam sendo do código. Trocam bem com o 46.
