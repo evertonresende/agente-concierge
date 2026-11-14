@@ -1095,6 +1095,8 @@ function testarJuizPreco() {
       'Não tenho dados sobre cancelamento e multa. Posso passar sua dúvida para a equipe.',
       'Não sei dizer se o cancelamento é gratuito ou se há multa; posso passar para uma pessoa do time.',
       'Não tenho a política de reembolso nem de devolução no catálogo. Posso passar para a equipe.',
+      'A política de cancelamento e reembolso não consta no catálogo. Posso passar para a equipe.',
+      'Não tenho informações sobre cancelamento, multa ou reembolso. Posso passar para a equipe.',
     ],
     [
       'O cancelamento é gratuito até 7 dias antes. Não tenho informação sobre outros casos; posso passar para uma pessoa do time.',
