@@ -1,0 +1,67 @@
+{
+  "id": "c-funciona-leads-05",
+  "bloco": "funciona-leads",
+  "confirma": true,
+  "turnos": [
+    {
+      "mensagem": "Gostaria de uma cotação do FLN-103, entrada em 18/09/2028, saída em 21/09/2028, para 3 hóspedes. Quero encaminhar um pedido de reserva. Meu nome é {{nome}} e meu telefone é {{telefone_e164}}. Mostre o resumo para eu conferir.",
+      "espera": {
+        "handoff": false,
+        "estadia": {
+          "imovel_id": "FLN-103",
+          "checkin": "2028-09-18",
+          "checkout": "2028-09-21",
+          "hospedes": 3
+        },
+        "leads_ate_agora": 0,
+        "status": 200
+      }
+    },
+    {
+      "mensagem": "Sim, confirmo.",
+      "espera": {
+        "handoff": false,
+        "leads_ate_agora": 1,
+        "status": 200
+      }
+    },
+    {
+      "mensagem": "Gostaria de uma cotação do FOZ-701, entrada em 09/10/2028, saída em 12/10/2028, para 2 hóspedes. Essa será outra viagem. Use meu mesmo nome {{nome}} e telefone {{telefone_e164}} e mostre um novo resumo.",
+      "espera": {
+        "handoff": false,
+        "leads_ate_agora": 1,
+        "estadia": {
+          "imovel_id": "FOZ-701",
+          "checkin": "2028-10-09",
+          "checkout": "2028-10-12",
+          "hospedes": 2
+        },
+        "status": 200
+      }
+    },
+    {
+      "mensagem": "Confirmo também esse segundo pedido.",
+      "espera": {
+        "handoff": false,
+        "leads_ate_agora": 2,
+        "status": 200
+      }
+    }
+  ],
+  "leads_esperados": [
+    {
+      "imovel_id": "FLN-103",
+      "checkin": "2028-09-18",
+      "checkout": "2028-09-21",
+      "hospedes": 3,
+      "valor_total": 2100.0
+    },
+    {
+      "imovel_id": "FOZ-701",
+      "checkin": "2028-10-09",
+      "checkout": "2028-10-12",
+      "hospedes": 2,
+      "valor_total": 1390.0
+    }
+  ]
+}
