@@ -374,7 +374,7 @@ Os quatro casos que o simulador propôs não viraram caso fixo: fixariam expecta
 (P36). O conjunto de desenvolvimento fica com os 104 casos medidos.
 
 Registro anterior, que não é o resultado da entrega: a rodada ao vivo de 13/11, contra `dev`
-com a `main` 75fdeb8 (código do Marco 1, antes da leva 2), deu 5 de 10 conversas aprovadas
+com a `main` 75fdeb8 (Marco 1 mais o passo 1 da F e o passo 2 da J; antes de E, G e H), deu 5 de 10 conversas aprovadas
 ([relatório](evals/relatorios/simulador-2026-11-13T21-32-22-068Z.md)). As cinco falhas foram
 lidas à mão no log do backlog: duas da frente F (um "sim" que repetia dados do resumo não
 confirmava, assunto que a P13 decidiu depois), uma da frente E (cotou estadia no passado) e
