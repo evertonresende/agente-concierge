@@ -591,6 +591,17 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   curso com nota de estado; o pedido que estava na fila dela foi retirado e vai para a sessão
   nova. H: estava parada com tudo entregue (c905a09); a conversa dela foi reconfigurada para
   o Opus 5.5 em esforço alto e o próximo pedido abre sessão nova com a nota de estado
+- 13/11 21h31 · F · correções da segunda rodada entregues (5adf022, 810 testes): hesitação só vale se o
+  resto for vazio ou um sim (B1); rearme negado por padrão, com as 64 mudanças e as negações
+  em teste (B2); condição de preço com `handoff` (B3); P13 nas formas com vírgula (B4); P14
+  com o teto de envios por reserva; P15 com as formas novas de confirmação; testes para os
+  dois defeitos plantados que escapavam. Leituras aceitas: depois de uma reserva bloqueada, o
+  primeiro `422` com campo de outra reserva passa direto para humano; pergunta no rearme
+  mantém o resumo, repetido inteiro; datas por extenso iguais às do resumo derrubam. Conferido
+  pela coordenadora: ensaio limpo, 810 testes, tipos e gate verdes; a sonda do verificador
+  que falhava 10 de 10 passa inteira e a da primeira rodada segue sem violação; no runtime
+  real (modelo antigo), `funciona-leads` 86% só com `lead-05` e `lead-06`, que dependem da G.
+  Terceira rodada do verificador independente (Opus 5.5, esforço muito alto) em curso
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
