@@ -9,7 +9,10 @@
         "handoff": false,
         "sem_total": true,
         "imovel_id": "GRM-301",
-        "resposta_contem": ["\\?", "datas?|entrada|sa[ií]da|check-?in|check-?out"]
+        "resposta_contem": [
+          "datas?|entrada|sa[ií]da|check-?in|check-?out",
+          "\\?|pode(?:ria)?\\s|informe|envie|mande|confirme|confirmar|me\\s+(?:diga|passe|informe)|preciso|please|could\\s+you|let\\s+me\\s+know"
+        ]
       }
     }
   ]

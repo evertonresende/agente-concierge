@@ -1010,10 +1010,12 @@ function testarJuizPreco() {
     [
       'A saída em 18/01 ficaria a mais de 90 noites da entrada em 20/01. Pode confirmar as datas de entrada e saída, com o ano?',
       'Não consegui entender as datas: a saída (18/01) vem antes da entrada (20/01). Quais são as datas certas?',
+      'Pode confirmar as datas de entrada e saída.',
+      'Informe as datas de entrada e de saída de novo, com o ano se a estadia for longa mesmo.',
     ],
     [
       'Pronto: de 20/01/2027 a 18/01/2028 são 363 noites.',
-      'Pode confirmar as datas de entrada e saída.',
+      'A estadia de 20/01/2027 a 18/01/2028 tem 363 noites.',
     ]
   );
   assert.equal(rec12.turnos[0].espera.sem_total, true);
