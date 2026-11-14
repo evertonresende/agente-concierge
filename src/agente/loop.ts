@@ -33,6 +33,19 @@ export interface SaidaDoTurno {
 }
 
 const MAX_VOLTAS = 6;
+/**
+ * Teto de chamadas de ferramenta (P30): por resposta do modelo e por turno, somando as
+ * voltas. Nos turnos reais, o máximo foi a varredura do catálogo inteiro (1 listar, 11
+ * buscas e 15 fichas: 27 no turno); o teto só corta pedido em massa, que martelaria o
+ * catálogo (de terceiro) num turno só. A confirmação conta, mas nunca é cortada.
+ */
+export const MAX_CHAMADAS_POR_RESPOSTA = 16;
+export const MAX_CHAMADAS_POR_TURNO = 32;
+/** A busca por comodidade lê o catálogo inteiro (1 + cidades + fichas: 27 pedidos no real): até 2 por turno. */
+export const MAX_COMODIDADE_POR_TURNO = 2;
+const COMODIDADE = "buscar_por_comodidade";
+const LIMITE_DE_CHAMADAS = "Limite de chamadas de ferramenta neste turno: esta não foi executada. Responda com o que já "
+  + "tem ou peça ao hóspede para reduzir o pedido.";
 const CONFIRMAR = "confirmar_reserva";
 const TENTATIVAS_DO_MODELO = 2;
 /** Aviso honesto de falha interna; sempre acompanha `handoff: true` (contrato L18). */
@@ -603,6 +616,8 @@ export async function rodarTurno(entrada: EntradaDoTurno): Promise<SaidaDoTurno>
   const totais: string[] = [];
   let handoff = false;
   let rascunho: string | undefined;
+  let chamadasNoTurno = 0;
+  let comodidadesNoTurno = 0;
   // Sinal na mensagem do hóspede (P17): provoca no máximo UMA chamada focada ao modelo.
   let focou = false;
   const pendenteNoInicio = pendenteAberto(entrada.contexto.cofre.ler());
@@ -785,13 +800,21 @@ export async function rodarTurno(entrada: EntradaDoTurno): Promise<SaidaDoTurno>
       guardar({ role: "assistant", content: resposta.texto, tool_calls: chamadas });
       let respostaFinal: string | undefined;
       let falhou = false;
+      let noLote = 0;
       for (const chamada of chamadas) {
         // Toda chamada recebe um resultado no histórico, mesmo depois que o turno já foi
         // decidido: histórico com chamada sem resposta quebra o turno seguinte.
         let resultado: Resultado;
         if (respostaFinal !== undefined || falhou) {
           resultado = { paraOModelo: { ignorada: "o turno já tinha sido encerrado por outra ferramenta" } };
+        } else if (chamada.function.name !== CONFIRMAR && (noLote >= MAX_CHAMADAS_POR_RESPOSTA || chamadasNoTurno >= MAX_CHAMADAS_POR_TURNO
+          || (chamada.function.name === COMODIDADE && comodidadesNoTurno >= MAX_COMODIDADE_POR_TURNO))) {
+          // Passou do teto (P30): não executa, e o modelo responde com o que já tem.
+          resultado = { paraOModelo: { erro: LIMITE_DE_CHAMADAS } };
         } else {
+          noLote++;
+          chamadasNoTurno++;
+          if (chamada.function.name === COMODIDADE) comodidadesNoTurno++;
           usadas.push(chamada.function.name);
           try {
             resultado = barrar(chamada, chamadas) ?? await comPrazo(executar(comGrupoSomado(chamada), contexto), entrada.prazo - agora());
