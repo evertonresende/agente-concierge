@@ -29,7 +29,14 @@ novo_repo() { # $1 = caso; $2 = host da CATALOGO_URL (opcional). Entra no reposi
   git config user.email "$AUTOR"
   echo base > a.txt; git add a.txt; git commit -q -m "inicio"
 }
-rodar() { saida=$(bash "$GATE" 2>&1); cod=$?; }
+rodar() { saida=$(env "$@" bash "$GATE" 2>&1); cod=$?; } # $@ = variáveis extras
+
+# git falso: sai com 128 quando um argumento é igual a FALHA_GIT; senão chama o real.
+mkdir -p "$TMP/bin"
+printf '#!/bin/sh\nfor a in "$@"; do [ "$a" = "$FALHA_GIT" ] && exit 128; done\nexec %s "$@"\n' \
+  "$(command -v git)" > "$TMP/bin/git"
+chmod +x "$TMP/bin/git"
+falhando() { rodar PATH="$TMP/bin:$PATH" FALHA_GIT="$1"; }
 curto() { git rev-parse HEAD | cut -c1-8; }
 falha() { falhas+=("$caso: $1"); }
 espera_codigo() { [ "$cod" -eq "$1" ] || falha "saída $cod, esperava $1"; }
@@ -88,6 +95,20 @@ echo "zqxwfalso.invalid" > c.txt; git add c.txt
 rodar; espera_codigo 1; espera_texto "c.txt:1"
 git rm -q --cached c.txt; echo "zqxwaspas.test" > c.txt; git add c.txt
 rodar; espera_codigo 1; espera_texto "c.txt:1"
+
+caso="l) leitura do git que falha sai com 2"
+novo_repo l1; echo "$EMPRESA" > c.txt; git add c.txt
+falhando grep; espera_codigo 2
+novo_repo l2; git commit -q --allow-empty -m "$HOST"
+falhando log; espera_codigo 2
+novo_repo l3; mkdir "d-$EMPRESA"; echo x > "d-$EMPRESA/x"; git add -A
+falhando ls-files; espera_codigo 2
+novo_repo l4; echo "$TOKEN" > b.txt; git add b.txt; git commit -q -m b; git rm -q b.txt; git commit -q -m rm
+falhando --batch=; espera_codigo 2
+
+caso="s) pasta temporária que não pode ser criada"
+novo_repo s; echo "$TOKEN" > b.txt; git add b.txt
+rodar TMPDIR="$TMP/nao-existe"; espera_codigo 2
 
 caso="e) termo em arquivo binário"
 novo_repo e

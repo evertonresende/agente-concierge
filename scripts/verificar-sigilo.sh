@@ -24,7 +24,6 @@ cd "$(git rev-parse --show-toplevel)" || exit 2
 
 AUTOR="contato@evertonresende.com"
 DIR_CFG="${AGENTE_CFG:-$HOME/.config/agente-concierge}"
-marca=$(mktemp -u)   # arquivo-flag: relata() roda em subshell de pipe, variável não sobrevive
 
 [ -f "$DIR_CFG/env" ] || { echo "SIGILO: sem $DIR_CFG/env não dá para derivar os termos proibidos"; exit 2; }
 # O arquivo de ambiente é lido como dado, nunca executado: o shell não ecoa nenhuma
@@ -55,7 +54,10 @@ empresa=$(printf '%s' "$host" | awk -F. '{ e = $(NF-1); if (length(e) < 4 && NF 
 [ -n "$empresa" ] || [ -f "$DIR_CFG/sigilo-extra" ] \
   || { echo "SIGILO: não deu para derivar o nome da empresa do host; ponha-o em sigilo-extra"; exit 2; }
 
-fixos=$(mktemp); trap 'rm -f "$fixos" "$marca"' EXIT
+tmpd=$(mktemp -d) || { echo "SIGILO: não consegui criar a pasta temporária"; exit 2; }
+trap 'rm -rf "$tmpd"' EXIT
+fixos="$tmpd/termos"
+marca="$tmpd/achou"   # arquivo-flag: relata() roda em subshell de pipe, variável não sobrevive
 {
   printf '%s\n' "$host" "$token" "$empresa"
   hostname; hostname -s
@@ -65,6 +67,7 @@ fixos=$(mktemp); trap 'rm -f "$fixos" "$marca"' EXIT
   [ -f "$DIR_CFG/sigilo-extra" ] && grep -v '^[[:space:]]*$' "$DIR_CFG/sigilo-extra"
 } | awk 'length($0) >= 4' | sort -u \
   | { if [ -f "$DIR_CFG/sigilo-liberados" ]; then grep -v -x -F -f "$DIR_CFG/sigilo-liberados"; else cat; fi; } > "$fixos"
+[ -f "$fixos" ] || { echo "SIGILO: não consegui gravar a lista de termos"; exit 2; }
 
 relata() { # $1 = rótulo; stdin = localizações (arquivo:linha, commit ou commit:arquivo)
   local linhas n
@@ -81,19 +84,27 @@ relata() { # $1 = rótulo; stdin = localizações (arquivo:linha, commit ou comm
   : > "$marca"
 }
 
+# Lê do git para $tmpd/<arquivo>. Qualquer falha de leitura sai com 2, nunca com
+# SIGILO OK; o código 1 só é aceito do git grep, que o usa para "nada achado".
+le() { # $1 = arquivo de saída; o resto = subcomando do git e argumentos
+  local arq="$tmpd/$1" st; shift
+  git "$@" > "$arq" 2>/dev/null; st=$?
+  [ "$st" -eq 0 ] || { [ "$st" -eq 1 ] && [ "$1" = grep ]; } \
+    || { echo "SIGILO: falha ao ler o repositório (git $1)"; exit 2; }
+}
+
 # 1. Conteúdo do índice (o que já está versionado + o que está em stage).
-git grep --cached -a -n -i -F -f "$fixos" -- . 2>/dev/null | cut -d: -f1,2 \
-  | relata "termo proibido (domínio, token, empresa ou nome de máquina)"
+le indice grep --cached -a -n -i -F -f "$fixos" -- .
+cut -d: -f1,2 "$tmpd/indice" | relata "termo proibido (domínio, token, empresa ou nome de máquina)"
 
-git grep --cached -a -n -o -E '\b([0-9]{1,3}\.){3}[0-9]{1,3}\b' -- . 2>/dev/null \
-  | grep -v -E ':(127\.0\.0\.1|0\.0\.0\.0)$' | cut -d: -f1,2 \
-  | relata "endereço IP"
+le ips grep --cached -a -n -o -E '\b([0-9]{1,3}\.){3}[0-9]{1,3}\b' -- .
+grep -v -E ':(127\.0\.0\.1|0\.0\.0\.0)$' "$tmpd/ips" | cut -d: -f1,2 | relata "endereço IP"
 
-git grep --cached -a -n -o -E '[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}' -- . 2>/dev/null \
-  | grep -v -F ":$AUTOR" | cut -d: -f1,2 \
-  | relata "e-mail que não é o do autor"
+le emails grep --cached -a -n -o -E '[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}' -- .
+grep -v -F ":$AUTOR" "$tmpd/emails" | cut -d: -f1,2 | relata "e-mail que não é o do autor"
 
-git ls-files --cached | grep -E '(^|/)(\.privado/|\.env($|\.)|\.dev\.vars)' | grep -v -F '.env.example' \
+le arquivos ls-files --cached
+grep -E '(^|/)(\.privado/|\.env($|\.)|\.dev\.vars)' "$tmpd/arquivos" | grep -v -F '.env.example' \
   | relata "arquivo local ou de ambiente versionado"
 
 # 2. Histórico publicável: branches, tags e o que já está no remoto. Ferramentas de
@@ -101,46 +112,49 @@ git ls-files --cached | grep -E '(^|/)(\.privado/|\.env($|\.)|\.dev\.vars)' | gr
 #    outra identidade; elas não são publicadas por `git push` e ficam fora desta
 #    checagem, mas o item 3 garante que nenhuma chegou ao remoto.
 PUBLICAVEL="--branches --tags --remotes"
+: > "$tmpd/tipos"
 if git rev-parse -q --verify HEAD >/dev/null; then
   # Conteúdo de todos os commits publicáveis: o repositório fica público com o histórico
   # inteiro, então um termo apagado num commit posterior continua publicado. Varre cada
   # blob uma vez (rápido); só quando acha algo localiza commit:arquivo, blob a blob.
-  objetos=$(set -o pipefail; git rev-list --objects $PUBLICAVEL \
-    | git cat-file --batch-check='%(objecttype) %(objectname) %(rest)') \
-    || { echo "SIGILO: falha ao listar os objetos do histórico"; exit 2; }
-  printf '%s\n' "$objetos" | awk '$1 == "blob" { print $2 }' | git cat-file --batch='' \
+  le objetos rev-list --objects $PUBLICAVEL
+  le tipos cat-file --batch-check='%(objecttype) %(objectname) %(rest)' < "$tmpd/objetos"
+  awk '$1 == "blob" { print $2 }' "$tmpd/tipos" | git cat-file --batch='' 2>/dev/null \
     | grep -a -q -i -F -f "$fixos"
   st=("${PIPESTATUS[@]}")
-  if [ "${st[3]}" -eq 0 ]; then
+  if [ "${st[2]}" -eq 0 ]; then
     # Commit que introduziu cada versão com o termo (o mais antigo que a toca).
-    loc=$(printf '%s\n' "$objetos" | awk '$1 == "blob"' | while read -r _ obj caminho; do
+    loc=$(awk '$1 == "blob"' "$tmpd/tipos" | while read -r _ obj caminho; do
       git cat-file blob "$obj" | grep -a -q -i -F -f "$fixos" || continue
       c=$(git log $PUBLICAVEL --format=%H --find-object="$obj" | tail -n 1 | cut -c1-8)
       echo "${c:-?}:$caminho"
     done)
     printf '%s\n' "${loc:-(não localizado)}" | relata "termo proibido no conteúdo de commit"
-  elif [ "${st[3]}" -ne 1 ] || [ "${st[2]}" -ne 0 ]; then
+  elif [ "${st[2]}" -ne 1 ] || [ "${st[1]}" -ne 0 ] || [ "${st[0]}" -ne 0 ]; then
     echo "SIGILO: falha ao ler o conteúdo do histórico"; exit 2
   fi
 
   # Um registro por commit, separado por NUL (que não cabe numa mensagem): hash, \037 e
   # a mensagem. Procura só na mensagem e imprime só o identificador curto. Registro fora
   # desse formato reprova como ilegível, em vez de ser pulado.
-  git log -z $PUBLICAVEL --format='%H%x1f%B' | awk -v F="$fixos" '
+  le mensagens log -z $PUBLICAVEL --format='%H%x1f%B'
+  awk -v F="$fixos" '
     BEGIN { while ((getline t < F) > 0) T[tolower(t)]; RS = "\0" }
     { i = index($0, "\037"); h = substr($0, 1, i - 1)
       if (i == 0 || h !~ /^[0-9a-f]+$/) { print "(mensagem ilegível)"; next }
       corpo = tolower(substr($0, i + 1))
-      for (t in T) if (index(corpo, t)) { print substr(h, 1, 8); next } }' \
+      for (t in T) if (index(corpo, t)) { print substr(h, 1, 8); next } }' "$tmpd/mensagens" \
     | relata "termo proibido em mensagem de commit"
-  git log $PUBLICAVEL --format='%ae%n%ce' | sort -u | grep -v -x -F "$AUTOR" | sed 's/.*/(e-mail fora do padrão no histórico)/' \
+  le autores log $PUBLICAVEL --format='%ae%n%ce'
+  sort -u "$tmpd/autores" | grep -v -x -F "$AUTOR" | sed 's/.*/(e-mail fora do padrão no histórico)/' \
     | relata "autor ou committer diferente de $AUTOR"
-  git reflog | grep -E -i 'amend|rebase|squash' | cut -d' ' -f1 \
+  le reflog reflog
+  grep -E -i 'amend|rebase|squash' "$tmpd/reflog" | cut -d' ' -f1 \
     | relata "amend, rebase ou squash no reflog"
 fi
 
 # Nomes de arquivo e de pasta, no índice e no histórico: só a contagem, nunca o nome.
-n=$({ printf '%s\n' "${objetos:-}" | cut -s -d' ' -f3-; git ls-files --cached; } | grep -c -i -F -f "$fixos")
+n=$({ cut -s -d' ' -f3- "$tmpd/tipos"; cat "$tmpd/arquivos"; } | grep -c -i -F -f "$fixos")
 [ "$n" -eq 0 ] || echo "($n caminho(s))" | relata "termo proibido em nome de arquivo ou pasta"
 
 # 3. Remoto: só branches e tags. Nunca `git push --mirror` nem push de outras refs.
@@ -153,7 +167,8 @@ if git remote get-url origin >/dev/null 2>&1; then
   fi
 fi
 
-locais=$(git for-each-ref --format='%(refname)' | grep -v -c -E '^refs/(heads|tags|remotes)/')
+le refs for-each-ref --format='%(refname)'
+locais=$(grep -v -c -E '^refs/(heads|tags|remotes)/' "$tmpd/refs")
 [ "$locais" -eq 0 ] || echo "SIGILO: aviso: $locais ref(s) local(is) de ferramenta fora de branches e tags; não são publicadas por git push"
 
 [ ! -e "$marca" ] || exit 1
