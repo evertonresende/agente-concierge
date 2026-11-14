@@ -316,6 +316,18 @@ um turno ao hóspede.
 Rajada na árvore final, em `dev`: 10 sessões simultâneas de 4 turnos, 40 de 40 com status
 200, sem 429, 5xx, contingência ou resposta vazia; p95 de 5,4 s.
 
+`producao` recebeu a árvore final em 14/11, com o envio real desligado e nenhum lead real do
+começo ao fim. A validação completa reprovou na primeira passada, 69 de 70, por um caso que
+o juiz de preço marcou. A resposta não ficou gravada: o script roda o runner sem relatório e
+o Worker não registra texto, então a falha ficou não classificada. Pela P37, houve uma
+segunda passada com o script sem mudança, uma vez só: 70 de 70, `PRODUCAO OK`. As duas
+ficam registradas, e a soma é 139 de 140. Repetir até passar e chamar de verde esconderia a
+primeira.
+
+O monitor diário dos 7 dias no ar foi cortado como código (P38), segundo item da linha de
+corte: o que ele faria já existe em dois modos do script de validação. Agendar e escolher o
+canal do aviso ficaram com o Éverton.
+
 ## 9. O que deu errado e como foi corrigido
 
 1. **Falso verde no runner (16h47).** O caso pulado saía do denominador. Corrigido antes
