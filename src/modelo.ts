@@ -40,6 +40,16 @@ function objeto(valor: unknown): Record<string, unknown> {
 /** Id de chamada de ferramenta para quando o modelo não manda um: único na conversa inteira. */
 const idNovo = () => `chamada_${crypto.randomUUID().replace(/-/g, "")}`;
 
+/** Id que o modelo mandou, ou um novo quando falta ou já apareceu nesta mesma resposta. */
+function idsDaResposta(): (id: unknown) => string {
+  const vistos = new Set<string>();
+  return (id) => {
+    const escolhido = typeof id === "string" && id !== "" && !vistos.has(id) ? id : idNovo();
+    vistos.add(escolhido);
+    return escolhido;
+  };
+}
+
 function numero(valor: unknown): number {
   return typeof valor === "number" && Number.isFinite(valor) ? valor : 0;
 }
@@ -55,6 +65,7 @@ export function normalizarResposta(bruto: unknown): RespostaDoModelo {
   const mensagem = escolhas.length > 0 ? objeto(objeto(escolhas[0]).message) : raiz;
   const conteudo = escolhas.length > 0 ? mensagem.content : raiz.response;
   const brutas = Array.isArray(mensagem.tool_calls) ? mensagem.tool_calls : [];
+  const idDe = idsDaResposta();
 
   const chamadas = brutas.flatMap((item, i): ChamadaDeFerramenta[] => {
     const chamada = objeto(item);
@@ -63,7 +74,7 @@ export function normalizarResposta(bruto: unknown): RespostaDoModelo {
     const argumentos = funcao.arguments ?? chamada.arguments ?? {};
     if (typeof nome !== "string" || nome === "") return [];
     return [{
-      id: typeof chamada.id === "string" && chamada.id !== "" ? chamada.id : idNovo(),
+      id: idDe(chamada.id),
       type: "function",
       function: { name: nome, arguments: typeof argumentos === "string" ? argumentos : JSON.stringify(argumentos) },
     }];
@@ -107,9 +118,10 @@ export const esforcoValido = (esforco?: string) => (esforco && ESFORCOS.has(esfo
 export function pedidoAnthropic(mensagens: Mensagem[], ferramentas: DefinicaoDeFerramenta[], esforco?: string): Record<string, unknown> {
   const sistema = mensagens.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
   // A API recusa id fora de [a-zA-Z0-9_-] (erro 7003, medido): o reserva pode devolver
-  // outro formato. Cada id também sai único no pedido, e o resultado segue o seu id.
+  // outro formato. Cada id também sai único no pedido, e o resultado segue o seu id; um id
+  // repetido na mesma resposta (histórico já gravado) vira uma fila, consumida na ordem.
   const usados = new Set<string>();
-  let doTurno = new Map<string, string>();
+  let doTurno = new Map<string, string[]>();
   const idParaAnthropic = (original: string) => {
     const base = original.replace(/[^a-zA-Z0-9_-]/g, "_") || "chamada";
     let id = base;
@@ -126,7 +138,7 @@ export function pedidoAnthropic(mensagens: Mensagem[], ferramentas: DefinicaoDeF
   for (const m of mensagens) {
     if (m.role === "user") acrescentar("user", [{ type: "text", text: m.content }]);
     else if (m.role === "tool") {
-      const id = doTurno.get(m.tool_call_id) ?? m.tool_call_id.replace(/[^a-zA-Z0-9_-]/g, "_");
+      const id = doTurno.get(m.tool_call_id)?.shift() ?? m.tool_call_id.replace(/[^a-zA-Z0-9_-]/g, "_");
       acrescentar("user", [{ type: "tool_result", tool_use_id: id, content: m.content }]);
     }
     else if (m.role === "assistant") {
@@ -137,7 +149,7 @@ export function pedidoAnthropic(mensagens: Mensagem[], ferramentas: DefinicaoDeF
         ...(m.content.trim() ? [{ type: "text", text: m.content }] : []),
         ...(m.tool_calls ?? []).map((c) => {
           const id = idParaAnthropic(c.id);
-          doTurno.set(c.id, id);
+          doTurno.set(c.id, [...(doTurno.get(c.id) ?? []), id]);
           return { type: "tool_use", id, name: c.function.name, input: argumentosComoObjeto(c.function.arguments) };
         }),
       ];
@@ -180,8 +192,9 @@ export function lerRespostaAnthropic(bruto: unknown): RespostaDoModelo {
   // descartar em silêncio nem de inventar argumentos vazios.
   const valido = (b: Bloco) => typeof b.name === "string" && b.name !== "" && !!b.input && typeof b.input === "object" && !Array.isArray(b.input);
   if (!usos.every(valido)) throw inutil("chamada de ferramenta sem nome ou com argumentos inválidos");
+  const idDe = idsDaResposta();
   const chamadas = usos.map((b): ChamadaDeFerramenta => ({
-    id: typeof b.id === "string" && b.id !== "" ? b.id : idNovo(),
+    id: idDe(b.id),
     type: "function",
     function: { name: b.name as string, arguments: JSON.stringify(b.input) },
   }));

@@ -336,3 +336,32 @@ describe("lacunas apontadas pelo verificador (M2, M8, M17, M18)", () => {
     expect(messages[1]!.content).toEqual([{ type: "text", text: "Vou cotar." }, { type: "tool_use", id: "toolu_1", name: "cotar", input: {} }]);
   });
 });
+
+describe("o mesmo id duas vezes na mesma resposta", () => {
+  it("a leitura troca o repetido por um id novo, no reserva e no Haiku", () => {
+    const cf = normalizarResposta({ choices: [{ message: { tool_calls: [{ id: "call_0", function: { name: "a", arguments: "{}" } }, { id: "call_0", function: { name: "b", arguments: "{}" } }] } }] });
+    const an = lerRespostaAnthropic({ stop_reason: "tool_use", content: [{ type: "tool_use", id: "toolu_1", name: "a", input: {} }, { type: "tool_use", id: "toolu_1", name: "b", input: {} }] });
+    for (const r of [cf, an]) {
+      const ids = r.chamadas.map((c) => c.id);
+      expect(new Set(ids).size).toBe(2);
+    }
+    expect(cf.chamadas[0]!.id).toBe("call_0");
+  });
+
+  it("histórico já gravado com id repetido no turno: um resultado por chamada, cada um com o seu id", () => {
+    const historico: Mensagem[] = [
+      { role: "user", content: "a" },
+      { role: "assistant", content: "", tool_calls: [
+        { id: "call_0", type: "function", function: { name: "listar", arguments: "{}" } },
+        { id: "call_0", type: "function", function: { name: "buscar", arguments: "{}" } },
+      ] },
+      { role: "tool", tool_call_id: "call_0", content: "r1" },
+      { role: "tool", tool_call_id: "call_0", content: "r2" },
+    ];
+    const { messages } = pedidoAnthropic(historico, [], undefined) as { messages: { content: Record<string, unknown>[] }[] };
+    const usos = messages[1]!.content.map((b) => b.id);
+    const resultados = messages[2]!.content.map((b) => [b.tool_use_id, b.content]);
+    expect(new Set(usos).size).toBe(2);
+    expect(resultados).toEqual([[usos[0], "r1"], [usos[1], "r2"]]);
+  });
+});
