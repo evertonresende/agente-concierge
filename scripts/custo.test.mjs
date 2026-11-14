@@ -56,6 +56,8 @@ test('saída legível termina com CUSTO OK e o valor médio, sem ruído de ponto
   assert.equal(r.codigo, 0);
   const linhas = r.out.trimEnd().split('\n');
   assert.equal(linhas.at(-1), 'CUSTO OK US$ 0,00059 por conversa (média de 3)');
+  assert.match(r.out, /Modelo: anthropic\/claude-haiku-5\.5 \(US\$ 0,10 \/ 0,50 por milhão/);
+  assert.match(r.out, /aviso: os relatórios não dizem qual modelo respondeu .*preço errado/);
   assert.doesNotMatch(r.out, /\d{7,}|e-\d/);
 });
 
@@ -64,6 +66,10 @@ test('preço sobrescrito pela linha de comando, sem float', () => {
   const dir = pasta({ 'a.json': { conjunto: 'dev', conversas: [conversa('c1', 1000, 100, 1)] } });
   const j = JSON.parse(rodar([dir, '--json', '--preco-entrada', '0,15']).out);
   assert.equal(j.geral.custo_medio_usd, 0.0002);
+  assert.equal(j.preco_sobrescrito, true);
+  assert.match(j.avisos.join('\n'), /preço passado na linha de comando/);
+  assert.match(rodar([dir, '--modelo', '@cf/zai-org/glm-5.3']).out, /US\$ 1,40 \/ 4,40 por milhão/);
+  assert.match(rodar([dir, '--preco-entrada', '0,075']).out, /US\$ 0,075 \/ 0,50 por milhão, entrada \/ saída, preço sobrescrito/);
   assert.equal(lerPreco('0.1'), 100_000);
   assert.equal(lerPreco('1,40'), 1_400_000);
   assert.equal(rodar([dir, '--modelo', 'x/sem-preco']).codigo, 2);
@@ -87,7 +93,7 @@ test('mistura: ignora o que não tem uso, avisa e calcula o resto', () => {
   });
   const r = rodar([dir]);
   assert.equal(r.codigo, 0);
-  assert.match(r.err, /ignorado .*b\.json/);
-  assert.match(r.err, /c\.json: só agregado/);
+  assert.match(r.out, /aviso: ignorado .*b\.json/);
+  assert.match(r.out, /aviso: .*c\.json: só agregado/);
   assert.match(r.out, /CUSTO OK US\$ 0,00059 por conversa \(média de 3\)\n$/);
 });

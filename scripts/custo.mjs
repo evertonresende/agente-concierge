@@ -190,7 +190,7 @@ function listarArquivos(entradas) {
 }
 
 /** Calcula tudo. Retorna { resultado, avisos }; resultado.geral é null sem uso nenhum. */
-export function calcular(arquivos, preco, modelo) {
+export function calcular(arquivos, preco, modelo, sobrescrito = false) {
   const avisos = [];
   const relatorios = [];
   const todas = [];
@@ -219,8 +219,11 @@ export function calcular(arquivos, preco, modelo) {
   const semModelo = relatorios.length > 0;
   if (semModelo) {
     avisos.push(
-      `os relatórios não dizem qual modelo respondeu cada chamada: tudo calculado com o preço de ${modelo}`
-      + (modelo === PRINCIPAL ? ` (principal); turnos respondidos pelo reserva (${RESERVA}) saem com o preço errado` : ''),
+      'os relatórios não dizem qual modelo respondeu cada chamada: tudo calculado com '
+      + (sobrescrito ? 'o preço passado na linha de comando' : `o preço de ${modelo}`)
+      + (modelo === PRINCIPAL && !sobrescrito
+        ? ` (principal); turnos respondidos pelo reserva (${RESERVA}) saem com o preço errado`
+        : ''),
     );
     avisos.push('tokens de cache entram como entrada a preço cheio (src/modelo.ts soma cache na entrada)');
   }
@@ -229,6 +232,7 @@ export function calcular(arquivos, preco, modelo) {
     resultado: {
       modelo,
       preco_usd_por_milhao: { entrada: preco.entrada / 1_000_000, saida: preco.saida / 1_000_000 },
+      preco_sobrescrito: sobrescrito,
       modelo_por_chamada_no_relatorio: false,
       relatorios,
       geral: todas.length > 0 ? resumirConversas(todas, preco) : null,
@@ -238,7 +242,11 @@ export function calcular(arquivos, preco, modelo) {
 
 const usd = (v) => (v === null ? '—' : v.toFixed(5).replace('.', ','));
 const num = (v) => (v === null ? '—' : String(v).replace('.', ','));
-const preco = (v) => (Number.isInteger(v * 100) ? v.toFixed(2) : String(v)).replace('.', ',');
+/** Microdólar por milhão (inteiro) → "0,10", "4,40", "0,075". */
+function formatarPreco(micro) {
+  const frac = String(micro % 1_000_000).padStart(6, '0').replace(/0+$/, '').padEnd(2, '0');
+  return `${Math.floor(micro / 1_000_000)},${frac}`;
+}
 
 function tabela(r) {
   const cab = ['relatório', 'tipo', 'conversas', 'sem chamada', 'entrada méd', 'saída méd', 'chamadas méd',
@@ -258,25 +266,30 @@ export function main(argv, saida = process.stdout, erro = process.stderr) {
   let calc;
   try {
     opcoes = lerArgs(argv);
-    calc = calcular(listarArquivos(opcoes.entradas), opcoes.preco, opcoes.modelo);
+    const sobrescrito = opcoes.precoEntrada !== undefined || opcoes.precoSaida !== undefined;
+    calc = calcular(listarArquivos(opcoes.entradas), opcoes.preco, opcoes.modelo, sobrescrito);
   } catch (e) {
     if (!(e instanceof ErroDeUso)) throw e;
     erro.write(`CUSTO ERRO: ${e.message}\n`);
     return 2;
   }
   const { resultado, avisos } = calc;
-  for (const a of avisos) erro.write(`aviso: ${a}\n`);
   if (!resultado.geral) {
+    for (const a of avisos) erro.write(`aviso: ${a}\n`);
     erro.write('CUSTO FALHOU: nenhum relatório com dados de uso por conversa\n');
     if (opcoes.json) saida.write(`${JSON.stringify({ ...resultado, avisos }, null, 2)}\n`);
     return 1;
   }
   if (opcoes.json) {
+    for (const a of avisos) erro.write(`aviso: ${a}\n`);
     saida.write(`${JSON.stringify({ ...resultado, avisos }, null, 2)}\n`);
     return 0;
   }
-  const p = resultado.preco_usd_por_milhao;
-  saida.write(`Modelo: ${resultado.modelo} (US$ ${preco(p.entrada)} / ${preco(p.saida)} por milhão, entrada / saída)\n`);
+  // Na saída legível, os avisos (inclusive o limite do modelo) vão para o stdout.
+  const origem = resultado.preco_sobrescrito ? ', preço sobrescrito' : '';
+  saida.write(`Modelo: ${resultado.modelo} (US$ ${formatarPreco(opcoes.preco.entrada)} / `
+    + `${formatarPreco(opcoes.preco.saida)} por milhão, entrada / saída${origem})\n`);
+  for (const a of avisos) saida.write(`aviso: ${a}\n`);
   saida.write(`${tabela(resultado)}\n`);
   saida.write(`CUSTO OK US$ ${usd(resultado.geral.custo_medio_usd)} por conversa (média de ${resultado.geral.conversas})\n`);
   return 0;
