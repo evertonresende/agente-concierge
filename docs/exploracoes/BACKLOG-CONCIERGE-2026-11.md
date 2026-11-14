@@ -1464,6 +1464,47 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   anterior e o modelo chama `montar_resumo` com os mesmos dados, a ferramenta trata como confirmação.
   Leitura à mão ensaiada neste registro (P27): os quatro casos de desconto são recusas limpas com
   `handoff`, sem concessão; 88 das 174 respostas têm valor em reais
+- 14/11 01h52 · B2 · verificador da rodada 3: APROVADO o f4ee189. Os 234 itens do corpus conferem; zero certa
+  reprovada nos cinco registros; 422 avaliações de erradas sem nenhuma aprovada, pelo `espera` do caso;
+  recusas certas nos casos de desconto: nenhuma das 20 reais reprova e 3 das 40 escritas reprovam com a
+  negação a até 3 palavras (limiar 4), todas por "don't"; o caso da P21 aprova as quatro respostas reais
+  e reprova a cotação; 21 de 21 defeitos plantados pegos. Duas correções de uma palavra pedidas por ele
+  e enviadas à frente junto com a do rótulo com parêntese: negações que faltam ("don't" e outras) e a
+  expressão que não pega "abrir mão". Depois, verificador curto só desses três pontos
+- 14/11 01h52 · M2 · segunda passada, segurança do delta (sem a H): nenhum achado crítico ou alto; três médios e
+  quatro baixos, registrados em `docs/revisoes/m2.md`. S2-1 (valor no nome do lead) vira a P29, com a
+  frente F; S2-3 (lote de buscas martela o catálogo, 900 pedidos num turno na sonda) vira a P30, com a
+  frente G, reaberta só para isso; S2-2 (valor sem marca de moeda escrito pelo modelo) e os baixos ficam
+  como limite no README. A primeira metade do achado 2 da primeira passada está fechada
+- 14/11 01h59 · B2 · a frente entregou as três correções do juiz na cabeça bd6e28b: rótulo de componente seguido
+  de parêntese (90ca26c, o falso vermelho do `cot-13-entrada-hoje`), negações em inglês na proibida dos
+  quatro casos de desconto (f29c838; "no", "sem" e "nenhum" só valem colados à palavra, escolha da frente
+  para não aprovar "Posso, no seu caso, isentar a limpeza"), "abrir mão" (c3c9a45) e dois limites fixados
+  no corpus, que vai a 241 itens. Verificador curto da rodada 4 lançado, com barra fechada de sete itens
+- 14/11 01h59 · H · verificador da rodada 5: APROVADO o 38ae72f, barra fechada de sete itens. A cópia repetida
+  de pedido abandonado na fila não roda o turno e devolve a mesma contingência, sem resumo visto (0 lead)
+  e com resumo visto (o primeiro "sim" reapresenta, o segundo envia o que foi visto); pedido legítimo não
+  recebe contingência; 7.536 execuções do lote de desistência sem violação; 28 execuções dos arquivos de
+  fila sem falha; dois defeitos plantados pegos. Ensaio por hash sobre a `main`: 51 arquivos, 1468
+  testes, tipos verdes, SIGILO OK. **Frente H na `main` em 6daffb1.** Limites para o README: a marca de
+  reapresentação não sobrevive a reinício do objeto com o "sim" ainda na fila (B7); "pergunta + sim" na
+  fila responde só "Certo." (B8); sem sinal de cancelamento chegando ao objeto; corpo acima de 64 KB
+  recusado. O verificador não mediu a ordem "aviso antes da cópia" nem "cópia em curso + cópia na
+  fila"; os dois foram pedidos à parte 2 da M2
+- 14/11 01h59 · F · "sim" limpo entregue em efa5f8b (só `src/agente/ferramentas/lead.ts`, 24 linhas): com o
+  resumo em aberto mostrado no turno anterior, mensagem que é "sim" pela leitura do código e
+  `montar_resumo` chamado com a mesma reserva e o mesmo nome, a ferramenta segue o caminho do
+  `confirmar_reserva`. Conferência com o modelo real (servidor local, `main` + H 38ae72f + F efa5f8b,
+  roteiro do `lead-12-troca-hospedes-apos-resumo`, 8 sessões): 8 de 8 registram no turno 4, e os 8 leads
+  no webhook falso saem com 8 hóspedes. Antes: 2 de 3 reapresentavam. P29 pronta na árvore da F; ela
+  torna sem sentido um teste da G (`test/janela-g.test.ts`, que montava resumo com nome "Ana R$ 10,00").
+  Autorizado à F, só nesse teste: nome "Ana Lima", mensagem da cotação de volta à constante e título
+  novo; a metade da M-1 (total do resumo aberto continua permitido) fica intacta, e a prova de que nome
+  com valor não libera valor fica no teste unitário de `valoresDoCodigo`. A G foi avisada para não mexer
+  nesses testes na P30
+- 14/11 01h59 · M2 · parte 2 da segunda passada lançada: a frente H na `main` 6daffb1 (identificador do
+  pedido, teto da fila, teto do corpo, log e dado pessoal, os dois caminhos que o verificador não mediu),
+  os itens 13 e 15, e os itens 7, 8 e 14 no runner e no juiz da B2 em bd6e28b
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -1489,12 +1530,13 @@ e o runner da B2, a P20 (nome do lead, frente F) e a P21 (datas sem ano, frente 
 casos fixo. Meta: 14/11 03h00. Limite: 06h00. Gatilho que já existia: 10h00 com o critério 4 não
 verde, parar e chamar o Éverton.
 
-**Estado do congelamento em 14/11 01h45.** Na `main`: G, T (P21), F (P20), o script da K e o gate da S.
-H: 38ae72f no verificador da rodada 5 (B6); B1, B2 e a P24 já têm veredito favorável. Juiz da B2:
-f4ee189 no verificador da rodada 3, e uma correção a mais pedida (rótulo com parêntese, achada no
-ensaio local). F: correção do "sim" limpo que não registra, pedida depois do ensaio local. O ensaio
-local da árvore candidata deu 98 de 100. Só o que muda o comportamento do agente ou o juiz reinicia a
-contagem das rodadas.
+**Estado do congelamento em 14/11 01h59.** Na `main` (6daffb1): G, T (P21), F (P20), H (fila da sessão e
+P24), o script da K e o gate da S. Abertos, todos pequenos e com verificador curto depois: F ("sim"
+limpo entregue em efa5f8b e conferido com o modelo real, 8 de 8; falta o hash com a P29, nome sem
+dígito nem moeda); G (P30, teto de chamadas de ferramenta); B2 (bd6e28b, com as três correções, no
+verificador da rodada 4). A parte 2 da M2 (H, itens 7, 8, 13, 14 e 15) está em curso. O ensaio local da
+árvore candidata deu 98 de 100, e as duas falhas têm correção entregue. Só o que muda o comportamento
+do agente ou o juiz reinicia a contagem das rodadas.
 
 **Plano B, decisão do Éverton (perguntado em 14/11).** Um ciclo de correção e verificação leva
 cerca de 85 minutos; cabem dois até as 06h00. Se a H ou o juiz não fecharem nesse prazo, a escolha
