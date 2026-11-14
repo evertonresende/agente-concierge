@@ -235,7 +235,7 @@ describe("resposta inútil do Haiku vai ao reserva", () => {
     it(`${nome}: responde o reserva e nada do Haiku chega ao hóspede`, async () => {
       const chamados: string[] = [];
       const ai = { run: async (m: string) => { chamados.push(m); return m === HAIKU ? bruto : { choices: [{ message: { content: "do reserva" } }] }; } } as unknown as Ai;
-      const r = await criarModelo(ai, HAIKU, { reserva: RESERVA })([{ role: "user", content: "oi" }], []);
+      const r = await criarModelo(ai, HAIKU, { reserva: RESERVA, gateway: "gw" })([{ role: "user", content: "oi" }], []);
       expect(r).toMatchObject({ texto: "do reserva", chamadas: [] });
       expect(chamados).toEqual([HAIKU, RESERVA]);
     });

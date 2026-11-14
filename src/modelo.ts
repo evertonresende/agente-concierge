@@ -288,6 +288,13 @@ export function criarModelo(ai: Ai, modelo: string | undefined, opcoes: OpcoesDo
     if (!modelo) throw new Error("MODELO não configurado");
     const contar = (r: RespostaDoModelo, chamadas: number): RespostaDoModelo => ({ ...r, uso: { ...r.uso, chamadas } });
     if (!opcoes.reserva) return contar(await comMarcaDeLimite(chamar(modelo, mensagens, ferramentas), true), 1);
+    // Modelo de terceiro sem gateway sempre falha (erro 2021 em cerca de 2,8 s, medido em
+    // dev): nem tenta, o reserva responde direto. Decisão provisória da coordenação.
+    if (ehAnthropic(modelo) && !opcoes.gateway) {
+      // Um registro por turno: a primeira chamada do turno termina na mensagem do hóspede.
+      if (mensagens.at(-1)?.role === "user") console.warn(JSON.stringify({ evento: "principal_pulado", modelo, motivo: "sem AI_GATEWAY" }));
+      return contar(await comMarcaDeLimite(chamar(opcoes.reserva, mensagens, ferramentas), false), 1);
+    }
     let principalPorLimite: boolean;
     try {
       return contar(await comLimite(chamar(modelo, mensagens, ferramentas), opcoes.tempoDoPrincipalMs ?? TEMPO_DO_PRINCIPAL_MS), 1);
