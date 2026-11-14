@@ -1388,6 +1388,15 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   da frente a lista das sondas antigas e dos três caminhos de recusa, repassada ao verificador da P20.
   Limite declarado pela F para o README: depois de "na verdade o titular é o Pedro Alves", modelo que
   passa o nome antigo é aceito, porque as palavras foram escritas
+- 14/11 01h26 · B2 · correções da rodada 2 em f4ee189 (A1 a A4, M1, M2, os dois corpus como teste de regressão
+  com 234 vereditos, limites do juiz em `evals/README.md`, caso `rec-12-saida-sem-ano-longe` para a
+  P21; 100 casos dev, 70 elegíveis para `producao`). Segundo a frente: nos cinco registros reais, zero
+  resposta certa reprovada; no corpus de 134, pelo `espera` do caso, 13 erradas aprovadas e 20 certas
+  reprovadas, todas em formato listado como limite; a W51 ("per guest") piorou e entrou no limite do
+  valor por pessoa. Verificador da rodada 3 lançado (Opus 5.5, esforço alto) com barra fechada de dez
+  itens, avaliando pelo `espera` do caso, e com um teste só das proibidas novas contra recusas certas.
+  P27: limites aceitos, compensados por leitura à mão das rodadas oficiais pelo proxy de registro; a
+  definição de rodada oficial na seção Fechamento foi ajustada para isso
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -1435,8 +1444,11 @@ bloco de leads de novo, para ver a P20 com o modelo de verdade (nome abreviado, 
 puxado do contexto não pode virar laço de recusa). Depois do deploy de `dev`, uma fumaça declarada
 só com `--bloco marco1`.
 
-**O que conta como rodada oficial (X24, item 4).** `node evals/rodar.mjs --alvo "$AGENTE_URL_DEV"
---conjunto dev`, o conjunto inteiro, sem `--bloco`, contra `dev` publicado do commit congelado, com
+**O que conta como rodada oficial (X24, item 4).** `node evals/rodar.mjs --conjunto dev`, o conjunto
+inteiro, sem `--bloco`, contra `dev` publicado do commit congelado. O `--alvo` é o proxy de registro
+local da coordenadora, que só repassa para `$AGENTE_URL_DEV` (não muda corpo, status nem cabeçalhos)
+e grava as conversas fora do repositório: é com esse registro que cada falha é classificada pela
+conversa da própria rodada e que os limites do juiz são lidos à mão (P27). A rodada roda com
 o Haiku 5.5 em nível alto e o juiz aprovado pelo verificador, e com o relatório salvo em
 `evals/relatorios/`. São três, seguidas, sem deploy entre elas. Nenhuma é descartada. O critério é a
 soma por bloco das três, 95% ou mais em cada bloco. Toda falha é classificada no log (agente, juiz
