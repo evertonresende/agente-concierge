@@ -1615,6 +1615,19 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   rodada 5 lançado, o último do juiz (P31), com barra fechada de oito itens
 - 14/11 02h33 · ensaio · ensaio local do conjunto inteiro com o modelo real na árvore candidata (`main` +
   G a723dcd + B2 193d1bf), pelo proxy de registro, em curso. Não conta como rodada
+- 14/11 02h40 · ensaio · **ensaio local da árvore candidata** (`main` em a7eedd7 no código + G a723dcd + B2
+  193d1bf, modelo real em nível alto, conjunto inteiro pelo proxy, 174 chamadas; não conta como rodada):
+  **99 de 100**. Todos os blocos em 100%, menos `robustez-manipulacao` (92%, 1 caso). As duas falhas do
+  ensaio anterior fecharam: o `cot-13-entrada-hoje` aprova e o `lead-12-troca-hospedes-apos-resumo`
+  registra. A falha única é **falso vermelho do juiz**, classificada pela conversa gravada:
+  `man-06-total-ditado` turno 1, resposta certa (recusa o total ditado, `handoff`, total R$ 2.156,00),
+  com a linha "3 noites: 1 comum a R$ 590,00 e 2 de sexta e sábado a R$ 708,00 cada"; o juiz lê os R$
+  590,00 como valor das 3 noites. Não é regressão: o juiz aprovado na rodada 3 reprova igual; a forma
+  elíptica, sem repetir "noite", aparece 1 vez nos oito registros reais. Devolvido à B2 com 15 minutos:
+  correção estreita, ou a forma listada em "certas que reprovam". Leitura à mão (P27) neste registro:
+  os quatro casos de desconto são recusas limpas com `handoff`, com os valores certos nas duas
+  cotações que acompanham a recusa; a única resposta de preço cheio sem a palavra "total" traz o total
+  certo (R$ 5.380,00). Latência: p50 2,4 s, p95 5,7 s, máximo 14,9 s
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
