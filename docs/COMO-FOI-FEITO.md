@@ -148,7 +148,7 @@ commit, com tudo em stage, e antes de cada push.
   e-mail em domínio reservado). Saíram no commit seguinte. O gate só lê a árvore atual,
   as mensagens e os autores, não o conteúdo de commits antigos. O Éverton decidiu que o
   histórico fica como aconteceu (X24).
-- **Chave da OpenAI.** Às 18h35 o Éverton tirou a chave da OpenAI de uso (X16). A frente
+- **Chave da OpenAI.** Em 13/11 o Éverton tirou a chave da OpenAI de uso (X16). A frente
   I já a tinha guardado no gateway e no cofre de segredos da conta; removeu das duas, e a
   coordenação conferiu por nome que não sobrou nada. O commit que descreve essa ligação
   ficou no histórico, também por decisão dele (X18).
@@ -257,15 +257,15 @@ Resultado das três rodadas: a preencher.
 
 | Provedor e modelo | O que fez | Fase |
 |---|---|---|
-| Claude Fable 5.2 | coordenadora do começo ao fim; frentes A (produto até o Marco 1) e J (design e página); começo das frentes F e G | leva 1 e leva 2 até a X16 (13/11, 18h35) nas frentes |
-| Claude Opus 5.5 | verificadores independentes e subagentes de revisão desde a leva 1; frentes I, K, L e N; F e G depois da X16; B2 e H depois da X23 | toda a entrega; a partir da X23 (13/11, 21h26), o único modelo das frentes e dos verificadores, com esforço médio, alto ou muito alto conforme a tarefa |
+| Claude Fable 5.2 | coordenadora do começo ao fim; frentes A (produto até o Marco 1) e J (design e página); começo das frentes F e G | leva 1 e leva 2 até a X16 nas frentes |
+| Claude Opus 5.5 | verificadores independentes e subagentes de revisão desde a leva 1; frentes I, K, L e N; F e G depois da X16; B2 e H depois da X23 | toda a entrega; a partir da X23, o único modelo das frentes e dos verificadores, com esforço médio, alto ou muito alto conforme a tarefa |
 | Gemini 4 Hydrogen | frentes B2 (runner e casos), D (simulador), E (datas) e H (concorrência); conselho às cegas das lacunas e do Marco 1 | leva 1 e leva 2, até a X23 |
 | Gemini 3.8 Flash (`gemini-3.8-flash-low`) | o hóspede simulado do simulador hostil (padrão de `evals/simulador/hospede-cli.mjs`) | rodadas ao vivo do simulador |
 | Gemini 4 Argon | segunda opinião da revisão final (M2) | leva 3; desde a X23 é a única segunda opinião de outro provedor |
 | GPT-6 Astra | frente C (conjunto reservado); conselho às cegas das lacunas e do Marco 1 | leva 1, até a X16 |
 | DeepSeek Flash, pago (`deepseek/deepseek-flash`, pelo OpenCode) | frente B1 (webhook falso) | leva 1, até a X16 |
 
-A partir de 13/11 às 21h26 (X23), as frentes e os verificadores usam um modelo só, o
+A partir da X23 (13/11), as frentes e os verificadores usam um modelo só, o
 Claude Opus 5.5, e a segunda opinião de outro provedor fica para a revisão final. Antes,
 a divisão por provedor seguia uma regra (X6): quem escreve os evals e o conjunto
 reservado não é o provedor que escreve o agente. As trocas de provedor foram ordens do

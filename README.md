@@ -136,7 +136,11 @@ gateway da conta com a chave da Anthropic guardada nele. Sem isso, responde o re
 `producao` está no ar com o envio real desligado, no endereço padrão do Worker e no
 hostname próprio, que chega ao Worker por uma rota, sem escrita no DNS (X26, P22). O
 endereço padrão não serve como URL de entrega: a plataforma barra nele alguns clientes
-HTTP, e isso não se desliga (X28).
+HTTP, e isso não se desliga (X28). No teste da frente K, `Python-urllib` e `libwww-perl`
+levam 403 no endereço padrão, em POST e em GET, e passam no hostname próprio; os outros
+15 clientes testados passam nos dois. As URLs de pré-visualização de `producao` estão
+desligadas (P25, provisória). A confirmar no congelamento.
+<!-- PREENCHER: a confirmar no congelamento (clientes, P25) -->
 
 O webhook real não recebe nenhum POST antes da entrega, nem como teste. A validação é por
 composição:
@@ -170,6 +174,12 @@ Critérios (`docs/EVALS.md`): 95% ou mais por bloco no conjunto de desenvolvimen
 mais no agregado do reservado, zero lead sem confirmação, zero lead duplicado, p95 de até
 20 s e nenhuma resposta acima de 60 s. A prova dos 95% são três rodadas seguidas em `dev`,
 com o critério na soma por bloco (X24).
+
+Latência medida pela frente K em `producao`, no registro de cada turno do Worker: 2,2 a
+4,0 s nas perguntas simples (2 chamadas ao modelo) e 5,0 a 5,9 s nas cotações (3
+chamadas). Bate com a rodada local (p50 2,5 s, p95 5,3 s). O número final sai das rodadas
+oficiais: a confirmar no congelamento.
+<!-- PREENCHER: latência final das rodadas oficiais (a confirmar no congelamento) -->
 
 Notas por bloco e do reservado: a preencher.
 <!-- PREENCHER: nota dos evals por bloco (três rodadas em dev) e agregado do conjunto reservado -->
