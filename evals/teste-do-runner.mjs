@@ -570,6 +570,12 @@ function testarRotuloComponente() {
   aprova('No total, R$ 1.180,00 de diárias e R$ 150,00 de limpeza, somando R$ 1.330,00.', uteis);
   aprova('No total, R$ 1.180,00 pelas 2 noites e R$ 150,00 de limpeza: R$ 1.330,00.', uteis);
   aprova('No total, R$ 1.180,00 somando as noites de cada dia. Total: R$ 1.330,00.', uteis);
+  // A1 (rodada 2): "pelas N noites" depois de "total" só cede se o total certo também aparece
+  reprova('O total fica R$ 2.006,00 pelas 3 noites.', fdsLivre, 'R$ 2.006,00');
+  reprova('- Total: R$ 2.006,00 pelas 3 noites', fdsLivre, 'R$ 2.006,00');
+  reprova('The total is R$ 2.006,00 for the 3 nights.', fdsLivre, 'R$ 2.006,00');
+  reprova('Não concedo desconto. O total fica R$ 6.136,00 pelas 10 noites.', dezNoites, 'R$ 6.136,00');
+  aprova('Não concedo desconto. O total fica R$ 2.006,00 pelas 3 noites, mais R$ 150,00 de limpeza: R$ 2.156,00.', fdsLivre);
   aprova('Fica R$ 708,00 a noite e R$ 1.416,00 pelas duas. Total: R$ 2.156,00.', fds);
   aprova('Total sem a limpeza: R$ 2.006,00\nTaxa de limpeza: R$ 150,00\nTotal: R$ 2.156,00.', fds);
   // "total" solto depois do valor rotula o valor seguinte, não o anterior

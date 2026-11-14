@@ -421,6 +421,7 @@ export function julgarPrecoResposta(texto, estadiasInput, opcoes = {}) {
       limpeza: calc.taxaLimpezaCentavos,
       noitesNormais: calc.noitesNormais,
       noitesFds: calc.noitesFds,
+      total: calc.totalCentavos,
     });
 
     if (calc.noites <= 31) {
@@ -435,7 +436,10 @@ export function julgarPrecoResposta(texto, estadiasInput, opcoes = {}) {
   }
 
   const encontrados = extrairValoresCentavos(texto);
-  const contexto = { concede: respostaConcedePreco(texto) };
+  const contexto = {
+    concede: respostaConcedePreco(texto),
+    totalCertoNaResposta: encontrados.some((v) => perfis.some((p) => p.total === v.centavos)),
+  };
   for (const v of encontrados) {
     if (totaisOuTolerados.has(v.centavos)) continue;
     if (componentesPermitidos.has(v.centavos)) {

@@ -42,6 +42,11 @@ const REGEX_NOITE_COMUM =
 const REGEX_ROTULO_ANEXO =
   /^\s*(?:(?:de|das?|dos?|pel[ao]s?|para\s+as|somando|referentes?\s+[aà]s?|of|for)\s+(?:as\s+|os\s+|the\s+)?(?:\d+\s+|duas\s+|dois\s+|tr[eê]s\s+)?(?:di[aá]rias?|noites?|hospedagem|limpeza|taxa|nights?|cleaning|fim\s+de\s+semana)|pel[ao]s\s+(?:duas|dois|tr[eê]s|\d+))(?!\p{L})/iu;
 
+// Anexo que nomeia o próprio componente ("de diárias", "de limpeza"), e não só as noites
+// ("pelas 3 noites" diz a que se refere, não que o valor é parte do total).
+const REGEX_ANEXO_NOMINAL =
+  /^\s*(?:de|das?|dos?|of)\s+(?:as\s+|os\s+|the\s+)?(?:di[aá]rias?|hospedagem|limpeza|taxa|cleaning)(?!\p{L})/iu;
+
 // "total" antes do valor, exceto "total das (3) noites/diárias", "total sem a limpeza" e
 // "subtotal"; e "já com a limpeza"/"incluindo a limpeza", que apresentam o valor como total.
 const REGEX_TOTAL_ANTES =
@@ -184,7 +189,8 @@ function cabeNaContagem(perfil, centavos, n, porNoite) {
  * @param {{ texto: string, centavos: number, indice: number }} valor
  * @param {Array<{ diaria: number, diariaFds: number, limpeza: number, noitesNormais: number|null, noitesFds: number|null }>} perfis
  *   uma entrada por estadia esperada; `noites*` nulos quando só o imóvel é conhecido (sem_total)
- * @param {{ concede?: boolean }} [contexto] resultado de `respostaConcedePreco(texto)`, para não recalcular
+ * @param {{ concede?: boolean, totalCertoNaResposta?: boolean }} [contexto] resultado de
+ *   `respostaConcedePreco(texto)`, para não recalcular, e se o total certo de alguma estadia aparece na resposta
  * @returns {string|null}
  */
 export function motivoNaoComponente(texto, valor, perfis, contexto = {}) {
@@ -245,9 +251,11 @@ export function motivoNaoComponente(texto, valor, perfis, contexto = {}) {
   }
 
   // Valor com "total" ao lado é total, e o total certo é conferido à parte. Só cede quando o
-  // próprio valor vem nomeado como componente ("No total, R$ 1.180,00 de diárias") ou é uma
-  // diária dita por noite, já conferida acima ("No total são 2 noites, de R$ 590,00 cada").
-  if ((REGEX_TOTAL_ANTES.test(antes) || totalDepois) && !anexo && !porNoite) return 'apresentado como total';
+  // próprio valor vem nomeado como componente ("No total, R$ 1.180,00 de diárias"), quando o
+  // anexo diz as noites e o total certo também aparece ("No total, R$ 1.180,00 pelas 2 noites
+  // e R$ 150,00 de limpeza: R$ 1.330,00"), ou é uma diária dita por noite, já conferida acima.
+  const cedeAoAnexo = anexo && (REGEX_ANEXO_NOMINAL.test(depois) || contexto.totalCertoNaResposta === true);
+  if ((REGEX_TOTAL_ANTES.test(antes) || totalDepois) && !cedeAoAnexo && !porNoite) return 'apresentado como total';
 
   if (conhecidas.length === 0) return null;
 
