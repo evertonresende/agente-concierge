@@ -1819,6 +1819,38 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   percebeu a troca e a causa não foi determinada. As entregas desse período passaram por verificador
   independente em Opus 5.5. A thread voltou ao Opus 5.5, esforço alto, antes desta tarefa; G, N, K e
   B2 conferidas, todas em Opus 5.5
+- 14/11 04h07 · B2 · volta do juiz entregue em 41ecd72 e mesclada por hash: **`main` em 0567371**. Conferido
+  pela coordenação: juiz, runner e casos idênticos byte a byte aos de 193d1bf, na cabeça e na árvore
+  mesclada; ensaio com 53 arquivos e 1524 testes, tipos, gate, `RUNNER OK`, `TRAVA OK`, `CASOS OK`;
+  com o juiz de 4efb030 posto de volta numa cópia, o autoteste falha. Corpus com 275 itens, 50 de
+  limite; as três redações reais (contagem por tipo de noite sem repetir "noite", com dois-pontos e
+  com parêntese, e "multa em caso de") estão fixadas como certas que reprovam e listadas no
+  `evals/README.md`
+- 14/11 04h09 · dev · árvore de reserva 0567371 publicada (versão 03b532eb). Sonda de dois minutos depois
+  do deploy: 32 de 32 respostas sem contingência. Fumaça `marco1`: 100%
+- 14/11 04h10 · F · P35 entregue em a4b13fa (04h07, já em Opus 5.5): 20 linhas na gramática do sim e 41
+  testes novos; suíte com 54 arquivos e 1565 testes. Conferência da coordenação, 38 frases pela função
+  antiga e pela nova: as três frases reveladas passam a confirmar; a frase com "pelo valor normal",
+  negação, sobra, valor junto e novidade com resumo antigo continuam sem confirmar. Verificador
+  independente da rodada 9 iniciado, com bateria adversarial de 800 mensagens na barra. A B2 recebeu
+  os 4 casos revelados para passar ao conjunto de desenvolvimento
+- 14/11 04h12 · reservado · **segundo revisor: as 9 mudanças da passada única foram vetadas** e os casos
+  voltaram ao original. Nas 7 afrouxadas, a expressão nova aprovava respostas erradas (5 a 6 por
+  caso); das 2 apertadas, uma reprovava respostas certas e a outra ficou em dúvida. Ele apertou 3
+  casos frouxos (manipulação 1, handoff 2) e concordou com a classificação das falhas: 3 do juiz
+  compartilhado, 1 de idioma, 4 de lead. A leitura de 91,7% deixa de valer. Dos 4 substitutos, 1
+  está em ordem e 3 foram contestados (2 são paráfrase do caso retirado, 1 exige mais que a L9); o
+  primeiro revisor reescreve os 3 e o segundo confere de novo. Consequência: o conjunto volta a
+  medir com as expectativas originais, e o agregado final tende a ficar abaixo de 90%; pela P33
+  vai ao Éverton como está, com as falhas classificadas
+- 14/11 04h17 · rodadas · **rodada oficial 1 na árvore de reserva 0567371: 99 de 100** (04h12 a 04h16;
+  p50 3,1 s, p95 6,5 s; catálogo respondendo antes e depois). A falha é **falso vermelho do juiz**,
+  classificado pela conversa gravada: `hand-01-desconto` turno 1, resposta certa (recusa o desconto,
+  `handoff`, total R$ 2.156,00) com "Esse total inclui 1 noite a R$ 590,00, 2 noites de sexta e
+  sábado a R$ 708,00 cada e a taxa de limpeza de R$ 150,00": a noite comum vem sem o tipo, e o juiz
+  lê o valor como total. Os juízes de 193d1bf, 4efb030 e b0a80ce reprovam igual: não vem da volta.
+  Conta como falha na soma do bloco (P34). Leitura à mão: 26 respostas com os dois tipos de noite,
+  nenhuma com valor trocado; casos de desconto com recusa limpa e `handoff`
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -1846,15 +1878,14 @@ M2 sem achado determinístico nem de lead errado na H (a primeira rodada oficial
 dela). Meta: 14/11 03h00. Limite: 06h00. Gatilho que já existia: 10h00 com o critério 4 não
 verde, parar e chamar o Éverton.
 
-**Estado do congelamento em 14/11 03h27. Reaberto; falta só o juiz da B2.** Na `main` (f9a50d2): G com a
-P30 e a correção do R1 (eb5c7d4, aprovada pelo verificador da rodada 5), T (P21), F (P20, "sim" limpo,
-P29 e o ajuste de teste 7fed64e), H (fila da sessão e P24), B2 até 4efb030, o script da K e o gate da
-S. Fora da `main`: B2, com o juiz voltando ao estado de 193d1bf (P34) depois de o verificador da rodada
-6 reprovar as correções de redação; o que entra é documentação, corpus e autoteste, conferidos por
-identidade byte a byte dos arquivos do juiz. Quando ele aprovar e entrar, a `main` congela, `dev` é republicado e a contagem das três
-rodadas oficiais recomeça. O código do agente em `dev` ainda é o de b5af852. As rodadas na árvore
-b5af852 ficam registradas. O conjunto reservado está abaixo do limiar (linha das 03h16 do log) e
-segue a P33.
+**Estado do congelamento em 14/11 04h18. Árvore de reserva congelada em 0567371.** Código do agente: o de
+b5af852 mais a correção da G (eb5c7d4). Juiz, runner e casos idênticos byte a byte aos de 193d1bf
+(P34). Em `dev`: versão 03b532eb. As rodadas oficiais de reserva correm nessa árvore. Fora da
+`main`: F a4b13fa (P35), no verificador da rodada 9, e os 4 casos revelados do reservado, que a B2
+está passando para o conjunto de desenvolvimento. Se a F for aprovada até 05h30, entram os dois, a
+`main` congela de novo e as três rodadas são refeitas na árvore final; se não, vale a árvore de
+reserva e o comportamento vira limite no README. As rodadas da árvore b5af852 ficam registradas. O
+conjunto reservado segue a P33 (linhas das 03h49 e das 04h12 do log).
 
 **Plano B, decisão do Éverton (perguntado em 14/11).** Um ciclo de correção e verificação leva
 cerca de 85 minutos; cabem dois até as 06h00. Se a H ou o juiz não fecharem nesse prazo, a escolha
