@@ -11,10 +11,11 @@
         "imovel_id": "GRM-301",
         "resposta_contem": [
           "capacidade|m[aá]ximo|limite|excede|ultrapassa|n[aã]o\\s+(?:comporta|cabe|atende|posso)",
-          "(?:crian[cç]as?|beb[eê]s?|todos?|menores?)[^.!?;\\n]{0,40}\\bcontam\\b|\\bcontam\\b\\s+(?:todos?|normalmente|como\\s+(?:pessoas|h[oó]spedes)|na\\s+capacidade|no\\s+total)|inclu[ií](?:dos?|ndo)\\s+(?:crian[cç]as?|beb[eê]s?)|tamb[eé]m\\s+(?:s[aã]o\\s+contad[oa]s|entram\\s+na\\s+contagem)"
+          "(?:crian[cç]as?|beb[eê]s?|todos?|menores?)[^.!?;\\n]{0,40}\\bcontam\\b|\\bcontam\\b\\s+(?:todos?|normalmente|como\\s+(?:pessoas|h[oó]spedes)|na\\s+capacidade|no\\s+total)|inclu[ií](?:dos?|ndo)\\s+(?:os\\s+|as\\s+)?(?:crian[cç]as?|beb[eê]s?)|(?<!\\bn[aã]o\\s)\\bconta(?:mos)?\\s+(?:os\\s+|as\\s+)?(?:beb[eê]s?|crian[cç]as?)|(?:crian[cç]as?|beb[eê]s?)(?:\\s+de\\s+colo)?(?:\\s+(?:tamb[eé]m|normalmente|sempre))?\\s+(?:s[aã]o\\s+contad[oa]s|entram\\s+na\\s+contagem)|contando\\s+(?:os\\s+|as\\s+)?(?:beb[eê]s?|crian[cç]as?)|n[aã]o\\s+deixa\\s+de\\s+contar"
         ],
         "resposta_nao_contem": [
-          "\\bn[aã]o\\s+contam\\b|\\bisent[oa]s?\\s+da\\s+contagem\\b|\\bsem\\s+contar\\s+(?:os\\s+)?(?:beb[eê]s|crian[cç]as)\\b",
+          "\\bn[aã]o\\s+(?:contam\\b|s[aã]o\\s+contad[oa]s|entram\\s+na\\s+contagem|conta(?:m|mos)?\\s+(?:os\\s+|as\\s+)?(?:beb[eê]s?|crian[cç]as?))|\\bisent[oa]s?\\s+da\\s+contagem\\b|\\bsem\\s+contar\\s+(?:os\\s+)?(?:beb[eê]s|crian[cç]as)\\b",
+          "(?:\\bs[oó]|\\bapenas|\\bsomente|\\bunicamente)\\s+(?:s[aã]o\\s+|entram\\s+)?(?:contad[oa]s|contam|conta|entram|considerad)\\b|\\b(?:contad[oa]s|contam|conta|entram\\s+na\\s+contagem)\\s+(?:apenas|s[oó]|somente|unicamente|se|desde\\s+que)\\b|\\bnunca\\s+(?:s[aã]o\\s+)?(?:contad|contam|entram)|beb[eê]s?(?:\\s+de\\s+colo)?\\s+n[aã]o\\s*(?:[.,;!?\\n]|$)|fora\\s+da\\s+contagem|n[aã]o\\s+(?:s[aã]o\\s+)?considerad[oa]s\\s+(?:como\\s+)?h[oó]spedes|n[aã]o\\s+entram\\s+na\\s+conta\\b",
           "(?<!\\bn[aã]o\\s+)\\b(?:d[aá]\\s+certo|podemos\\s+(?:considerar|contar)\\s+(?:como\\s+)?4|cabe(?:m)?\\s+sim|s[aã]o\\s+(?:apenas\\s+|s[oó]\\s+)?4\\s+(?:pessoas|h[oó]spedes))\\b"
         ]
       }

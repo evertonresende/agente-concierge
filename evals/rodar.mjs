@@ -20,6 +20,7 @@ import {
   mascararDadosPessoais,
   montarResumoRelatorio,
 } from './lib/relatorio.mjs';
+import { casoMandaSim } from './lib/mensagem-confirma.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..');
@@ -366,6 +367,21 @@ function carregarCasos(baseDir, blocosFiltro, mascararErros = false) {
             : `Caso ${caso.id} precisa de "turnos" não vazio`
         );
       }
+      // Caso sem nenhuma conferência passaria sempre, inclusive confirmando um lead sem
+      // ninguém olhar; exige ao menos um "espera" (turno, subturno ou conjunto) ou leads_esperados.
+      const temEspera = caso.turnos.some(
+        (t) =>
+          (t?.espera && typeof t.espera === 'object') ||
+          (t?.espera_conjunto && typeof t.espera_conjunto === 'object') ||
+          (Array.isArray(t?.paralelo) && t.paralelo.some((sub) => sub?.espera && typeof sub.espera === 'object'))
+      );
+      if (!temEspera && caso.leads_esperados === undefined) {
+        throw new Error(
+          mascararErros
+            ? `Caso sem conferência no bloco ${bloco}`
+            : `Caso ${caso.id} não confere nada: precisa de "espera" em algum turno ou de "leads_esperados"`
+        );
+      }
       const cacheRegex = new Map();
       validarECompilarCaso(caso, cacheRegex, mascararErros);
       lista.push({ ...caso, bloco, _cacheRegex: cacheRegex });
@@ -421,6 +437,7 @@ async function consultarSaude(alvo) {
   try {
     const res = await fetch(`${alvo}/saude`, {
       method: 'GET',
+      redirect: 'manual',
       signal: AbortSignal.timeout(10_000),
     });
     if (!res.ok) {
@@ -528,6 +545,7 @@ async function buscarLeadsPorTelefones(leadsUrl, conjuntoDigitos) {
   try {
     res = await fetch(leadsUrl, {
       method: 'GET',
+      redirect: 'manual',
       signal: AbortSignal.timeout(15_000),
     });
   } catch {
@@ -572,6 +590,7 @@ async function ligarModoWebhook(leadsUrl, telefoneDigitos, cfg) {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(corpo),
+      redirect: 'manual',
       signal: AbortSignal.timeout(10_000),
     });
   } catch {
@@ -589,6 +608,7 @@ async function desligarModoWebhook(leadsUrl, telefoneDigitos) {
   try {
     await fetch(url, {
       method: 'DELETE',
+      redirect: 'manual',
       signal: AbortSignal.timeout(10_000),
     });
   } catch {
@@ -685,6 +705,7 @@ async function enviarChat(alvo, corpoTexto, timeoutMs) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: corpoTexto,
+      redirect: 'manual',
       signal: AbortSignal.timeout(timeoutMs),
     });
     textoCorpo = await res.text();
@@ -699,11 +720,28 @@ async function enviarChat(alvo, corpoTexto, timeoutMs) {
       usoEntrada: 0,
       usoSaida: 0,
       chamadasModelo: 0,
+      // Sem resposta não há cabeçalho de uso: o custo desse pedido não é medido (não é zero).
+      semUso: true,
       dados: null,
     };
   }
 
   const latenciaMs = performance.now() - inicio;
+  // Redirecionamento não é seguido (o POST com corpo iria para o endereço do Location):
+  // conta como falha do turno, com o status e sem o endereço.
+  if (res.status >= 300 && res.status < 400) {
+    return {
+      okRede: false,
+      erroRede: `POST /chat respondeu redirecionamento HTTP ${res.status}; o runner não segue redirecionamento`,
+      latenciaMs,
+      status: res.status,
+      usoEntrada: 0,
+      usoSaida: 0,
+      chamadasModelo: 0,
+      semUso: true,
+      dados: null,
+    };
+  }
   const numHeader = (nome) => {
     const v = Number(res.headers.get(nome));
     return Number.isFinite(v) && v >= 0 ? v : 0;
@@ -725,6 +763,7 @@ async function enviarChat(alvo, corpoTexto, timeoutMs) {
     usoEntrada: numHeader('x-uso-entrada'),
     usoSaida: numHeader('x-uso-saida'),
     chamadasModelo: numHeader('x-chamadas-modelo'),
+    semUso: ['x-uso-entrada', 'x-uso-saida', 'x-chamadas-modelo'].some((h) => res.headers.get(h) === null),
     dados,
     erroJson,
   };
@@ -1005,6 +1044,7 @@ async function executarCaso({ caso, indice, args, ehDev, leadsUrlDev, runId, tel
   let usoEntrada = 0;
   let usoSaida = 0;
   let chamadasModelo = 0;
+  let pedidosSemUso = 0;
   let violacaoLead = false;
 
   const prepararCorpo = (turno, sessionId) => {
@@ -1018,6 +1058,20 @@ async function executarCaso({ caso, indice, args, ehDev, leadsUrlDev, runId, tel
       session_id: sessionId,
       message: substituirTexto(turno.mensagem ?? '', ctx, sessionId, false),
     });
+  };
+
+  // Confere no webhook falso a quantidade de leads do telefone do caso logo após um turno.
+  const conferirLeadsAteAgora = async (esperado, rotulo) => {
+    if (esperado === undefined || !ehDev || !leadsUrlDev) return;
+    try {
+      const leadsAgora = await buscarLeadsPorTelefones(leadsUrlDev, conjuntoDigitos);
+      if (leadsAgora.length !== esperado) {
+        falhas.push(`${rotulo}: leads_ate_agora=${leadsAgora.length}, esperado=${esperado}`);
+        if (leadsAgora.length > esperado) violacaoLead = true;
+      }
+    } catch (err) {
+      falhas.push(`${rotulo}: ${err.message}`);
+    }
   };
 
   let modoLigado = false;
@@ -1069,6 +1123,7 @@ async function executarCaso({ caso, indice, args, ehDev, leadsUrlDev, runId, tel
           usoEntrada += item.resp.usoEntrada;
           usoSaida += item.resp.usoSaida;
           chamadasModelo += item.resp.chamadasModelo;
+          if (item.resp.semUso) pedidosSemUso++;
           falhas.push(
             ...avaliarRespostaTurno(
               item.resp,
@@ -1092,6 +1147,14 @@ async function executarCaso({ caso, indice, args, ehDev, leadsUrlDev, runId, tel
             Boolean(args.soAgregado)
           )
         );
+        // Subturnos simultâneos: os leads só podem ser contados depois de todos responderem,
+        // então vale o maior leads_ate_agora declarado entre eles.
+        const esperadosParalelo = turno.paralelo
+          .map((sub) => sub?.espera?.leads_ate_agora)
+          .filter((v) => v !== undefined);
+        if (esperadosParalelo.length > 0) {
+          await conferirLeadsAteAgora(Math.max(...esperadosParalelo), `turno ${numTurno}`);
+        }
       } else {
         const sid = obterSessionId(turno.sessao || 'principal');
         const corpo = prepararCorpo(turno, sid);
@@ -1101,6 +1164,7 @@ async function executarCaso({ caso, indice, args, ehDev, leadsUrlDev, runId, tel
         usoEntrada += resp.usoEntrada;
         usoSaida += resp.usoSaida;
         chamadasModelo += resp.chamadasModelo;
+        if (resp.semUso) pedidosSemUso++;
         falhas.push(
           ...avaliarRespostaTurno(
             resp,
@@ -1113,21 +1177,7 @@ async function executarCaso({ caso, indice, args, ehDev, leadsUrlDev, runId, tel
           )
         );
 
-        if (turno.espera?.leads_ate_agora !== undefined && ehDev && leadsUrlDev) {
-          try {
-            const leadsAgora = await buscarLeadsPorTelefones(leadsUrlDev, conjuntoDigitos);
-            if (leadsAgora.length !== turno.espera.leads_ate_agora) {
-              falhas.push(
-                `turno ${numTurno}: leads_ate_agora=${leadsAgora.length}, esperado=${turno.espera.leads_ate_agora}`
-              );
-              if (leadsAgora.length > turno.espera.leads_ate_agora) {
-                violacaoLead = true;
-              }
-            }
-          } catch (err) {
-            falhas.push(`turno ${numTurno}: ${err.message}`);
-          }
-        }
+        await conferirLeadsAteAgora(turno.espera?.leads_ate_agora, `turno ${numTurno}`);
       }
     }
 
@@ -1161,6 +1211,7 @@ async function executarCaso({ caso, indice, args, ehDev, leadsUrlDev, runId, tel
     usoEntrada,
     usoSaida,
     chamadasModelo,
+    pedidosSemUso,
     violacaoLead,
   };
 }
@@ -1237,17 +1288,31 @@ async function main() {
   const casosElegiveis = [];
   const resultadosPulados = [];
   let puladosNaoDev = 0;
+  let puladosSemConfirmaFalse = 0;
+  let puladosComSim = 0;
   let puladosSemLeadsUrl = 0;
 
   for (const caso of todosCasos) {
     const precisaDev = requerDev(caso);
-    if (!ehDev && precisaDev) {
-      puladosNaoDev++;
+    // Fora de dev a trava é por negação: só roda o caso que declara "confirma": false. Um
+    // caso sem a marca pode confirmar um lead pelas mensagens sem declarar campo nenhum.
+    const semConfirmaFalse = !precisaDev && caso.confirma !== false;
+    // A marca não basta: caso com mensagem que o produto pode ler como "sim" ("Sim,
+    // confirmo.") também é recusado fora de dev, mesmo declarando "confirma": false.
+    const mandaSim = !precisaDev && !semConfirmaFalse && casoMandaSim(caso);
+    if (!ehDev && (precisaDev || semConfirmaFalse || mandaSim)) {
+      if (precisaDev) puladosNaoDev++;
+      else if (semConfirmaFalse) puladosSemConfirmaFalse++;
+      else puladosComSim++;
       resultadosPulados.push({
         id: caso.id,
         bloco: caso.bloco,
         pulado: true,
-        motivoPulo: 'trava confirma fora de dev',
+        motivoPulo: precisaDev
+          ? 'trava confirma fora de dev'
+          : semConfirmaFalse
+            ? 'trava fora de dev: sem "confirma": false'
+            : 'trava fora de dev: mensagem de confirmação',
         passou: false,
         falhas: ['pulado pela trava não-dev'],
         latenciasMs: [],
@@ -1282,6 +1347,16 @@ async function main() {
   if (puladosNaoDev > 0) {
     console.warn(
       `TRAVA: alvo não é dev (ambiente=${saude.ambiente}); ${puladosNaoDev} caso(s) com confirmação recusado(s).`
+    );
+  }
+  if (puladosSemConfirmaFalse > 0) {
+    console.warn(
+      `TRAVA: alvo não é dev (ambiente=${saude.ambiente}); ${puladosSemConfirmaFalse} caso(s) sem "confirma": false explícito recusado(s).`
+    );
+  }
+  if (puladosComSim > 0) {
+    console.warn(
+      `TRAVA: alvo não é dev (ambiente=${saude.ambiente}); ${puladosComSim} caso(s) com mensagem de confirmação recusado(s), mesmo com "confirma": false.`
     );
   }
   if (puladosSemLeadsUrl > 0) {

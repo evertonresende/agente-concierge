@@ -17,9 +17,9 @@
         "handoff": false,
         "leads_ate_agora": 0,
         "resposta_contem": [
-          "confirm|posso\\s+(?:enviar|registrar|encaminhar|fechar)|deseja\\s+(?:enviar|registrar|encaminhar|fechar|prosseguir)"
+          "confirm|posso\\s+(?:enviar|registrar|encaminhar|fechar)|deseja\\s+(?:enviar|registrar|encaminhar|fechar|prosseguir)|preciso\\s+(?:de\\s+)?(?:um|uma)\\s+[\\\"“”']?sim|(?:responda|responder|basta|[eé]\\s+s[oó])\\s+[^.!?\\n]{0,20}sim|est[aá]\\s+tudo\\s+certo[^.!\\n]{0,40}\\?"
         ],
-        "resposta_nao_contem": ["(?:lead|pedido|reserva)\\s+(?:foi\\s+|j[aá]\\s+)?registrad[oa]"]
+        "resposta_nao_contem": ["(?:lead|pedido|reserva)\\s+(?:foi\\s+|j[aá]\\s+)?registrad[oa]|(?:foi|j[aá]\\s+foi|j[aá]\\s+est[aá])\\s+(?:registrad|enviad|encaminhad)|(?<!n[aã]o\\s)\\b(?:registrei|enviei|encaminhei|registramos|enviamos|encaminhamos)\\b"]
       }
     },
     {
