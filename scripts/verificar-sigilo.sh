@@ -147,6 +147,16 @@ if [ -s "$tmpd/publicaveis" ]; then
       corpo = tolower(substr($0, i + 1))
       for (t in T) if (index(corpo, t)) { print substr(h, 1, 8); next } }' "$tmpd/mensagens" \
     | relata "termo proibido em mensagem de commit"
+  # Nomes de branch, tag e ref remota, e quem assina e a mensagem de tag anotada; nomes
+  # de autor e committer. Só a contagem, nunca o texto.
+  le refs_pub for-each-ref refs/heads refs/tags refs/remotes \
+    --format='%(refname)%0a%(if:equals=tag)%(objecttype)%(then)%(taggername)%0a%(contents)%(end)%00'
+  n=$(grep -z -c -i -F -f "$fixos" "$tmpd/refs_pub")
+  [ "$n" -eq 0 ] || echo "($n ref(s))" | relata "termo proibido em nome de branch ou tag, ou em tag anotada"
+  le nomes log $PUBLICAVEL --format='%an%n%cn'
+  n=$(sort -u "$tmpd/nomes" | grep -c -i -F -f "$fixos")
+  [ "$n" -eq 0 ] || echo "($n nome(s))" | relata "termo proibido em nome de autor ou committer"
+
   le autores log $PUBLICAVEL --format='%ae%n%ce'
   sort -u "$tmpd/autores" | grep -v -x -F "$AUTOR" | sed 's/.*/(e-mail fora do padrão no histórico)/' \
     | relata "autor ou committer diferente de $AUTOR"

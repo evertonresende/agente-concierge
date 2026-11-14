@@ -116,6 +116,16 @@ git commit -q --allow-empty -m "$HOST"
 git switch -q --orphan nova
 rodar; espera_codigo 1; espera_texto "conteúdo de commit"; espera_texto "mensagem de commit"
 
+caso="j) nome de branch, de tag e de autor, e mensagem de tag anotada"
+novo_repo j1; git branch "frente-$EMPRESA"
+rodar; espera_codigo 1; espera_texto "nome de branch ou tag"; sem_pedaco "$EMPRESA"
+novo_repo j2; git tag "v1-$EMPRESA"
+rodar; espera_codigo 1; espera_texto "nome de branch ou tag"; sem_pedaco "$EMPRESA"
+novo_repo j3; git -c user.name="Ana $EMPRESA" commit -q --allow-empty -m "vazio"
+rodar; espera_codigo 1; espera_texto "nome de autor ou committer"; sem_pedaco "$EMPRESA"
+novo_repo j4; git tag -a v1 -m "$HOST"
+rodar; espera_codigo 1; espera_texto "tag anotada"; sem_pedaco "$HOST"
+
 caso="e) termo em arquivo binário"
 novo_repo e
 printf 'PNG\0\0%s\0' "$TOKEN" > d.bin; git add d.bin
