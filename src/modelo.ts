@@ -351,7 +351,9 @@ export function criarModelo(ai: Ai, modelo: string | undefined, opcoes: OpcoesDo
         turnosRegistrados.add(ultima);
         console.warn(JSON.stringify({ evento: "principal_pulado", modelo, motivo: "sem AI_GATEWAY" }));
       }
-      return contado(comMarcaDeLimite(chamar(opcoes.reserva, mensagens, ferramentas), false), 1);
+      // O reserva é o único modelo chamado: recusa por limite dele sai com porLimite e o loop
+      // não repete, como no caminho de um modelo só (decisão provisória, complementa a P16).
+      return contado(comMarcaDeLimite(chamar(opcoes.reserva, mensagens, ferramentas), true), 1);
     }
     let principalPorLimite: boolean;
     try {

@@ -69,6 +69,14 @@ describe("producao sem gateway para o Haiku", () => {
     expect(chamados).toEqual([HAIKU]);
   });
 
+  it("sem gateway, recusa por limite do reserva sai com porLimite: true e 1 chamada", async () => {
+    const chamados: string[] = [];
+    const ai = { run: async (m: string) => { chamados.push(m); throw new Error("AiError: 3021: rate limiting: inference request per min rate reached"); } } as unknown as Ai;
+    const erro = await criarModelo(ai, HAIKU, { reserva: RESERVA })([{ role: "user", content: "oi" }], []).catch((e: unknown) => e);
+    expect(erro).toMatchObject({ porLimite: true, chamadas: 1 });
+    expect(chamados).toEqual([RESERVA]);
+  });
+
   it("o reserva também falha: aviso honesto com handoff, sem lançar", async () => {
     const { ai } = aiDeProducao(false);
     const saida = await turno(ai);
