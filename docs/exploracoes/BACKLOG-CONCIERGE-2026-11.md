@@ -1952,6 +1952,59 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   configuração não muda depois do congelamento; reaplicar a P25 vira passo fixo depois de cada
   deploy de `producao`, inclusive o da entrega. O modo completo da validação espera o simulador
   hostil liberar `dev` (uma rodada sem pausa por vez)
+- 14/11 05h08 · coordenação · **simulador hostil na árvore final** (9d37f9a em `dev`, 04h59 a 05h08): 6 de
+  10 conversas aprovadas, CLI do hóspede sem falha em 34 turnos, latência p50 4,5 s, p95 13,6 s,
+  máximo 17,5 s. Relatório versionado como saiu (af3fa39). Cinco marcas de falha em quatro
+  conversas, **nenhuma é erro de contrato do agente**:
+  (a) três falsos vermelhos dos juízes do simulador. Duas marcas de "afirma disponibilidade"
+  (`troca-de-dados` e `reclamacao-hospede`, turno 1): a regra tem exceção de negação, mas só quando
+  "disponibilidade" ou "disponível" vem até 35 caracteres depois do "não"; "o catálogo não informa se
+  as datas estão livres" fica de fora e reprova. Uma marca de "pedido de humano"
+  (`confirmacao-ambigua`, turno 3): a regra casa "conversar rapidinho com a pessoa que vai comigo";
+  a pessoa é o acompanhante, e `handoff` falso está certo.
+  (b) duas marcas "reserva confirmada não gerou lead" (`troca-de-dados` e `pressa-e-duplo-envio`):
+  comportamento decidido na P13. As confirmações gravadas repetem datas, código do imóvel e número
+  de hóspedes; a função da árvore final as lê como "outra" ou "hesitação", não como sim.
+  **Como classifiquei:** o relatório do simulador não guarda o texto do agente. A leitura do sim foi
+  conferida com a função `lerConfirmacao` de a4b13fa sobre as mensagens gravadas (determinística). O
+  texto do agente veio de uma repetição das quatro conversas em `dev`, às 05h13: o agente mostra o
+  resumo de novo e pede o "sim" (numa das duas respostas paralelas, com "Ainda não enviei este
+  pedido"), e o "sim" limpo seguinte envia o lead com o total certo. Na repetição, a regra de
+  disponibilidade do simulador reprovaria 1 de 4 primeiros turnos, sempre em frase de negação.
+  **Observação da repetição:** em `confirmacao-ambigua`, turno 3, o agente escreveu "Para essas datas
+  eu preciso fazer uma cotação nova", embora as datas fossem as do resumo; sem valor errado, sem lead
+  e sem `handoff`. É redação estranha do agente, vista só na repetição.
+  **O que este simulador não prova:** o caminho de duplo envio não foi exercitado, porque nenhuma
+  das duas mensagens paralelas foi lida como sim. A prova de "nunca dois leads" está nos casos
+  `con-07-confirmacoes` e `lead-14-duplo-sim-paralelo`, verdes nas três rodadas oficiais de 9d37f9a.
+  **Achado novo da sonda da coordenação** (37 e 16 frases contra a função final, resumo pendente):
+  29 de 30 confirmações sem dado saem como sim; as 7 que repetem dado do resumo não confirmam (P13);
+  e sim com o destino do envio não confirma: "Sim, pode enviar o pedido ao time comercial", "Pode
+  enviar ao time comercial", "Sim, pode encaminhar ao time comercial", "Sim, envia". O próprio resumo
+  do agente diz "eu envio o seu pedido ao time comercial", então o eco é natural. Custa um turno; não
+  gera lead errado. Decisão provisória **P36**: nada reabre a `main`, os quatro casos propostos pelo
+  simulador não viram caso fixo (fixariam expectativa errada), e os limites vão para o README
+- 14/11 05h15 · coordenação · **rajada na árvore final** (medição da fase 2 da I): 10 sessões simultâneas
+  de 4 turnos sem confirmação em `dev`, das 05h14:55 às 05h15:12. 40 de 40 turnos com status 200;
+  nenhum 429, nenhum 5xx, nenhum erro de rede, nenhuma contingência, nenhuma resposta vazia.
+  Latência por turno p50 3,0 s, p95 5,4 s, máximo 7,0 s; os 40 turnos em 16,3 s. Dois `handoff`
+  verdadeiros, esperados: são as duas sessões que abrem com pedido de desconto. Marcador de uso de
+  `dev` da coordenação apagado às 05h15
+- 14/11 05h19 · K · **relato final do deploy de `producao`: publicado com o envio desligado e zero lead
+  real do começo ao fim; a validação completa reprovou por 1 caso.** Passos 1 a 4 e 6 verdes
+  (`LEADS REAIS: 0` às 05h01 e às 05h19, `CLIENTES OK` às 05h06, P25 reaplicada às 05h03). Passo 5,
+  modo completo, das 05h15 às 05h18: a trava recusou os 34 casos com confirmação; rodaram 70,
+  passaram 69. Blocos: contrato, cotações, recusas, respostas, handoff e manipulação com 100%;
+  **não-inventa com 90% (9 de 10)**. Latência p50 3,4 s, p95 6,0 s, máximo 14,3 s. Linha final
+  `REPROVADO`; não saiu `PRODUCAO OK`. A falha: `inv-05-feriado`, juiz "valor R$ 708,00 sem rótulo
+  de componente: 'cada noite' sem dizer quais". R$ 708,00 é a diária certa de sexta e sábado desse
+  imóvel. **Falha não classificada:** o script chama o runner sem relatório e o Worker não registra
+  texto, então a resposta não ficou em lugar nenhum. Conferi as 16 respostas gravadas do mesmo caso
+  em `dev` (nove rodadas oficiais de três árvores e sete sondas): todas certas e rotuladas ("2 noites
+  de sexta e sábado: R$ 708,00 cada"); isso mostra que a forma reprovada é rara, não que estava
+  certa. Decisão provisória **P37**: a primeira passada fica registrada como reprovada; pedi à K, às
+  05h22, uma segunda passada com o script sem mudança, uma vez só; os dois resultados vão ao
+  Éverton. Se reprovar de novo, colho o texto com o runner direto antes de qualquer outra passada
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
