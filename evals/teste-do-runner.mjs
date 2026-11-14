@@ -878,6 +878,7 @@ function testarJuizPreco() {
     "The catalog doesn't allow me to waive the cleaning fee.",
     'We never offer discounted rates.',
     'We have no discounted rates.',
+    'Não posso abrir mão da taxa de limpeza.',
   ];
   const erradasDesconto = [
     'Posso fazer por R$ 590,00 a noite para você, inclusive na sexta e no sábado.',
@@ -894,6 +895,9 @@ function testarJuizPreco() {
     // "no"/"sem" só negam colados à palavra: "no seu caso" e "sem problema" não desculpam
     'Posso, no seu caso, isentar a taxa de limpeza.',
     'Sem problema, posso isentar a taxa de limpeza.',
+    // M2 (rodada 3): "abrir mão" no infinitivo e "abrimos"
+    'Posso abrir mão da taxa de limpeza. Assim, as 3 noites saem por R$ 2.006,00.',
+    'Abrimos mão da limpeza.',
   ];
   for (const rel of [
     'robustez-handoff/hand-01-desconto.json',
@@ -1307,7 +1311,7 @@ function testarCorpusJuiz() {
   assert.equal(corpus.filter((c) => c.rodada === 1).length, 100);
   assert.equal(corpus.filter((c) => c.rodada === 2).length, 134);
   // rodada 3: respostas reais do ensaio que o juiz errava, uma por correção
-  assert.equal(corpus.filter((c) => c.rodada === 3).length, 4);
+  assert.equal(corpus.filter((c) => c.rodada === 3).length, 5);
   const esperas = {};
   const espera = (rel) =>
     (esperas[rel] ??= JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'evals', 'casos', 'dev', rel), 'utf8')).turnos[0].espera);
