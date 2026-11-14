@@ -56,6 +56,10 @@ export interface EstadoLead {
   envios: Record<string, SituacaoEnvio>;
   /** Resumos mostrados na sessão, para saber se um resumo substituiu outro (P13). */
   resumosMostrados?: number;
+  /** POSTs sem 201 por estadia (ver `chaveDaEstadia`): no máximo 2 na sessão (P14). */
+  postsSemRegistro?: Record<string, number>;
+  /** Estadias que não recebem mais POST na sessão, com o motivo: recusa ou resultado incerto (P14). */
+  estadiasBloqueadas?: Record<string, "recusado" | "incerto">;
 }
 
 export const ESTADO_INICIAL: EstadoLead = { pendente: null, envios: {} };
@@ -69,6 +73,19 @@ export interface Cofre {
 /** A mesma reserva = mesmo imóvel, datas, hóspedes e telefone (contrato L7). */
 export function chaveDaReserva(r: Reserva): string {
   return [r.imovel_id.toUpperCase(), r.checkin, r.checkout, r.hospedes, r.telefone.replace(/\D/g, "")].join("|");
+}
+
+/**
+ * A estadia = imóvel, entrada e saída. O teto de falhas da P14 conta por estadia, então
+ * trocar nome, telefone ou número de hóspedes não abre um novo envio depois do bloqueio.
+ */
+export function chaveDaEstadia(r: Reserva): string {
+  return [r.imovel_id.toUpperCase(), r.checkin, r.checkout].join("|");
+}
+
+/** A estadia desta reserva está bloqueada na sessão? Devolve o motivo. */
+export function estadiaBloqueada(estado: EstadoLead, r: Reserva): "recusado" | "incerto" | undefined {
+  return estado.estadiasBloqueadas?.[chaveDaEstadia(r)];
 }
 
 /** Registra que o resumo foi mostrado neste turno. Substitui qualquer resumo anterior (L10). */
@@ -622,36 +639,57 @@ export async function confirmar(cofre: Cofre, turnoAtual: number, mensagem: stri
   const corrida = agora.envios[chave];
   if (reservaFechada(corrida)) return jaMarcada(cofre, corrida!, pendente, turnoAtual);
   if (!agora.pendente || chaveDaReserva(agora.pendente.reserva) !== chave) return { tipo: "sem_resumo" };
+  // Estadia bloqueada (duas falhas, ou uma falha que passou para humano): nenhum POST (P14).
+  const bloqueio = estadiaBloqueada(agora, pendente.reserva);
+  if (bloqueio) return { tipo: "nao_registrado", motivo: bloqueio === "incerto" ? "ja_tentado" : "ja_recusado" };
   // Lido antes do marcador "enviando", que sobrescreve a recusa anterior desta reserva.
   const recusadaAntes = corrida === "nao_registrado";
   const recusaNaSessao = recusadaAntes || Object.values(agora.envios).some((e) => e === "nao_registrado" || e === "recusado");
+  const estadia = chaveDaEstadia(pendente.reserva);
+  let semRegistro = agora.postsSemRegistro?.[estadia] ?? 0;
   marcar(cofre, chave, "enviando");
 
   const corpo = corpoDoLead(pendente.reserva, cotacao.totalCentavos);
-  let resposta = await tentarEnvio(deps, corpo);
-  // 5xx: exatamente uma nova tentativa (L11). Resposta que não chegou nunca é repetida.
-  if (resposta !== "incerto" && resposta.status >= 500) resposta = await tentarEnvio(deps, corpo);
+  const enviar = async () => {
+    const r = await tentarEnvio(deps, corpo);
+    if (r === "incerto" || r.status !== 201) semRegistro++;
+    return r;
+  };
+  let resposta = await enviar();
+  // 5xx: uma nova tentativa (L11), se a estadia ainda não chegou a 2 POSTs sem 201 (P14).
+  // Resposta que não chegou nunca é repetida.
+  if (resposta !== "incerto" && resposta.status >= 500 && semRegistro < 2) resposta = await enviar();
+
+  /** Grava o resultado da tentativa: marcador da reserva, contagem e bloqueio da estadia. */
+  const fechar = (situacao: SituacaoEnvio, bloqueia?: "recusado" | "incerto", pendenteDepois: Pendente | null = null) => {
+    const estado = cofre.ler();
+    cofre.salvar({
+      ...estado,
+      pendente: pendenteDepois,
+      envios: { ...estado.envios, [chave]: situacao },
+      postsSemRegistro: { ...estado.postsSemRegistro, [estadia]: semRegistro },
+      estadiasBloqueadas: bloqueia ? { ...estado.estadiasBloqueadas, [estadia]: bloqueia } : estado.estadiasBloqueadas,
+    });
+  };
   if (resposta === "incerto") {
-    marcar(cofre, chave, "incerto");
+    fechar("incerto", "incerto", cofre.ler().pendente);
     return { tipo: "nao_registrado", motivo: "incerto" };
   }
   if (resposta.status === 201) {
-    const estado = cofre.ler();
-    cofre.salvar({ ...estado, pendente: { ...pendente, turno: turnoAtual }, envios: { ...estado.envios, [chave]: "registrado" } });
+    fechar("registrado", undefined, { ...pendente, turno: turnoAtual });
     return { tipo: "registrado", pendente };
   }
   // 2xx diferente de 201 (200, 204): pode ter entrado. Incerto, sem novo envio (P14).
   if (resposta.status >= 200 && resposta.status < 300) {
-    marcar(cofre, chave, "incerto");
+    fechar("incerto", "incerto", cofre.ler().pendente);
     return { tipo: "nao_registrado", motivo: "incerto" };
   }
-  // Com certeza não registrou. Só o 422 que aponta dado do hóspede, e na primeira recusa
-  // da sessão, pede a correção e deixa a reserva ser enviada de novo com novo resumo.
-  // Qualquer outra resposta (5xx depois da nova tentativa, 3xx, 400, 401, 404, 422 sem
-  // campo ou repetido) bloqueia a reserva na sessão e passa para humano (P14).
-  const corrigivel = resposta.status === 422 && resposta.campos.length > 0 && !recusaNaSessao;
-  const estado = cofre.ler();
-  cofre.salvar({ ...estado, pendente: null, envios: { ...estado.envios, [chave]: corrigivel ? "nao_registrado" : "recusado" } });
+  // Com certeza não registrou. Só o 422 que aponta dado do hóspede, na primeira recusa da
+  // sessão e com a estadia abaixo de 2 POSTs sem 201, pede a correção e deixa um envio
+  // corrigido. Qualquer outra resposta (5xx depois da nova tentativa, 3xx, 4xx, 422 sem
+  // campo ou repetido, ou a segunda falha da estadia) bloqueia a estadia e passa para humano (P14).
+  const corrigivel = resposta.status === 422 && resposta.campos.length > 0 && !recusaNaSessao && semRegistro < 2;
+  fechar(corrigivel ? "nao_registrado" : "recusado", corrigivel ? undefined : "recusado");
   return corrigivel ? { tipo: "campo_recusado", campos: resposta.campos } : { tipo: "nao_registrado", motivo: "resposta" };
 }
 

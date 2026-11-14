@@ -115,9 +115,12 @@ describe("falhas do webhook na conversa", () => {
     expect(r.handoff).toBe(true);
     expect(r.respostaFinal).toMatch(/Não consegui registrar/);
     expect(r.respostaFinal).not.toMatch(/Pode me informar de novo/);
-    // O mesmo dado recusado de novo também passa para humano.
-    await s.resumo(6);
-    expect((await s.sim(7)).handoff).toBe(true);
+    // Voltar ao telefone original: a estadia está bloqueada (P14), nem resumo nem POST.
+    const volta = await s.resumo(6);
+    expect(volta.handoff).toBe(true);
+    expect(volta.respostaFinal).toMatch(/Não consegui registrar/);
+    await s.sim(7);
+    expect(s.recebidos).toHaveLength(2);
     expect(s.guardados).toEqual([]);
   });
 
@@ -140,17 +143,18 @@ describe("falhas do webhook na conversa", () => {
     expect(s.guardados).toEqual([]);
   });
 
-  it("reserva bloqueada por duas recusas: o primeiro 422 da reserva corrigida já passa para humano", async () => {
+  it("estadia bloqueada por duas recusas: a mesma estadia com outro telefone não ganha resumo nem POST (P14)", async () => {
     const s = sessao(["422"]);
     await s.resumo(2);
     await s.sim(3);
     await s.resumo(4);
     expect((await s.sim(5)).handoff).toBe(true);
-    await s.resumo(6, { ...DADOS, telefone: "(11) 97777-0000" });
-    const r = await s.sim(7);
+    // Outro telefone, mesma estadia: bloqueada pelo teto de 2 POSTs sem 201 (P14), sem resumo nem POST.
+    const r = await s.resumo(6, { ...DADOS, telefone: "(11) 97777-0000" });
     expect(r.handoff).toBe(true);
-    expect(r.respostaFinal).not.toMatch(/Pode me informar de novo/);
-    expect(s.recebidos).toHaveLength(3);
+    expect(r.respostaFinal).toMatch(/Não consegui registrar/);
+    await s.sim(7);
+    expect(s.recebidos).toHaveLength(2);
   });
 
   it("P14: 500 persistente bloqueia a reserva já na primeira rodada (2 POSTs); outra reserva segue normal", async () => {
