@@ -249,16 +249,25 @@ Resultado das três rodadas: a preencher.
 
 ## 10. Quem fez o quê
 
-| Provedor e modelo | Papel |
-|---|---|
-| Claude Fable 5.2 | coordenadora; antes da X16, também A, J, F e G |
-| Claude Opus 5.5 | frentes depois da X16 e da X23 (esforço médio, alto ou muito alto conforme a tarefa), todos os verificadores e subagentes de revisão |
-| Gemini 4 Hydrogen | B2, D, E e H até a X23; conselho no Marco 1 |
-| Gemini 4 Argon | segunda opinião da revisão final (M2) |
-| GPT-6 Astra | conjunto reservado (C) e conselho, até a X16 |
-| DeepSeek | webhook falso (B1), até a X16 |
+<!-- PREENCHER: revisão do Éverton desta seção (modelos e provedores por fase) -->
+Seção a revisar pelo Éverton: a preencher.
 
-Quem escreveu os evals e o conjunto reservado não foi o provedor que escreveu o agente.
+| Provedor e modelo | O que fez | Fase |
+|---|---|---|
+| Claude Fable 5.2 | coordenadora do começo ao fim; frentes A (produto até o Marco 1) e J (design e página); começo das frentes F e G | leva 1 e leva 2 até a X16 (13/11, 18h35) nas frentes |
+| Claude Opus 5.5 | verificadores independentes e subagentes de revisão desde a leva 1; frentes I, K, L e N; F e G depois da X16; B2 e H depois da X23 | toda a entrega; a partir da X23 (13/11, 21h26), o único modelo das frentes e dos verificadores, com esforço médio, alto ou muito alto conforme a tarefa |
+| Gemini 4 Hydrogen | frentes B2 (runner e casos), D (simulador), E (datas) e H (concorrência); conselho às cegas das lacunas e do Marco 1 | leva 1 e leva 2, até a X23 |
+| Gemini 3.8 Flash | o hóspede simulado do simulador hostil (padrão de `evals/simulador/hospede-cli.mjs`) | rodadas ao vivo do simulador |
+| Gemini 4 Argon | segunda opinião da revisão final (M2) | leva 3; desde a X23 é a única segunda opinião de outro provedor |
+| GPT-6 Astra | frente C (conjunto reservado); conselho às cegas das lacunas e do Marco 1 | leva 1, até a X16 |
+| DeepSeek | frente B1 (webhook falso) | leva 1, até a X16 |
+
+A partir de 13/11 às 21h26 (X23), as frentes e os verificadores usam um modelo só, o
+Claude Opus 5.5, e a segunda opinião de outro provedor fica para a revisão final. Antes,
+a divisão por provedor seguia uma regra (X6): quem escreve os evals e o conjunto
+reservado não é o provedor que escreve o agente. As trocas de provedor foram ordens do
+Éverton, por limite semanal de uso e por escolha dele (X14, X16, X23).
+
 Nas frentes fora do Claude, o rodapé do commit nomeia a ferramenta e o modelo que
 ajudaram de fato (X9). Autor e committer são sempre os do repositório.
 
