@@ -2037,6 +2037,31 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   confirmo o total de R$ 1.330,00", "Confirmo, 3 pessoas", "Sim, pode enviar o pedido do GRM-301".
   **Limpeza:** o webhook falso local antigo, na porta 8799, foi encerrado pelo PID; nenhuma porta de
   eval local ficou aberta
+- 14/11 05h41 · rodadas · **telemetria das rodadas oficiais** (árvore final 9d37f9a em `dev`). O verificador
+  final da N apontou que a frase "sem contingência nem falha do catálogo nas três rodadas" não tinha
+  fonte neste log. Consulta refeita agora ao log do Worker de `dev` (Workers Observability, visão de
+  contagem, amostragem no nível 1, isto é, contagem exata), nas três janelas:
+  rodada 1 (04h35m00 a 04h40m30): 185 eventos `turno`; rodada 2 (04h40m30 a 04h45m45): 182; rodada 3
+  (04h45m45 a 04h52m00): 182. Nas três: **nenhum evento com `contingencia` verdadeira, nenhum evento
+  com origem no catálogo, e nenhum outro tipo de evento além de `turno`** (nenhum `falha_no_chat`,
+  `tempo_esgotado_no_worker` nem falha de modelo). A janela da rodada 1 pega também os últimos turnos
+  da sonda de pós-deploy
+- 14/11 05h41 · N · **verificador final da N sobre 4a9ece4: REPROVADO**, 0 críticos, 4 altos, 7 médios, 3
+  baixos. Nenhum número de resultado errado (recalculou rodadas, latência, custo, casos, reservado e
+  hashes); gate verde e leitura manual de 20 arquivos sem dado sigiloso; merge limpo. Altos: duas
+  garantias escritas acima do que os limites dizem ("nunca negocia preço"; "o modelo nunca escreve
+  um total por conta própria") e dois erros no desenho do lead (ordem de envio desligado, releitura
+  e marcador; o 422 com campo derruba o resumo, não volta a pendente). Médios: frase da telemetria
+  sem fonte (registro acima), limite 36 descrevendo o modelo de mentira dos testes, limites da M2
+  ausentes (já corrigido pela N nos limites 58 a 63), duas frases de circunstância do Éverton,
+  frases absolutas de processo que o log desmente, o período da F em Fable 5.2 fora do desenho da
+  fábrica, e o simulador de 13/11 sem citação. Tudo devolvido à N às 05h40, com a decisão de cada
+  achado. **Fechamento da M2** escrito pela N em `docs/revisoes/m2.md` (cabeça 43704c0): 43 linhas;
+  14 resolvidos, 23 limites no README, 1 decisão do Éverton (limite de gasto), 1 não se aplica, 4
+  baixos não conferidos de novo (limite 63); nenhum crítico ou alto aberto. A N corrigiu um fato
+  que eu tinha passado errado: a P30 (b43ac7b, f485eef) entrou pelo relatório lido antes do fim da
+  rodada 4 do verificador, que terminou reprovada só pelo R1; só a correção eb5c7d4 teve rodada
+  aprovada. Depois das correções, um segundo verificador julga tudo o que entrou desde 4a9ece4
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -2151,13 +2176,14 @@ Só ele faz, nesta ordem sugerida:
    `scripts/validar-producao.sh --entrega`, e escolher por onde chega o aviso de falha.
 
 Ele confirma ou reverte:
-- Todas as provisórias, P1 a P38 (a P23 já foi revogada por ele). As desta madrugada: P32 (catálogo
+- Todas as provisórias, P1 a P38 (a P23 já foi revogada por ele). As de 14/11: P32 (catálogo
   fora do ar em rodada oficial), P33 (regra do reservado), P34 (juiz volta ao estado aprovado), P35
   (formas novas de confirmação), P36 (simulador: nada reabre a `main`), P37 (duas passadas em
   `producao`), P38 (monitor), e a correção do texto da P25.
-- A pergunta "tira": nos prompts versionados, duas frases sobre a disponibilidade dele foram
-  omitidas e marcadas. As frases de circunstância que restam em X15, no `DECISOES.md` e neste log
-  continuam como estão até ele dizer.
+- A pergunta "tira", aplicada como provisória pela convenção que ele deu em 14/11 (decisão só com
+  a data, sem circunstância pessoal): nos prompts versionados, duas frases sobre a disponibilidade
+  dele foram omitidas e marcadas; a X15 foi reescrita em commit novo, como a X28 e a X29; e a frente
+  N tira as duas frases que o verificador achou nos textos dela. O histórico não foi reescrito.
 - O plano B perguntado em 14/11 não foi preciso: a H e o juiz fecharam por verificador.
 
 Números que ele precisa saber sem abrir relatório:
