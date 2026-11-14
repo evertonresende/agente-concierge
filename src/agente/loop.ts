@@ -1,7 +1,7 @@
 // Loop de ferramentas de um turno: o modelo pede ferramentas, o código executa e
 // devolve o resultado, até sair uma resposta. O loop tem limite de voltas e de tempo, e
 // nunca lança: em qualquer falha devolve a resposta de contingência (contrato L18).
-import { mudaDadoDoResumo, pedidoDeConfirmacaoPendente, pendenteAberto } from "../lead";
+import { invalidarPendente, mudaDadoDoResumo, pedidoDeConfirmacaoPendente, pendenteAberto } from "../lead";
 import type { ChamadaDeFerramenta, Mensagem, Modelo, RespostaDoModelo } from "../modelo";
 import { type Idioma, idiomaDoHospede } from "../nucleo/idioma";
 import { type Argumentos, type Contexto, FERRAMENTAS, type Resultado } from "./ferramentas";
@@ -596,6 +596,12 @@ export async function rodarTurno(entrada: EntradaDoTurno): Promise<SaidaDoTurno>
     // Concessão no texto do próprio agente sai, e a conversa passa para uma pessoa (P17).
     if (frases(texto).some((frase, i) => i % 2 === 0 && motivoDeCorte(frase, situacao) === "concessao")) handoff = true;
     const conferido = comTotais(corrigirValores(semPontaSolta(texto), permitidos(), textos.semValor, situacao), totais, textos);
+    // Pergunta do modelo com resumo pendente (P18): o "sim" seguinte responde a ela, não ao
+    // resumo. O resumo cai e não é repetido; o modelo monta outro com os dados atualizados.
+    if (pendenteAberto(contexto.cofre.ler()) !== null && /[?？؟]/.test(conferido)) {
+      invalidarPendente(contexto.cofre);
+      return terminar(conferido);
+    }
     // Com resumo pendente, a resposta escrita pelo modelo termina com o pedido de
     // confirmação gerado por código, que não passa pela conferência (trava da frente F).
     // Com a mensagem do turno: dado mudado pelo hóspede sem ferramenta não rearma o "sim".

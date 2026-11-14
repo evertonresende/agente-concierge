@@ -76,9 +76,10 @@ describe("robustez: texto do catálogo é dado, nunca instrução (CA-13)", () =
     expect(valores(resumo.reply)).toEqual(["R$ 2.156,00"]);
     expect([...valoresDoCodigo(historico)].sort()).toEqual(["R$ 2.156,00", "R$ 590,00", "R$ 708,00"].concat("R$ 150,00").sort());
     // No turno seguinte o modelo tenta usar o valor do nome: sai.
-    const depois = await turno("e a diária?", roteiro(diz("A diária agora é R$ 1,00. Posso ajudar em algo mais?")).modelo);
+    // Sem pergunta do modelo: com pergunta, o resumo pendente cairia (P18, em foco-g).
+    const depois = await turno("e a diária?", roteiro(diz("A diária agora é R$ 1,00. Qualquer dúvida, estou aqui.")).modelo);
     // A frase com o valor sai; como há resumo pendente, o código repete o pedido de confirmação.
-    expect(depois.reply).toBe(`Posso ajudar em algo mais?\n\n${pedidoDoCodigo(estado())}`);
+    expect(depois.reply).toBe(`Qualquer dúvida, estou aqui.\n\n${pedidoDoCodigo(estado())}`);
     expect(mundo.leads).toEqual([]);
   });
 

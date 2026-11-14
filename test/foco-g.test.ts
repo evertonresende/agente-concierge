@@ -110,3 +110,37 @@ describe("resumo pendente e o hóspede muda as datas (L10, lead-04)", () => {
     expect(r.recebidas).toHaveLength(1);
   });
 });
+
+describe("pergunta do modelo com resumo pendente derruba o resumo (P18)", () => {
+  async function comResumo() {
+    const c = await comCotacao();
+    await c.turno("quero fechar, Ana Lima, (11) 98888-0000", roteiro(pedeFerramentas(chamar("montar_resumo", { ...ESTADIA, ...PESSOA }))).modelo);
+    return c;
+  }
+
+  it.each([
+    "Sim, o chalé tem 1 vaga de garagem. Sua sogra conta como hóspede: quer que eu atualize o pedido para 3 hóspedes?",
+    "Tem wifi e toalhas, sim. O João vai ficar hospedado também？",
+  ])("o sim seguinte responde à pergunta: 0 envio, e o hóspede recebe o resumo novo (%s)", async (pergunta) => {
+    const c = await comResumo();
+    const t2 = await c.turno("vou levar minha sogra e queria saber se tem estacionamento?", roteiro(diz(pergunta)).modelo);
+    expect(t2.reply).toBe(pergunta);
+    expect(c.estado().pendente).toBeNull();
+    const sim = await c.turno("sim", roteiro(
+      pedeFerramentas(chamar("confirmar_reserva")),
+      pedeFerramentas(chamar("montar_resumo", { ...ESTADIA, ...PESSOA, hospedes: 3 })),
+    ).modelo);
+    expect(c.mundo.leads).toEqual([]);
+    expect(sim.reply).not.toMatch(/registrad/);
+    expect(sim.reply).toContain("Hóspedes: 3");
+  });
+
+  it("controle (lead-02): resposta sem pergunta repete o resumo inteiro, cuja pergunta fixa não conta, e o sim envia o resumo mostrado", async () => {
+    const c = await comResumo();
+    const t2 = await c.turno("tem estacionamento?", roteiro(diz("Tem, sim: 1 vaga de garagem.")).modelo);
+    expect(t2.reply).toMatch(/^Tem, sim: 1 vaga de garagem\.\n\nO seu pedido de reserva ainda aguarda a sua confirmação/);
+    expect(t2.reply).toContain("Para confirmar, responda");
+    await c.turno("sim", roteiro(pedeFerramentas(chamar("confirmar_reserva"))).modelo);
+    expect(c.mundo.leads.map((l) => l.hospedes)).toEqual([2]);
+  });
+});
