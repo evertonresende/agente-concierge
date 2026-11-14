@@ -953,6 +953,30 @@ function testarJuizPreco() {
     ]
   );
 
+  // Trava fora de dev por negação: todo caso de dev declara "confirma" (sem a marca, ele é
+  // pulado contra producao), e pelo menos 60 rodam lá, o mínimo do validar-producao.sh
+  {
+    const DIR = path.join(REPO_ROOT, 'evals', 'casos', 'dev');
+    let elegiveisProducao = 0;
+    for (const bloco of fs.readdirSync(DIR)) {
+      for (const arq of fs.readdirSync(path.join(DIR, bloco))) {
+        const c = carregarCasoDev(path.join(bloco, arq));
+        assert.equal(typeof c.confirma, 'boolean', `${c.id}: "confirma" explícito é obrigatório nos casos de dev`);
+        const usaWebhook =
+          Boolean(c.webhook_modo) ||
+          Array.isArray(c.leads_esperados) ||
+          c.turnos.some(
+            (t) =>
+              t.webhook_modo ||
+              t?.espera?.leads_ate_agora !== undefined ||
+              (t.paralelo || []).some((s) => s?.espera?.leads_ate_agora !== undefined)
+          );
+        if (c.confirma === false && !usaWebhook) elegiveisProducao++;
+      }
+    }
+    assert.ok(elegiveisProducao >= 60, `só ${elegiveisProducao} casos de dev rodam contra producao (mínimo 60)`);
+  }
+
   // P13: o "sim" de um turno que espera registro não traz valor junto (código de imóvel,
   // número, data); com valor, o código repete o pedido e o lead esperado nunca sai (lead-12)
   const DIR_DEV = path.join(REPO_ROOT, 'evals', 'casos', 'dev');
