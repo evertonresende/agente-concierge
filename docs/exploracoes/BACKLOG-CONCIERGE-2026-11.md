@@ -2116,18 +2116,63 @@ relatório novo (`scripts/custo.mjs`); segunda passada da M2, só o delta; deplo
 e `scripts/validar-producao.sh` completo; textos finais da frente N e verificador de sigilo e de
 fatos; lista para o Éverton.
 
-**Critérios de fechamento ainda abertos** (numeração da tabela de outcomes):
-- 1: `producao` no ar no endereço padrão e no hostname próprio, envio desligado. Falta o deploy
-  final, o `PRODUCAO OK` e o monitor diário da frente L.
-- 2 a 9: dependem das três rodadas oficiais e do critério de integração 3 (frente H).
-- 12: relatórios das rodadas oficiais e do simulador versionados.
-- 13: agregado do reservado; cópia do conjunto para o repositório no commit de entrega.
-- 14: segunda passada da M2 em `docs/revisoes/m2.md`.
-- 15: medição final em `docs/revisoes/modelos.md`.
-- 17 e 19: README com o custo medido; desenhos conferidos no GitHub.
-- 18: `DECISOES.md` ainda não tem as seções de cortes e do que faria com mais tempo.
-- 20: `docs/prompts/` com os prompts das levas 2 e 3; exports de sessão dependem do Éverton.
+**Critérios de fechamento em 14/11 05h33** (numeração da tabela de outcomes):
+- 1: **atendido com ressalva.** `producao` no ar no endereço padrão e no hostname próprio, na árvore
+  final, envio desligado, zero lead real; validação completa com duas passadas, 69 de 70 e 70 de 70
+  (P37). Monitor diário cortado como código (P38): falta só o Éverton agendar o comando.
+- 2 a 9: **atendidos.** 310 de 312 nas três rodadas oficiais; todo bloco com 97% ou mais na soma.
+- 12: **atendido.** Relatórios das rodadas oficiais e do simulador versionados.
+- 13: agregado do reservado em 110 de 120 (91,7%). Falta a cópia do conjunto para o repositório no
+  commit de entrega, com a ordem do Éverton.
+- 14: segunda passada registrada; o fechamento achado por achado foi pedido à frente N.
+- 15: **atendido.** Fase 2 em `docs/revisoes/modelos.md`.
+- 17 e 19: README com o custo medido na cabeça da frente N, ainda fora da `main`. Os desenhos
+  renderizam no Mermaid 11.4.1; a conferência na página do GitHub fica para depois do merge.
+- 18: rascunho de cortes e do que faria com mais tempo pronto na frente N; entra em `DECISOES.md`
+  no merge dela.
+- 20: **atendido** nos prompts (`docs/prompts/`). Exports de sessão dependem do Éverton.
 - 21 a 24: do Éverton (vídeo, e-mail, repositório público, envio real).
+
+**Lista para o Éverton** (o que só ele faz, e o que ele confirma ou reverte).
+
+Só ele faz, nesta ordem sugerida:
+1. Ler o README e o "Como foi feito" depois do merge da frente N, e os marcadores `PREENCHER` que
+   sobraram (URL pública, repositório público, envio ligado, caminho do reservado, exports, vídeo).
+2. Escolher as sessões a exportar. Nada entra em `docs/sessoes/` antes de ele ler. Aviso: o registro
+   desta sessão coordenadora tem uma saída de ferramenta, de 14/11 às 05h05, com o endereço de `dev`;
+   o gate pega, e o trecho precisa sair antes de qualquer export.
+3. Dar a ordem de ligar o envio real. O que a ordem dispara: deploy de `producao` com o envio
+   ligado, P25 reaplicada e conferida por leitura, `scripts/validar-producao.sh --entrega`, cópia do
+   conjunto reservado para o repositório com o último agregado, marcadores do README preenchidos.
+4. Tornar o repositório público, depois do gate na árvore de entrega.
+5. Gravar o vídeo. Na confirmação do pedido, responder só "sim" (limites 54 e 55 do README).
+6. Responder o e-mail da entrega.
+7. Monitor dos 7 dias (P38): agendar uma vez por dia `scripts/validar-producao.sh --clientes` e
+   `scripts/validar-producao.sh --entrega`, e escolher por onde chega o aviso de falha.
+
+Ele confirma ou reverte:
+- Todas as provisórias, P1 a P38 (a P23 já foi revogada por ele). As desta madrugada: P32 (catálogo
+  fora do ar em rodada oficial), P33 (regra do reservado), P34 (juiz volta ao estado aprovado), P35
+  (formas novas de confirmação), P36 (simulador: nada reabre a `main`), P37 (duas passadas em
+  `producao`), P38 (monitor), e a correção do texto da P25.
+- A pergunta "tira": nos prompts versionados, duas frases sobre a disponibilidade dele foram
+  omitidas e marcadas. As frases de circunstância que restam em X15, no `DECISOES.md` e neste log
+  continuam como estão até ele dizer.
+- O plano B perguntado em 14/11 não foi preciso: a H e o juiz fecharam por verificador.
+
+Números que ele precisa saber sem abrir relatório:
+- Conjunto de desenvolvimento: 310 de 312 (99,4%); as duas falhas são um falso vermelho do juiz e
+  uma descrição de dia errada, corrigida no próprio texto do agente.
+- Conjunto reservado: 110 de 120 (91,7%), leituras de 88% e 95%; antes da correção da P35, 83% e 80%.
+- Simulador: 6 de 10, nenhuma marca é erro de contrato; dois limites de confirmação no README.
+- `producao`: uma passada reprovada por 1 caso em 70, sem texto para classificar; a seguinte, 70 de 70.
+- Custo: US$ 0,0026 por conversa em média. Latência: p50 3,0 s, p95 6,2 s, máximo 13,8 s.
+- Correção possível e não feita: aceitar o sim com o destino do envio ("pode enviar ao time
+  comercial"). Custa cerca de duas horas e refaz as três rodadas, o reservado e `producao`.
+
+O que ele deve saber do processo: cinco erros da coordenação, contados na seção 9 do "Como foi
+feito" e registrados neste log na hora em que foram vistos; a frente F rodou em Fable 5.2 de 13/11 23h28 a 14/11 02h55 por desvio não
+percebido, e o que ela entregou nesse período passou por verificador em Opus 5.5.
 
 ## Pré-voo (antes da leva 1)
 
