@@ -1216,6 +1216,14 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   quatro últimos já existiam. Baixos e 5 de 16 defeitos plantados que o teste não pega. Correções
   pedidas à frente. Conferido no ambiente real, sem imprimir valor: nenhuma linha com `export` nem
   fora do formato, as 5 variáveis de endereço são lidas e o termo da empresa é derivado
+- 14/11 00h27 · K · verificador independente do delta do script (f28ce3e): REPROVADO por um ponto: no modo
+  completo o runner ainda segue redirecionamento e, com 307 ou 308 no `/chat`, manda os POSTs ao
+  endereço do `Location`; o script não se protege sozinho. Correção de duas linhas pedida à K (o
+  `fetch` do runner chamado pelo script com redirecionamento manual); a correção do próprio runner
+  está na branch da B2. Passou: nenhum `PRODUCAO OK` em 46 combinações de argumentos, contagem mínima,
+  quatro clientes sem seguir redirecionamento, só GET no webhook de mentira em 162 cenários, nenhum
+  endereço na saída. Baixos pedidos junto. Informação: 69 casos rodam contra `producao`, antes e
+  depois da trava por negação
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
