@@ -56,7 +56,8 @@ cabeçalhos `x-uso-entrada`, `x-uso-saida` e `x-chamadas-modelo`, usados para me
   > Estado deste rascunho: a `main` tem as frentes I, F, G e T, o script de validação de
   > `producao` (K) e o gate de sigilo novo (S), todos verificados. Falta a frente H
   > (concorrência e falha interna): o que depende dela (limite de corpo de 64 KB, P24) entra
-  > com ela. <!-- PREENCHER: conferir depois da entrada da H -->
+  > com ela. Conferir depois da entrada da H: a preencher.
+  > <!-- PREENCHER: conferir depois da entrada da H -->
 - **Modelo.** Decidido pelo Éverton por medição (`DECISOES.md` X24 e X30;
   [`docs/revisoes/modelos.md`](docs/revisoes/modelos.md)). Principal: Claude Haiku 5.5, com
   o raciocínio em nível alto, direto do provedor pelo AI Gateway. Reserva: GLM-5.3 Flash,
@@ -108,7 +109,7 @@ gateway da conta com a chave da Anthropic guardada nele. Sem isso, responde o re
 |---|---|---|
 | Testes unitários e de integração local | `npm test` | vitest sem falha e sem erro não tratado |
 | Tipos | `npm run tipos` | sem erro |
-| Gate de sigilo e de histórico (varre o histórico inteiro) | `scripts/verificar-sigilo.sh` | `SIGILO OK` |
+| Gate de sigilo e de histórico (termos de sigilo em todo o histórico; IP e e-mail só nos arquivos atuais) | `scripts/verificar-sigilo.sh` | `SIGILO OK` |
 | Teste do gate | `scripts/verificar-sigilo.teste.sh` | `TESTE DO GATE OK` |
 | Teste do script de custo | `node --test scripts/custo.test.mjs` | sem falha |
 | Listar os casos de eval | `node evals/rodar.mjs --listar` | contagem por bloco e `CASOS OK` |
@@ -316,7 +317,8 @@ preencher)**
 34. **Medição do nível alto.** A comparação de níveis do Haiku teve uma rodada só no nível
     alto, e entre duas rodadas do mesmo nível 13 casos trocaram de resultado.
 
-**Conferências com o modelo real** (uma repetição de cada roteiro, não são rodadas de eval):
+**Conferências com o modelo real** (servidor local com a `main`, a F e a branch da H; uma
+repetição de cada roteiro, não são rodadas de eval):
 oito roteiros de nome, nenhum travado em recusa, e os sete leads com o nome exatamente como
 o hóspede escreveu; quatro pedidos com saída sem ano anterior à entrada, nenhum valor em
 reais e nenhum ano completado pelo modelo; 20 sessões com resumo pendente e mensagem que
