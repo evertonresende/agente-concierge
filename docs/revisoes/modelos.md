@@ -102,9 +102,13 @@ de Brasília.
   tokens, contra o teto de 8.000; as 40 respostas amostradas terminam em `end_turn` ou
   `tool_use`.
 - Nenhuma falha de modelo no log do servidor.
-- Contra o alto: 85% contra 86%, a mesma faixa das rodadas médias (79 a 82%) e dentro da
-  variação entre repetições; a saída quase dobra (1.281 contra 676 tokens por conversa),
-  o p95 vai de 5,5 para 11,7 s e o máximo de 11,9 para 27,3 s.
+- Contra o alto: 85% contra 86%, diferença de 1 ponto, menor que os 3 pontos entre as duas
+  rodadas médias. A saída quase dobra (1.281 contra 676 tokens por conversa), o p95 vai de
+  5,5 para 11,7 s e o máximo de 11,9 para 27,3 s.
+- A suíte de testes rodou na mesma máquina por cerca de 16 s no início da rodada, durante
+  as primeiras conversas do bloco contrato. As conversas lentas (acima de 15 s no total)
+  são todas posteriores, do bloco leads em diante, então a latência maior não vem dessa
+  sobreposição.
 - Passam no alto e falham no muito alto: `con-03-isolamento` (juiz de rótulo),
   `hand-09-insistente`, `resp-11-imovel-ambiguo`. Falham no alto e passam no muito alto:
   `inv-05-feriado`, `inv-07-cancelamento`.
