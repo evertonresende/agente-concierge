@@ -133,7 +133,15 @@ export class Sessao extends DurableObject<Env> {
   /** Chamada curta de melhor esforço quando o Worker desiste e devolve contingência (A0, A3, A5b). */
   async registrarContingenciaNoWorker(idPedido?: string): Promise<void> {
     const emCurso = idPedido !== undefined && this.idEmCurso === idPedido;
-    if (emCurso) this.desistidos.add(idPedido);
+    // Marca sempre: o pedido pode estar em curso ou ainda esperando na fila (B2). Só os
+    // últimos ficam, porque um id que nunca chegou ao objeto não sai do conjunto sozinho.
+    if (idPedido !== undefined) {
+      this.desistidos.add(idPedido);
+      for (const antigo of this.desistidos) {
+        if (this.desistidos.size <= LIMITE_PEDIDOS) break;
+        this.desistidos.delete(antigo);
+      }
+    }
     this.ctx.storage.transactionSync(() => {
       this.gravar("handoff", true);
       if (idPedido && (emCurso || pendenteAberto(this.ler<EstadoLead>("lead", ESTADO_INICIAL)))) {
@@ -206,7 +214,10 @@ export class Sessao extends DurableObject<Env> {
     const limiteWorker = prazoWorker !== undefined ? prazoWorker - folgaWorker : Infinity;
     const prazo = Math.min(chegada + orcamentoMs + esperaNaFila, chegada + tetoMs, limiteWorker);
 
-    if (inicio >= prazo) {
+    // O Worker já devolveu a contingência deste pedido enquanto ele esperava na fila (B2):
+    // o turno não roda, como quando o prazo vence na fila.
+    const desistidoNaFila = idPedido !== undefined && this.desistidos.delete(idPedido);
+    if (inicio >= prazo || desistidoNaFila) {
       this.ctx.storage.transactionSync(() => {
         this.gravar("handoff", true);
         if (pendenteAberto(this.ler<EstadoLead>("lead", ESTADO_INICIAL))) {
