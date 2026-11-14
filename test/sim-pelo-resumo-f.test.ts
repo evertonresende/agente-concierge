@@ -76,6 +76,20 @@ describe("sim limpo com o modelo pedindo o mesmo resumo de novo (pelo laço)", (
     });
   }
 
+  it("sim com troca de dado na mensagem e o modelo pedindo o resumo antigo: 0 POST", async () => {
+    // A mensagem do turno 3 do caso, com o modelo ignorando a troca e passando os 6 hóspedes do resumo.
+    const c = conversa({ fichas });
+    await c.turno(APRESENTACAO, roteiro(pedeFerramentas(resumoDe(6))).modelo);
+    const troca = await c.turno("Sim, pode confirmar! Ah, troca para 8 hóspedes em vez de 6.", roteiro(pedeFerramentas(resumoDe(6))).modelo);
+    expect(c.mundo.leads).toEqual([]);
+    expect(troca.reply.startsWith("Resumo do seu pedido")).toBe(true);
+
+    const oito = await ateOResumoDeOito();
+    const sete = await oito.turno("Sim, confirmo, mas para 7 pessoas", roteiro(pedeFerramentas(resumoDe(8))).modelo);
+    expect(oito.mundo.leads).toEqual([]);
+    expect(sete.reply.startsWith("Resumo do seu pedido")).toBe(true);
+  });
+
   it("(e) resumo e confirmação pedidos na mesma resposta do modelo: 1 POST só, em qualquer ordem", async () => {
     for (const chamadas of [[resumoDe(8), confirma()], [confirma(), resumoDe(8)]]) {
       const c = await ateOResumoDeOito();
