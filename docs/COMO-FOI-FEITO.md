@@ -435,9 +435,9 @@ O setup do ambiente do autor que rodou nesta entrega (regras, skills e subagente
 
 ## 11. A preencher no fim
 
-- Revisões (M2): as duas passadas estão em [`revisoes/m2.md`](revisoes/m2.md); a segunda,
-  de segurança, sem achado crítico ou alto. Fechamento da M2: a preencher.
-  <!-- PREENCHER: fechamento da M2 -->
+- Revisões (M2): as duas passadas estão em [`revisoes/m2.md`](revisoes/m2.md). O estado
+  final de cada achado na árvore 9d37f9a, com a prova, está na seção "Fechamento" do mesmo
+  arquivo: nenhum achado crítico ou alto aberto.
 - Exports de sessão em [`sessoes/`](sessoes/): a preencher.
   <!-- PREENCHER: exports de sessão -->
 - Roteiro do vídeo: a preencher. <!-- PREENCHER: roteiro do vídeo; na confirmação, o hóspede responde só "sim" (limites 54 e 55 do README) -->
