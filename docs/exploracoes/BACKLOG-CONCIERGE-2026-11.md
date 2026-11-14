@@ -1149,6 +1149,20 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   cima da `origin/frente-g` (a G mexe nos mesmos arquivos e entra antes). Arquivos: `src/nucleo/datas.ts`,
   `src/agente/ferramentas/pedido.ts` e um teste novo. Verificador antes do merge. Falta um caso de
   eval para esse caminho, a pedir à B2 depois do veredito do juiz
+- 14/11 00h15 · Éverton · X28: sem energia, só pelo celular. A coordenadora segue a própria recomendação como
+  provisória em tudo, menos ligar o envio real, tornar o repositório público, escrever no DNS ou
+  mexer em segurança da zona, e escolher as sessões dos exports. Medição dele em `dev`: no endereço
+  padrão do Worker, `Python-urllib` e `libwww-perl` levam 403 (erro 1010) e outros dez clientes
+  passam; pesa contra o endereço padrão como URL de entrega
+- 14/11 00h15 · K · dois passos a mais, depois da rota: repetir o teste por agente de usuário nos dois endereços
+  de `producao` (só medir) e pôr o limite de taxa no gateway de `producao` (P23, 300 por minuto)
+- 14/11 00h15 · B2 · cabeça 7f12107: `main` mesclada, `lead-12-troca-hospedes-apos-resumo` movido para o conjunto
+  de desenvolvimento (99 casos), 69 elegíveis contra `producao`, e o autoteste passa a exigir a marca
+  de confirmação em todo caso e pelo menos 60 elegíveis. Nada mudou no juiz desde 897e44b, que é a
+  cabeça em verificação
+- 14/11 00h15 · G · cabeça da64da4, com a `main` mesclada; nada mudou em `src/` desde 29ae3aa, em verificação
+- 14/11 00h15 · provisórias abertas para o Éverton confirmar ou reverter no fim: P11 a P23, e os nomes dos
+  modelos mantidos no "Como foi feito"
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
