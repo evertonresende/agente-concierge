@@ -143,9 +143,18 @@ gateway da conta com a chave da Anthropic guardada nele. Sem isso, responde o re
   `dev`.
 - `LEADS_URL_DEV` aponta para o webhook falso, para o runner conferir os leads de cada
   conversa. Ela nunca é impressa.
-- O conjunto de desenvolvimento tem 104 casos em 9 blocos. O reservado tem 60 casos, fica
-  fora do repositório até a entrega e só mostra o agregado por bloco. O conjunto está em
-  `evals/casos/reservado/`, e o material do diagnóstico em `docs/revisoes/reservado/`.
+- O conjunto de desenvolvimento tem 104 casos em 9 blocos. O reservado ficou fora do
+  repositório até a entrega de 14/11 e só mostra o agregado por bloco. Agora está em
+  [`evals/casos/reservado/`](evals/casos/reservado/): 60 casos em 8 blocos (contrato 8,
+  funciona-cotacoes 8, funciona-leads 8, funciona-recusas 7, funciona-respostas 7,
+  robustez-handoff 8, robustez-manipulacao 7, robustez-nao-inventa 7), com um `LEIA.md`
+  sobre a composição e o histórico das leituras. O material do diagnóstico está em
+  [`docs/revisoes/reservado/`](docs/revisoes/reservado/): auditoria, correções propostas e
+  vetos do segundo revisor, classificação, os originais dos casos que mudaram e os arquivos
+  de fechamento por hash. Os dois agregados finais estão em
+  `evals/relatorios/2026-11-14-reservado-9d37f9a-leitura-1.txt` e `-leitura-2.txt`. Com a
+  pasta no repositório, o runner lê o conjunto dali (`RESERVADO_DIR` continua tendo
+  precedência) e segue mostrando só o agregado.
 - O simulador usa um modelo de outro provedor no papel do hóspede, por uma ferramenta de
   linha de comando (`--cli`, padrão `agy`).
 
