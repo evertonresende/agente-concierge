@@ -56,7 +56,7 @@ hora de coordenação, 12 horas no total. Prazo de entrega:
 |---|---|---|
 | 1 | A (produto, única) · B1 webhook falso · B2 harness e casos · C reservado · D simulador · J design da página | até o Marco 1 o código de produto tem uma frente só |
 | Portão | Marco 1 · M1 revisão curta · I escolha do modelo | a leva 2 só sai com o Marco 1 verde |
-| 2 | E datas · F lead · G robustez e handoff · H concorrência · J implementação · D rodadas ao vivo | um dono por arquivo |
+| 2 | E datas · F lead · G robustez e handoff · H concorrência · J implementação · D rodadas ao vivo · T datas sem ano (P21, saída da G) · S gate de sigilo (achados da M2) | um dono por arquivo |
 | 3 | M2 revisões · L custo e monitor · K produção · N entregáveis | K e N adiantadas pela X24 |
 
 - Cada frente rodou na própria worktree, a partir da `main`. A tabela "Dono de arquivo"
@@ -90,18 +90,27 @@ para ver quantos a suíte da frente pega. Reprovação devolve a frente com a li
 correção entra como commit novo. As reprovações abaixo são o que o processo pegou antes
 de chegar à `main` ou a `dev`.
 
+No fim da leva 2 o ciclo de cada frente ficou fixo: ensaio do merge pelo hash exato sobre
+a `main`, conferência com o modelo real num servidor local, verificador independente com
+barra fechada (a lista do que ele tem de conferir, combinada antes) e merge pelo mesmo hash.
+O hash exato entrou porque branches de frentes diferentes carregavam a G mesclada antes de
+ela ter veredito.
+
 | Frente | Rodadas | O que o verificador achou |
 |---|---|---|
 | A (Marco 1) | 1, com o conselho (M1) | aprovada com ressalvas; 13 de 20 defeitos plantados pegos; total errado do modelo ao lado do total do código; suíte sem guarda no que F e H iam editar; cotação inválida não derrubava o resumo pendente. Quatro achados corrigidos antes do merge; a coordenadora plantou três defeitos de novo e os três foram pegos. Ver [`revisoes/m1.md`](revisoes/m1.md) |
 | B1 (webhook falso) | 3 | modo gravado que não expirava, atraso que esperava antes de guardar, teste com furos; na terceira, o teste falhava em 3 de 5 rodadas contra `dev` porque desistia do POST antes de o pedido chegar |
-| B2 (runner e casos) | 3 | **falso verde crítico**: caso pulado pela trava saía do denominador e o `marco1` dava 100% e `EVAL OK` sem rodar a conversa de lead; 20 de 80 casos reprovariam um agente correto; 2 de manipulação rodariam contra `producao`. Na terceira, o juiz novo tinha ficado mais frouxo: aprovava desconto escrito como "cada noite sai por", total errado e política inventada |
+| B2 (runner e casos) | 2 do runner na leva 1, 5 do juiz de preço na leva 2 | **falso verde crítico**: caso pulado pela trava saía do denominador e o `marco1` dava 100% e `EVAL OK` sem rodar a conversa de lead; 20 de 80 casos reprovariam um agente correto; 2 de manipulação rodariam contra `producao`. Na terceira, o juiz novo tinha ficado mais frouxo: aprovava desconto escrito como "cada noite sai por", total errado e política inventada (primeira do juiz). Juiz R2: quatro altos (total sem a limpeza aprovado, resposta real certa reprovada, desconto com valor igual a um componente aprovado, respostas certas em inglês reprovadas). R3: aprovada. R4: a regra do rótulo com parêntese fazia o juiz aceitar qualquer das duas diárias. R5: aprovada; a P31 fechou o ciclo de correção do juiz, e o que sobra fica listado em `evals/README.md` |
 | D (simulador) | 1 | `SIMULADOR OK` com a ferramenta do hóspede fora do ar; erro do agente derrubava a rodada; juiz de handoff acusava agente certo e deixava passar errado; 10 de 12 casos fixos frágeis |
 | E (datas) | conferência da coordenação | tabela própria de datas em três fusos, sem diferença; o CHECK no runtime achou regressão da L8 (1 de 3 respostas sem a pergunta de quantas pessoas), corrigida e repetida 10 de 10 |
-| F (lead) | 7, aprovada na sexta; a sétima aprovou a regra do nome (P20) | R1: hesitação com dado ("acho que sim, mas somos 3") e o "sim" seguinte enviava o dado antigo. R2: "acho que sim, mas no mês que vem" reexibia o resumo antigo e o sim o enviava, 10 de 10; das 50 confirmações naturais, 15 não enviavam. R3: um "?" em qualquer ponto mantinha o resumo; combinações de `422` e `5xx` somavam 3 e 4 POSTs para a mesma estadia. R4: com outras formas de pontuação, 34 de 106 mensagens mantinham o resumo antigo (virou limite conhecido, P18). R5: um sim com anúncio de dúvida ainda podia enviar o lead (daí a P19). R6: aprovada, com zero envio nesses casos e a confirmação legítima intacta. R7: a regra do nome (P20) aprovada; dois efeitos viraram limites (P28) |
-| G (robustez) | 3, e a entrada na `main` depois do ensaio da coordenação | R1: o código ligava `handoff` com texto fixo em mensagem comum ("Pode fechar, meu telefone é…", "a 500 m da praia"). R2: as redes por palavra passavam 24 de 80 mensagens comuns para humano ("esse lugar é descontraído?", "não estou pedindo desconto"); a conferência cortava a explicação do acréscimo de sexta e sábado; o lead podia sair com menos pessoas do que o grupo cotado. R3: reprovada por um achado só de teste, já corrigido; um médio (o total repetido saía cortado depois de 80 mensagens) foi corrigido com resumo aberto e aceito como limite sem ele (P26) |
-| H (concorrência) | 2 do verificador, 2 conferências da coordenação | **crítico**: a nova tentativa do Worker reenviava a mesma mensagem sem identificador, e um "sim" podia valer duas vezes. A coordenadora achou no runtime real dois defeitos que o vitest não pega: o Worker não subia (constante exportada no módulo de entrada) e todo turno com catálogo caía em contingência (`fetch` chamado como método de objeto). R2: resumo gravado cuja resposta se perdia no caminho podia ser confirmado sem o hóspede ter visto; corpo sem limite de tamanho (corrigido pela P12 na branch da H, em verificação) |
+| F (lead) | 8: aprovada na sexta; a sétima aprovou a regra do nome (P20) e a oitava o "sim" limpo e a P29 | R1: hesitação com dado ("acho que sim, mas somos 3") e o "sim" seguinte enviava o dado antigo. R2: "acho que sim, mas no mês que vem" reexibia o resumo antigo e o sim o enviava, 10 de 10; das 50 confirmações naturais, 15 não enviavam. R3: um "?" em qualquer ponto mantinha o resumo; combinações de `422` e `5xx` somavam 3 e 4 POSTs para a mesma estadia. R4: com outras formas de pontuação, 34 de 106 mensagens mantinham o resumo antigo (virou limite conhecido, P18). R5: um sim com anúncio de dúvida ainda podia enviar o lead (daí a P19). R6: aprovada, com zero envio nesses casos e a confirmação legítima intacta. R7: a regra do nome (P20) aprovada; dois efeitos viraram limites (P28). R8: aprovada; o "sim" limpo pelo caminho do resumo dá o mesmo lead que a confirmação em 28 formas de mensagem e não fura a fila da H |
+| G (robustez) | 5, a quinta em curso <!-- PREENCHER: veredito da quinta rodada da G --> (a preencher) | R1: o código ligava `handoff` com texto fixo em mensagem comum ("Pode fechar, meu telefone é…", "a 500 m da praia"). R2: as redes por palavra passavam 24 de 80 mensagens comuns para humano ("esse lugar é descontraído?", "não estou pedindo desconto"); a conferência cortava a explicação do acréscimo de sexta e sábado; o lead podia sair com menos pessoas do que o grupo cotado. R3: reprovada por um achado só de teste, já corrigido; um médio (o total repetido saía cortado depois de 80 mensagens) foi corrigido com resumo aberto e aceito como limite sem ele (P26). R4 (teto de chamadas, P30): reprovada por um ponto do caminho do lead, achado depois que a coordenação já tinha mesclado (seção 9). R5: só a correção desse ponto |
+| H (concorrência) | 5 do verificador, mais um só para a P24, e 2 conferências da coordenação | **crítico**: a nova tentativa do Worker reenviava a mesma mensagem sem identificador, e um "sim" podia valer duas vezes. A coordenadora achou no runtime real dois defeitos que o vitest não pega: o Worker não subia (constante exportada no módulo de entrada) e todo turno com catálogo caía em contingência (`fetch` chamado como método de objeto). R2: resumo gravado cuja resposta se perdia no caminho podia ser confirmado sem o hóspede ter visto; corpo sem limite de tamanho (corrigido pela P12). R3: duas mensagens ao mesmo tempo na sessão e um resumo que ficava confirmável sem ter sido visto quando o Worker desistia com o pedido na fila. R4: a correção desse segundo caso abriu outro (as duas tentativas do Worker entravam na fila e a segunda rodava o turno); a P24 foi verificada à parte e aprovada. R5: aprovada |
 | S (gate de sigilo) | 2, mais uma conferência da coordenação | R1: cinco médios, quatro deles anteriores à frente. R2: com o índice corrompido, o gate terminava com `SIGILO OK` depois de falha de leitura; corrigido e conferido pela coordenação com as sondas do verificador |
 | T (datas sem ano, P21) | 1 | aprovada: 82.102 casos comparados com a árvore anterior; só mudaram as saídas sem ano a mais de 90 noites, que passaram a ser recusadas; 11 de 12 defeitos plantados pegos |
+| K (validação de `producao`) | 3, aprovada na terceira | R1: falso verde, `PRODUCAO OK` sem nenhuma conversa quando o script recebia argumentos extras; um redirecionamento no `/chat` era seguido com POST e corpo. R2: no modo completo, o runner ainda seguia o redirecionamento. R3: aprovada |
+| L (custo) | 1, aprovada | só achados baixos; as contas batem com um programa à parte em frações exatas |
+| N (estes textos) | 1 até aqui | R1: reprovada por uma afirmação, a trava de valores dada como garantida quando a G ainda a corrigia. O verificador final dos textos roda depois dos números finais: a preencher <!-- PREENCHER: verificador final da frente N --> |
 | I (modelo) | 3, aprovada na terceira | R1: resposta `200` inútil do Haiku (vazia, cortada, erro como valor) não ia ao reserva. R2: fim de resposta que não batia com o conteúdo passava, e o mesmo id duas vezes quebrava o pareamento de chamada e resultado. R3: aprovada, sem achado alto nem médio; 7 de 68 defeitos plantados escapam, como seguimento |
 
 Contagens de defeitos plantados pegos pela suíte, por rodada: F 12 de 12, 21 de 25, e na
@@ -222,6 +231,14 @@ Essas notas valem como medida do agente, não como prova do critério: o juiz da
 rodadas foi reprovado pelo verificador. A prova dos 95% por bloco são três rodadas
 seguidas em `dev`, com o juiz corrigido e aprovado (X24).
 
+A fila da sessão também foi conferida no runtime real, em `dev`: duas mensagens ao mesmo
+tempo na mesma sessão respondem as duas, sem contingência, e o "sim" que estava na fila só
+reapresenta o resumo; o "sim" seguinte registra.
+
+Rodadas na árvore congelada b5af852, pelo proxy de registro: rodada 1, 100 de 100; rodada
+2, 100 de 100; a terceira estava rodando quando este texto foi escrito. Ficam registradas,
+mas não contam: as três que valem são as da árvore com a correção da G.
+
 Resultado das três rodadas: a preencher.
 <!-- PREENCHER: três rodadas em dev, nota por bloco, classificação de cada falha -->
 
@@ -255,8 +272,29 @@ Resultado das três rodadas: a preencher.
    vermelho, da H, bloqueou o merge e voltou para ela. Às 23h31 a H mostrou que o teste
    estava desatualizado, sem defeito: na combinação sai 1 POST e 1 lead, depois do "sim".
 9. **Validação do nome do hóspede (23h14).** A rodada integrada achou um defeito no campo
-   do nome do lead. Em correção na F; estado final a preencher.
-   <!-- PREENCHER: estado da validação do nome depois da F -->
+   do nome do lead. A F fechou com a regra do nome (P20: só palavras que o hóspede
+   escreveu) e, depois da segunda passada da revisão de segurança, com a P29 (sem dígito
+   nem símbolo de moeda).
+10. **Merge pelo relatório antes do fim do verificador (14/11).** A coordenação mesclou a
+    frente G lendo o relatório do verificador quando a primeira linha dizia aprovado, antes
+    de ele terminar. O veredito final reprovou um ponto do caminho do lead: a confirmação
+    rodava quando o teto de chamadas cortava um `cotar` ou um `montar_resumo` do mesmo lote.
+    A `main` já estava congelada. O congelamento foi reaberto, a G corrigiu e a contagem das
+    rodadas recomeçou. Regra nova: veredito só vale quando a tarefa do verificador termina.
+11. **Arquivos de sonda num commit de backlog (14/11).** Um commit de backlog feito com a
+    árvore inteira em stage levou dois arquivos vazios deixados por uma sonda de
+    verificação. Saíram num commit novo. Regra nova: a coordenação põe em stage só os
+    arquivos que editou.
+12. **O que só o ensaio com o modelo real achou.** Antes de congelar, o ensaio local com o
+    modelo real achou o que a suíte não acha: o "sim" que reapresentava o resumo em vez de
+    registrar (`lead-12`, corrigido pelo "sim" limpo da F), um falso vermelho do juiz no
+    `cot-13` e, no último ensaio, outro falso vermelho na contagem elíptica de noites
+    ("3 noites: 1 comum a R$ 590,00 e 2 de sexta e sábado"), corrigido no juiz.
+13. **Catálogo fora do ar em `dev` (14/11).** Logo depois de um deploy, 25 turnos seguidos
+    saíram em contingência com origem no catálogo, por 95 segundos. Um segundo deploy do
+    mesmo código não repetiu; a causa não foi determinada. A P32 diz como uma rodada
+    oficial atingida por isso é contada, e cada rodada só começa depois de dois minutos de
+    sonda limpa.
 
 ## 10. Quem fez o quê
 
@@ -284,8 +322,9 @@ O setup do ambiente do autor que rodou nesta entrega (regras, skills e subagente
 
 ## 11. A preencher no fim
 
-- Revisões de código, de segurança e segunda opinião (M2): a preencher.
-  <!-- PREENCHER: resultado das revisões de código e segurança -->
+- Revisões (M2): as duas passadas estão em [`revisoes/m2.md`](revisoes/m2.md); a segunda,
+  de segurança, sem achado crítico ou alto. Fechamento da M2: a preencher.
+  <!-- PREENCHER: fechamento da M2 -->
 - Exports de sessão em [`sessoes/`](sessoes/): a preencher.
   <!-- PREENCHER: exports de sessão -->
 - Roteiro do vídeo: a preencher. <!-- PREENCHER: roteiro do vídeo -->
