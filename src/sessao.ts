@@ -231,11 +231,15 @@ export class Sessao extends DurableObject<Env> {
     // o turno não roda, como quando o prazo vence na fila.
     const desistidoNaFila = idPedido !== undefined && this.desistidos.delete(idPedido);
     if (inicio >= prazo || desistidoNaFila) {
+      const contingencia: RespostaDoChat = { reply: CONTINGENCIA, handoff: true, uso: SEM_USO };
       this.ctx.storage.transactionSync(() => {
         this.gravar("handoff", true);
         if (pendenteAberto(this.ler<EstadoLead>("lead", ESTADO_INICIAL))) {
           this.gravar("reapresentar", true);
         }
+        // A outra tentativa do Worker com o mesmo id pode estar na fila: ela acha o pedido
+        // gravado e devolve a mesma contingência, sem rodar o turno (B6).
+        if (idPedido) this.gravarPedido(idPedido, contingencia);
       });
       console.log(JSON.stringify({
         evento: "prazo_esgotado_na_fila",
@@ -244,7 +248,7 @@ export class Sessao extends DurableObject<Env> {
         origem: "prazo",
         erro: "TempoEsgotado",
       }));
-      return { reply: CONTINGENCIA, handoff: true, uso: SEM_USO };
+      return contingencia;
     }
 
     if (idPedido) this.idEmCurso = idPedido;

@@ -86,6 +86,27 @@ function entregaPerdida(esperaMs: number): Env {
   };
 }
 
+/** As duas tentativas do Worker chegam ao objeto (o mesmo id) e as duas perdem a volta (B6). */
+function entregaDupla(): Env {
+  return {
+    ...ambiente,
+    SESSAO: {
+      ...ambiente.SESSAO,
+      getByName(nome: string) {
+        const real = ambiente.SESSAO.getByName(nome);
+        return {
+          async conversar(...args: [string, number?, string?, number?]): Promise<RespostaDoChat> {
+            real.conversar(...args).catch(() => {});
+            await pausa(5);
+            throw new Error("conexão perdida");
+          },
+          registrarContingenciaNoWorker: (idPedido?: string) => real.registrarContingenciaNoWorker(idPedido),
+        };
+      },
+    } as unknown as Env["SESSAO"],
+  };
+}
+
 describe("Worker desiste de pedido na fila do objeto (frente H, B2)", () => {
   it("B2: 'quero fechar' abandonado enquanto espera na fila → o turno não roda, nenhum resumo fica gravado e o 'sim' seguinte não envia", async () => {
     const vistas: string[] = [];
@@ -133,5 +154,43 @@ describe("Worker desiste de pedido na fila do objeto (frente H, B2)", () => {
     await pausa(150);
     await postChat(s.id, "sim");
     expect(s.mundo.leads).toEqual([]);
+  });
+
+  it("B6: as duas tentativas de 'quero fechar' entram na fila e o Worker desiste → a cópia repetida não roda o turno, nenhum resumo fica e o 'sim' não envia", async () => {
+    const vistas: string[] = [];
+    const s = await abrir(vistas);
+    const lento = postChat(s.id, LENTA);
+    await pausa(20);
+
+    const r = await (await postChat(s.id, "quero fechar, sou Ana Lima", entregaDupla())).json<{ handoff: boolean }>();
+    expect(r.handoff).toBe(true);
+    await lento;
+    await pausa(300);
+
+    await postChat(s.id, "sim");
+    expect(vistas).not.toContain("quero fechar, sou Ana Lima");
+    expect(s.mundo.leads).toEqual([]);
+  });
+
+  it("B6b: resumo visto em aberto e as duas tentativas de 'quero outras datas' na fila → nenhuma roda; 'sim' reapresenta o visto e o 'sim' seguinte envia as datas vistas", async () => {
+    const vistas: string[] = [];
+    const s = await abrir(vistas);
+    await postChat(s.id, "quero fechar, sou Ana Lima");
+    const lento = postChat(s.id, LENTA);
+    await pausa(20);
+
+    const r = await (await postChat(s.id, "quero outras datas", entregaDupla())).json<{ handoff: boolean }>();
+    expect(r.handoff).toBe(true);
+    await lento;
+    await pausa(300);
+
+    const primeiro = await (await postChat(s.id, "sim")).json<{ reply: string }>();
+    expect(primeiro.reply).toContain("Ainda não enviei este pedido");
+    expect(primeiro.reply).toContain("15/01/2027");
+    expect(s.mundo.leads).toEqual([]);
+
+    await postChat(s.id, "sim");
+    expect(vistas).not.toContain("quero outras datas");
+    expect(s.mundo.leads).toMatchObject([{ checkin: "2027-01-15", checkout: "2027-01-18", hospedes: 2 }]);
   });
 });
