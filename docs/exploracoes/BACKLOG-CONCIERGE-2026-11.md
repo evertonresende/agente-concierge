@@ -1007,6 +1007,11 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   versionados são de antes do Haiku, então o valor do CHECK não é o custo real; conversa com zero
   tokens puxa a média para baixo; arquivo passado duas vezes conta duas vezes; 4 de 14 defeitos
   plantados escapam do teste. Falta da frente: o monitor diário, depois que `producao` existir
+- 13/11 23h49 · Éverton · X25: três suítes de teste ao mesmo tempo; o resto do teto de carga não muda. Com
+  pressão de memória, a coordenadora volta para duas e avisa. A trava (`com-trava.sh`, fora do
+  repositório) passou a ter três vagas; as frentes não mudam nada no jeito de chamar. Medido na hora:
+  8 GB disponíveis, pressão de memória zero, carga 5,9 em 8 núcleos. A coordenadora olha a pressão a
+  cada relatório
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
