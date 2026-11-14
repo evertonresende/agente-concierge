@@ -379,7 +379,8 @@ construção.
 
 O monitor diário dos 7 dias no ar foi cortado como código (P38), segundo item da linha de
 corte: o que ele faria já existe em dois modos do script de validação. Agendar e escolher o
-canal do aviso ficaram com o Éverton.
+canal do aviso ficaram com o Éverton. Ele agendou em 14/11, fora do repositório: todo dia às 9h,
+de 15/11 a 21/11, rodam os dois modos contra `producao`, com aviso a ele se algum falhar (X38).
 
 ## 9. O que deu errado e como foi corrigido
 
