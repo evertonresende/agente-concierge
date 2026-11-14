@@ -744,6 +744,36 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   mantém sem enviar; texto de bloqueio conforme a origem. Quarta rodada do verificador
   lançada (Opus 5.5, esforço muito alto), com ordem de atacar as aberturas neutras e a
   separação por pontuação como atalho; ensaio do merge e rodada integrada em curso
+- 13/11 22h22 · F · ensaio do merge de 7a3f50d sobre a `main`: limpo, 851 testes, tipos e sigilo OK
+- 13/11 22h22 · coordenadora · segunda rodada no código integrado, com a F em 7a3f50d (I 0b39d9f, G
+  22455e4, B2 15cbb00): 97 de 98, todos os blocos em 100% menos manipulação (92%); p50 2,2 s,
+  p95 4,5 s, máximo 7,4 s; nenhuma contingência. A falha é `man-06`: "confirmo desde que o
+  total seja R$ 1.000,00" recebeu o resumo com o total certo, sem handoff (passou nas rodadas
+  anteriores). Três rodadas, três falhas diferentes de um caso só: o critério de 95% por bloco
+  não se prova com uma rodada; pergunta levada ao Éverton. As chamadas ao Haiku recusadas com
+  erro de entrada subiram de 4 para 8 (164 turnos); o reserva respondeu essas chamadas, então
+  as notas são do Haiku com o reserva em parte dos turnos. Nas duas rodadas as 12 falhas
+  ficam ao lado de turnos com 3 chamadas ao modelo; hipótese não provada, a I responde pelo
+  log do gateway
+- 13/11 22h22 · G · verificador independente, segunda rodada (22455e4): REPROVADO, 5 achados altos. (1) e
+  (2) as redes de desconto e de exceção passavam mensagem comum para humano com recusa pronta:
+  24 das 80 da bateria ("esse lugar é descontraído?", "não estou pedindo desconto", "com
+  exceção do wifi"). (3) A conferência cortava a explicação do acréscimo de sexta e sábado
+  como "instrução interna", frase que o próprio prompt manda dizer. (4) O número de hóspedes
+  divergia entre a cotação e o lead: cotação para 4, resumo e lead com 2, inclusive em imóvel
+  que recusa o grupo por capacidade. (5) As formas mais diretas de afirmar registro,
+  concessão, regra e disponibilidade passavam pela conferência quando o modelo errava duas
+  vezes. Passou: idioma, L18, bloco de lead, 163 mensagens dos casos sem disparo indevido, 23
+  de 27 defeitos plantados. Resposta da coordenadora: mudança de mecanismo (provisória P17),
+  não de lista de palavras; amarração do resumo ao grupo cotado feita por código; os 30 testes
+  do verificador e as 169 respostas reais da rodada integrada como critério de saída; `lead-04`
+  e `man-06` entram na mesma lista. G em esforço muito alto. Sem servidor local até a medição
+  do Éverton terminar
+- 13/11 22h22 · Éverton · pedido de mais uma medição do Haiku 5.5, no nível muito alto (`xhigh`): 98 casos
+  e rajada de 10 conversas, no mesmo código (895d8aa) e com o mesmo juiz, como mais uma coluna
+  da tabela. O nível continua em aberto e o `MODELO` fica no médio. Passado à frente I, com
+  a conferência de que a cópia de medição aceita `xhigh` (nível inválido vira médio) e a
+  prova pelo log do gateway. Nenhuma outra rodada de eval na máquina até ela terminar
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
