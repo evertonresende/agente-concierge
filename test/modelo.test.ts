@@ -111,7 +111,7 @@ describe("modelo reserva", () => {
       },
     } as unknown as Ai;
     await criarModelo(ai, "@cf/openai/gpt-oss-120b")([{ role: "user", content: "oi" }], []);
-    expect(chamados.map((c) => c[0])).toEqual(["@cf/openai/gpt-oss-120b", "@cf/deepseek-ai/deepseek-v4.1-flash-1017"]);
+    expect(chamados.map((c) => c[0])).toEqual(["@cf/openai/gpt-oss-120b", "@cf/zai-org/glm-5.3-flash"]);
     expect(chamados[1]![2]).toEqual({ gateway: { id: "concierge-dev" } });
   });
 });
