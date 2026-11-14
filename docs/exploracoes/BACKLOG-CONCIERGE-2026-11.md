@@ -1224,6 +1224,13 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   quatro clientes sem seguir redirecionamento, só GET no webhook de mentira em 162 cenários, nenhum
   endereço na saída. Baixos pedidos junto. Informação: 69 casos rodam contra `producao`, antes e
   depois da trava por negação
+- 14/11 00h28 · N · exports prontos FORA do repositório, em `~/.cache/agente-concierge/sessoes/`, com índice:
+  92 sessões (67 threads do projeto, 23 subagentes e 2 consultas do conselho), 1.878 mensagens, 2,1 MB
+  de Markdown a partir de 217 MB de fonte. Gate com tudo em stage numa worktree descartável: SIGILO OK,
+  sem commit. Os três furos do limpador foram fechados. 43 sessões marcadas para leitura humana
+  obrigatória (planejamento, as que citam o enunciado, as de primeira mensagem longa e as do conselho).
+  Limite que só a leitura pega: trecho copiado do enunciado e nome da empresa escrito de outro jeito.
+  Nada entra em `docs/sessoes/` antes de o Éverton olhar (X29)
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
