@@ -510,6 +510,23 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   `funciona-leads` 86% em duas rodadas e `contrato` 88%, só com `lead-05`, `lead-06` e
   `con-07`, os três dependentes das ligações da G; 110 turnos sem contingência. Segunda
   rodada de verificador independente (Opus) em curso; o merge espera o veredito
+- 13/11 21h00 · H · correções da segunda rodada entregues (73558c1): resumo cuja entrega falhou é
+  reapresentado antes de valer um "sim" (marca posta por identificador repetido, por
+  contingência do Worker e por turno que termina depois do prazo); teto da sessão a 50 s, com
+  5 s de folga para o Worker; corpo acima de 64 KB devolve `200` "longa demais" sem ler o
+  resto (P12); tabela de pedidos podada em 20; log do Worker com origem e classe; handoff de
+  contingência no estado; `tratarChat` foi para o arquivo novo `src/chat.ts` (da H). Conferido
+  pela coordenadora: ensaio limpo, 617 testes, tipos e gate verdes; no runtime real, 8.001
+  caracteres, 66 KB e 30 MB devolvem `200` em menos de 120 ms, `session_id` de 60 KB vale,
+  JSON inválido e campo faltando devolvem `400`; blocos `contrato` e `funciona-leads` iguais
+  aos da `main`. Com corpo de 5 MB o cliente local às vezes vê a conexão cair antes de ler o
+  `200` (até 1 MB recebe sempre): aceito. Pendente: a F muda de lugar `textoDoResumo` e passa
+  a devolver o resumo inteiro no pedido de confirmação; a H traz a F para a branch, ajusta o
+  import e a reapresentação sem resumo duplicado, e então roda a terceira rodada de verificador
+- 13/11 21h00 · integração · ensaio de F e G juntas sobre a `main`: merge limpo, tipos verdes, 832 de 835
+  testes. Os 3 que falham são da G (`test/robustez-g.test.ts`) e comparam o texto antigo do
+  pedido de confirmação, que a F trocou pelo resumo inteiro; nenhum é defeito de produto. A G
+  foi avisada para atualizar as expectativas mantendo a intenção. Ordem de entrada: F, H, G
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
