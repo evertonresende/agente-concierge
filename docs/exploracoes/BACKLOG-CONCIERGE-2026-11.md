@@ -2232,6 +2232,12 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   fora da `main` é a `frente-n` (3 commits, só o arquivo `docs/rascunho-aberturas.md`, cujo texto
   aprovado já está no `DECISOES.md` e no README). Ao tornar o repositório público, todas as
   branches ficam públicas
+- 14/11 06h58 · Éverton · **X34: a cópia da skill de orquestração em `docs/setup` espera uma versão adaptada ao
+  T3 Code, que ele envia.** O marcador de revisão fica e o item não fecha até lá. Quando a versão
+  chegar: a frente N troca a cópia por ela na `frente-n-textos`, lê o arquivo inteiro atrás de item
+  de sigilo (caminho de máquina, nome de máquina, endereço, nome de outro projeto), tira o
+  marcador e a frase "a preencher" da linha da tabela de `docs/setup/README.md`, passa o gate, e a
+  coordenação confere o delta e mescla pelo hash. O resto da última passada já está na `main`
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -2336,8 +2342,8 @@ P23 (X33); exports de sessão fora desta entrega (X33).
 Falta só com ele:
 1. Tornar o repositório público. A `main` de entrega está em 3b56fac, com o gate verde em todas
    as refs publicáveis e sem marcador no README nem no "Como foi feito". Todas as 19 branches do
-   remoto ficam públicas junto. Antes, decidir a revisão da cópia da skill de orquestração em
-   `docs/setup` (o único marcador que resta): revisar, ou mandar tirar o marcador.
+   remoto ficam públicas junto. O único marcador que resta é o da cópia da skill de
+   orquestração em `docs/setup`: ela espera a versão adaptada ao T3 Code que ele vai enviar (X34).
 2. Gravar o vídeo e mandar o link no e-mail. Na confirmação do pedido, responder só "sim"
    (limites 54 e 55 do README).
 3. Responder o e-mail da entrega.
