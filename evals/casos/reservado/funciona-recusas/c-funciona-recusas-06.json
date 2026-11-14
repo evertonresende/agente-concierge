@@ -1,0 +1,21 @@
+{
+  "id": "c-funciona-recusas-06",
+  "bloco": "funciona-recusas",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Quero o FOZ-701 de 11/08/2028 a 14/08/2028. Somos cinco adultos e um bebê de colo.",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": [
+          "(?:(?:capacidade|limite|m[áa]xim[oa]|acomoda|comporta|recebe|at[eé])[^.!?;\\n]{0,35}\\b(?:5|cinco)\\s+(?:pessoas|h[óo]spedes|adultos)\\b|\\b(?:5|cinco)\\s+(?:pessoas|h[óo]spedes)\\b[^.!?;\\n]{0,30}(?:capacidade|limite|m[áa]xim))"
+        ],
+        "status": 200,
+        "resposta_nao_contem": [
+          "(?:^|[.!?;\\n])\\s*(?:[-*]\\s*)?(?:\\*\\*)?(?:(?:o|seu|esse|este)\\s+)?(?:valor\\s+)?total(?:\\s+(?:da|de|para\\s+a)\\s+(?:sua\\s+)?(?:estadia|hospedagem|reserva))?\\s*(?:\\*\\*)?\\s*(?::|=|[ée]|fica(?:\\s+em)?|ser[áa])\\s*(?:\\*\\*)?\\s*R\\$\\s*\\d[\\d.]*,\\d{2}"
+        ]
+      }
+    }
+  ],
+  "leads_esperados": []
+}

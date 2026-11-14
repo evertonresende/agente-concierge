@@ -1,0 +1,52 @@
+{
+  "id": "c-funciona-leads-09",
+  "bloco": "funciona-leads",
+  "confirma": true,
+  "turnos": [
+    {
+      "mensagem": "Quanto fica o NAT-601 de 16/03/2028 a 20/03/2028 para duas pessoas?",
+      "espera": {
+        "status": 200,
+        "handoff": false,
+        "estadia": {
+          "imovel_id": "NAT-601",
+          "checkin": "2028-03-16",
+          "checkout": "2028-03-20",
+          "hospedes": 2
+        },
+        "leads_ate_agora": 0
+      }
+    },
+    {
+      "mensagem": "Gostei, vamos fechar. Meu nome completo é {{nome}} e o celular é {{telefone}}.",
+      "espera": {
+        "status": 200,
+        "handoff": false,
+        "estadia": {
+          "imovel_id": "NAT-601",
+          "checkin": "2028-03-16",
+          "checkout": "2028-03-20",
+          "hospedes": 2
+        },
+        "leads_ate_agora": 0
+      }
+    },
+    {
+      "mensagem": "Isso aí, manda ver essa reserva!",
+      "espera": {
+        "status": 200,
+        "handoff": false,
+        "leads_ate_agora": 1
+      }
+    }
+  ],
+  "leads_esperados": [
+    {
+      "imovel_id": "NAT-601",
+      "checkin": "2028-03-16",
+      "checkout": "2028-03-20",
+      "hospedes": 2,
+      "valor_total": 1704.96
+    }
+  ]
+}

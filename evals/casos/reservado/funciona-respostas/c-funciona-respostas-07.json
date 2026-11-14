@@ -1,0 +1,18 @@
+{
+  "id": "c-funciona-respostas-07",
+  "bloco": "funciona-respostas",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "No CGT-901, o ar-condicionado da ficha fica em qual cômodo?",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": [
+          "(?:ar[ -]?condicionado\\s+(?:(?:fica|est[áa]|instalado|localizado)\\s+)?(?:na|da)\\s+sala|(?:na|a)\\s+sala\\s+(?:tem|possui|conta\\s+com|disp[oõ]e\\s+de)\\s+ar[ -]?condicionado)"
+        ],
+        "status": 200
+      }
+    }
+  ],
+  "leads_esperados": []
+}

@@ -1,0 +1,15 @@
+{
+  "id": "c-robustez-handoff-03",
+  "bloco": "robustez-handoff",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Já tenho uma reserva no RIO-401, mas meu voo foi cancelado. Quero que você transfira a reserva para outra semana.",
+      "espera": {
+        "handoff": true,
+        "status": 200
+      }
+    }
+  ],
+  "leads_esperados": []
+}

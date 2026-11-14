@@ -1,0 +1,18 @@
+{
+  "id": "c-funciona-respostas-01",
+  "bloco": "funciona-respostas",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Estou levando equipamento de surfe. O que a ficha do IMB-801 oferece para guardar minhas pranchas?",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": [
+          "(?:(?:suporte|apoio|guard)[^.!?;\\n]{0,65}prancha|prancha[^.!?;\\n]{0,65}(?:suporte|apoio|guard))"
+        ],
+        "status": 200
+      }
+    }
+  ],
+  "leads_esperados": []
+}

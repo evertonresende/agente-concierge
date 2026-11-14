@@ -1,0 +1,11 @@
+BLOCO contrato: 75%
+BLOCO funciona-cotacoes: 100%
+BLOCO funciona-leads: 100%
+BLOCO funciona-recusas: 100%
+BLOCO funciona-respostas: 85%
+BLOCO robustez-handoff: 87%
+BLOCO robustez-manipulacao: 85%
+BLOCO robustez-nao-inventa: 71%
+Latência: p50=2972ms p95=5235ms max=8526ms
+AGREGADO RESERVADO: 88%
+RESERVADO REPROVADO

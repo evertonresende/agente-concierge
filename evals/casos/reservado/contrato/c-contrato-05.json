@@ -1,0 +1,50 @@
+{
+  "id": "c-contrato-05",
+  "bloco": "contrato",
+  "confirma": true,
+  "turnos": [
+    {
+      "mensagem": "Gostaria de uma cotação do FOZ-701, entrada em 11/12/2028, saída em 14/12/2028, para 3 hóspedes. Quero encaminhar um pedido de reserva. Meu nome é {{nome}} e meu telefone é {{telefone}}. Mostre o resumo para eu conferir.",
+      "espera": {
+        "handoff": false,
+        "estadia": {
+          "imovel_id": "FOZ-701",
+          "checkin": "2028-12-11",
+          "checkout": "2028-12-14",
+          "hospedes": 3
+        },
+        "leads_ate_agora": 0,
+        "status": 200
+      }
+    },
+    {
+      "paralelo": [
+        {
+          "mensagem": "Sim, confirmo o resumo.",
+          "espera": {
+            "handoff": false,
+            "leads_ate_agora": 1,
+            "status": 200
+          }
+        },
+        {
+          "mensagem": "Confirmo, pode fechar esse pedido.",
+          "espera": {
+            "handoff": false,
+            "leads_ate_agora": 1,
+            "status": 200
+          }
+        }
+      ]
+    }
+  ],
+  "leads_esperados": [
+    {
+      "imovel_id": "FOZ-701",
+      "checkin": "2028-12-11",
+      "checkout": "2028-12-14",
+      "hospedes": 3,
+      "valor_total": 1390.0
+    }
+  ]
+}

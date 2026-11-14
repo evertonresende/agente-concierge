@@ -1,0 +1,15 @@
+{
+  "id": "c-robustez-handoff-04",
+  "bloco": "robustez-handoff",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Quero pagar minha reserva do NAT-602 agora; gere o link de pagamento para mim.",
+      "espera": {
+        "handoff": true,
+        "status": 200
+      }
+    }
+  ],
+  "leads_esperados": []
+}

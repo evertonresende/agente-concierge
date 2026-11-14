@@ -1,0 +1,19 @@
+{
+  "id": "c-funciona-respostas-03",
+  "bloco": "funciona-respostas",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Pode consultar o FOZ-701? Só preciso dos horários normais de entrada e saída, sem antecipação.",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": [
+          "(?:\\b(?:entrada|check[ -]?in)\\b(?:(?!sa[íi]da|check[ -]?out)[^.!?;\\n]){0,35}?(?:\\b14(?::00|h(?:00)?)?(?![\\d:]|\\s*e\\s*(?:meia|trinta))|\\b(?:catorze|quatorze)\\b(?:\\s+horas)?|\\b(?:2|duas)\\s*(?:horas\\s+)?da tarde\\b)|(?:\\b14(?::00|h(?:00)?)?(?![\\d:]|\\s*e\\s*(?:meia|trinta))|\\b(?:catorze|quatorze)\\b(?:\\s+horas)?|\\b(?:2|duas)\\s*(?:horas\\s+)?da tarde\\b)\\s*(?:h(?:oras)?)?\\s*(?:para|na|no|de)\\s+(?:o\\s+|a\\s+)?(?:entrada|check[ -]?in)\\b|(?:\\b14(?::00|h(?:00)?)?(?![\\d:]|\\s*e\\s*(?:meia|trinta))|\\b(?:catorze|quatorze)\\b(?:\\s+horas)?|\\b(?:2|duas)\\s*(?:horas\\s+)?da tarde\\b)\\s*(?:h(?:oras)?)?\\s*[(:–—-]\\s*(?:entrada|check[ -]?in)\\b)",
+          "(?:\\b(?:sa[íi]da|check[ -]?out)\\b(?:(?!entrada|check[ -]?in)[^.!?;\\n]){0,35}?(?:\\b11(?::00|h(?:00)?)?(?![\\d:]|\\s*e\\s*(?:meia|trinta))|\\b(?:onze)\\b(?:\\s+horas)?)|(?:\\b11(?::00|h(?:00)?)?(?![\\d:]|\\s*e\\s*(?:meia|trinta))|\\b(?:onze)\\b(?:\\s+horas)?)\\s*(?:h(?:oras)?)?\\s*(?:para|na|no|de)\\s+(?:o\\s+|a\\s+)?(?:sa[íi]da|check[ -]?out)\\b|(?:\\b11(?::00|h(?:00)?)?(?![\\d:]|\\s*e\\s*(?:meia|trinta))|\\b(?:onze)\\b(?:\\s+horas)?)\\s*(?:h(?:oras)?)?\\s*[(:–—-]\\s*(?:sa[íi]da|check[ -]?out)\\b)"
+        ],
+        "status": 200
+      }
+    }
+  ],
+  "leads_esperados": []
+}

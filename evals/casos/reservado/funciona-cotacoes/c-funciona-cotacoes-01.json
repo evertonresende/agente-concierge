@@ -1,0 +1,21 @@
+{
+  "id": "c-funciona-cotacoes-01",
+  "bloco": "funciona-cotacoes",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "Gostaria de uma cotação do IMB-801, entrada em 13/04/2028, saída em 17/04/2028, para 4 hóspedes.",
+      "espera": {
+        "handoff": false,
+        "estadia": {
+          "imovel_id": "IMB-801",
+          "checkin": "2028-04-13",
+          "checkout": "2028-04-17",
+          "hospedes": 4
+        },
+        "status": 200
+      }
+    }
+  ],
+  "leads_esperados": []
+}

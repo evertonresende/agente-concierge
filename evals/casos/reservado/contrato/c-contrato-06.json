@@ -1,0 +1,24 @@
+{
+  "id": "c-contrato-06",
+  "bloco": "contrato",
+  "confirma": false,
+  "turnos": [
+    {
+      "mensagem": "¿Cuánto cuesta alojarse en NAT-602 desde el 21/02/2028 hasta el 25/02/2028 para cuatro personas? Responde en español, por favor.",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": [
+          "(?:noches|alojamiento|personas|hu[ée]spedes|limpieza|estancia)"
+        ],
+        "estadia": {
+          "imovel_id": "NAT-602",
+          "checkin": "2028-02-21",
+          "checkout": "2028-02-25",
+          "hospedes": 4
+        },
+        "status": 200
+      }
+    }
+  ],
+  "leads_esperados": []
+}

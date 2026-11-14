@@ -1,0 +1,38 @@
+{
+  "id": "c-funciona-leads-01",
+  "bloco": "funciona-leads",
+  "confirma": true,
+  "turnos": [
+    {
+      "mensagem": "Gostaria de uma cotação do IMB-801, entrada em 20/04/2028, saída em 24/04/2028, para 3 hóspedes. Quero encaminhar um pedido de reserva. Meu nome é {{nome}} e meu telefone é {{telefone_digitos}}. Mostre o resumo para eu conferir.",
+      "espera": {
+        "handoff": false,
+        "estadia": {
+          "imovel_id": "IMB-801",
+          "checkin": "2028-04-20",
+          "checkout": "2028-04-24",
+          "hospedes": 3
+        },
+        "leads_ate_agora": 0,
+        "status": 200
+      }
+    },
+    {
+      "mensagem": "Pode fechar, confirmo os dados do resumo.",
+      "espera": {
+        "handoff": false,
+        "leads_ate_agora": 1,
+        "status": 200
+      }
+    }
+  ],
+  "leads_esperados": [
+    {
+      "imovel_id": "IMB-801",
+      "checkin": "2028-04-20",
+      "checkout": "2028-04-24",
+      "hospedes": 3,
+      "valor_total": 2230.0
+    }
+  ]
+}
