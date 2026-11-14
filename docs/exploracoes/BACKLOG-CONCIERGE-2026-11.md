@@ -1194,6 +1194,19 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   apontou: entrada sem ano com saída com ano continua cotando a estadia longa (fora da regra); o
   modelo real pode chamar a cotação de novo pondo o ano por conta própria, a conferir no ensaio local
   com o modelo real e num caso de eval novo
+- 14/11 00h25 · G · verificador independente, terceira rodada (29ae3aa; árvores com a G sozinha e com a F em
+  28109d8 mais a G): REPROVADO por um achado, já corrigido depois dessa cabeça: os 2 testes de
+  `foco-g` vermelhos na árvore F mais G (A1, só teste; resolvido em ee30c42, e o ensaio da coordenadora
+  em da64da4 deu 1352 testes). Passou: os 5 altos da rodada 2 corrigidos; 0 de 80 mensagens inocentes
+  ligam handoff; P17 e P18 ao pé da letra; a trava de valores fecha os dois cenários da revisão de
+  segurança e mantém o valor legítimo no turno seguinte, depois de reinício da sessão e com dois
+  imóveis; nenhuma das 121 respostas reais muda; o turno não estoura o orçamento por construção.
+  Médio determinístico (M-1), regressão da correção da trava: quando o resultado da cotação sai da
+  janela de 80 mensagens, o total que o modelo repete é cortado; com resumo pendente a correção é de
+  uma linha (o total do resumo aberto entra nos permitidos) e foi pedida à frente; sem resumo fica
+  como limite da janela (o agente cota de novo). Baixos que viram limite: contagem de chamadas com 1
+  a menos quando o prazo vence no reserva; milhar com espaço; motivo do handoff com falsos positivos
+  quando a ferramenta já foi chamada. O relatório final do verificador ainda fecha os defeitos plantados
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
