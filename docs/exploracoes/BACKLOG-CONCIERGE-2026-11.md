@@ -1464,6 +1464,18 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   anterior e o modelo chama `montar_resumo` com os mesmos dados, a ferramenta trata como confirmação.
   Leitura à mão ensaiada neste registro (P27): os quatro casos de desconto são recusas limpas com
   `handoff`, sem concessão; 88 das 174 respostas têm valor em reais
+- 14/11 01h52 · B2 · verificador da rodada 3: APROVADO o f4ee189. Os 234 itens do corpus conferem; zero certa
+  reprovada nos cinco registros; 422 avaliações de erradas sem nenhuma aprovada, pelo `espera` do caso;
+  recusas certas nos casos de desconto: nenhuma das 20 reais reprova e 3 das 40 escritas reprovam com a
+  negação a até 3 palavras (limiar 4), todas por "don't"; o caso da P21 aprova as quatro respostas reais
+  e reprova a cotação; 21 de 21 defeitos plantados pegos. Duas correções de uma palavra pedidas por ele
+  e enviadas à frente junto com a do rótulo com parêntese: negações que faltam ("don't" e outras) e a
+  expressão que não pega "abrir mão". Depois, verificador curto só desses três pontos
+- 14/11 01h52 · M2 · segunda passada, segurança do delta (sem a H): nenhum achado crítico ou alto; três médios e
+  quatro baixos, registrados em `docs/revisoes/m2.md`. S2-1 (valor no nome do lead) vira a P29, com a
+  frente F; S2-3 (lote de buscas martela o catálogo, 900 pedidos num turno na sonda) vira a P30, com a
+  frente G, reaberta só para isso; S2-2 (valor sem marca de moeda escrito pelo modelo) e os baixos ficam
+  como limite no README. A primeira metade do achado 2 da primeira passada está fechada
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -1489,12 +1501,12 @@ e o runner da B2, a P20 (nome do lead, frente F) e a P21 (datas sem ano, frente 
 casos fixo. Meta: 14/11 03h00. Limite: 06h00. Gatilho que já existia: 10h00 com o critério 4 não
 verde, parar e chamar o Éverton.
 
-**Estado do congelamento em 14/11 01h45.** Na `main`: G, T (P21), F (P20), o script da K e o gate da S.
-H: 38ae72f no verificador da rodada 5 (B6); B1, B2 e a P24 já têm veredito favorável. Juiz da B2:
-f4ee189 no verificador da rodada 3, e uma correção a mais pedida (rótulo com parêntese, achada no
-ensaio local). F: correção do "sim" limpo que não registra, pedida depois do ensaio local. O ensaio
-local da árvore candidata deu 98 de 100. Só o que muda o comportamento do agente ou o juiz reinicia a
-contagem das rodadas.
+**Estado do congelamento em 14/11 01h52.** Na `main`: G, T (P21), F (P20), o script da K e o gate da S.
+Abertos, todos pequenos e com verificador curto depois: H (38ae72f no verificador da rodada 5, B6); F
+(o "sim" limpo que não registra e a P29, nome sem dígito nem moeda); G (P30, teto de chamadas de
+ferramenta); B2 (juiz aprovado em f4ee189, com três correções de uma linha pedidas: rótulo com
+parêntese, negações em inglês, "abrir mão"). O ensaio local da árvore candidata deu 98 de 100. Só o
+que muda o comportamento do agente ou o juiz reinicia a contagem das rodadas.
 
 **Plano B, decisão do Éverton (perguntado em 14/11).** Um ciclo de correção e verificação leva
 cerca de 85 minutos; cabem dois até as 06h00. Se a H ou o juiz não fecharem nesse prazo, a escolha
