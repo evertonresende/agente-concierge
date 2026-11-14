@@ -39,7 +39,13 @@ fixos=$(mktemp); trap 'rm -f "$fixos" "$marca"' EXIT
   | { if [ -f "$DIR_CFG/sigilo-liberados" ]; then grep -v -x -F -f "$DIR_CFG/sigilo-liberados"; else cat; fi; } > "$fixos"
 
 relata() { # $1 = rótulo; stdin = localizações (arquivo:linha, commit ou commit:arquivo)
-  local linhas n; linhas=$(sort -u)
+  local linhas n
+  # Rede de segurança: localização que contém um termo (nome de arquivo, ref) não é
+  # impressa; vira uma linha genérica.
+  linhas=$(awk -v F="$fixos" '
+    BEGIN { while ((getline t < F) > 0) T[tolower(t)] }
+    { l = tolower($0); for (t in T) if (index(l, t)) { print "(localização omitida: contém termo proibido)"; next } print }' \
+    | sort -u)
   [ -z "$linhas" ] && return 0
   n=$(printf '%s\n' "$linhas" | wc -l)
   echo "SIGILO: $1 em:"; printf '%s\n' "$linhas" | head -n 20 | sed 's/^/  /'
@@ -89,7 +95,13 @@ if git rev-parse -q --verify HEAD >/dev/null; then
     echo "SIGILO: falha ao ler o conteúdo do histórico"; exit 2
   fi
 
-  git log $PUBLICAVEL --format='%H %B' | grep -i -F -f "$fixos" | cut -c1-8 \
+  # Um registro por commit (separador \036); procura só no texto depois de \037 e
+  # imprime só o identificador curto, nunca a linha encontrada.
+  git log $PUBLICAVEL --format='%x1e%H%x1f%B' | awk -v F="$fixos" '
+    BEGIN { while ((getline t < F) > 0) T[tolower(t)]; RS = "\036" }
+    { i = index($0, "\037"); if (!i) next
+      corpo = tolower(substr($0, i + 1))
+      for (t in T) if (index(corpo, t)) { print substr($0, 1, 8); next } }' \
     | relata "termo proibido em mensagem de commit"
   git log $PUBLICAVEL --format='%ae%n%ce' | sort -u | grep -v -x -F "$AUTOR" | sed 's/.*/(e-mail fora do padrão no histórico)/' \
     | relata "autor ou committer diferente de $AUTOR"
