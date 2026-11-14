@@ -567,6 +567,19 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   quase todas de redação que o juiz ou a expressão do caso não aceitam, não de valor. O que
   falta para `producao` usar o Haiku: criar o gateway de `producao`, guardar nele a chave e
   apontar a variável (frente K, com ordem do Éverton)
+- 13/11 21h23 · H · estado do lead persistido por inteiro (c905a09, 674 testes), com teste de campo
+  desconhecido que sobrevive a turno e a despejo. Espera a F entrar na `main`
+- 13/11 21h23 · G · relatório de fced648 (961 testes): idioma corrigido na causa (`cotar` entrega as datas
+  no idioma do hóspede; `dataComDia` no núcleo), sem camada de reescrita; achados altos
+  fechados (rede de desconto só com palavra de desconto ou percentual aplicado; rede de
+  insistência por palavra-chave removida; bateria negativa de 31 mensagens comuns); médios 3
+  a 7 e baixos 8 a 11 tratados; os 3 testes da integração com a F atualizados. CHECK dela no
+  modelo antigo: `contrato` 100% em três rodadas, com `con-10` passando. Limites declarados:
+  número por extenso fora do alcance; o total é amarrado à estadia só pelo rótulo e pelas
+  datas. Pedido: trazer a frente I para a branch e rodar o CHECK completo no Haiku, e
+  diagnosticar três defeitos do agente medidos com o Haiku (`rec-11`, `man-13`, `resp-11`).
+  Exceção de dono: a G pode editar `pedido.ts` e `cotacao.ts` na contagem e na validade do
+  número de hóspedes. Depois, segunda rodada de verificador. Ordem de entrada: I, F, H, G
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -603,7 +616,7 @@ mexer na configuração.
 | `src/catalogo.ts` (cliente do catálogo) | A | G | — |
 | `src/agente/loop.ts`, `src/agente/prompt.ts` | A | G | — |
 | `src/agente/ferramentas/catalogo.ts`, `handoff.ts`, `index.ts`, `tipos.ts` | A | G | — |
-| `src/agente/ferramentas/cotacao.ts`, `src/agente/ferramentas/pedido.ts` (onde as datas dos argumentos são interpretadas) | A | E (exceção: a G edita `cotacao.ts` só para as datas e o exemplo da instrução saírem no idioma do hóspede) | — |
+| `src/agente/ferramentas/cotacao.ts`, `src/agente/ferramentas/pedido.ts` (onde as datas dos argumentos são interpretadas) | A | E (exceções: a G edita `cotacao.ts` para as datas e o exemplo da instrução saírem no idioma do hóspede, e os dois arquivos no que toca à contagem e à validade do número de hóspedes) | — |
 | `src/agente/ferramentas/lead.ts`, `src/lead.ts` | A | F | — |
 | `src/env.ts` | A | I, que roda junto com a leva 2; outra frente pede à coordenadora | — |
 | `test/apoio.ts` | A | congelado: ninguém altera; apoio novo vai em `test/apoio-<frente>.ts` da própria frente | — |
