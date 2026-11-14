@@ -38,6 +38,7 @@ janela de cada rodada (contagem do log do AI Gateway por modelo). No Haiku,
 
 | Modelo | contrato | cotações | leads | recusas | respostas | marco1 | handoff | manipulação | não inventa | total | p50 / p95 / máx | chamadas por conversa | tokens por conversa (entrada / saída) | US$ por conversa | 429 | reserva usado |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Haiku 5.5, muito alto (`xhigh`) | 66% | 92% | 80% | 72% | 90% | 100% | 92% | 84% | 100% | 85% (84) | 2,9 / 11,7 / 27,3 s | 2,89 | 13.669 / 1.281 | 0,0020 | 0 | 0 |
 | Haiku 5.5, alto | 77% | 92% | 80% | 72% | 100% | 100% | 100% | 84% | 80% | **86% (85)** | 2,3 / 5,5 / 11,9 s | 2,76 | 12.838 / 676 | 0,0016 | 0 | 0 |
 | Haiku 5.5, médio | 77% | 92% | 80% | 81% | 90% | 100% | 78% | 84% | 70% | **82% (81)** | 2,0 / 4,4 / 11,1 s | 2,70 | 12.532 / 528 | 0,0015 | 0 | 0 |
 | Haiku 5.5, médio (repetição de controle) | 77% | 84% | 80% | 72% | 90% | 100% | 85% | 76% | 60% | 79% (78) | 2,1 / 4,5 / 12,0 s | 2,67 | 12.367 / 525 | 0,0015 | 0 | 0 |
@@ -59,6 +60,7 @@ janela de cada rodada (contagem do log do AI Gateway por modelo). No Haiku,
 
 | Nível | turnos | normais | pelo reserva | contingência | p50 / máx | acima de 60 s |
 |---|---|---|---|---|---|---|
+| muito alto | 40 | 40 | 0 | 0 | 2,7 / 7,7 s | 0 |
 | alto | 40 | 40 | 0 | 0 | 2,4 / 5,5 s | 0 |
 | médio | 40 | 40 | 0 | 0 | 2,0 / 4,1 s | 0 |
 | médio (controle) | 40 | 40 | 0 | 0 | 2,3 / 3,8 s | 0 |
@@ -87,6 +89,25 @@ entre as duas rodadas médias), então a cópia reproduz a medição.
   `lead-11-confirmacao-condicional-preco`, `inv-05-feriado`. Falham nas duas rodadas
   médias e passam no alto: `cot-03-centavos-a`, `lead-06-duplo-sim`,
   `resp-11-imovel-ambiguo`, `hand-08-depois`.
+
+### Nível muito alto (`xhigh`) do Haiku (pedido do Éverton, 14/11)
+
+Mesma cópia, mesmo código (`895d8aa`) e mesmo juiz da rodada alta, entre 22h18 e 22h25
+de Brasília.
+
+- O nível enviado foi `xhigh`: as 40 requisições amostradas no log do gateway na janela
+  trazem `output_config: {"effort": "xhigh"}`. A janela só tem tráfego desta rodada: 351
+  chamadas do Haiku, todas 200, nenhuma de outro modelo.
+- Nenhuma resposta cortada por `max_tokens`: a maior saída de uma chamada foi de 3.137
+  tokens, contra o teto de 8.000; as 40 respostas amostradas terminam em `end_turn` ou
+  `tool_use`.
+- Nenhuma falha de modelo no log do servidor.
+- Contra o alto: 85% contra 86%, a mesma faixa das rodadas médias (79 a 82%) e dentro da
+  variação entre repetições; a saída quase dobra (1.281 contra 676 tokens por conversa),
+  o p95 vai de 5,5 para 11,7 s e o máximo de 11,9 para 27,3 s.
+- Passam no alto e falham no muito alto: `con-03-isolamento` (juiz de rótulo),
+  `hand-09-insistente`, `resp-11-imovel-ambiguo`. Falham no alto e passam no muito alto:
+  `inv-05-feriado`, `inv-07-cancelamento`.
 
 ### Blocos de raciocínio do Haiku
 
