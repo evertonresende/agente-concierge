@@ -1,7 +1,7 @@
 import { regrasDaFicha } from "../../catalogo";
 import {
-  apresentarResumo, type CampoDoHospede, chaveDaReserva, confirmar, invalidarPendente, type Leitura, type Pendente, type Reserva,
-  estadiaBloqueada, reservaFechada, simAposRegistro, textoDoResumo, dataComDia,
+  apresentarResumo, type CampoDoHospede, chaveDaReserva, confirmar, invalidarPendente, lerConfirmacao, type Leitura, type Pendente,
+  pendenteAberto, type Reserva, estadiaBloqueada, reservaFechada, simAposRegistro, textoDoResumo, dataComDia,
 } from "../../lead";
 import { formatarReais } from "../../nucleo/dinheiro";
 import { type Idioma, idiomaDoHospede } from "../../nucleo/idioma";
@@ -218,6 +218,16 @@ async function tentarResumir(argumentos: Argumentos, contexto: Contexto): Promis
   if (!nome || !informado || faltando.length > 0) {
     return { paraOModelo: { erro: `Falta: ${faltando.join(", ")}. Pergunte ao hóspede; não invente.` } };
   }
+  // Nome de pessoa não tem dígito nem símbolo de moeda (P29): com eles, o campo levaria um
+  // preço falso a quem lê o lead. Algarismo romano e sufixo por extenso passam.
+  if (/[\p{Nd}\p{No}\p{Sc}]/u.test(inteiro)) {
+    return {
+      paraOModelo: {
+        erro: "O nome informado tem número ou símbolo de moeda, e nome de pessoa não tem. Peça ao hóspede o nome dele "
+          + "sem número nem valor. Não invente, não corrija por conta própria e não monte resumo sem isso.",
+      },
+    };
+  }
   // O nome do lead só pode ser formado por palavras que o hóspede escreveu (P20). Conferido
   // antes do corte de tamanho: palavra cortada ao meio não é palavra que ele escreveu.
   const estranhas = palavrasQueOHospedeNaoEscreveu(inteiro, contexto);
@@ -257,7 +267,27 @@ async function tentarResumir(argumentos: Argumentos, contexto: Contexto): Promis
     };
   }
 
+  // O hóspede disse um sim limpo ao resumo do turno anterior e o modelo, em vez de confirmar,
+  // pediu o mesmo resumo de novo: a chamada vale como a confirmação, pelo caminho dela.
+  const reserva: Reserva = {
+    imovel_id: pedido.ficha.id, checkin: pedido.checkin, checkout: pedido.checkout, hospedes: pedido.hospedes, nome, telefone,
+  };
+  if (eSimAoMesmoResumo(contexto, reserva)) return confirmarReserva.executar({}, contexto);
   return resumir(contexto, pedido, nome, telefone);
+}
+
+/**
+ * A reserva pedida é a do resumo em aberto (imóvel, datas, hóspedes, nome e telefone), ele foi
+ * mostrado no turno anterior e a mensagem do turno é um sim a ele, pela mesma leitura da
+ * confirmação. Com qualquer diferença, o pedido de resumo segue como resumo novo, sem envio.
+ */
+function eSimAoMesmoResumo(contexto: Contexto, reserva: Reserva): boolean {
+  const pendente = pendenteAberto(contexto.cofre.ler());
+  return pendente !== null
+    && contexto.turno === pendente.turno + 1
+    && chaveDaReserva(pendente.reserva) === chaveDaReserva(reserva)
+    && pendente.reserva.nome === reserva.nome
+    && lerConfirmacao(contexto.mensagem, pendente, contexto.turno) === "sim";
 }
 
 export const confirmarReserva = definir(
