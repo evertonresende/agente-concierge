@@ -54,10 +54,12 @@ cabeçalhos `x-uso-entrada`, `x-uso-saida` e `x-chamadas-modelo`, usados para me
   transições do lead, o resumo para confirmação e o aviso de falha. O modelo entende o
   pedido, escolhe a ferramenta e redige. Antes de sair, o texto do modelo passa por uma
   conferência de código (frente G), que retira o que reconhece: valor em dinheiro que
-  nenhuma ferramenta calculou (com "R$", "reais", outra moeda ou centavos), concessão,
+  nenhuma ferramenta calculou (com "R$", "reais", outra moeda ou centavos com vírgula
+  ("1999,00")), concessão,
   registro afirmado sem `201` (enquanto nenhum pedido da conversa foi registrado ou há
-  resumo aberto) e afirmação de disponibilidade. Número por extenso e número
-  solto sem marca nem centavos passam, e concessão, registro e disponibilidade são
+  resumo aberto) e afirmação de disponibilidade. Número por extenso, número
+  solto sem marca nem centavos com vírgula ("o total em 1500"), centavos com ponto
+  ("1999.00") e gíria ("1999 conto") passam, e concessão, registro e disponibilidade são
   reconhecidos pela forma da frase (limites 8, 20, 46, 65 e 66); os demais limites dessa
   conferência estão na lista do fim.
 - **Nome do lead.** Só pode ser formado por palavras que o hóspede escreveu na conversa
@@ -584,7 +586,8 @@ verificadores das frentes, no log do backlog.
 **Segunda passada da revisão de segurança**
 
 46. **Número solto sem marca de moeda nem centavos** escrito pelo modelo ("consigo deixar o
-    total em 1500") chega ao hóspede sem corte (S2-2). Com marca ou centavos, é cortado
+    total em 1500") chega ao hóspede sem corte (S2-2). Centavos com ponto ("1999.00") e gíria ("1999 conto")
+    também passam. Com marca ou centavos com vírgula, é cortado
     quando nenhuma ferramenta o calculou: "1999 reais", "US$ 300", "o total fica 1.500" e
     "R$ 1.999,00" saem; um valor calculado escrito de outro jeito ("2156 reais", "2.156,00")
     é reescrito como "R$ 2.156,00".
