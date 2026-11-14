@@ -53,3 +53,17 @@ describe("log de falha: código só da posição de código, nome de lista fecha
     expect(falhas).toEqual(["TempoDoPrincipal"]);
   });
 });
+
+describe("log de falha: motivo da resposta inútil numa palavra", () => {
+  it.each([
+    ["corte por max_tokens", { stop_reason: "max_tokens", content: [{ type: "text", text: "pela met" }] }, "corte"],
+    ["recusa", { stop_reason: "refusal", content: [] }, "recusa"],
+    ["fim desconhecido", { stop_reason: "pause_turn", content: [{ type: "text", text: "x" }] }, "fim_desconhecido"],
+    ["fim que não bate", { stop_reason: "tool_use", content: [{ type: "text", text: "vou consultar" }] }, "fim_nao_bate"],
+    ["vazia", { stop_reason: "end_turn", content: [] }, "vazia"],
+  ])("%s", async (_n, bruto, motivo) => {
+    const { r, falhas } = await rodar(() => bruto);
+    expect(r.texto).toBe("Resposta do reserva.");
+    expect(falhas).toEqual([`RespostaInutil ${motivo}`]);
+  });
+});
