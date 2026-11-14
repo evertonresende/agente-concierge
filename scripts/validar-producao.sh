@@ -77,11 +77,21 @@ class Limpador:
         return re.sub(r"https?://\S+", "<url>", texto)
 
 
+class SemRedirecionar(urllib.request.HTTPRedirectHandler):
+    """Nenhum 3xx é seguido: a resposta de redirecionamento volta como erro HTTP."""
+
+    def redirect_request(self, *args, **kwargs):
+        return None
+
+
+ABRIR = urllib.request.build_opener(SemRedirecionar).open
+
+
 def obter(url):
     """Só GET: a função não aceita corpo nem método, então não tem como fazer POST."""
     pedido = urllib.request.Request(url, method="GET", headers={"User-Agent": "validar-producao/1"})
     try:
-        with urllib.request.urlopen(pedido, timeout=TEMPO_S) as resposta:
+        with ABRIR(pedido, timeout=TEMPO_S) as resposta:
             return resposta.status, resposta.headers.get("content-type", ""), resposta.read().decode("utf-8", "replace")
     except urllib.error.HTTPError as erro:
         return erro.code, erro.headers.get("content-type", ""), erro.read().decode("utf-8", "replace")
@@ -145,6 +155,8 @@ def avaliar_chat(status, tipo, corpo):
     codigo = re.search(r"[Ee]rror(?: code:)? (1\d{3})", corpo or "")
     if codigo:
         return f"página de bloqueio da Cloudflare (HTTP {status}, erro {codigo.group(1)})"
+    if 300 <= status < 400:
+        return f"redirecionamento HTTP {status}, recusado"
     if status != 200:
         return f"HTTP {status}"
     if "json" not in (tipo or ""):
@@ -181,7 +193,7 @@ def chat_curl(url):
 def chat_requests(url):
     import requests
     try:
-        resposta = requests.post(url, json=corpo_do_chat("requests"), timeout=TEMPO_S)
+        resposta = requests.post(url, json=corpo_do_chat("requests"), timeout=TEMPO_S, allow_redirects=False)
     except Exception as erro:
         raise Falha(f"sem resposta ({type(erro).__name__})") from None
     return resposta.status_code, resposta.headers.get("content-type", ""), resposta.text
@@ -191,7 +203,7 @@ def chat_urllib(url):
     pedido = urllib.request.Request(url, data=json.dumps(corpo_do_chat("urllib")).encode(),
                                     headers={"Content-Type": "application/json"})
     try:
-        with urllib.request.urlopen(pedido, timeout=TEMPO_S) as resposta:
+        with ABRIR(pedido, timeout=TEMPO_S) as resposta:
             return resposta.status, resposta.headers.get("content-type", ""), resposta.read().decode("utf-8", "replace")
     except urllib.error.HTTPError as erro:
         return erro.code, erro.headers.get("content-type", ""), erro.read().decode("utf-8", "replace")
@@ -201,7 +213,7 @@ def chat_urllib(url):
 
 NODE_FETCH = """
 try {
-  const r = await fetch(process.env.ALVO_CHAT, { method: "POST", headers: { "content-type": "application/json" }, body: process.env.CORPO_CHAT });
+  const r = await fetch(process.env.ALVO_CHAT, { method: "POST", headers: { "content-type": "application/json" }, body: process.env.CORPO_CHAT, redirect: "manual" });
   process.stdout.write(JSON.stringify({ status: r.status, tipo: r.headers.get("content-type") ?? "", corpo: await r.text() }));
 } catch (e) {
   process.stdout.write(JSON.stringify({ erro: e?.name ?? "Error" }));
@@ -349,6 +361,7 @@ def autoteste():
     assert "bloqueio" in avaliar_chat(200, "text/html", "<html>desafio</html>")
     assert avaliar_chat(200, "application/json", '{"reply": 1}') == "JSON sem reply e handoff"
     assert avaliar_chat(530, "text/html", "x") == "HTTP 530"
+    assert "redirecionamento" in avaliar_chat(307, "application/json", "{}")
     validar_extras(["--paralelo", "2", "--pausa-ms", "0"])
     for extras in (["--alvo", "x"], ["-h"], ["--listar"], ["--bloco", "marco1"], ["--conjunto", "dev"],
                    ["--paralelo"], ["--paralelo", "x"], ["--relatorio", "1"]):
