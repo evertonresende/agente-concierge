@@ -38,10 +38,13 @@ fixos=$(mktemp); trap 'rm -f "$fixos" "$marca"' EXIT
 } | awk 'length($0) >= 4' | sort -u \
   | { if [ -f "$DIR_CFG/sigilo-liberados" ]; then grep -v -x -F -f "$DIR_CFG/sigilo-liberados"; else cat; fi; } > "$fixos"
 
-relata() { # $1 = rótulo; stdin = linhas arquivo:linha
-  local linhas; linhas=$(sort -u)
+relata() { # $1 = rótulo; stdin = localizações (arquivo:linha, commit ou commit:arquivo)
+  local linhas n; linhas=$(sort -u)
   [ -z "$linhas" ] && return 0
-  echo "SIGILO: $1 em:"; printf '%s\n' "$linhas" | sed 's/^/  /'; : > "$marca"
+  n=$(printf '%s\n' "$linhas" | wc -l)
+  echo "SIGILO: $1 em:"; printf '%s\n' "$linhas" | head -n 20 | sed 's/^/  /'
+  [ "$n" -le 20 ] || echo "  (e mais $((n - 20)))"
+  : > "$marca"
 }
 
 # 1. Conteúdo do índice (o que já está versionado + o que está em stage).
@@ -65,6 +68,27 @@ git ls-files --cached | grep -E '(^|/)(\.privado/|\.env($|\.)|\.dev\.vars)' | gr
 #    checagem, mas o item 3 garante que nenhuma chegou ao remoto.
 PUBLICAVEL="--branches --tags --remotes"
 if git rev-parse -q --verify HEAD >/dev/null; then
+  # Conteúdo de todos os commits publicáveis: o repositório fica público com o histórico
+  # inteiro, então um termo apagado num commit posterior continua publicado. Varre cada
+  # blob uma vez (rápido); só quando acha algo localiza commit:arquivo, blob a blob.
+  objetos=$(set -o pipefail; git rev-list --objects $PUBLICAVEL \
+    | git cat-file --batch-check='%(objecttype) %(objectname) %(rest)') \
+    || { echo "SIGILO: falha ao listar os objetos do histórico"; exit 2; }
+  printf '%s\n' "$objetos" | awk '$1 == "blob" { print $2 }' | git cat-file --batch='' \
+    | grep -a -q -i -F -f "$fixos"
+  st=("${PIPESTATUS[@]}")
+  if [ "${st[3]}" -eq 0 ]; then
+    # Commit que introduziu cada versão com o termo (o mais antigo que a toca).
+    loc=$(printf '%s\n' "$objetos" | awk '$1 == "blob"' | while read -r _ obj caminho; do
+      git cat-file blob "$obj" | grep -a -q -i -F -f "$fixos" || continue
+      c=$(git log $PUBLICAVEL --format=%H --find-object="$obj" | tail -n 1 | cut -c1-8)
+      echo "${c:-?}:$caminho"
+    done)
+    printf '%s\n' "${loc:-(não localizado)}" | relata "termo proibido no conteúdo de commit"
+  elif [ "${st[3]}" -ne 1 ] || [ "${st[2]}" -ne 0 ]; then
+    echo "SIGILO: falha ao ler o conteúdo do histórico"; exit 2
+  fi
+
   git log $PUBLICAVEL --format='%H %B' | grep -i -F -f "$fixos" | cut -c1-8 \
     | relata "termo proibido em mensagem de commit"
   git log $PUBLICAVEL --format='%ae%n%ce' | sort -u | grep -v -x -F "$AUTOR" | sed 's/.*/(e-mail fora do padrão no histórico)/' \
@@ -72,6 +96,10 @@ if git rev-parse -q --verify HEAD >/dev/null; then
   git reflog | grep -E -i 'amend|rebase|squash' | cut -d' ' -f1 \
     | relata "amend, rebase ou squash no reflog"
 fi
+
+# Nomes de arquivo e de pasta, no índice e no histórico: só a contagem, nunca o nome.
+n=$({ printf '%s\n' "${objetos:-}" | cut -s -d' ' -f3-; git ls-files --cached; } | grep -c -i -F -f "$fixos")
+[ "$n" -eq 0 ] || echo "($n caminho(s))" | relata "termo proibido em nome de arquivo ou pasta"
 
 # 3. Remoto: só branches e tags. Nunca `git push --mirror` nem push de outras refs.
 if git remote get-url origin >/dev/null 2>&1; then
