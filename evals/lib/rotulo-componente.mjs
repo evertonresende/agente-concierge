@@ -52,6 +52,11 @@ const REGEX_ANEXO_NOMINAL =
 const REGEX_TOTAL_ANTES =
   /(?<!\p{L})total(?!\s+(?:das?|de)\s+(?:\d+\s+)?(?:di[aá]rias?|noites?|hospedagem)|\s+sem\s+(?:a\s+)?(?:taxa\s+de\s+)?limpeza)(?!\p{L})|(?<!\p{L})(?:j[aá]\s+com\s+(?:a\s+)?(?:taxa\s+de\s+)?limpeza|inclu\p{L}*\s+(?:a\s+)?(?:taxa\s+de\s+)?limpeza|limpeza\s+inclu\p{L}*|in\s+total|comes?\s+to)(?!\p{L})/iu;
 
+// "já com a (taxa de) limpeza de R$ X", "incluindo a limpeza de R$ X": rotula o próprio valor
+// como limpeza, não como total.
+const REGEX_LIMPEZA_DE_ANTES =
+  /(?<!\p{L})(?:j[aá]\s+com|inclu\p{L}*)\s+(?:a\s+|the\s+)?(?:taxa\s+de\s+)?(?:limpeza|cleaning(?:\s+fee)?)\s+(?:de|of)\s*$/iu;
+
 // "total" logo depois do valor ("R$ 2.006,00 no total", "R$ 2.006,00, já com a limpeza").
 // "total" solto só conta se não vier outro valor na frase: em "limpeza R$ 150,00, total
 // R$ 2.156,00" ele rotula o valor seguinte.
@@ -254,6 +259,9 @@ export function motivoNaoComponente(texto, valor, perfis, contexto = {}) {
   // próprio valor vem nomeado como componente ("No total, R$ 1.180,00 de diárias"), quando o
   // anexo diz as noites e o total certo também aparece ("No total, R$ 1.180,00 pelas 2 noites
   // e R$ 150,00 de limpeza: R$ 1.330,00"), ou é uma diária dita por noite, já conferida acima.
+  if (REGEX_LIMPEZA_DE_ANTES.test(antes)) {
+    return perfis.some((p) => valor.centavos === p.limpeza) ? null : 'rotulado como limpeza, mas não é a taxa de limpeza';
+  }
   const cedeAoAnexo = anexo && (REGEX_ANEXO_NOMINAL.test(depois) || contexto.totalCertoNaResposta === true);
   if ((REGEX_TOTAL_ANTES.test(antes) || totalDepois) && !cedeAoAnexo && !porNoite) return 'apresentado como total';
 

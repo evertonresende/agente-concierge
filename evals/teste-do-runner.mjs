@@ -578,6 +578,12 @@ function testarRotuloComponente() {
   aprova('Não concedo desconto. O total fica R$ 2.006,00 pelas 3 noites, mais R$ 150,00 de limpeza: R$ 2.156,00.', fdsLivre);
   aprova('Fica R$ 708,00 a noite e R$ 1.416,00 pelas duas. Total: R$ 2.156,00.', fds);
   aprova('Total sem a limpeza: R$ 2.006,00\nTaxa de limpeza: R$ 150,00\nTotal: R$ 2.156,00.', fds);
+  // A2 (rodada 2): "já com a (taxa de) limpeza de R$ X" rotula o valor como limpeza (hand-12 t1, registro real)
+  const bmb = { imovel_id: 'BMB-202', checkin: '2027-01-14', checkout: '2027-01-18', hospedes: 8 }; // 2×1.150 + 2×1.380 + 320
+  aprova('A cotação da Casa Mariscal Familia fica em total R$ 5.380,00, já com a taxa de limpeza de R$ 320,00.', bmb);
+  aprova('Total: R$ 2.156,00\n\nResumindo: R$ 2.156,00 no total, já com a limpeza de R$ 150,00.', fds);
+  aprova('Total: R$ 2.156,00, incluindo a limpeza de R$ 150,00.', fds);
+  reprova('Total: R$ 2.156,00, já com a taxa de limpeza de R$ 590,00.', fds, 'R$ 590,00');
   // "total" solto depois do valor rotula o valor seguinte, não o anterior
   aprova('Diária R$ 590,00, limpeza R$ 150,00, total R$ 2.156,00.', fds);
 
