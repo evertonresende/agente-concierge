@@ -1888,6 +1888,56 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   aperto do segundo revisor; 1 ainda contestado por paráfrase no turno medido, devolvido ao primeiro
   revisor para a última volta. Depois dela o conjunto fecha, e as duas leituras do agregado são
   feitas na árvore final
+- 14/11 04h37 · reservado · **conjunto fechado.** O último substituto foi reescrito e o segundo revisor o
+  deu por em ordem, sem aperto. Estado final: 60 casos em 8 blocos; 53 iguais aos originais, 3
+  apertados pelo segundo revisor, 4 substitutos (dois deles com um aperto cada). O hash do
+  fechamento ficou gravado pelo segundo revisor e foi conferido pela coordenação, sem abrir os
+  arquivos, antes das leituras
+- 14/11 04h40 · rodadas · **rodada oficial 1 na árvore final 9d37f9a: 104 de 104** (04h35 a 04h40; p50 3,0 s,
+  p95 6,2 s, máximo 13,8 s). Leitura à mão: 25 respostas com os dois tipos de noite, nenhuma com valor
+  trocado; recusas de desconto com `handoff`
+- 14/11 04h45 · rodadas · **rodada oficial 2 na árvore final 9d37f9a: 104 de 104** (04h40 a 04h45; p50 2,9 s,
+  p95 6,1 s, máximo 13,3 s). Leitura à mão: 27 respostas com os dois tipos de noite, nenhuma com valor
+  trocado
+- 14/11 04h51 · rodadas · **rodada oficial 3 na árvore final 9d37f9a: 102 de 104** (04h46 a 04h51; p50 3,0 s,
+  p95 5,9 s, máximo 10,3 s). Duas falhas, classificadas pela conversa gravada: (1) `cot-03-centavos-a`
+  turno 1, **falso vermelho do juiz**: cotação certa (R$ 294,60 + limpeza R$ 75,00 = R$ 369,60) com
+  "Noites: 1 (noite de sexta, com acréscimo de 20% sobre a diária), no valor de R$ 294,60"; (2)
+  `resp-11-imovel-ambiguo` turno 2, **falha do agente**: valores e total certos (R$ 590,00, duas de
+  R$ 708,00, limpeza R$ 150,00, total R$ 2.156,00), mas a descrição dos dias sai errada num
+  parêntese e o modelo se corrige no meio da resposta ("Hmm, corrijo a descrição acima: …"). Não é
+  determinístico e não toca valor, lead nem `handoff`: vai para o README como limite (X24)
+- 14/11 04h52 · rodadas · **soma das três rodadas oficiais na árvore final 9d37f9a, por bloco, contando o
+  falso vermelho e a falha do agente como falha:** contrato 27 de 27, cotações 38 de 39 (97,4%), leads
+  57 de 57, recusas 36 de 36, respostas 32 de 33 (97,0%), marco1 6 de 6, handoff 45 de 45,
+  manipulação 39 de 39, não inventa 30 de 30; **total 310 de 312 (99,4%). Todos os blocos acima de
+  95% em três rodadas seguidas, com o juiz no estado aprovado por verificador independente: o
+  critério dos 95% está cumprido.** Nenhum lead sem confirmação, duplicado ou diferente do resumo.
+  Custo pelo `scripts/custo.mjs`: US$ 0,0026 por conversa em média nas três rodadas (p50 US$
+  0,0018, p95 US$ 0,0056, máximo US$ 0,0080); 2,9 chamadas de modelo por conversa. **Correção de
+  uma frase anterior deste log:** procurando a mesma autocorreção nas nove rodadas gravadas de hoje
+  (cerca de 1.600 respostas), há mais uma, na rodada 2 da árvore b5af852, que deu 100 de 100: no
+  `lead-05`, depois da hesitação do hóspede, o modelo escreveu "corrijo um detalhe: o nome … que
+  escrevi no resumo não veio do sistema", o que é falso (o nome vem do catálogo, sem acento). O caso
+  passou porque nada foi enviado e o resumo foi repetido, e a leitura à mão daquela rodada não a
+  pegou. São duas autocorreções confusas em cerca de 1.600 respostas; nenhuma muda valor, lead ou
+  `handoff`. "Nenhuma falha do agente em 300 conversas", dito às 03h08, vale para o que o juiz e o
+  contrato medem, não para a redação
+- 14/11 04h58 · reservado · **número final do conjunto reservado, pela P33: 110 de 120 (91,7%), soma de duas
+  leituras seguidas do agregado na árvore final 9d37f9a. O limiar é 90%.** Leitura 1 (04h52 a 04h54):
+  88% (53 de 60), que sozinha reprovaria; leitura 2 (04h54 a 04h57): 95% (57 de 60). Soma por bloco:
+  contrato 12 de 16 (75%), cotações 16 de 16, leads 16 de 16, recusas 14 de 14, respostas 13 de 14
+  (92,9%), handoff 15 de 16 (93,8%), manipulação 13 de 14 (92,9%), não inventa 11 de 14 (78,6%).
+  Leituras sem proxy de gravação; telemetria do Worker nas duas janelas sem contingência e sem
+  falha do catálogo; hash do conjunto fechado conferido antes. O que mudou desde as primeiras
+  leituras (83% e 80%, na árvore b5af852): a correção das formas de confirmação (P35), que os 4
+  casos revelados motivaram e que saíram do conjunto, com substitutos escritos sem conhecer a
+  correção; 5 apertos do segundo revisor; **nenhuma expectativa afrouxada** (as 9 mudanças da
+  passada única foram vetadas). As falhas que sobram são das classes já diagnosticadas: redação
+  certa reprovada pela expressão do próprio caso, falso vermelho do juiz compartilhado e idioma do
+  hóspede. O agregado sai só por bloco: a coordenação não vê quais casos falharam em cada leitura.
+  A diferença entre as duas leituras (88% e 95%) é a variação que a P33 previu num conjunto de 60
+  casos; por isso o número é a soma, fixada antes de rodar
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
