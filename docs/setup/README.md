@@ -2,9 +2,8 @@
 
 Cópia das regras, skills e subagentes do ambiente global do autor (Claude Code) que
 **rodaram de fato** nesta entrega. A lista sai do bloco "Setup global usado nesta entrega"
-do [backlog](../exploracoes/BACKLOG-CONCIERGE-2026-11.md). Ela é viva até o fim: a lista
-final fecha na entrega: a preencher.
-<!-- PREENCHER: conferir a lista final contra o bloco do backlog na entrega -->
+do [backlog](../exploracoes/BACKLOG-CONCIERGE-2026-11.md); a tabela abaixo foi conferida
+contra esse bloco em 14/11.
 
 | Arquivo | Onde rodou |
 |---|---|

@@ -13,7 +13,7 @@ despacha frentes em worktrees, confere cada entrega com ensaio de merge, suíte,
 CHECK no runtime real, pede um verificador independente e, por regra, só então faz o
 merge (os merges que entraram sem verificador aprovado estão numa tabela do "Como foi
 feito", seção 4). O
-conjunto reservado fica fora do repositório e só devolve o agregado. Uma segunda sessão de
+conjunto reservado ficou fora do repositório até a entrega de 14/11 e só devolve o agregado. Uma segunda sessão de
 IA, revisora do Éverton e fora da cadeia da coordenadora, lê o repositório e os relatórios
 e devolve os achados a ele, que viram itens do backlog. A frente K pede ao Éverton a ordem
 para ligar o envio real de leads, e só ele a dá.
@@ -100,7 +100,8 @@ flowchart TB
 - **Sessão revisora do Éverton**: uma segunda sessão de IA, independente, que ele usa para
   revisar as entregas. Não recebe ordens da coordenadora e devolve os achados a ele.
 - **Decisão provisória.** Lacuna aberta durante a execução é decidida pela coordenação como
-  provisória (as decisões P), para o Éverton confirmar ou reverter (X15, X27 e X28).
+  provisória (as decisões P), para o Éverton confirmar ou reverter (X15, X27 e X28). Ele
+  confirmou todas em 14/11, menos a P23 (X33).
 
 ## 2. Portões e laços
 

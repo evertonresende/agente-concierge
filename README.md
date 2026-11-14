@@ -80,10 +80,10 @@ cabeçalhos `x-uso-entrada`, `x-uso-saida` e `x-chamadas-modelo`, usados para me
   limite de pedidos vai direto ao reserva, sem nova tentativa (L18).
 - **AI Gateway** da Cloudflare entre o Worker e os modelos (X21 e X24): guarda a chave do
   provedor do principal, registra qual modelo respondeu e os erros de limite. Sem gateway
-  configurado, o reserva responde direto (decisão provisória P16).
+  configurado, o reserva responde direto (decisão P16, confirmada em 14/11).
 - **Dois ambientes.** `dev` usa o catálogo real e um webhook falso, nosso (`falso/`), que
-  replica o contrato do real. `producao` usa o webhook real, com o envio desligado
-  (`ENVIO_LEADS=desligado`) até a ordem do Éverton (L24).
+  replica o contrato do real. `producao` usa o webhook real, com o envio real ligado
+  desde 14/11 (`ENVIO_LEADS=ligado`, L24 e X32).
 
 Desenhos: [`docs/desenhos/`](docs/desenhos/).
 
@@ -143,31 +143,41 @@ gateway da conta com a chave da Anthropic guardada nele. Sem isso, responde o re
   `dev`.
 - `LEADS_URL_DEV` aponta para o webhook falso, para o runner conferir os leads de cada
   conversa. Ela nunca é impressa.
-- O conjunto de desenvolvimento tem 104 casos em 9 blocos. O reservado tem 60 casos, fica
-  fora do repositório até a entrega e só mostra o agregado por bloco. Caminho no
-  repositório depois da entrega: a preencher.
-  <!-- PREENCHER: caminho do reservado no repositório depois da cópia de entrega -->
+- O conjunto de desenvolvimento tem 104 casos em 9 blocos. O reservado ficou fora do
+  repositório até a entrega de 14/11 e só mostra o agregado por bloco. Agora está em
+  [`evals/casos/reservado/`](evals/casos/reservado/): 60 casos em 8 blocos (contrato 8,
+  funciona-cotacoes 8, funciona-leads 8, funciona-recusas 7, funciona-respostas 7,
+  robustez-handoff 8, robustez-manipulacao 7, robustez-nao-inventa 7), com um `LEIA.md`
+  sobre a composição e o histórico das leituras. O material do diagnóstico está em
+  [`docs/revisoes/reservado/`](docs/revisoes/reservado/): auditoria, correções propostas e
+  vetos do segundo revisor, classificação, os originais dos casos que mudaram e os arquivos
+  de fechamento por hash. Os dois agregados finais estão em
+  `evals/relatorios/2026-11-14-reservado-9d37f9a-leitura-1.txt` e `-leitura-2.txt`. Com a
+  pasta no repositório, o runner lê o conjunto dali (`RESERVADO_DIR` continua tendo
+  precedência) e segue mostrando só o agregado.
 - O simulador usa um modelo de outro provedor no papel do hóspede, por uma ferramenta de
   linha de comando (`--cli`, padrão `agy`).
 
 ## Como validar `producao` sem enviar lead
 
-`producao` está no ar com o envio real desligado, no endereço padrão do Worker e no
+`producao` está no ar com o envio real ligado desde 14/11 (X32), no endereço padrão do Worker e no
 hostname próprio, que chega ao Worker por uma rota, sem escrita no DNS (X26, P22). O
 endereço padrão não serve como URL de entrega: a plataforma barra nele alguns clientes
 HTTP, e isso não se desliga (X28). No teste da frente K, `Python-urllib` e `libwww-perl`
 levam 403 no endereço padrão, em POST e em GET, e passam no hostname próprio; os outros
 15 clientes testados passam nos dois. As URLs de pré-visualização do Worker de `producao`
 estão desligadas (P25). É só proteção: a plataforma não gera URL por versão para Worker com
-Durable Object, então nenhuma existia. O ajuste não sobrevive a deploy: o deploy religa as
-URLs de pré-visualização, e a frente K reaplica o ajuste pela API e confere por leitura
-depois de cada deploy de `producao`, também no deploy da entrega.
+Durable Object, então nenhuma existia. Até caac4c5, o procedimento foi reaplicar o ajuste
+pela API e conferir por leitura depois de cada deploy de `producao`: sem `preview_urls` no
+`wrangler.jsonc`, o deploy religava as URLs de pré-visualização. Desde caac4c5 a
+configuração traz `preview_urls: false` em `env.producao`, e no deploy com o envio ligado a
+pré-visualização veio desligada sem reaplicar pela API (conferido por leitura).
 
 O webhook real não recebe nenhum POST antes da entrega, nem como teste. A validação é por
 composição:
 
 1. `GET /saude` em `producao` mostra `ambiente: "producao"`, `leads_destino: "real"`,
-   `envio_leads: "desligado"` e a presença das variáveis.
+   `envio_leads: "ligado"` e a presença das variáveis.
 2. `GET` no webhook real (permitido) confere endereço e token e devolve a lista de leads,
    que precisa estar vazia.
 3. O caminho do POST é o mesmo código que roda em `dev` contra o webhook falso.
@@ -186,8 +196,8 @@ arquivo de ambiente e nunca aparecem na saída.
 
 ### Deploy final e validação
 
-A árvore final foi publicada em `producao` em 14/11, com o envio real desligado. Nenhum lead
-real do começo ao fim: o webhook real só foi lido por GET, antes e depois de cada etapa. Os
+A árvore final foi publicada primeiro em `producao` em 14/11, com o envio real desligado.
+Nenhum lead real do começo ao fim: o webhook real só foi lido por GET, antes e depois de cada etapa. Os
 quatro clientes (curl, Python `requests`, Python `urllib` e `fetch` do Node) receberam 200:
 `CLIENTES OK`.
 
@@ -207,15 +217,20 @@ registra texto, então a resposta não ficou em lugar nenhum. As 16 respostas gr
 mesmo caso em `dev` estão certas e rotuladas; isso mostra que a forma reprovada é rara, não
 que ela estava certa. Não houve terceira passada.
 
-Envio real de leads: desligado até a ordem do Éverton. Depois de ligado, `--entrega`
-confirma o estado: a preencher.
-<!-- PREENCHER: envio real ligado e ENTREGA OK (ordem do Éverton) -->
+Em 14/11, `producao` foi publicada de novo, da `main` a97777b, com o envio real ligado (X32).
+`scripts/validar-producao.sh --entrega` deu `ENVIO: ligado`, `LEADS REAIS: 0` e `ENTREGA OK`,
+duas vezes, com `--clientes` no meio (`CLIENTES OK`, os quatro clientes com 200);
+`LEADS REAIS: 0` antes e depois. Nenhuma conversa com confirmação foi feita contra
+`producao`, e o modo completo não rodou com o envio ligado: as duas passadas acima foram
+feitas com o envio desligado. O "ligado" está gravado em `wrangler.jsonc`, em `env.producao.vars.ENVIO_LEADS`,
+e o teste `test/configuracao-i.test.ts` exige esse valor: um novo deploy publica esse
+arquivo e mantém o envio ligado.
 
 ### Sete dias no ar
 
 Não há monitor automático entregue: o monitor diário foi cortado como código (P38). O que ele
-faria já existe em dois modos de `scripts/validar-producao.sh`: `--clientes` e, depois de
-ligado o envio, `--entrega`. Agendar a execução diária e escolher por onde chega o aviso de
+faria já existe em dois modos de `scripts/validar-producao.sh`: `--clientes` e
+`--entrega`. Agendar a execução diária e escolher por onde chega o aviso de
 falha ficam com o Éverton; o comando está pronto.
 
 ## Custo por conversa
@@ -704,7 +719,7 @@ mistura mudança e pergunta, zero lead com dado velho e zero nome sujo.
 | Arquivo | Para quê |
 |---|---|
 | [`docs/CONTRATO.md`](docs/CONTRATO.md) | requisitos e decisões de comportamento (lacunas L1 a L24) |
-| [`DECISOES.md`](DECISOES.md) | decisões e motivos: produto, execução (X), provisórias (P), engenharia |
+| [`DECISOES.md`](DECISOES.md) | decisões e motivos: produto, execução (X), da coordenação (P), confirmadas em 14/11, engenharia |
 | [`docs/COMO-FOI-FEITO.md`](docs/COMO-FOI-FEITO.md) | o processo de construção, com o que deu errado |
 | [`docs/EVALS.md`](docs/EVALS.md) | plano de evals, blocos, conjunto reservado, limiares |
 | [`docs/VERIFICACOES.md`](docs/VERIFICACOES.md) | fatos de plataforma verificados, com fonte |
@@ -716,8 +731,5 @@ mistura mudança e pergunta, zero lead com dado velho e zero nome sujo.
 | [`docs/setup/`](docs/setup/) | regras, skills e subagentes do ambiente do autor usados nesta entrega |
 | [`evals/`](evals/) | runner, casos, simulador e relatórios |
 | [`falso/`](falso/) | webhook falso de `dev` |
-
-Exports de sessão, com dados pessoais e segredos removidos: a preencher.
-<!-- PREENCHER: exports de sessão (docs/sessoes/), se o Éverton decidir publicar -->
 
 Contato: contato@evertonresende.com

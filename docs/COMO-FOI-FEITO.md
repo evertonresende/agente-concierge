@@ -2,8 +2,7 @@
 
 O processo de construção do agente, tirado do log de execução do
 [backlog](exploracoes/BACKLOG-CONCIERGE-2026-11.md) e de [`DECISOES.md`](../DECISOES.md).
-Horários em Brasília, como estão no log; sem data explícita, são de 13/11/2026. O que ainda
-depende do fim da entrega está marcado como "a preencher".
+Horários em Brasília, como estão no log; sem data explícita, são de 13/11/2026.
 
 ## Em uma tela
 
@@ -52,7 +51,7 @@ hora de coordenação, 12 horas no total. Prazo de entrega:
 - **Frente não decide produto.** Lacuna nova parava a frente. Lacuna aberta durante a
   execução foi decidida pela coordenação como provisória, para o Éverton confirmar ou
   reverter (X15, X27 e X28): são as decisões P do `DECISOES.md`, cada uma com o motivo e
-  quem levantou.
+  quem levantou. Ele confirmou todas em 14/11, menos a P23 (X33).
 
 ## 2. Frentes, levas e dono por arquivo
 
@@ -169,7 +168,8 @@ O custo das duas primeiras está declarado como limite no [README](../README.md)
 
 - Escrito pela frente C, em outro provedor (GPT-6 Astra), lendo só o contrato e o plano de
   evals, sem ver os casos de desenvolvimento: 60 casos, 13 com confirmação.
-- Fica em `~/.config/agente-concierge/reservado/`, fora de toda worktree, até a entrega.
+- Ficou em `~/.config/agente-concierge/reservado/`, fora de toda worktree, até a entrega de
+  14/11. Agora está em [`evals/casos/reservado/`](../evals/casos/reservado/).
 - O runner força `--so-agregado` nesse conjunto: sai só o acerto por bloco, sem id, sem
   mensagem e sem resposta.
 - A frente C foi avisada das classes de defeito de expectativa achadas nos casos de
@@ -362,6 +362,12 @@ segunda passada com o script sem mudança, uma vez só: 70 de 70, `PRODUCAO OK`.
 ficam registradas, e a soma é 139 de 140. Repetir até passar e chamar de verde esconderia a
 primeira.
 
+Ainda em 14/11, `producao` foi publicada de novo, da `main` a97777b, com o envio real ligado
+(X32). `--entrega` deu `ENTREGA OK` duas vezes, com `--clientes` no meio (`CLIENTES OK`) e
+`LEADS REAIS: 0` antes e depois. Nenhuma conversa com confirmação foi feita contra
+`producao`, e o modo completo não rodou com o envio ligado. O "ligado" está gravado em
+`wrangler.jsonc`, e o teste `test/configuracao-i.test.ts` exige esse valor.
+
 O monitor diário dos 7 dias no ar foi cortado como código (P38), segundo item da linha de
 corte: o que ele faria já existe em dois modos do script de validação. Agendar e escolher o
 canal do aviso ficaram com o Éverton.
@@ -476,7 +482,5 @@ O setup do ambiente do autor que rodou nesta entrega (regras, skills e subagente
 - Revisões (M2): as duas passadas estão em [`revisoes/m2.md`](revisoes/m2.md). O estado
   final de cada achado na árvore 9d37f9a, com a prova, está na seção "Fechamento" do mesmo
   arquivo: nenhum achado crítico ou alto aberto.
-- Exports de sessão em [`sessoes/`](sessoes/): a preencher.
-  <!-- PREENCHER: exports de sessão -->
 - Custo por conversa no código final: US$ 0,0026 em média nas três rodadas oficiais (seção 8
   e [README](../README.md)).
