@@ -78,15 +78,46 @@ cabeçalhos `x-uso-entrada`, `x-uso-saida` e `x-chamadas-modelo`, usados para me
   > byte aos de 193d1bf (P34). Os commits que entraram na `main` depois dela não mudam
   > `src/`: mudam texto, relatórios de eval, o conjunto reservado copiado para o
   > repositório e a configuração de `producao` (a97777b: `ENVIO_LEADS` ligado e
-  > `preview_urls: false` em `wrangler.jsonc`, com o teste da configuração). O commit
-  > publicado em `producao` é o a97777b.
+  > `preview_urls: false` em `wrangler.jsonc`, com o teste da configuração). Publicado em
+  > `producao` está o `fca6d6d` (14/11, depois das correções de segurança); antes dele
+  > estiveram no ar o a97777b e, por nove minutos, o `c5817a0`.
+  >
+  > Os números oficiais de evals deste README foram medidos na árvore 9d37f9a. Depois dela
+  > vieram as correções de segurança de 14/11, em onze commits. Sete mudam código:
+  > `f94a73d` e `413d619` (política de conteúdo e bloqueio de moldura em `GET /`),
+  > `8549259` (a leitura do catálogo não segue redirecionamento e para ao passar de 1 MiB),
+  > `a60c76b` e `e8c8158` (nome de ferramenta vindo do modelo cortado em 64 caracteres, e
+  > `desconhecida` no log para nome fora da lista fechada), `932cb81` (texto do catálogo sem
+  > caracteres invisíveis nem controles de direção) e `89de70f` (`preview_urls: false`
+  > também em `env.dev`). Os outros quatro (`a326b9d`, `f668d6f`, `36e31cb`, `905a42d`) são
+  > só testes. O contrato do `POST /chat` não mudou, e prompt, loop de ferramentas, leitura
+  > da confirmação, handoff, cálculo de preço e escolha de modelo não foram tocados por
+  > esses onze commits. Depois veio a correção do achado confirmado da auditoria, por
+  > decisão do Éverton de 14/11 (P41): `e85de28` faz a ferramenta de confirmação conferir de
+  > novo, antes do envio, que a data de entrada não passou (entrada anterior a hoje,
+  > regra L2), e `2bbbc63` é só teste. Ela mexe só nessa reconferência antes do envio, na
+  > ferramenta de confirmação; a leitura do "sim" não mudou.
+  > Rodaram de novo sobre as correções: a suíte inteira (57 arquivos, 1598 testes, e depois
+  > da correção do lead 58 arquivos, 1604 testes) e os tipos; uma rodada inteira do conjunto de desenvolvimento em `dev`, com as correções
+  > publicadas lá, 104 de 104 e sem resposta de contingência
+  > (`evals/relatorios/2026-11-14-dev-36e31cb-seguranca.json`), e uma segunda com a correção
+  > do lead, de novo 104 de 104 e sem contingência
+  > (`evals/relatorios/2026-11-14-dev-2bbbc63-seguranca.json`); a página aberta num
+  > navegador (Chromium sem interface) em `dev`, sem violação da política no console, com
+  > mensagem enviada e respondida e sem outra origem conseguir emoldurar a página; e 73 GETs
+  > diretos ao catálogo real sem seguir redirecionamento, nenhum 3xx e maior corpo de 593
+  > bytes (o teto é 1.048.576). Não rodaram de novo: as três rodadas oficiais, o conjunto
+  > reservado, o simulador e a rajada. A skill não auditou as correções. Registro em
+  > [`docs/revisoes/seguranca.md`](docs/revisoes/seguranca.md).
 - **Modelo.** Decidido pelo Éverton por medição (`DECISOES.md` X24 e X30;
   [`docs/revisoes/modelos.md`](docs/revisoes/modelos.md)). Principal: Claude Haiku 5.5, com
   o raciocínio em nível alto, direto do provedor pelo AI Gateway. Reserva: GLM-5.3 Flash,
   de outro fornecedor, no Workers AI, que só entra quando o principal falha. Recusa por
   limite de pedidos vai direto ao reserva, sem nova tentativa (L18).
 - **AI Gateway** da Cloudflare entre o Worker e os modelos (X21 e X24): guarda a chave do
-  provedor do principal, registra qual modelo respondeu e os erros de limite. Sem gateway
+  provedor do principal. Em `dev`, registra qual modelo respondeu e os erros de limite; em
+  `producao`, a coleta de log do gateway está desligada, para o pedido com nome e telefone
+  não ficar guardado (achado 3 de [`docs/revisoes/m2.md`](docs/revisoes/m2.md)). Sem gateway
   configurado, o reserva responde direto (decisão P16, confirmada em 14/11).
 - **Dois ambientes.** `dev` usa o catálogo real e um webhook falso, nosso (`falso/`), que
   replica o contrato do real. `producao` usa o webhook real, com o envio real ligado
@@ -99,11 +130,11 @@ Desenhos: [`docs/desenhos/`](docs/desenhos/).
 Pré-requisitos: Node 24 e uma conta da Cloudflare com Workers AI (o servidor local chama
 o modelo pela conta).
 
-1. Instale as dependências: `npm install`.
+1. Instale as dependências: `npm ci` (instala exatamente o que o lockfile fixa).
 2. Suba o webhook falso numa porta própria:
 
    ```bash
-   cd falso && npm install && npx wrangler dev --port 8795
+   cd falso && npm ci && npx wrangler dev --port 8795
    ```
 
 3. Crie `.dev.vars.dev` na raiz (o arquivo não é versionado) com duas linhas:
@@ -116,9 +147,13 @@ o modelo pela conta).
 5. Abra `http://127.0.0.1:8787/` ou mande uma mensagem:
 
    ```bash
+   SESSAO=$(uuidgen)
    curl -s http://127.0.0.1:8787/chat -H 'content-type: application/json' \
-     -d '{"session_id":"teste-1","message":"Quanto fica o GRM-301 de 15/01/2027 a 18/01/2027 para 2 pessoas?"}'
+     -d '{"session_id":"'"$SESSAO"'","message":"Quanto fica o GRM-301 de 15/01/2027 a 18/01/2027 para 2 pessoas?"}'
    ```
+
+   O id é gerado na hora porque quem repete um id fixo divide a sessão com quem usar o
+   mesmo id.
 
    A resposta traz `R$ 2.156,00`, o exemplo da seção 3 do contrato.
 
@@ -248,6 +283,14 @@ fica no log; o que prova é o código: só um `201` grava o estado "registrado" 
 texto fixo de registrado (`src/lead.ts:697`), e o log de `producao` tem, nessa janela, 1
 evento `turno` com envio `registrado`. Às 07h28, `--entrega` deu `ENVIO: ligado`,
 `LEADS REAIS: 1` e `ENTREGA OK`.
+
+Ainda em 14/11, as correções de segurança foram publicadas em `producao` em duas vezes. Às
+10h28, da `main` `c5817a0`, com as onze primeiras correções; às 10h37, da `main` `fca6d6d`,
+com a correção do achado confirmado. Nas duas, `ENTREGA OK` com 1 lead (o de teste da X36)
+e `CLIENTES OK`; a página aberta num navegador (Chromium sem interface) em `producao` teve a
+política presente, a cotação do exemplo respondida com R$ 2.156,00, outra origem sem
+conseguir emoldurar e um único erro de console, o do script que a borda insere (limite 27).
+Nenhuma validação reprovou, e não houve volta de versão.
 
 ### Sete dias no ar
 
@@ -443,6 +486,19 @@ nenhum caminho sondado gera lead sem resumo visto, duplicado ou diferente do res
 achados médios viraram correção (P29, P30 e a trava do runner por mensagem); os demais estão
 na lista de limites abaixo.
 
+Em 14/11, depois da construção, rodou uma auditoria de segurança com a skill
+`security-audit` da Cloudflare (código aberto, licença MIT), em modo de auditoria completa
+com o perfil `quick`, sobre a `main` `db96f2f`. É uma passada rápida e parcial. Resultado da
+skill: 1 achado confirmado, de severidade baixa, no caminho da confirmação do lead; 2 que
+"precisam de validação", sem severidade; nenhum rejeitado. Foram 23 unidades de cobertura
+(16 cobertas, 3 com candidato, 4 adiadas) e 62 checagens (60 por leitura de código, 2 por
+execução local em sandbox). O achado confirmado foi corrigido no mesmo dia (`e85de28`), por
+decisão do Éverton; os dois que "precisam de validação" ficaram como limite (24 e 67).
+Também foram corrigidos no mesmo dia cabeçalhos da página, leitura do catálogo, nome de
+ferramenta, caracteres invisíveis do catálogo e pré-visualização em `dev` (ver o bloco
+"Estado da entrega"); o resto está na lista de limites abaixo. Registro
+completo em [`docs/revisoes/seguranca.md`](docs/revisoes/seguranca.md).
+
 ## Limites conhecidos
 
 **Os cinco limites que mais pesam**
@@ -463,7 +519,7 @@ na lista de limites abaixo.
    como data, e o agente pede as datas de novo. Custo: um turno, e a conversa em inglês
    não chega à cotação enquanto a data vier nesse formato.
 
-A lista completa segue abaixo, por grupo: os 66 limites, numerados de 1 a 66, com os
+A lista completa segue abaixo, por grupo: os 70 limites, numerados de 1 a 70, com os
 cinco de cima incluídos.
 
 Pela X24, só bloqueia a entrada na `main` o que é determinístico ou gera lead errado; o
@@ -549,13 +605,26 @@ verificadores das frentes, no log do backlog.
 
 24. **Sem limite de gasto por cliente ou por sessão.** O custo de modelo não tem teto por
     quem conversa. A fila de uma sessão também não tem teto de quantidade, só de tempo:
-    mensagem que espera mais de 50 s não chama o modelo.
+    mensagem que espera mais de 50 s não chama o modelo. O controle que existe é o limite
+    de gasto na conta do provedor do modelo (X29; a P23 foi revogada); não há regra de
+    taxa. A auditoria de 14/11 registrou este ponto como "precisa de validação".
 25. **O `session_id` é a única credencial da conversa.**
 26. **Dados de terceiros nos leads.** Com o envio real ligado, nome e telefone do hóspede
     vão ao webhook do time comercial.
-27. **Página de chat sem cabeçalhos de proteção** do navegador.
+27. **Cabeçalhos de proteção da página de chat**, corrigido em 14/11 (`f94a73d`,
+    `413d619`). Hoje o `GET /` responde com política de conteúdo (script e estilo só pelo
+    hash calculado da própria página, mais `style-src-attr` para um elemento oculto que a
+    borda insere), bloqueio de moldura (`frame-ancestors 'none'` e `x-frame-options:
+    DENY`), `x-content-type-options: nosniff`, `referrer-policy: no-referrer` e
+    `permissions-policy`. O que resta: em `producao`, a borda da Cloudflare insere na página
+    um script de detecção de robôs que a política bloqueia, o que gera um erro no console do
+    navegador a cada carga, sem efeito na conversa. Tirar esse erro pede configuração da
+    zona ou política por nonce.
 28. **Dados da sessão sem prazo de apagamento** no armazenamento do objeto. O histórico
-    nunca é podado; só a leitura usa a janela de 80 mensagens.
+    nunca é podado; só a leitura usa a janela de 80 mensagens. A auditoria de 14/11 reviu o
+    ponto e ele continua limite: apagar por alarme mexe no objeto da sessão, e o prazo é
+    decisão de produto. Em `producao` o gateway não guarda o pedido (coleta de log
+    desligada).
 29. **Log.** Até 4 dígitos de um dado podem ir para o log se a plataforma ecoar o pedido
     numa mensagem de erro.
 
@@ -740,6 +809,22 @@ varredura que veio depois, executando a função de conferência fora do reposit
     taxa de limpeza por minha conta." chegam ao hóspede. Nenhuma ferramenta aceita desconto,
     e o valor do lead continua sendo o do código.
 
+**Auditoria de segurança de 14/11**
+
+67. **Webhook falso de `dev` sem teto.** Ele guarda leads sem teto de quantidade, de tamanho
+    nem de retenção, em qualquer segmento. É infraestrutura de teste, com dados fictícios. A
+    auditoria registrou como "precisa de validação".
+68. **Emoji composto no catálogo.** Família, bandeira e outros emojis compostos no texto do
+    catálogo passam a aparecer como os emojis separados, porque o caractere que os junta é
+    removido com os invisíveis. Nenhum texto do catálogo de hoje usa isso.
+69. **Id e argumentos de chamada de ferramenta sem teto.** O id e os argumentos de uma
+    chamada de ferramenta vinda do modelo não têm teto de tamanho; só o nome tem.
+70. **Explicação da recusa por data passada.** Quando a confirmação é recusada porque a
+    data de entrada já passou, a explicação ao hóspede é escrita pelo modelo a partir do
+    motivo que o código entrega, como nas outras recusas da confirmação. Esse texto não foi
+    medido: não há como adiantar o relógio em `dev`. O código garante que nada é enviado,
+    que o resumo é descartado e que o `handoff` é falso.
+
 **Conferências com o modelo real** (servidor local com a `main`, a F e a branch da H; uma
 repetição de cada roteiro, não são rodadas de eval):
 oito roteiros de nome, nenhum travado em recusa, e os sete leads com o nome exatamente como
@@ -759,6 +844,7 @@ mistura mudança e pergunta, zero lead com dado velho e zero nome sujo.
 | [`docs/exploracoes/BACKLOG-CONCIERGE-2026-11.md`](docs/exploracoes/BACKLOG-CONCIERGE-2026-11.md) | frentes, donos de arquivo, critérios de aceite e o log da execução |
 | [`docs/desenhos/`](docs/desenhos/) | desenhos do agente e da fábrica |
 | [`docs/revisoes/`](docs/revisoes/) | revisões e escolha do modelo |
+| [`docs/revisoes/seguranca.md`](docs/revisoes/seguranca.md) | auditoria de segurança de 14/11 com a skill `security-audit` e as correções |
 | [`docs/conselho/`](docs/conselho/) | perguntas e respostas da consulta às cegas a modelos de outros provedores |
 | [`docs/prompts/`](docs/prompts/) | prompts das sessões de planejamento e de coordenação |
 | [`docs/setup/`](docs/setup/) | regras, skills e subagentes do ambiente do autor usados nesta entrega |
