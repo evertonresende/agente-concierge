@@ -717,7 +717,4 @@ mistura mudança e pergunta, zero lead com dado velho e zero nome sujo.
 | [`evals/`](evals/) | runner, casos, simulador e relatórios |
 | [`falso/`](falso/) | webhook falso de `dev` |
 
-Exports de sessão, com dados pessoais e segredos removidos: a preencher.
-<!-- PREENCHER: exports de sessão (docs/sessoes/), se o Éverton decidir publicar -->
-
 Contato: contato@evertonresende.com

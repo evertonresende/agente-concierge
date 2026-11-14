@@ -2,8 +2,7 @@
 
 O processo de construção do agente, tirado do log de execução do
 [backlog](exploracoes/BACKLOG-CONCIERGE-2026-11.md) e de [`DECISOES.md`](../DECISOES.md).
-Horários em Brasília, como estão no log; sem data explícita, são de 13/11/2026. O que ainda
-depende do fim da entrega está marcado como "a preencher".
+Horários em Brasília, como estão no log; sem data explícita, são de 13/11/2026.
 
 ## Em uma tela
 
@@ -476,7 +475,5 @@ O setup do ambiente do autor que rodou nesta entrega (regras, skills e subagente
 - Revisões (M2): as duas passadas estão em [`revisoes/m2.md`](revisoes/m2.md). O estado
   final de cada achado na árvore 9d37f9a, com a prova, está na seção "Fechamento" do mesmo
   arquivo: nenhum achado crítico ou alto aberto.
-- Exports de sessão em [`sessoes/`](sessoes/): a preencher.
-  <!-- PREENCHER: exports de sessão -->
 - Custo por conversa no código final: US$ 0,0026 em média nas três rodadas oficiais (seção 8
   e [README](../README.md)).
