@@ -20,7 +20,7 @@ repetido logo depois de um registro recebe um texto fixo. Fora disso, o laço ch
 limite, o reserva). Se o modelo pede ferramentas, o código confere a chamada, executa,
 grava o resultado e volta ao modelo, até 6 voltas e com teto de chamadas (P30). Quando o modelo responde em texto, o
 código confere o texto, pede uma correção se achar problema, retira o que reconhece como
-proibido (por forma da frase, com os limites 8, 20, 46 e 65 do README) e acrescenta o total e o pedido de confirmação gerados por código. A
+proibido (por forma da frase, com os limites 8, 20, 46, 65 e 66 do README) e acrescenta o total e o pedido de confirmação gerados por código. A
 sessão grava histórico e estado e o Worker devolve `reply` e `handoff`. Qualquer falha
 vira o aviso de contingência com `handoff: true`, nunca erro 500.
 

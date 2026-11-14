@@ -11,7 +11,7 @@ Agente de chat para quem quer se hospedar em imóveis de temporada. Ele faz quat
 4. Passa a conversa para uma pessoa em reclamação, pedido de desconto, negociação ou
    assunto fora do alcance dele. Não negocia preço: nenhuma ferramenta aceita desconto, e o
    valor do lead sai do cálculo do código. Reconhecer o pedido e passar para humano depende
-   do modelo, e o texto dele passa por uma conferência com limites (limites 1, 2, 8 e 46).
+   do modelo, e o texto dele passa por uma conferência com limites (limites 1, 2, 8, 46 e 66).
 
 Os requisitos estão em [`docs/CONTRATO.md`](docs/CONTRATO.md). O que ainda depende do fim da
 entrega está marcado como "a preencher".
@@ -56,7 +56,7 @@ cabeçalhos `x-uso-entrada`, `x-uso-saida` e `x-chamadas-modelo`, usados para me
   nenhuma ferramenta calculou (com "R$", "reais", outra moeda ou centavos), concessão,
   registro afirmado sem `201` e afirmação de disponibilidade. Número por extenso e número
   solto sem marca nem centavos passam, e concessão, registro e disponibilidade são
-  reconhecidos pela forma da frase (limites 8, 20, 46 e 65); os demais limites dessa
+  reconhecidos pela forma da frase (limites 8, 20, 46, 65 e 66); os demais limites dessa
   conferência estão na lista do fim.
 - **Nome do lead.** Só pode ser formado por palavras que o hóspede escreveu na conversa
   (P20), sem dígito nem símbolo de moeda (P29); se não for, a ferramenta do resumo recusa e
@@ -652,6 +652,11 @@ verificadores das frentes, no log do backlog.
     desenvolvimento proíbem formas de registro em turnos sem lead (`resposta_nao_contem`), e
     nenhum reprovou nas três rodadas oficiais da árvore final; a medida também é por forma
     de frase, então paráfrase não foi medida.
+66. **Concessão escrita pelo modelo.** A conferência corta a concessão nas formas que
+    reconhece ("Posso te dar um desconto de 10% nessa estadia.", "Consigo abrir uma exceção
+    para o pet."), e paráfrase passa: "Vou fazer um precinho especial pra você." e "Deixo a
+    taxa de limpeza por minha conta." chegam ao hóspede. Nenhuma ferramenta aceita desconto,
+    e o valor do lead continua sendo o do código.
 
 **Conferências com o modelo real** (servidor local com a `main`, a F e a branch da H; uma
 repetição de cada roteiro, não são rodadas de eval):
