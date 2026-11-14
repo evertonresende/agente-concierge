@@ -78,8 +78,9 @@ cabeçalhos `x-uso-entrada`, `x-uso-saida` e `x-chamadas-modelo`, usados para me
   > byte aos de 193d1bf (P34). Os commits que entraram na `main` depois dela não mudam
   > `src/`: mudam texto, relatórios de eval, o conjunto reservado copiado para o
   > repositório e a configuração de `producao` (a97777b: `ENVIO_LEADS` ligado e
-  > `preview_urls: false` em `wrangler.jsonc`, com o teste da configuração). O commit
-  > publicado em `producao` é o a97777b.
+  > `preview_urls: false` em `wrangler.jsonc`, com o teste da configuração). Publicado em
+  > `producao` está o `fca6d6d` (14/11, depois das correções de segurança); antes dele
+  > estiveram no ar o a97777b e, por nove minutos, o `c5817a0`.
   >
   > Os números oficiais de evals deste README foram medidos na árvore 9d37f9a. Depois dela
   > vieram as correções de segurança de 14/11, em onze commits. Sete mudam código:
@@ -90,11 +91,18 @@ cabeçalhos `x-uso-entrada`, `x-uso-saida` e `x-chamadas-modelo`, usados para me
   > caracteres invisíveis nem controles de direção) e `89de70f` (`preview_urls: false`
   > também em `env.dev`). Os outros quatro (`a326b9d`, `f668d6f`, `36e31cb`, `905a42d`) são
   > só testes. O contrato do `POST /chat` não mudou, e prompt, loop de ferramentas, leitura
-  > da confirmação, handoff, cálculo de preço e escolha de modelo não foram tocados.
-  > Rodaram de novo sobre as correções: a suíte inteira (57 arquivos, 1598 testes) e os
-  > tipos; uma rodada inteira do conjunto de desenvolvimento em `dev`, com as correções
+  > da confirmação, handoff, cálculo de preço e escolha de modelo não foram tocados por
+  > esses onze commits. Depois veio a correção do achado confirmado da auditoria, por
+  > decisão do Éverton de 14/11 (P41): `e85de28` faz a ferramenta de confirmação conferir de
+  > novo, antes do envio, que a data de entrada não passou (entrada anterior a hoje,
+  > regra L2), e `2bbbc63` é só teste. Ela mexe só nessa reconferência antes do envio, na
+  > ferramenta de confirmação; a leitura do "sim" não mudou.
+  > Rodaram de novo sobre as correções: a suíte inteira (57 arquivos, 1598 testes, e depois
+  > da correção do lead 58 arquivos, 1604 testes) e os tipos; uma rodada inteira do conjunto de desenvolvimento em `dev`, com as correções
   > publicadas lá, 104 de 104 e sem resposta de contingência
-  > (`evals/relatorios/2026-11-14-dev-36e31cb-seguranca.json`); a página aberta num
+  > (`evals/relatorios/2026-11-14-dev-36e31cb-seguranca.json`), e uma segunda com a correção
+  > do lead, de novo 104 de 104 e sem contingência
+  > (`evals/relatorios/2026-11-14-dev-2bbbc63-seguranca.json`); a página aberta num
   > navegador (Chromium sem interface) em `dev`, sem violação da política no console, com
   > mensagem enviada e respondida e sem outra origem conseguir emoldurar a página; e 73 GETs
   > diretos ao catálogo real sem seguir redirecionamento, nenhum 3xx e maior corpo de 593
@@ -275,6 +283,14 @@ fica no log; o que prova é o código: só um `201` grava o estado "registrado" 
 texto fixo de registrado (`src/lead.ts:697`), e o log de `producao` tem, nessa janela, 1
 evento `turno` com envio `registrado`. Às 07h28, `--entrega` deu `ENVIO: ligado`,
 `LEADS REAIS: 1` e `ENTREGA OK`.
+
+Ainda em 14/11, as correções de segurança foram publicadas em `producao` em duas vezes. Às
+10h28, da `main` `c5817a0`, com as onze primeiras correções; às 10h37, da `main` `fca6d6d`,
+com a correção do achado confirmado. Nas duas, `ENTREGA OK` com 1 lead (o de teste da X36)
+e `CLIENTES OK`; a página aberta num navegador (Chromium sem interface) em `producao` teve a
+política presente, a cotação do exemplo respondida com R$ 2.156,00, outra origem sem
+conseguir emoldurar e um único erro de console, o do script que a borda insere (limite 27).
+Nenhuma validação reprovou, e não houve volta de versão.
 
 ### Sete dias no ar
 
@@ -476,9 +492,11 @@ com o perfil `quick`, sobre a `main` `db96f2f`. É uma passada rápida e parcial
 skill: 1 achado confirmado, de severidade baixa, no caminho da confirmação do lead; 2 que
 "precisam de validação", sem severidade; nenhum rejeitado. Foram 23 unidades de cobertura
 (16 cobertas, 3 com candidato, 4 adiadas) e 62 checagens (60 por leitura de código, 2 por
-execução local em sandbox). Parte foi corrigida no mesmo dia (cabeçalhos da página, leitura
-do catálogo, nome de ferramenta, caracteres invisíveis do catálogo e pré-visualização em
-`dev`; ver o bloco "Estado da entrega"); o resto está na lista de limites abaixo. Registro
+execução local em sandbox). O achado confirmado foi corrigido no mesmo dia (`e85de28`), por
+decisão do Éverton; os dois que "precisam de validação" ficaram como limite (24 e 67).
+Também foram corrigidos no mesmo dia cabeçalhos da página, leitura do catálogo, nome de
+ferramenta, caracteres invisíveis do catálogo e pré-visualização em `dev` (ver o bloco
+"Estado da entrega"); o resto está na lista de limites abaixo. Registro
 completo em [`docs/revisoes/seguranca.md`](docs/revisoes/seguranca.md).
 
 ## Limites conhecidos
@@ -501,7 +519,7 @@ completo em [`docs/revisoes/seguranca.md`](docs/revisoes/seguranca.md).
    como data, e o agente pede as datas de novo. Custo: um turno, e a conversa em inglês
    não chega à cotação enquanto a data vier nesse formato.
 
-A lista completa segue abaixo, por grupo: os 69 limites, numerados de 1 a 69, com os
+A lista completa segue abaixo, por grupo: os 70 limites, numerados de 1 a 70, com os
 cinco de cima incluídos.
 
 Pela X24, só bloqueia a entrada na `main` o que é determinístico ou gera lead errado; o
@@ -801,6 +819,11 @@ varredura que veio depois, executando a função de conferência fora do reposit
     removido com os invisíveis. Nenhum texto do catálogo de hoje usa isso.
 69. **Id e argumentos de chamada de ferramenta sem teto.** O id e os argumentos de uma
     chamada de ferramenta vinda do modelo não têm teto de tamanho; só o nome tem.
+70. **Explicação da recusa por data passada.** Quando a confirmação é recusada porque a
+    data de entrada já passou, a explicação ao hóspede é escrita pelo modelo a partir do
+    motivo que o código entrega, como nas outras recusas da confirmação. Esse texto não foi
+    medido: não há como adiantar o relógio em `dev`. O código garante que nada é enviado,
+    que o resumo é descartado e que o `handoff` é falso.
 
 **Conferências com o modelo real** (servidor local com a `main`, a F e a branch da H; uma
 repetição de cada roteiro, não são rodadas de eval):
