@@ -165,9 +165,11 @@ O custo das duas primeiras está declarado como limite no [README](../README.md)
   revisor. A correção (P35) foi pequena e verificada a fundo: 4 minutos de mudança, 20
   linhas na gramática do sim, e um verificador independente com 11.829 leituras de 3.943
   mensagens em três estados.
-- O conjunto mede com as expectativas originais. O agregado final sai de duas leituras na
-  árvore final e vai ao Éverton como estiver: a preencher.
-  <!-- PREENCHER: soma das duas leituras finais do reservado na árvore 9d37f9a (P33) -->
+- O conjunto mede com as expectativas originais. **Número final, pela P33: 110 de 120
+  (91,7%)**, soma de duas leituras seguidas na árvore final; o limiar é 90%. A leitura 1 deu
+  88%, que sozinha reprovaria; a leitura 2, 95%. Antes, na árvore b5af852: 83% e 80%. O que
+  mudou foi a correção do agente (P35) e 5 apertos do segundo revisor; nenhuma expectativa
+  foi afrouxada.
 
 ## 6. Gate de sigilo e de histórico
 
@@ -267,12 +269,13 @@ reapresenta o resumo; o "sim" seguinte registra.
 
 Rodadas na árvore congelada b5af852, pelo proxy de registro: 100 de 100, 100 de 100 e 98
 de 100. As duas falhas da terceira eram falso vermelho do juiz: 298 de 300, nenhuma falha
-do agente. Julgadas de novo com o juiz de 193d1bf (P34), dão o mesmo resultado. Nas
+do agente no que o juiz e o contrato medem (a redação teve uma autocorreção confusa que o
+juiz não pegou; item 16 da seção 9). Julgadas de novo com o juiz de 193d1bf (P34), dão o mesmo resultado. Nas
 rodadas oficiais, falso vermelho do juiz conta como falha na soma do bloco (P34). Como a correção da G reabriu o congelamento, a contagem das três rodadas
 oficiais recomeça na árvore nova; as três de b5af852 ficam registradas.
 
 Árvore de reserva 0567371 (sem a P35), três rodadas oficiais registradas: 99, 97 e 100 de
-100, soma 296 de 300, nenhuma falha do agente. As 4 falhas são falso vermelho, classificadas
+100, soma 296 de 300, nenhuma falha do agente no que o juiz e o contrato medem. As 4 falhas são falso vermelho, classificadas
 pela conversa gravada: três redações de cotação certa que o juiz não reconhece e uma
 expressão proibida do caso que pega "o pedido não foi enviado". Contando os falsos vermelhos
 como falha (P34), cotações fecha em 37 de 39 (94,9%); sem eles, 39 de 39. Esses números são
@@ -283,8 +286,14 @@ confirmação da F (P35), as duas aprovadas por verificador independente, juiz e
 idênticos aos de 193d1bf, e 104 casos de desenvolvimento. A contagem das três rodadas
 oficiais recomeça nela.
 
-Resultado das três rodadas na árvore final: a preencher.
-<!-- PREENCHER: três rodadas em dev, nota por bloco, classificação de cada falha -->
+Resultado das três rodadas oficiais seguidas na árvore final, em `dev`: 104 de 104, 104 de
+104 e 102 de 104. Soma por bloco, contando toda falha: 310 de 312 (99,4%), todos os blocos
+acima de 95%; o menor é respostas, com 32 de 33 (97,0%). Nenhum lead sem confirmação,
+duplicado ou diferente do resumo. As duas falhas da rodada 3, classificadas pela conversa
+gravada: um falso vermelho do juiz (`cot-03`) e uma falha do agente (`resp-11`, descrição dos
+dias errada num parêntese e uma autocorreção no meio da resposta, com valores e total
+certos). Latência por turno: p50 de 2,9 a 3,0 s, p95 de 5,9 a 6,2 s, máximo de 13,8 s. Custo:
+US$ 0,0026 por conversa em média. A tabela por bloco está no [README](../README.md).
 
 ## 9. O que deu errado e como foi corrigido
 
@@ -357,6 +366,15 @@ Resultado das três rodadas na árvore final: a preencher.
     resultado (0, 0 e 2 reprovações, as duas já classificadas como falso vermelho), e a
     leitura do tipo de noite contra o valor não marca nenhuma resposta. O buraco não foi
     exercitado. Pela P34, o juiz volta a 193d1bf e não é mais corrigido nesta entrega.
+16. **Autocorreção do modelo que a leitura à mão não pegou (14/11).** Em cerca de 1.600
+    respostas gravadas no dia, duas trazem uma autocorreção confusa escrita pelo modelo. Uma
+    é a falha do agente na rodada 3 da árvore final (`resp-11`). A outra, numa rodada de
+    b5af852 que deu 100 de 100, diz que o nome no resumo "não veio do sistema", o que é falso:
+    o nome vem do catálogo. Ela passou no juiz, e a leitura à mão da coordenação não a pegou
+    na hora. É o quinto erro da coordenação nesta lista, junto da frase "nenhuma falha do
+    agente em 300 conversas", dita sobre aquelas rodadas: ela vale para o que o juiz e o
+    contrato medem, não para a redação. Nenhuma das duas muda valor, lead ou `handoff`; as
+    duas viraram limite no README.
 
 ## 10. Quem fez o quê
 
@@ -390,5 +408,5 @@ O setup do ambiente do autor que rodou nesta entrega (regras, skills e subagente
 - Exports de sessão em [`sessoes/`](sessoes/): a preencher.
   <!-- PREENCHER: exports de sessão -->
 - Roteiro do vídeo: a preencher. <!-- PREENCHER: roteiro do vídeo -->
-- Custo por conversa no código final: a preencher.
-  <!-- PREENCHER: custo por conversa medido -->
+- Custo por conversa no código final: US$ 0,0026 em média nas três rodadas oficiais (seção 8
+  e [README](../README.md)).
