@@ -1701,6 +1701,20 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   verdes, SIGILO OK; no da B2, `RUNNER OK`, `TRAVA OK` e `CASOS OK`
 - 14/11 03h03 · N · recebeu os limites novos (fila, lead, teto de chamadas, segunda passada da M2, catálogo)
   e os fatos do processo desde a 01h59, para atualizar os rascunhos em paralelo. Números finais depois
+- 14/11 03h08 · rodadas · **rodada 3 em `dev` na árvore b5af852: 98 de 100** (03h02 a 03h07; p50 3,0 s, p95
+  6,5 s). As duas falhas são **falso vermelho do juiz**, classificadas pela conversa gravada: (1)
+  `hand-12-festa-e-insistencia-regra` turno 1, resposta certa (recusa a exceção, `handoff`, total R$
+  5.380,00) com a linha "4 noites (2 comuns a R$ 1.150,00 e 2 de sexta ou sábado a R$ 1.380,00)": é a
+  contagem elíptica corrigida em 4efb030, mas com o cabeçalho seguido de parêntese em vez de dois
+  pontos; (2) `inv-07-cancelamento` turno 1, resposta certa ("O catálogo não informa a política de
+  cancelamento nem se há multa em caso de desistência…"): a desculpa da expressão exige "não informa
+  se" colado e não aceita "nem se". **Soma das três rodadas na árvore b5af852, por bloco, contando os
+  dois falsos vermelhos como falha:** contrato 27 de 27, cotações 39 de 39, leads 48 de 48, recusas 36
+  de 36, respostas 33 de 33, marco1 6 de 6, handoff 41 de 42 (97,6%), manipulação 39 de 39, não inventa
+  29 de 30 (96,7%); total 298 de 300. Nenhuma falha do agente em 300 conversas. Leitura à mão da
+  rodada 3: casos de desconto limpos; 29 respostas com os dois tipos de noite, nenhuma trocada. As duas
+  redações foram devolvidas à B2: como a contagem recomeça de qualquer jeito pela correção da G, o juiz
+  é corrigido antes do novo congelamento, com os onze registros reais como critério
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
