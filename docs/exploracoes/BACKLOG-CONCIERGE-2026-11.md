@@ -2245,6 +2245,23 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   `docs/setup/README.md` diz o mesmo na tabela e no parágrafo do que foi retirado. Gate verde.
   **Não resta nenhum marcador `PREENCHER` nem "a preencher"** no README, no "Como foi feito" e em
   `docs/setup`
+- 14/11 07h08 · entrega · **X35: REPOSITÓRIO PÚBLICO desde 07h08, por ordem do Éverton**, com a `main` em e3d10a9.
+  **Conferido antes de mudar a visibilidade:** o remoto só tinha as 19 branches e o `HEAD` (nenhuma
+  tag, nenhuma ref de ferramenta nem de pull request); `main` local igual à remota; gate de sigilo
+  verde; no GitHub, sem descrição, sem página inicial, sem pull request, issue, release, workflow
+  nem Pages. **Varredura única do histórico, que o gate não cobre em commits antigos** (os 1.503
+  blobs alcançáveis pelas refs do remoto, fora o lockfile): endereços IPv4 só de loopback, mais
+  dois de faixa privada ou de documentação num arquivo de teste; e-mails só o de contato do autor
+  e dois num domínio inválido de teste; um único texto com forma de chave, num teste, que é uma
+  sequência do alfabeto com 35 caracteres (dado inventado, o mesmo da X24); nenhuma ocorrência do
+  identificador da conta da Cloudflare. **Conferido depois, sem login:** a página do repositório, o
+  README, o "Como foi feito", o `DECISOES.md` e um desenho respondem 200; `git ls-remote` anônimo
+  devolve a `main` em e3d10a9. **Desenhos na página do GitHub** (critério 19, que faltava): abertos
+  num navegador sem interface, os seis blocos Mermaid renderizam, com a mesma contagem de nós da
+  conferência local (23 e 10 no agente; 17, 16, 25 e 7 na fábrica), sem erro de render. **Daqui em
+  diante todo push é publicação:** o gate continua obrigatório antes de cada commit e de cada push.
+  Todas as 19 branches ficaram públicas; a única com commits fora da `main` é a `frente-n`, com o
+  arquivo de rascunho das aberturas, cujo texto aprovado está no `DECISOES.md` e no README
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -2272,18 +2289,20 @@ M2 sem achado determinístico nem de lead errado na H (a primeira rodada oficial
 dela). Meta: 14/11 03h00. Limite: 06h00. Gatilho que já existia: 10h00 com o critério 4 não
 verde, parar e chamar o Éverton.
 
-**Estado do congelamento em 14/11 06h57. `main` de entrega em 3b56fac; código do agente igual ao da árvore
-final 9d37f9a; `producao` com o envio real ligado; repositório privado.** Depois de 9d37f9a a
-`main` recebeu documentos, relatórios, o conjunto reservado e uma mudança de configuração
-(a97777b: `ENVIO_LEADS` ligado e `preview_urls: false` em `env.producao`, com o teste da
-configuração). `src/` não mudou. **Medidas na árvore final:** 310 de 312 nas três rodadas
-oficiais (todo bloco com 97% ou mais); reservado 110 de 120 (91,7%); simulador 6 de 10, nenhuma
-marca é erro de contrato (P36); rajada 40 de 40. **`producao`:** versão 4d457dc2, `ENTREGA OK`,
-`CLIENTES OK`, zero lead real até 06h43. **Na `main`:** README, "Como foi feito", desenhos, setup,
-fechamento da M2, abertura do `DECISOES.md` com cortes e mais tempo, `docs/prompts/`, conjunto
-reservado com o diagnóstico. **Decisões:** P1 a P38 confirmadas (X33), menos a P23. **Só com o
-Éverton:** tornar o repositório público, o vídeo, o e-mail da entrega e agendar o monitor (P38).
-Depois desse parágrafo entrou a cópia da skill adaptada ao T3 Code (X34, d69066a).
+**Estado em 14/11 07h09. ENTREGA NO AR: repositório público desde 07h08 (X35), `producao` com o envio real
+ligado, `main` em e3d10a9 na hora da publicação.** Código do agente igual ao da árvore final
+9d37f9a; depois dela a `main` recebeu documentos, relatórios, o conjunto reservado e uma mudança
+de configuração (a97777b: `ENVIO_LEADS` ligado e `preview_urls: false` em `env.producao`, com o
+teste da configuração). **Medidas na árvore final:** 310 de 312 nas três rodadas oficiais (todo
+bloco com 97% ou mais); reservado 110 de 120 (91,7%); simulador 6 de 10, nenhuma marca é erro de
+contrato (P36); rajada 40 de 40. **`producao`:** versão 4d457dc2, `ENTREGA OK`, `CLIENTES OK`,
+zero lead real até 06h43. **Na `main`:** README, "Como foi feito", desenhos (renderizam no
+GitHub), setup com a skill adaptada ao T3 Code (X34), fechamento da M2, abertura do `DECISOES.md`
+com cortes e mais tempo, `docs/prompts/`, conjunto reservado com o diagnóstico. Nenhum marcador
+aberto. **Decisões:** P1 a P38 confirmadas (X33), menos a P23. **Só com o Éverton:** o vídeo, o
+e-mail da entrega e agendar o monitor dos 7 dias (P38). **Regra que segue:** nenhum POST de
+sessão nossa ao webhook real; contra `producao`, só conversa sem confirmação; todo push passa
+pelo gate, porque agora é publicação.
 
 **Plano B, decisão do Éverton (perguntado em 14/11).** Um ciclo de correção e verificação leva
 cerca de 85 minutos; cabem dois até as 06h00. Se a H ou o juiz não fecharem nesse prazo, a escolha
@@ -2347,10 +2366,7 @@ ligado (X32); URL pública no README (X32); vídeo só no e-mail (X32); P1 a P38
 P23 (X33); exports de sessão fora desta entrega (X33).
 
 Falta só com ele:
-1. Tornar o repositório público. A `main` de entrega está em 3b56fac, com o gate verde em todas
-   as refs publicáveis e sem marcador no README nem no "Como foi feito". Todas as 19 branches do
-   remoto ficam públicas junto. Não resta nenhum marcador: a cópia da skill de
-   orquestração em `docs/setup` já é a versão adaptada ao T3 Code que ele enviou (X34, d69066a).
+1. (feito em 14/11, X35) O repositório está público desde 07h08.
 2. Gravar o vídeo e mandar o link no e-mail. Na confirmação do pedido, responder só "sim"
    (limites 54 e 55 do README).
 3. Responder o e-mail da entrega.
