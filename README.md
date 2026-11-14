@@ -208,7 +208,15 @@ Já decididos ou declarados:
    resposta, a mensagem de conferência chega como texto de usuário, no mesmo nível de uma
    fala do hóspede. Um hóspede que copie esse texto não ganha autoridade, mas o modelo
    também não distingue os dois.
-10. **Medição do nível alto.** A comparação de níveis do Haiku teve uma rodada só no nível
+10. **Sem limite de gasto por cliente ou por sessão.** O custo de modelo não tem teto por
+    quem conversa.
+11. **O `session_id` é a única credencial da conversa.** Quem conhece o identificador de uma
+    sessão continua aquela conversa.
+12. **Dados de terceiros nos leads.** Com o envio real ligado, nome e telefone do hóspede
+    vão ao webhook do time comercial.
+13. **Página de chat sem cabeçalhos de proteção** do navegador.
+14. **Dados da sessão sem prazo de apagamento** no armazenamento do objeto.
+15. **Medição do nível alto.** A comparação de níveis do Haiku teve uma rodada só no nível
    alto, e entre duas rodadas do mesmo nível 13 casos trocaram de resultado.
 
 ## Onde está cada documento
