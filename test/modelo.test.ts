@@ -381,3 +381,30 @@ describe("chamadas reais no erro", () => {
     expect(await criarModelo(dois, undefined, {})([], []).catch((e: unknown) => e)).toMatchObject({ chamadas: 0 });
   });
 });
+
+describe("conferência do loop depois de um rascunho (forma real que dava 7003)", () => {
+  // O loop da frente G guarda o rascunho reprovado e pede de novo com um system no fim.
+  const conferencia = "CONFERÊNCIA AUTOMÁTICA (não é mensagem do hóspede). A resposta acima não foi enviada.";
+  const formas: [string, Mensagem[]][] = [
+    ["depois de ferramenta", [
+      { role: "system", content: "Regras." }, { role: "user", content: "Quanto fica?" },
+      { role: "assistant", content: "", tool_calls: [{ id: "toolu_1", type: "function", function: { name: "cotar", arguments: "{}" } }] },
+      { role: "tool", tool_call_id: "toolu_1", content: "{}" },
+      { role: "assistant", content: "Rascunho reprovado." }, { role: "system", content: conferencia },
+    ]],
+    ["sem ferramenta", [
+      { role: "system", content: "Regras." }, { role: "user", content: "Oi" },
+      { role: "assistant", content: "Rascunho reprovado." }, { role: "system", content: conferencia },
+    ]],
+  ];
+  for (const [nome, historico] of formas) {
+    it(`${nome}: o pedido termina no usuário, com papéis alternados e a conferência no texto`, () => {
+      const { system, messages } = pedidoAnthropic(historico, [], undefined) as { system: string; messages: { role: string; content: Record<string, unknown>[] }[] };
+      expect(system).toBe("Regras.");
+      expect(messages.at(-1)!.role).toBe("user");
+      expect(messages.at(-1)!.content.at(-1)).toEqual({ type: "text", text: conferencia });
+      for (let i = 1; i < messages.length; i++) expect(messages[i]!.role).not.toBe(messages[i - 1]!.role);
+      expect(messages[0]!.role).toBe("user");
+    });
+  }
+});

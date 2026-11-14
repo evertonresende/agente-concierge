@@ -116,7 +116,12 @@ const ESFORCOS = new Set(["low", "medium", "high", "xhigh", "max"]);
 export const esforcoValido = (esforco?: string) => (esforco && ESFORCOS.has(esforco) ? esforco : "medium");
 
 export function pedidoAnthropic(mensagens: Mensagem[], ferramentas: DefinicaoDeFerramenta[], esforco?: string): Record<string, unknown> {
-  const sistema = mensagens.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
+  // Só o system do começo vai no campo system. Um system no meio da conversa (a conferência
+  // do loop, depois de um rascunho do assistente) vira texto do usuário: deixado no campo
+  // system, o pedido terminaria no rascunho, e a API recusa (erro 7003, "does not support
+  // assistant message prefill", medido no log do gateway).
+  const inicio = mensagens.findIndex((m) => m.role !== "system");
+  const sistema = mensagens.slice(0, inicio < 0 ? mensagens.length : inicio).map((m) => m.content).join("\n\n");
   // A API recusa id fora de [a-zA-Z0-9_-] (erro 7003, medido): o reserva pode devolver
   // outro formato. Cada id também sai único no pedido, e o resultado segue o seu id; um id
   // repetido na mesma resposta (histórico já gravado) vira uma fila, consumida na ordem.
@@ -135,8 +140,8 @@ export function pedidoAnthropic(mensagens: Mensagem[], ferramentas: DefinicaoDeF
     if (ultima && ultima.role === role) conversa[conversa.length - 1] = { role, content: [...ultima.content, ...blocos] };
     else conversa.push({ role, content: blocos });
   };
-  for (const m of mensagens) {
-    if (m.role === "user") acrescentar("user", [{ type: "text", text: m.content }]);
+  for (const m of inicio < 0 ? [] : mensagens.slice(inicio)) {
+    if (m.role === "user" || m.role === "system") acrescentar("user", [{ type: "text", text: m.content }]);
     else if (m.role === "tool") {
       const id = doTurno.get(m.tool_call_id)?.shift() ?? m.tool_call_id.replace(/[^a-zA-Z0-9_-]/g, "_");
       acrescentar("user", [{ type: "tool_result", tool_use_id: id, content: m.content }]);
