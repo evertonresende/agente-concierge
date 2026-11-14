@@ -73,6 +73,7 @@ TypeScript na Cloudflare, um Durable Object por sessão, loop de ferramentas pr�
 | Um bloco | acrescente `--bloco <nome>` |
 | Conjunto reservado (só agregado) | `node evals/rodar.mjs --alvo "$AGENTE_URL_DEV" --conjunto reservado --so-agregado` |
 | Simulador hostil (só `dev`) | `node evals/simulador/rodar.mjs --alvo "$AGENTE_URL_DEV"` |
+| Custo por conversa (de um relatório de eval) | `node scripts/custo.mjs <relatório.json>` |
 | Deploy de `dev` | `npm run deploy:dev` |
 | Validar `producao` sem enviar lead | `scripts/validar-producao.sh` |
 | Deploy de `producao` (envio real desligado até a ordem do Éverton) | `npm run deploy:producao` |
