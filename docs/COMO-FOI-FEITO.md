@@ -12,11 +12,15 @@ que se mede no fim está marcado como "a preencher".
 2. O Éverton decidiu as lacunas do enunciado antes do código.
 3. Uma sessão coordenadora despachou frentes paralelas, cada uma na sua worktree e só nos
    seus arquivos. Ela não editou código de produto.
-4. Antes de cada merge, um verificador independente leu o diff, mandou sondas e plantou
-   defeitos para ver se a suíte pegava.
+4. Por regra, antes de cada merge, um verificador independente leu o diff, mandou sondas e
+   plantou defeitos para ver se a suíte pegava. Exceções registradas: a frente E e o commit
+   4efb030 do juiz entraram só com a conferência da coordenação, ajustes só de teste também,
+   e a P30 entrou pelo relatório lido antes do fim da rodada 4 da G (seções 4 e 9).
 5. Um conjunto de evals reservado, escrito por outro provedor, ficou fora do repositório.
-   Quem corrige o agente só vê o agregado.
-6. Um gate de sigilo e de histórico rodou antes de cada commit e de cada push.
+   Quem corrige o agente só vê o agregado; a exceção são os 4 casos revelados pela regra 6
+   de `docs/EVALS.md`, que saíram do conjunto (seção 5).
+6. Por regra, um gate de sigilo e de histórico rodou antes de cada commit e de cada push.
+   Exceção: a frente I publicou dois commits com o gate reprovando (seção 6).
 7. O modelo foi escolhido por medição, com a tabela na frente do Éverton.
 
 Estimativa do plano: 29,5 horas de agente; caminho crítico de 11 horas de relógio mais 1
@@ -83,10 +87,13 @@ hora de coordenação, 12 horas no total. Prazo de entrega:
   execuções (1 falha) e classificado como defeito intermitente do agente, sem risco de
   envio indevido.
 
-## 4. Verificador independente antes de cada merge
+## 4. Verificador independente antes do merge
 
-Cada entrega passou por um subagente verificador (Claude Opus 5.5) que não escreveu o
-código. Ele lê o diff, monta sondas próprias numa cópia e planta defeitos, um por vez,
+Por regra, cada entrega passou por um subagente verificador (Claude Opus 5.5) que não
+escreveu o código. Exceções que o log registra: a frente E teve só a conferência da
+coordenação; o commit 4efb030 do juiz e os ajustes só de teste (como f9a50d2) entraram com
+a conferência da coordenação, sem verificador; e a P30 da G foi mesclada pelo relatório
+lido antes do fim da rodada 4, que depois reprovou (seção 9, itens 10 e 15). Ele lê o diff, monta sondas próprias numa cópia e planta defeitos, um por vez,
 para ver quantos a suíte da frente pega. Reprovação devolve a frente com a lista; a
 correção entra como commit novo. As reprovações abaixo são o que o processo pegou antes
 de chegar à `main` ou a `dev`.

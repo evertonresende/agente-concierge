@@ -10,7 +10,9 @@ Texto alternativo: o Éverton decide as lacunas, os modelos e o que não se desf
 sessão de planejamento leu o enunciado, verificou a plataforma, consultou dois modelos de
 outros provedores às cegas e escreveu contrato, plano de evals e backlog. A coordenadora
 despacha frentes em worktrees, confere cada entrega com ensaio de merge, suíte, gate e
-CHECK no runtime real, pede um verificador independente e só então faz o merge. O
+CHECK no runtime real, pede um verificador independente e, por regra, só então faz o
+merge (exceções registradas no "Como foi feito": a frente E, o commit 4efb030 do juiz,
+ajustes só de teste e a P30, mesclada pelo relatório lido antes do fim da verificação). O
 conjunto reservado fica fora do repositório e só devolve o agregado. Uma segunda sessão de
 IA, revisora do Éverton e fora da cadeia da coordenadora, lê o repositório e os relatórios
 e devolve os achados a ele, que viram itens do backlog. A frente K pede ao Éverton a ordem
@@ -84,13 +86,16 @@ flowchart TB
   o contexto dela fica limpo para durar todas as levas.
 - **Frentes** trabalham cada uma na sua worktree, com critérios de aceite binários e
   evidência exigida. Frente pequena é subagente; frente longa é thread própria.
-- **Portões**: nada entra em `main` sem passar por eles. M1 é a versão curta (revisão de
+- **Portões**: por regra, nada entra em `main` sem passar por eles; as exceções estão no
+  "Como foi feito" (seções 4 e 9), e a frente I publicou dois commits com o gate reprovando. M1 é a versão curta (revisão de
   código da máquina de estados no marco 1); M2 é a completa (código, segurança e segunda
   opinião do Gemini 4 Argon) antes de produção.
 - **Laço de robustez**: falha do simulador → caso fixo em `evals/casos/dev/` → correção →
-  agregado do reservado.
+  agregado do reservado. Exceção: na árvore final, os quatro casos propostos pelo simulador
+  não viraram caso fixo, porque fixariam expectativa errada (P36).
 - **Barreira do reservado**: quem escreve o conjunto reservado não corrige o agente, e quem
-  corrige o agente só vê o agregado.
+  corrige o agente só vê o agregado. Exceção: os 4 casos revelados pela regra 6 de
+  `docs/EVALS.md`, que saíram do conjunto e ganharam substitutos.
 - **Sessão revisora do Éverton**: uma segunda sessão de IA, independente, que ele usa para
   revisar as entregas. Não recebe ordens da coordenadora e devolve os achados a ele.
 - **Decisão provisória.** Lacuna aberta durante a execução é decidida pela coordenação como
