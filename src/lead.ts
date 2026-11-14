@@ -397,11 +397,28 @@ export function mudaDadoDoResumo(mensagem: string, pendente: Pendente): boolean 
   // Fora de um sim também derrubam: palavra de novidade ("quero outra reserva"), valor do
   // resumo repetido ("não são 2 pessoas": a marca engole a palavra "pessoas") e negação.
   const texto = marcarDadosIguais(semAcento(mensagem), pendente);
-  // Afirmação (sem "?") só mantém o resumo se for um sim ou uma hesitação: a lista de
-  // sinais nunca fica completa ("quero cancelar", "vou com o João"). Pergunta segue pela lista.
-  if (!/[?？؟]/.test(mensagem) && !["sim", "hesitacao"].includes(lerConfirmacao(mensagem, pendente))) return true;
+  // Afirmação só mantém o resumo se for um sim ou uma hesitação: a lista de sinais nunca
+  // fica completa ("quero cancelar", "vou com o João"). Afirmação junto com pergunta vale
+  // pela afirmação ("levo o João, ok?"); só a mensagem que é toda pergunta segue pela lista.
+  if (afirmaAlemDasPerguntas(mensagem, pendente)) return true;
   return temSinalDeMudanca(texto) || NOVIDADE.test(texto) || new RegExp(`(?<![a-z0-9])(?:${MARCA})(?![a-z0-9])`).test(texto)
     || NEGACAO.test(texto);
+}
+
+// Trecho que termina em "?" (separado por vírgula, ponto, ponto e vírgula ou quebra de linha).
+const TRECHO_DE_PERGUNTA = /[^.!?,;\n]*[?？؟]+/g;
+// Abertura que não diz nada sobre a reserva ("ah, antes de confirmar, qual é o bairro?").
+const ABERTURA_NEUTRA = /(?<![a-z0-9])(?:oi|ola|ah|bom|entao|hum+|hey|hi|hello|alias|antes de (?:confirmar|fechar)|antes|so uma pergunta|uma duvida|e|mas|and|but|so)(?![a-z0-9])/g;
+
+/**
+ * Fora dos trechos de pergunta sobra uma afirmação que não é sim nem hesitação? É a regra
+ * da afirmação aplicada ao resto (C1): "vou levar minha sogra, tem estacionamento?" muda o
+ * resumo como "vou levar minha sogra"; "tem wifi?" e "posso levar minha sogra?" não sobram nada.
+ */
+function afirmaAlemDasPerguntas(mensagem: string, pendente: Pendente): boolean {
+  const resto = mensagem.replace(TRECHO_DE_PERGUNTA, " ");
+  if (semPontuacao(semAcento(resto)).replace(ABERTURA_NEUTRA, " ").trim() === "") return false;
+  return !["sim", "hesitacao"].includes(lerConfirmacao(resto, pendente));
 }
 
 const NEGACAO = /(?<![a-z0-9])(?:nao|not|no|nope|errad\w*|wrong|incorret\w*|sem|without|tira\w*|remov\w*|exceto|except)(?![a-z0-9])/;
@@ -431,7 +448,7 @@ export function lerConfirmacao(mensagem: string, pendente: Pendente, turno?: num
     // qualquer outra pergunta ("sim, e tem wifi?", "pode fechar?", "sim?") não confirma.
     const perguntas = (texto.match(/[^.!?]*\?/g) ?? []).map(semPontuacao);
     const pedidoEducado = COMECA_AFIRMANDO.test(limpo) && perguntas.every((p) => PEDIDO_DE_ENVIO.test(p));
-    if (!pedidoEducado) return /\d/.test(texto) ? "outra" : "pergunta";
+    if (!pedidoEducado) return /\d/.test(texto) || afirmaAlemDasPerguntas(bruto, pendente) ? "outra" : "pergunta";
   }
   if (HESITA.test(limpo)) {
     // "acho que sim, mas no mês que vem": a hesitação não pode engolir o resto (L10).
