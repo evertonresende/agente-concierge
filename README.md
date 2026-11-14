@@ -296,8 +296,10 @@ Nenhuma validação reprovou, e não houve volta de versão.
 
 Não há monitor automático entregue: o monitor diário foi cortado como código (P38). O que ele
 faria já existe em dois modos de `scripts/validar-producao.sh`: `--clientes` e
-`--entrega`. Agendar a execução diária e escolher por onde chega o aviso de
-falha ficam com o Éverton; o comando está pronto.
+`--entrega`. O Éverton agendou a execução em 14/11, fora do repositório: todo dia às 9h, de
+15/11 a 21/11, rodam `--clientes` e `--entrega` contra `producao`. Ele recebe um aviso se
+alguma das duas falhar. Ele rodou uma vez em 14/11, e as duas passaram, com 1 lead na lista
+real (o lead de teste da X36).
 
 ## Custo por conversa
 
