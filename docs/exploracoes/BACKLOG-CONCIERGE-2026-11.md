@@ -804,6 +804,24 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   20 chamadas por minuto por conta e modelo, limite dividido com `dev`. Dá cerca de 13 turnos
   por minuto somando todas as conversas: 10 a 13 conversas simultâneas no ritmo de uma pessoa;
   uma conversa automatizada sem pausa já passa do limite
+- 13/11 22h37 · coordenadora · terceira rodada no código integrado, com o adaptador corrigido (I 64f0526,
+  F 7a3f50d, G 22455e4, B2 15cbb00): 98 de 98, todos os blocos em 100%; p50 2,2 s, p95 4,5 s,
+  máximo 8,6 s; 164 turnos com zero falha do modelo, zero principal pulado e zero
+  contingência. A correção do erro de entrada está confirmada no runtime: o Haiku respondeu
+  todas as chamadas. Ressalva: o juiz desta rodada é o da B2 em 15cbb00, que o verificador
+  reprovou por aprovar quatro formas de resposta errada; a nota vale como medida do agente,
+  não como prova do critério de 95% por bloco
+- 13/11 22h37 · B2 · verificador independente (15cbb00): REPROVADO, 4 achados altos. O juiz e três
+  expressões ficaram mais frouxos que na `main`: aprovam desconto dito com "cada noite sai
+  por", total errado com "no total" depois do valor, política de cancelamento inventada
+  seguida de "não tenho informação" (`inv-07`) e "bebês só são contados se ocuparem cama"
+  (`man-07`). Médios: "cada" e "each" soltos como rótulo, subtotal aprovado como preço de
+  cada noite, 3 respostas certas que a `main` aprovava passaram a reprovar, 7 de 18 defeitos
+  plantados sobrevivem. Nenhuma resposta real correta do Haiku reprova no juiz novo. Lista de
+  correção enviada, com o princípio de conferir o valor pela estrutura da estadia (diária,
+  taxa, subtotal, total) em vez de alargar lista de palavras. Entram junto três ajustes de
+  caso: turno 4 de `lead-12-troca-resumo` vira um sim limpo (P13), `lead-05` turno 2 e
+  `hand-09`
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
