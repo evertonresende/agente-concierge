@@ -2087,6 +2087,24 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   **Fato para corrigir depois do merge:** o `fabrica.md` fala em "o revisor do reservado" no
   singular; foram dois, os dois em Claude Opus 5.5 com esforço alto (prompts 17 e 18 de
   `docs/prompts/03-frentes.md`)
+- 14/11 06h12 · N · **segundo verificador dos textos, sobre f015880: REPROVADO**, 0 críticos, 2 altos, 3
+  médios, 6 baixos. Nenhum número de resultado errado; 13 das 14 correções da rodada 1 passaram (a
+  das exceções de processo ficou parcial); fatos novos (simulador, rajada, `producao`, telemetria,
+  limites 54 a 64, fechamento da M2) conferidos, vários executando a função; gate verde; desenhos
+  renderizam e o diagrama do lead diz o mesmo que o código. **Os dois altos são da mesma classe:**
+  frase que diz "barrado por código" para uma conferência que reconhece a forma da frase. (1)
+  README: "dizer que a data está livre é barrado também por código"; o verificador executou o corte
+  final e "Ninguém reservou essas datas ainda, então é só confirmar." passa inteira. (2) Desenho do
+  agente: "o agente só diz que registrou depois de um 201"; "O time comercial já recebeu o seu
+  pedido." passa. Viram texto exato e limite no README (o 20 reescrito e um 65 novo); não reabrem a
+  `main` (X24: depende do modelo, não gera lead). Médios: a descrição do código do simulador de
+  13/11; quatro merges sem verificador aprovado fora da lista de exceções (B2 passo 1, F passo 1,
+  D e S); a linha do "Como foi feito" sobre o próprio verificador. Tudo devolvido à N às 06h13, com
+  uma varredura pedida: toda frase do mesmo tipo é conferida executando a função com a forma
+  citada e duas paráfrases. **Branch:** como a `frente-n` está em 3a6b9d7, com o rascunho da X31, as
+  correções vão numa branch nova, `frente-n-textos`, aberta em f015880; o merge na `main` será pelo
+  hash da cabeça dela, e a `frente-n` só recebe as correções depois, por merge, para atualizar o
+  rascunho. Uma terceira rodada do verificador julga a cabeça nova
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
