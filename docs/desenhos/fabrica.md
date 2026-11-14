@@ -62,7 +62,7 @@ flowchart TB
 - **Falha do simulador vira caso fixo.** A conversa que falhou é reduzida e entra nos casos
   de desenvolvimento antes da correção.
 - **Decisão provisória.** Lacuna nova com o Éverton fora segue a recomendação da
-  coordenação, marcada como provisória (P1 a P18) até ele confirmar (X15).
+  coordenação, marcada como provisória (as decisões P) até ele confirmar (X15).
 
 ## 2. Frentes e levas
 
@@ -127,8 +127,9 @@ flowchart LR
 ```
 
 Provedores por frente (X6, X16, X23): coordenadora no Claude Fable 5.2; A e J no Fable;
-F e G começaram no Fable e passaram ao Claude Opus 5.5; B2, D, E e H rodaram no Gemini 4
-Hydrogen até a X23 e depois no Opus 5.5; C no GPT-6 Astra; B1 no DeepSeek; I, K, L, N e
+F e G começaram no Fable e passaram ao Claude Opus 5.5; D e E rodaram no Gemini 4
+Hydrogen e terminaram antes da X23; B2 e H rodaram no Gemini 4 Hydrogen até a X23 e depois
+no Opus 5.5; C no GPT-6 Astra; B1 no DeepSeek; I, K, L, N e
 todos os verificadores no Opus 5.5; segunda opinião da M2 no Gemini 4 Argon.
 
 ## 3. Ciclo de uma entrega até a `main`

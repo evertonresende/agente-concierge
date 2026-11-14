@@ -2,8 +2,10 @@
 
 Um agente só. Requisitos em [`docs/CONTRATO.md`](../CONTRATO.md); decisões citadas (L, P,
 X) em [`DECISOES.md`](../../DECISOES.md). Os desenhos descrevem o código da integração da
-leva 2 (frentes F, G, H e I). Conferir contra a `main` final: a preencher.
-<!-- PREENCHER: conferir os dois desenhos contra a main depois da entrada de F, G e H -->
+leva 2 (frentes F, G, H e I). F, G e H ainda não estão na `main`: o que depende delas é
+desenho, não garantia, e dois pontos estão em correção (a trava de valores, na G, e o sim
+com anúncio de dúvida, na F). Conferir contra a `main` final: a preencher.
+<!-- PREENCHER: conferir os desenhos contra a main depois da entrada de F, G e H, em especial a trava de valores (G) e a P19 (F) -->
 
 ## 1. Um turno: do pedido à resposta
 
@@ -81,8 +83,9 @@ flowchart TB
 
 - A fila existe porque o objeto intercala outro pedido enquanto espera o modelo ou o
   catálogo, e o bloqueio nativo tem limite de 30 s (`docs/VERIFICACOES.md` §1).
-- O modelo nunca escreve um total por conta própria: ele recebe o texto pronto da
-  ferramenta, e a conferência retira valor em reais que nenhuma ferramenta calculou.
+- O total sai pronto da ferramenta de cotação. A conferência procura no texto do modelo
+  valor em reais que nenhuma ferramenta calculou; essa trava tem uma brecha conhecida, em
+  correção na frente G, e não cobre número por extenso. Garantia final: a preencher.
 - Recusa por limite de pedidos vai direto ao reserva e não é repetida (L18). Sem gateway
   configurado, o reserva responde direto (P16).
 - O resumo para confirmação, o resultado da confirmação e o aviso de falha são textos
@@ -92,12 +95,14 @@ flowchart TB
 
 Texto alternativo: com imóvel, datas, hóspedes, nome e telefone, o código monta o resumo
 e o mostra num turno. No turno seguinte, só um sim inequívoco confirma; hesitação repete
-o pedido; um sim com anúncio de dúvida ("sim, uma dúvida") não envia nada; condição de preço passa para humano; qualquer dado mudado, ou uma pergunta do
+o pedido; um sim com anúncio de dúvida ("sim, uma dúvida") não deve enviar nada (P19, em
+correção na frente F); condição de preço passa para humano; qualquer dado mudado, ou uma pergunta do
 próprio agente, derruba o resumo. Na confirmação, o código grava o marcador de envio,
 relê a ficha e recalcula o total; se mudou, mostra um resumo novo. Com o envio desligado
 não há POST. Resposta 201 é a única que vira "registrado". 5xx tem uma nova tentativa;
 422 com campo apontado pede a correção; tempo esgotado ou resultado incerto não se
-repete. A segunda falha, de qualquer tipo, para a mesma estadia passa para humano e
+repete; qualquer outro código não registra, passa para humano e bloqueia a estadia já
+na primeira vez. A segunda falha, de qualquer tipo, para a mesma estadia passa para humano e
 bloqueia a estadia: no máximo 2 POSTs sem 201 por estadia.
 
 ```mermaid
@@ -117,7 +122,7 @@ stateDiagram-v2
   [*] --> sem
   sem --> cotado: cotar válido (código)
   cotado --> pendente: dados completos, montar_resumo
-  pendente --> pendente: hesitação ou sim com dúvida, nada enviado (P15, P19)
+  pendente --> pendente: hesitação ou sim com dúvida, nada enviado (P15; P19 em correção)
   pendente --> cotado: dado mudou (L10) ou pergunta do agente (P18)
   pendente --> nao: condição de preço (L9)
   pendente --> enviando: sim inequívoco no turno seguinte (L9, P11, P13)
@@ -128,6 +133,7 @@ stateDiagram-v2
   enviando --> pendente: 422 com campo, pede correção
   enviando --> incerto: tempo esgotado, 2xx diferente de 201
   enviando --> bloqueada: segunda falha da mesma estadia (P14)
+  enviando --> bloqueada: outro código de resposta, não registrado (P14)
   registrado --> registrado: mesmo sim de novo, "já registrado", sem POST
   registrado --> sem: outra reserva (L7)
   incerto --> bloqueada
