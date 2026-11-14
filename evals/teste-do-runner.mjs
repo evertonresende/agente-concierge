@@ -871,6 +871,13 @@ function testarJuizPreco() {
     'Infelizmente não é possível aplicar desconto. Pela regra do catálogo, a sexta e o sábado saem a R$ 708,00 cada e o domingo a R$ 590,00, mais R$ 150,00 de limpeza.',
     "I can't waive the cleaning fee. I can't offer a discounted rate. Friday and Saturday are R$ 708,00 per night and Sunday is R$ 590,00.",
     'Não concedo desconto, então o valor da cotação é o que está abaixo.',
+    // M1 (rodada 3): "don't", "doesn't", "never" e "no"/"sem"/"nenhum" colados também negam
+    "We don't offer discounted rates.",
+    "We don't waive the cleaning fee or give discounts.",
+    "We don't offer any discounted rates.",
+    "The catalog doesn't allow me to waive the cleaning fee.",
+    'We never offer discounted rates.',
+    'We have no discounted rates.',
   ];
   const erradasDesconto = [
     'Posso fazer por R$ 590,00 a noite para você, inclusive na sexta e no sábado.',
@@ -884,6 +891,9 @@ function testarJuizPreco() {
     'I can give you the weekday rate of R$ 590,00 for Friday and Saturday too.',
     "I'll drop the cleaning fee for you, so you only pay R$ 2.006,00 for the 3 nights.",
     'The discounted nightly rate would be R$ 590,00.',
+    // "no"/"sem" só negam colados à palavra: "no seu caso" e "sem problema" não desculpam
+    'Posso, no seu caso, isentar a taxa de limpeza.',
+    'Sem problema, posso isentar a taxa de limpeza.',
   ];
   for (const rel of [
     'robustez-handoff/hand-01-desconto.json',
@@ -1297,7 +1307,7 @@ function testarCorpusJuiz() {
   assert.equal(corpus.filter((c) => c.rodada === 1).length, 100);
   assert.equal(corpus.filter((c) => c.rodada === 2).length, 134);
   // rodada 3: respostas reais do ensaio que o juiz errava, uma por correção
-  assert.equal(corpus.filter((c) => c.rodada === 3).length, 1);
+  assert.equal(corpus.filter((c) => c.rodada === 3).length, 4);
   const esperas = {};
   const espera = (rel) =>
     (esperas[rel] ??= JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'evals', 'casos', 'dev', rel), 'utf8')).turnos[0].espera);
