@@ -11,7 +11,7 @@
 #                 Exige zero lead real antes e depois: depois da entrega, use --entrega.
 #   --clientes    um turno sem confirmação no POST /chat com curl, Python requests,
 #                 Python urllib e fetch do Node, cada um com o agente de usuário padrão
-#                 → CLIENTES OK. Confere só ambiente=producao, não o envio: a mensagem é
+#                 → CLIENTES OK (cada resposta com x-chamadas-modelo > 0). Confere só ambiente=producao, não o envio: a mensagem é
 #                 fixa e não confirma nada, então não gera lead.
 #   --entrega     /saude com o envio ligado e LEADS REAIS; reprova se o envio estiver
 #                 desligado. Não manda nenhuma conversa.
@@ -167,7 +167,7 @@ def exigir_saude(agente, envio_esperado):
     return dado
 
 
-def avaliar_chat(status, tipo, corpo):
+def avaliar_chat(status, tipo, corpo, chamadas=""):
     """None quando é a resposta do agente; senão o motivo, sem conteúdo da página."""
     codigo = re.search(r"[Ee]rror(?: code:)? (1\d{3})", corpo or "")
     if codigo:
@@ -184,6 +184,8 @@ def avaliar_chat(status, tipo, corpo):
         return "HTTP 200 com corpo que não é JSON"
     if not isinstance(dado, dict) or not isinstance(dado.get("reply"), str) or not isinstance(dado.get("handoff"), bool):
         return "JSON sem reply e handoff"
+    if not (chamadas or "").strip().isdigit() or int(chamadas) < 1:
+        return "cabeçalho x-chamadas-modelo ausente ou zero (o modelo não respondeu)"
     return None
 
 
@@ -198,13 +200,13 @@ def chat_curl(url):
             arquivo.write(f'url = "{url}"\n')
         processo = subprocess.run(
             ["curl", "-q", "-sS", "--max-time", str(TEMPO_S), "--config", config, "-H", "Content-Type: application/json",
-             "--data-binary", "@-", "-o", saida, "-w", "%{http_code} %{content_type}"],
+             "--data-binary", "@-", "-o", saida, "-w", "%{http_code}\\n%{content_type}\\n%header{x-chamadas-modelo}"],
             input=json.dumps(corpo_do_chat("curl")).encode(), capture_output=True)
         if processo.returncode != 0:
             raise Falha(f"curl saiu com código {processo.returncode}")
-        status, _, tipo = processo.stdout.decode().partition(" ")
+        status, tipo, chamadas = (processo.stdout.decode().split("\n") + ["", ""])[:3]
         with open(saida, encoding="utf-8", errors="replace") as arquivo:
-            return int(status), tipo, arquivo.read()
+            return int(status), tipo, arquivo.read(), chamadas
 
 
 def chat_requests(url):
@@ -216,7 +218,8 @@ def chat_requests(url):
         resposta = requests.post(url, json=corpo_do_chat("requests"), timeout=TEMPO_S, allow_redirects=False)
     except Exception as erro:
         raise Falha(f"sem resposta ({type(erro).__name__})") from None
-    return resposta.status_code, resposta.headers.get("content-type", ""), resposta.text
+    return (resposta.status_code, resposta.headers.get("content-type", ""), resposta.text,
+            resposta.headers.get("x-chamadas-modelo", ""))
 
 
 def chat_urllib(url):
@@ -224,9 +227,10 @@ def chat_urllib(url):
                                     headers={"Content-Type": "application/json"})
     try:
         with ABRIR(pedido, timeout=TEMPO_S) as resposta:
-            return resposta.status, resposta.headers.get("content-type", ""), resposta.read().decode("utf-8", "replace")
+            return (resposta.status, resposta.headers.get("content-type", ""), resposta.read().decode("utf-8", "replace"),
+                    resposta.headers.get("x-chamadas-modelo", ""))
     except urllib.error.HTTPError as erro:
-        return erro.code, erro.headers.get("content-type", ""), erro.read().decode("utf-8", "replace")
+        return erro.code, erro.headers.get("content-type", ""), erro.read().decode("utf-8", "replace"), ""
     except Exception as erro:
         raise Falha(f"sem resposta ({type(erro).__name__})") from None
 
@@ -234,7 +238,7 @@ def chat_urllib(url):
 NODE_FETCH = """
 try {
   const r = await fetch(process.env.ALVO_CHAT, { method: "POST", headers: { "content-type": "application/json" }, body: process.env.CORPO_CHAT, redirect: "manual" });
-  process.stdout.write(JSON.stringify({ status: r.status, tipo: r.headers.get("content-type") ?? "", corpo: await r.text() }));
+  process.stdout.write(JSON.stringify({ status: r.status, tipo: r.headers.get("content-type") ?? "", corpo: await r.text(), chamadas: r.headers.get("x-chamadas-modelo") ?? "" }));
 } catch (e) {
   process.stdout.write(JSON.stringify({ erro: e?.name ?? "Error" }));
 }
@@ -254,7 +258,7 @@ def chat_node(url):
         raise Falha(f"node saiu com código {processo.returncode}") from None
     if "erro" in dado:
         raise Falha(f"sem resposta ({dado['erro']})")
-    return dado["status"], dado["tipo"], dado["corpo"]
+    return dado["status"], dado["tipo"], dado["corpo"], dado["chamadas"]
 
 
 # O runner só aceita o alvo por argumento; aqui ele entra pelo ambiente, fora da lista de processos.
@@ -388,7 +392,9 @@ def autoteste():
     assert limpar("veja http://qualquer.invalid/x") == "veja <url>"
     assert limpar("HOST=AGENTE.EXEMPLO.INVALID") == "HOST=<oculto>"
     assert Limpador(["http://127.0.0.1:1"])("ip 127.0.0.1") == "ip <oculto>"
-    assert avaliar_chat(200, "application/json", '{"reply": "Oi", "handoff": false}') is None
+    assert avaliar_chat(200, "application/json", '{"reply": "Oi", "handoff": false}', "2") is None
+    for chamadas in ("", "0", "x"):
+        assert "x-chamadas-modelo" in avaliar_chat(200, "application/json", '{"reply": "Oi", "handoff": false}', chamadas)
     assert "1010" in avaliar_chat(403, "text/html", "<html>error code: 1010</html>")
     assert "bloqueio" in avaliar_chat(200, "text/html", "<html>desafio</html>")
     assert avaliar_chat(200, "application/json", '{"reply": 1}') == "JSON sem reply e handoff"
