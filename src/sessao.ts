@@ -130,6 +130,19 @@ export class Sessao extends DurableObject<Env> {
     return vez;
   }
 
+  /**
+   * O Worker respondeu sem o turno (mensagem vazia ou acima de 8.000 caracteres, P24): o
+   * "sim" seguinte pode responder à pergunta dele, então, com resumo em aberto, só
+   * reapresenta. Entra na fila para valer na ordem das mensagens; não conta como handoff.
+   */
+  registrarRespostaDoWorker(): Promise<void> {
+    const vez = this.fila.then(() => {
+      if (pendenteAberto(this.ler<EstadoLead>("lead", ESTADO_INICIAL))) this.gravar("reapresentar", true);
+    }).catch(() => {});
+    this.fila = vez;
+    return vez;
+  }
+
   /** Chamada curta de melhor esforço quando o Worker desiste e devolve contingência (A0, A3, A5b). */
   async registrarContingenciaNoWorker(idPedido?: string): Promise<void> {
     const emCurso = idPedido !== undefined && this.idEmCurso === idPedido;

@@ -64,18 +64,21 @@ async function lerCorpoLimitado(pedido: Request, limite: number, prazo: number):
   return JSON.parse(texto);
 }
 
-async function avisarContingenciaAoObjeto(env: Env, sessionId: string, idPedido: string, tetoMs: number): Promise<void> {
+interface AvisosDaSessao {
+  registrarContingenciaNoWorker?: (idPedido?: string) => Promise<void>;
+  registrarRespostaDoWorker?: () => Promise<void>;
+}
+
+/** Aviso curto de melhor esforço à sessão quando o Worker responde sem o turno dela. */
+async function avisarObjeto(env: Env, sessionId: string, tetoMs: number, aviso: (stub: AvisosDaSessao) => Promise<void> | undefined): Promise<void> {
   try {
-    const stub = env.SESSAO.getByName(`sessao:${sessionId}`) as unknown as {
-      registrarContingenciaNoWorker?: (idPedido?: string) => Promise<void>;
-    };
-    const chamada = stub.registrarContingenciaNoWorker?.(idPedido);
+    const chamada = aviso(env.SESSAO.getByName(`sessao:${sessionId}`) as unknown as AvisosDaSessao);
     if (!chamada) return;
     chamada.catch(() => {});
     const prazoAviso = Math.min(200, Math.max(25, Math.floor(tetoMs * 0.2)));
     await comPrazo(chamada, prazoAviso);
   } catch {
-    // Melhor esforço: falha no aviso não impede a devolução de contingência ao hóspede.
+    // Melhor esforço: falha no aviso não impede a resposta ao hóspede.
   }
 }
 
@@ -113,11 +116,12 @@ export async function tratarChat(pedido: Request, env: Env, tetoMs = TETO_WORKER
     if (typeof session_id !== "string" || typeof message !== "string") {
       return responder(400, "Corpo inválido: session_id e message são obrigatórios e precisam ser texto.", false);
     }
-    if (message.trim() === "") {
-      return responder(200, "Não recebi nenhum texto. Pode escrever a sua mensagem?", false);
-    }
-    if (message.length > LIMITE_DA_MENSAGEM) {
-      return responder(200, MENSAGEM_LONGA_DEMAIS, false);
+    // O Worker responde sem o turno; com resumo pendente, o "sim" seguinte pode ser resposta
+    // à pergunta dele, e a sessão fica avisada para só reapresentar o resumo (P24).
+    const vazia = message.trim() === "";
+    if (vazia || message.length > LIMITE_DA_MENSAGEM) {
+      await avisarObjeto(env, session_id, tetoMs, (stub) => stub.registrarRespostaDoWorker?.());
+      return responder(200, vazia ? "Não recebi nenhum texto. Pode escrever a sua mensagem?" : MENSAGEM_LONGA_DEMAIS, false);
     }
 
     const idPedido = crypto.randomUUID();
@@ -125,7 +129,7 @@ export async function tratarChat(pedido: Request, env: Env, tetoMs = TETO_WORKER
       const restante = prazo - Date.now();
       if (restante <= 0) {
         console.log(JSON.stringify({ evento: "tempo_esgotado_no_worker", origem: "prazo", erro: "TempoEsgotadoWorker" }));
-        await avisarContingenciaAoObjeto(env, session_id, idPedido, tetoMs);
+        await avisarObjeto(env, session_id, tetoMs, (stub) => stub.registrarContingenciaNoWorker?.(idPedido));
         return responder(200, CONTINGENCIA, true);
       }
       try {
@@ -142,7 +146,7 @@ export async function tratarChat(pedido: Request, env: Env, tetoMs = TETO_WORKER
               ? { evento: "tempo_esgotado_no_worker", origem: "prazo", erro: nomeDoErro(erro) }
               : { evento: "falha_no_chat", origem: "sessao", erro: nomeDoErro(erro) },
           ));
-          await avisarContingenciaAoObjeto(env, session_id, idPedido, tetoMs);
+          await avisarObjeto(env, session_id, tetoMs, (stub) => stub.registrarContingenciaNoWorker?.(idPedido));
           return responder(200, CONTINGENCIA, true);
         }
       }
