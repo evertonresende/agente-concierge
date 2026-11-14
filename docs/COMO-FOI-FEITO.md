@@ -2,8 +2,8 @@
 
 O processo de construção do agente, tirado do log de execução do
 [backlog](exploracoes/BACKLOG-CONCIERGE-2026-11.md) e de [`DECISOES.md`](../DECISOES.md).
-Horários de 13/11/2026, em Brasília, como estão no log. Este documento é um rascunho: o
-que se mede no fim está marcado como "a preencher".
+Horários em Brasília, como estão no log; sem data explícita, são de 13/11/2026. O que ainda
+depende do fim da entrega está marcado como "a preencher".
 
 ## Em uma tela
 
