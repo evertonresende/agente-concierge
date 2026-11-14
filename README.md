@@ -241,7 +241,14 @@ pela conversa gravada:
 
 Latência por turno nas três rodadas: p50 de 2,9 a 3,0 s, p95 de 5,9 a 6,2 s, máximo de
 13,8 s. A telemetria do Worker nas três rodadas e nas leituras do reservado não tem
-contingência nem falha do catálogo. Antes, a frente K tinha medido em `producao` 2,2 a 4,0 s
+contingência nem falha do catálogo.
+
+Rajada na árvore final, em `dev`: 10 sessões simultâneas de 4 turnos, sem confirmação. Os 40
+turnos voltaram com status 200, sem 429, 5xx, contingência ou resposta vazia; p50 3,0 s, p95
+5,4 s, máximo 7,0 s; os 40 turnos em 16,3 s
+([`docs/revisoes/modelos.md`](docs/revisoes/modelos.md), fase 2).
+
+Antes, a frente K tinha medido em `producao` 2,2 a 4,0 s
 nas perguntas simples e 5,0 a 5,9 s nas cotações.
 
 Fumaças em `dev`, que não contam como rodada: com G, T e F publicadas, bloco `marco1` com
@@ -292,7 +299,35 @@ conjunto: 60 casos, 53 iguais aos originais, 3 apertados e 4 substitutos.
 
 ### Simulador hostil
 
-Resultado: a preencher. <!-- PREENCHER: resultado do simulador hostil (rodando) -->
+Uma conversa por persona na árvore final, em `dev`, com o hóspede simulado por
+`gemini-3.8-flash-low`
+([relatório](evals/relatorios/simulador-2026-11-14T08-08-51-842Z.md)): **6 de 10 conversas
+aprovadas**. A CLI do hóspede não falhou em nenhum dos 34 turnos. Latência por turno: p50
+4,5 s, p95 13,6 s, máximo 17,5 s.
+
+As cinco marcas de falha estão em quatro conversas, e nenhuma é erro de contrato do agente
+(P36):
+
+- **Três falsos vermelhos dos juízes do simulador.** Duas marcas de "afirma
+  disponibilidade": a regra casa a frase em que o agente diz que não sabe se as datas estão
+  livres. Uma marca de "pedido de humano": a regra casa "conversar com a pessoa que vai
+  comigo", que é o acompanhante do hóspede.
+- **Duas marcas de "reserva confirmada não gerou lead".** É o comportamento decidido na P13:
+  sim que repete data, código do imóvel ou número de hóspedes não confirma. O agente mostra
+  o resumo de novo e pede o "sim", e o "sim" limpo seguinte envia o lead.
+
+Como foi classificado: a leitura do sim foi conferida pela função da árvore final sobre as
+mensagens gravadas. O relatório do simulador não guarda o texto do agente, então esse texto
+foi lido numa repetição das quatro conversas em `dev`. Na repetição não houve lead errado,
+lead sem confirmação nem afirmação de envio que não aconteceu.
+
+O que o simulador não prova: o duplo envio não foi exercitado nessa rodada, porque nenhuma
+das duas mensagens paralelas foi lida como sim. A prova de que não saem dois leads são os
+casos `con-07-confirmacoes` e `lead-14-duplo-sim-paralelo`, verdes nas três rodadas oficiais
+da árvore final.
+
+Os quatro casos que o simulador propôs não viraram caso fixo: fixariam expectativa errada
+(P36). O conjunto de desenvolvimento fica com os 104 casos medidos.
 
 A história da escolha do modelo, com a tabela de medições, está em
 [`docs/COMO-FOI-FEITO.md`](docs/COMO-FOI-FEITO.md).
