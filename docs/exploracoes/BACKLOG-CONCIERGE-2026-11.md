@@ -1742,6 +1742,25 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   frente C abre. A sessão original da frente C rodou em outro provedor, que saiu da entrega (X23): o
   diagnóstico vai para um revisor novo em Claude Opus 5.5 nesse papel, pelas regras da P33
   (provisória, em `DECISOES.md`), escritas antes de alguém ver quais casos falharam
+- 14/11 03h29 · reservado · revisor em Claude Opus 5.5 no papel da frente C iniciado, pelas regras da P33.
+  Trabalha numa pasta privada fora do rascunho, com um export da árvore candidata sem código de
+  produto e sem casos de desenvolvimento. Exclusão mútua com as rodadas da coordenação em `dev` por
+  arquivo marcador
+- 14/11 03h34 · B2 · **799b9c3 devolvida, não entra como está.** Sondas da coordenação no delta: (1) a
+  desculpa nova do `inv-07` ("nem se", "ou se", "e se") aprova 8 de 9 respostas erradas escritas pela
+  coordenação, como "O catálogo não informa a política de cancelamento, e se você cancelar não há
+  multa."; é a mesma forma do falso verde de 026eb25. A alternativa medida aprova a resposta real e
+  reprova as erradas: sem a desculpa nova e só com a fronteira de palavra depois de "é" em "multa é",
+  que é a causa real ("multa e" casava dentro de "multa em caso"). (2) O teste do corpus, afrouxado
+  para aceitar item sem estadia, deixa passar 19 de 34 erradas de preço que percam a estadia (defeito
+  plantado numa cópia); pedida a contagem fixa desses itens. O 3ab5f3f (cabeçalho da contagem
+  elíptica) fica: em 88 variantes medidas melhora nos dois sentidos (com vírgula, o juiz da `main`
+  aprovava contagem trocada, tudo comum, tudo fim de semana e soma errada; agora reprova). Sobra um
+  limite que já existia na `main` com dois-pontos: discriminação incompleta com o total certo.
+  Conferido também: onze registros reais só com as duas reprovações antigas; sonda de erradas do
+  verificador com 421 avaliações e nenhuma aprovada; ensaio do merge com 53 arquivos e 1524 testes.
+  Com o commit novo da B2, o delta de 4efb030 até a cabeça vai a um verificador independente antes do
+  merge
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -1772,8 +1791,8 @@ verde, parar e chamar o Éverton.
 **Estado do congelamento em 14/11 03h27. Reaberto; falta só o juiz da B2.** Na `main` (f9a50d2): G com a
 P30 e a correção do R1 (eb5c7d4, aprovada pelo verificador da rodada 5), T (P21), F (P20, "sim" limpo,
 P29 e o ajuste de teste 7fed64e), H (fila da sessão e P24), B2 até 4efb030, o script da K e o gate da
-S. Fora da `main`: B2 799b9c3 (documentação, corpus e as duas redações da rodada 3), em ensaio e no
-verificador. Quando ele aprovar e entrar, a `main` congela, `dev` é republicado e a contagem das três
+S. Fora da `main`: B2 799b9c3 (documentação, corpus e as duas redações da rodada 3), devolvida pela
+coordenação por um falso verde no `inv-07`; depois do commit novo, verificador independente. Quando ele aprovar e entrar, a `main` congela, `dev` é republicado e a contagem das três
 rodadas oficiais recomeça. O código do agente em `dev` ainda é o de b5af852. As rodadas na árvore
 b5af852 ficam registradas. O conjunto reservado está abaixo do limiar (linha das 03h16 do log) e
 segue a P33.
