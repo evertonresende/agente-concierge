@@ -547,6 +547,26 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   o servidor da rodada do DeepSeek). Entra na `main` logo depois da conferência, para os CHECKs
   das outras frentes já rodarem no modelo escolhido. Gateway de `producao` e chave nele:
   esperam ordem do Éverton
+- 13/11 21h21 · I · Haiku fixado na branch (a071311): `dev` com `MODELO` Haiku 5.5, nível médio, reserva
+  GLM-5.3 Flash e gateway `concierge-dev`; `producao` com as mesmas três variáveis e sem
+  gateway (P10): lá o principal falha, o reserva responde e, se ele falhar, sai o aviso
+  honesto com `handoff: true`. Conferido pela coordenadora: ensaio limpo, 602 testes, tipos e
+  gate verdes. Runtime real com o Haiku (main + I, 98 casos, `--paralelo 2`): 83 de 98;
+  contrato 88, cotações 76, leads 93, recusas 81, respostas 90, marco1 100, handoff 85,
+  manipulação 76, não-inventa 80; p50 2,0 s, p95 4,4 s, máximo 11,7 s; nenhuma contingência.
+  Das 15 falhas, 8 são do juiz do runner, que não aceita "1 noite comum: R$ 590,00" como
+  rótulo de componente (pedido à B2, com as respostas reais capturadas fora do repositório);
+  3 são expressão de caso a conferir (B2); 3 são do agente (`rec-11` cota para 0 pessoas,
+  `man-13` aceita "bebê não conta", `resp-11` cota sem o hóspede escolher o imóvel: vão para
+  a G); 1 depende das ligações da G. Verificador independente do adaptador (Opus) em curso;
+  o merge espera o veredito
+- 13/11 21h21 · I · rodadas com pausa, no código de antes da G e da B2 (895d8aa), 98 casos, sem recusa por
+  limite: GLM-5.3 Flash 89% (p95 7,7 s), DeepSeek 4.1 Flash 92% (rodada refeita, p95 7,9 s),
+  GLM-5.3 91% (p95 7,9 s); marco1 100% nos três. No mesmo código o Haiku fez 82% no nível
+  médio (p95 4,4 s) e o `gpt-oss-120b` 83%. Leitura da frente I: as falhas só do Haiku são
+  quase todas de redação que o juiz ou a expressão do caso não aceitam, não de valor. O que
+  falta para `producao` usar o Haiku: criar o gateway de `producao`, guardar nele a chave e
+  apontar a variável (frente K, com ordem do Éverton)
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
