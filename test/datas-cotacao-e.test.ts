@@ -189,7 +189,7 @@ describe("cotação e pedido com datas resolvidas por código", () => {
   it("montar_resumo e confirmar_reserva funcionam com datas sem ano resolvidas por prepararPedido", async () => {
     const { mundo, cofre, turno } = montar("2026-11-13");
     const dados = { imovel_id: "GRM-301", checkin: "15/01", checkout: "18/01", hospedes: 2, nome: "Ana Lima", telefone: "(11) 98888-0000" };
-    const resumo = await turno(1, "quero fechar de 15/01 a 18/01", roteiro(pedeFerramentas(chamar("montar_resumo", dados))).modelo);
+    const resumo = await turno(1, "quero fechar de 15/01 a 18/01, sou Ana Lima", roteiro(pedeFerramentas(chamar("montar_resumo", dados))).modelo);
     expect(resumo.reply).toContain("sexta-feira, 15/01/2027");
     expect(resumo.reply).toContain("segunda-feira, 18/01/2027");
     expect(resumo.reply).toContain("R$ 2.156,00");

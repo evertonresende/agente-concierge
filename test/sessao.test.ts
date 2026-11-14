@@ -112,7 +112,7 @@ describe("sessão", () => {
     const modelo: Modelo = async (mensagens) =>
       ultimaDoHospede(mensagens) === "sim" ? pedeFerramentas(chamar("confirmar_reserva")) : pedeFerramentas(chamar("montar_resumo", DADOS));
     const { stub, mundo } = await abrir(modelo);
-    await stub.conversar("quero fechar");
+    await stub.conversar("quero fechar, sou Ana Lima");
     const respostas = await Promise.all([stub.conversar("sim"), stub.conversar("sim")]);
     expect(mundo.leads).toHaveLength(1);
     expect(respostas[0].reply).toMatch(/foi registrado/);
@@ -130,7 +130,7 @@ describe("sessão", () => {
     const { stub, mundo } = await abrir(espiao, criarMundo({ atrasoDoCatalogoMs: 400 }));
 
     // Pedido que chegou há 44,8 s: sobram 200 ms, menos que a resposta do catálogo.
-    const cortada = await stub.conversar("quero fechar", Date.now() - 44_800);
+    const cortada = await stub.conversar("quero fechar, sou Ana Lima", Date.now() - 44_800);
     expect(cortada.handoff).toBe(true);
     expect(cortada.reply).toContain("problema técnico");
     await pausa(700); // a leitura da ficha termina depois da resposta
@@ -167,7 +167,7 @@ describe("sessão", () => {
     const modelo: Modelo = async (mensagens) =>
       ultimaDoHospede(mensagens) === "sim" ? pedeFerramentas(chamar("confirmar_reserva")) : pedeFerramentas(chamar("montar_resumo", DADOS));
     const { stub, mundo } = await abrir(modelo);
-    await stub.conversar("quero fechar");
+    await stub.conversar("quero fechar, sou Ana Lima");
 
     await evictDurableObject(stub); // a memória do objeto se perde; o storage fica
     const memoriaNova = await runInDurableObject(stub, (sessao: Sessao) => {
@@ -202,7 +202,7 @@ describe("sessão", () => {
         sessao.dependencias = { modelo, buscar };
       });
 
-      await stub.conversar("quero fechar");
+      await stub.conversar("quero fechar, sou Ana Lima");
       const confirmacao = await stub.conversar("sim");
       expect(posts).toEqual([]);
       expect(confirmacao.handoff).toBe(true);
