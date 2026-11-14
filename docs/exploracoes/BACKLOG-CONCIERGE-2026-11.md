@@ -59,8 +59,8 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 | H | agente-concierge | Concorrência endurecida e falha interna | Marco 1, L17, L17a, L18 | alta | 1 | subagente em worktree · Gemini 4 Hydrogen até 13/11 21h26; depois Opus 5.5, esforço alto (X23) | duas rodadas de verificador independente; correções entregues (c905a09); espera a F entrar na `main` para o merge final e a terceira rodada | `t3/durable-session-concurrency` |
 | J | agente-concierge | Página de chat em dois passos: design (canvas) e implementação | passo 1: nada; passo 2: Marco 1 e aprovação do Éverton | baixa | 0,7 + 1 | thread T3 · Fable 5.2 | passo 1 concluído (canvas aprovado pelo Éverton, com dois ajustes); passo 2 entregue (b8991ce) | `frente-j` |
 | M2 | agente-concierge | Revisão de código, segurança e segunda opinião | leva 2 integrada | alta | 1,5 | subagentes Opus 5.5 + segunda opinião do Gemini 4 Argon em esforço alto (X23) | primeira passada rodando desde 13/11 23h22, adiantada pela X24: segurança na `main` atual, código dos módulos estáveis e segunda opinião do Gemini sobre o cálculo; a segunda passada é só o delta, depois da leva 2 | — |
-| L | agente-concierge | Custo por conversa e monitor diário | leva 2 integrada | média | 1 | subagente em worktree · Opus 5.5, esforço médio (X23) | script de custo na `main` desde 13/11 23h47 (eec433a), verificador aprovado; falta o monitor diário, depois que `producao` existir; aberta em 13/11 23h22, adiantada pela X24: só `scripts/custo.mjs`; o monitor diário espera a K | `frente-l` |
-| K | agente-concierge | Produção com o envio real desligado | M2 | alta | 1,5 | thread T3 · Opus 5.5, esforço alto (X23) | gateway de `producao` criado e com o log desligado; `scripts/validar-producao.sh` na branch (33c8316), reprovado pelo verificador por um falso verde com argumentos extras, em correção; `producao` no ar no endereço padrão (3e053cb) e no hostname próprio por rota (P22), envio desligado, zero lead; faltam o teste por agente de usuário, a latência, o limite de taxa e o deploy final. Primeiro deploy autorizado em 14/11 00h07 (X26), só no endereço padrão do Worker e com o envio real desligado; a rota no hostname próprio segue à espera do Éverton. Rodando desde 13/11 23h14, adiantada pela X24: só a infraestrutura de `producao` com o envio real desligado; o deploy final espera a M2 | `frente-k` |
+| L | agente-concierge | Custo por conversa e monitor diário | leva 2 integrada | média | 1 | subagente em worktree · Opus 5.5, esforço médio (X23) | **fechada.** `scripts/custo.mjs` na `main` desde 13/11 23h47 (eec433a), verificador aprovado. Monitor diário cortado como código (P38): os modos `--clientes` e `--entrega` do script da K cobrem; agendar e escolher o canal do aviso ficam com o Éverton | `frente-l` |
+| K | agente-concierge | Produção com o envio real desligado | M2 | alta | 1,5 | thread T3 · Opus 5.5, esforço alto (X23) | **fechada, salvo a entrega.** Árvore final publicada em `producao` em 14/11 05h01 (versão 9e309710), envio real desligado, zero lead real; `CLIENTES OK`; validação completa com duas passadas registradas, 69 de 70 e 70 de 70 (P37); P25 reaplicada depois do deploy e a reaplicar depois de cada deploy. Falta só o passo da entrega (`--entrega`), com ordem do Éverton | `frente-k` |
 | N | agente-concierge | Entregáveis de processo | K | alta | 2 | thread T3 · Opus 5.5, esforço alto (X23) | rascunho completo na branch (ede0c12), sem achado de sigilo; reprovado por uma garantia dada como certa antes da hora, em correção; verificação final no fim da leva 2. Aberta em 13/11 23h14, adiantada pela X24: rascunhos do README, do "Como foi feito", dos desenhos e do setup, com marcador no que se preenche no fim | `frente-n` |
 | S | agente-concierge | Gate de sigilo: achados da M2 | M2, primeira passada | alta | 0,5 | subagente em worktree · Opus 5.5, esforço alto (X23) | primeira entrega (1d5e406) reprovada pelo verificador em 14/11 00h27 por cinco médios, quatro deles anteriores à frente; em correção na mesma branch; verificador do delta antes do merge | `frente-gate` |
 | T | agente-concierge | Datas sem ano (P21) | G | alta | 0,5 | subagente em worktree · Opus 5.5, esforço alto (X23) | pronta na branch (e53e777, por cima da G em da64da4) em 14/11 00h24; verificador do delta rodando; entra na `main` depois da G | `frente-datas` |
@@ -2005,6 +2005,20 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   certa. Decisão provisória **P37**: a primeira passada fica registrada como reprovada; pedi à K, às
   05h22, uma segunda passada com o script sem mudança, uma vez só; os dois resultados vão ao
   Éverton. Se reprovar de novo, colho o texto com o runner direto antes de qualquer outra passada
+- 14/11 05h25 · K · **segunda passada do modo completo em `producao`: `PRODUCAO OK`** (05h22 a 05h25, script
+  igual ao da `main`, versão publicada 9e309710). `ENVIO: desligado`; `LEADS REAIS: 0` antes e
+  depois (leituras às 05h22 e às 05h25); a trava recusou os 34 casos com confirmação; rodaram 70 e
+  passaram 70; todos os blocos que rodaram com 100%; latência p50 3,0 s, p95 5,3 s, máximo 13,6 s.
+  **As duas passadas ficam registradas (P37):** primeira 69 de 70, reprovada, com uma falha não
+  classificada por falta de texto (`inv-05-feriado`); segunda 70 de 70. Soma: 139 de 140; no bloco
+  não-inventa, 19 de 20 (95%). Nenhuma terceira passada. Critérios 1 e 2 da K atendidos com essa
+  ressalva; o critério 4 (`--entrega`) só com a ordem do Éverton. Depois de todo deploy de
+  `producao`, reaplicar a P25 e conferir por leitura. A K fica parada
+- 14/11 05h25 · L · **monitor diário cortado como código (P38, provisória; segundo item da linha de corte).**
+  O que ele faria já existe em dois modos verificados do `scripts/validar-producao.sh`: `--clientes`
+  e, depois de ligado o envio, `--entrega`. Falta agendar a execução diária e escolher o canal do
+  aviso de falha: ficam com o Éverton, com o comando pronto na lista dele. A frente L fecha com o
+  `scripts/custo.mjs` na `main`
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -2032,13 +2046,19 @@ M2 sem achado determinístico nem de lead errado na H (a primeira rodada oficial
 dela). Meta: 14/11 03h00. Limite: 06h00. Gatilho que já existia: 10h00 com o critério 4 não
 verde, parar e chamar o Éverton.
 
-**Estado do congelamento em 14/11 04h35. Árvore final congelada em 9d37f9a.** Código do agente: o de b5af852
-mais a correção da G (eb5c7d4) e as formas de confirmação da F (a4b13fa, P35), as duas aprovadas por
-verificador independente. Juiz e runner idênticos byte a byte aos de 193d1bf (P34). Conjunto de
-desenvolvimento com 104 casos (os 100 de antes e os 4 revelados pelo reservado). Em `dev`: versão
-b80a0f91. As três rodadas oficiais correm nesta árvore. A árvore de reserva 0567371 (sem a P35)
-tem três rodadas registradas, 296 de 300, e as de b5af852 também ficam registradas. O conjunto
-reservado segue a P33 e é lido na árvore final (linhas das 03h49, 04h12 e 04h35 do log).
+**Estado do congelamento em 14/11 05h25. Árvore final congelada em 9d37f9a, medida e publicada.** Código do agente: o de
+b5af852 mais a correção da G (eb5c7d4) e as formas de confirmação da F (a4b13fa, P35), as duas
+aprovadas por verificador independente. Juiz e runner idênticos byte a byte aos de 193d1bf (P34).
+Conjunto de desenvolvimento com 104 casos. **Critério dos 95%: verde**, 310 de 312 em três rodadas
+oficiais consecutivas (04h35 a 04h51), todo bloco com 97% ou mais na soma. **Reservado: 110 de 120
+(91,7%)** em duas leituras do agregado (P33). **Simulador hostil: 6 de 10**, cinco marcas
+classificadas, nenhuma erro de contrato do agente (P36). **Rajada: 40 de 40.** Em `dev`: versão
+b80a0f91. **Em `producao`: versão 9e309710, envio real desligado, zero lead real**; validação
+completa com duas passadas, 69 de 70 e 70 de 70 (P37). Depois de 9d37f9a a `main` só recebeu
+documentos e relatórios. **Falta:** fechar os entregáveis da frente N (verificador final em curso),
+`docs/prompts/`, e o que só o Éverton faz: ligar o envio real, tornar o repositório público,
+escolher as sessões a exportar, gravar o vídeo e responder o e-mail. As árvores 0567371 (296 de
+300) e b5af852 ficam registradas como histórico, não como resultado.
 
 **Plano B, decisão do Éverton (perguntado em 14/11).** Um ciclo de correção e verificação leva
 cerca de 85 minutos; cabem dois até as 06h00. Se a H ou o juiz não fecharem nesse prazo, a escolha
