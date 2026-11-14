@@ -11,6 +11,7 @@ import { describe, expect, it } from "vitest";
 import { confirmarReserva, montarResumo } from "../src/agente/ferramentas/lead";
 import { type Cofre, ESTADO_INICIAL, type EstadoLead, mudaDadoDoResumo, type Pendente, pedidoDeConfirmacaoPendente } from "../src/lead";
 import { criarContexto, criarMundo } from "./apoio";
+import { queroFechar } from "./apoio-f";
 
 const DADOS = { imovel_id: "GRM-301", checkin: "15/01/2027", checkout: "18/01/2027", hospedes: 2, nome: "Ana Lima", telefone: "(11) 98888-0000" };
 const GRM301: Pendente = {
@@ -46,7 +47,7 @@ describe("C1: afirmação de mudança seguida de pergunta derruba o resumo, como
       const mundo = criarMundo();
       let estado: EstadoLead = ESTADO_INICIAL;
       const cofre: Cofre = { ler: () => estado, salvar: (e) => { estado = e; } };
-      await montarResumo.executar(DADOS, criarContexto(mundo, cofre, 2, "quero fechar"));
+      await montarResumo.executar(DADOS, criarContexto(mundo, cofre, 2, queroFechar(DADOS)));
       // Turno 3: o modelo só responde à pergunta; o fim do turno chama o rearme com a mensagem (como na frente G).
       expect(pedidoDeConfirmacaoPendente(cofre, 3, "pt", comPergunta)).toBeUndefined();
       expect(estado.pendente).toBeNull();
@@ -79,7 +80,7 @@ describe("C1, decisão 1: cancelamento com pergunta derruba; só a mensagem toda
     const mundo = criarMundo();
     let estado: EstadoLead = ESTADO_INICIAL;
     const cofre: Cofre = { ler: () => estado, salvar: (e) => { estado = e; } };
-    await montarResumo.executar(DADOS, criarContexto(mundo, cofre, 2, "quero fechar"));
+    await montarResumo.executar(DADOS, criarContexto(mundo, cofre, 2, queroFechar(DADOS)));
     await confirmarReserva.executar({}, criarContexto(mundo, cofre, 3, "vou levar minha sogra, tem estacionamento?"));
     expect(estado.pendente).toBeNull();
     await confirmarReserva.executar({}, criarContexto(mundo, cofre, 4, "sim"));
@@ -120,7 +121,7 @@ describe("C11: \"uma pergunta\" sem \"só\" antes de pergunta pura mantém o res
       const mundo = criarMundo();
       let estado: EstadoLead = ESTADO_INICIAL;
       const cofre: Cofre = { ler: () => estado, salvar: (e) => { estado = e; } };
-      await montarResumo.executar(DADOS, criarContexto(mundo, cofre, 2, "quero fechar"));
+      await montarResumo.executar(DADOS, criarContexto(mundo, cofre, 2, queroFechar(DADOS)));
       const r = await confirmarReserva.executar({}, criarContexto(mundo, cofre, 3, mensagem));
       expect(r.respostaFinal ?? "").not.toMatch(/registrado/);
       expect(mundo.leads).toEqual([]);

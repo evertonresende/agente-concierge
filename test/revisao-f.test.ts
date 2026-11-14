@@ -5,6 +5,7 @@ import {
   type Cofre, ESTADO_INICIAL, type EstadoLead, lerConfirmacao, type Pendente, pedidoDeConfirmacaoPendente, pendenteAberto,
 } from "../src/lead";
 import { criarContexto, criarMundo } from "./apoio";
+import { comAnteriores, queroFechar } from "./apoio-f";
 
 const GRM301: Pendente = {
   reserva: { imovel_id: "GRM-301", checkin: "2027-01-15", checkout: "2027-01-18", hospedes: 2, nome: "Ana Lima", telefone: "(11) 98888-0000" },
@@ -112,7 +113,7 @@ describe("sim repetido depois do registro: texto fixo de código, zero POST (L7,
     let estado: EstadoLead = ESTADO_INICIAL;
     const cofre: Cofre = { ler: () => estado, salvar: (e) => { estado = e; } };
     const ctx = (turno: number, mensagem: string) => criarContexto(mundo, cofre, turno, mensagem);
-    await montarResumo.executar(DADOS, ctx(2, "quero fechar"));
+    await montarResumo.executar(DADOS, ctx(2, queroFechar(DADOS)));
     expect((await confirmarReserva.executar({}, ctx(3, "Sim, confirmo."))).respostaFinal).toMatch(/registrado/);
     return { mundo, ctx, posts: () => mundo.leads.length };
   }
@@ -142,7 +143,7 @@ describe("sim repetido depois do registro: texto fixo de código, zero POST (L7,
 
   it("resumo de outra reserva em aberto: o sim é dela, não do registro", async () => {
     const s = await registrada();
-    await montarResumo.executar({ ...DADOS, imovel_id: "RIO-402", checkin: "20/01/2027", checkout: "22/01/2027", hospedes: 1 }, s.ctx(4, "e o RIO-402"));
+    await montarResumo.executar({ ...DADOS, imovel_id: "RIO-402", checkin: "20/01/2027", checkout: "22/01/2027", hospedes: 1 }, comAnteriores(s.ctx(4, "e o RIO-402"), queroFechar(DADOS)));
     expect(respostaASimAposRegistro(s.ctx(5, "sim"))).toBeUndefined();
   });
 });
@@ -178,7 +179,7 @@ describe("todo pedido de confirmação gerado por código traz o resumo inteiro 
     let estado: EstadoLead = ESTADO_INICIAL;
     const cofre: Cofre = { ler: () => estado, salvar: (e) => { estado = e; } };
     await montarResumo.executar({ imovel_id: "GRM-301", checkin: "15/01/2027", checkout: "18/01/2027", hospedes: 2, nome: "Ana Lima", telefone: "(11) 98888-0000" },
-      criarContexto(mundo, cofre, 2, "quero fechar"));
+      criarContexto(mundo, cofre, 2, queroFechar({ nome: "Ana Lima" })));
     const r = await confirmarReserva.executar({}, criarContexto(mundo, cofre, 3, "acho que sim"));
     for (const linha of LINHAS.map((l) => l.replace("GRM-301", "Chalé"))) expect(r.respostaFinal).toContain(linha.startsWith("- Imóvel") ? "(GRM-301)" : linha);
     expect(mundo.leads).toEqual([]);
@@ -192,7 +193,7 @@ describe("rearme negado por padrão: mensagem com sinal de mudança derruba o re
     let estado: EstadoLead = ESTADO_INICIAL;
     const cofre: Cofre = { ler: () => estado, salvar: (e) => { estado = e; } };
     const ctx = (turno: number, mensagem: string) => criarContexto(mundo, cofre, turno, mensagem);
-    await montarResumo.executar(DADOS, ctx(2, "quero fechar"));
+    await montarResumo.executar(DADOS, ctx(2, queroFechar(DADOS)));
     return { mundo, cofre, estado: () => estado, confirma: (turno: number, mensagem: string) => confirmarReserva.executar({}, ctx(turno, mensagem)) };
   }
 
@@ -263,7 +264,7 @@ describe("sim só com caracteres comuns; \"?\" só com verbo de envio (A4)", () 
     let estado: EstadoLead = ESTADO_INICIAL;
     const cofre: Cofre = { ler: () => estado, salvar: (e) => { estado = e; } };
     const ctx = (turno: number, mensagem: string) => criarContexto(mundo, cofre, turno, mensagem);
-    await montarResumo.executar({ imovel_id: "GRM-301", checkin: "15/01/2027", checkout: "18/01/2027", hospedes: 2, nome: "Ana Lima", telefone: "(11) 98888-0000" }, ctx(2, "quero fechar"));
+    await montarResumo.executar({ imovel_id: "GRM-301", checkin: "15/01/2027", checkout: "18/01/2027", hospedes: 2, nome: "Ana Lima", telefone: "(11) 98888-0000" }, ctx(2, queroFechar({ nome: "Ana Lima" })));
     let turno = 3;
     for (const mensagem of [...ESTRANHOS, "sim, pode?"]) {
       const r = await confirmarReserva.executar({}, ctx(turno++, mensagem));
@@ -292,7 +293,7 @@ describe("P13: sim com palavra de referência ou de novidade, sem dado novo", ()
     return {
       mundo,
       estado: () => estado,
-      resumo: (turno: number, dados: Record<string, unknown> = DADOS) => montarResumo.executar(dados, ctx(turno, "quero fechar")),
+      resumo: (turno: number, dados: Record<string, unknown> = DADOS) => montarResumo.executar(dados, ctx(turno, queroFechar(dados))),
       confirma: (turno: number, mensagem: string) => confirmarReserva.executar({}, ctx(turno, mensagem)),
     };
   }
@@ -367,7 +368,7 @@ describe("B1: a hesitação não engole a mudança; só é hesitação o que, se
       let estado: EstadoLead = ESTADO_INICIAL;
       const cofre: Cofre = { ler: () => estado, salvar: (e) => { estado = e; } };
       const ctx = (turno: number, m: string) => criarContexto(mundo, cofre, turno, m);
-      await montarResumo.executar(DADOS, ctx(2, "quero fechar"));
+      await montarResumo.executar(DADOS, ctx(2, queroFechar(DADOS)));
       expect(lerConfirmacao(mensagem, GRM301, 3)).toBe("outra");
       await confirmarReserva.executar({}, ctx(3, mensagem));
       await confirmarReserva.executar({}, ctx(4, "sim"));
@@ -387,7 +388,7 @@ describe("P15: formas de confirmação", () => {
       const mundo = criarMundo();
       let estado: EstadoLead = ESTADO_INICIAL;
       const cofre: Cofre = { ler: () => estado, salvar: (e) => { estado = e; } };
-      await montarResumo.executar(DADOS, criarContexto(mundo, cofre, 2, "quero fechar"));
+      await montarResumo.executar(DADOS, criarContexto(mundo, cofre, 2, queroFechar(DADOS)));
       expect((await confirmarReserva.executar({}, criarContexto(mundo, cofre, 3, mensagem))).respostaFinal).toMatch(/registrado|registered/);
       expect(mundo.leads).toHaveLength(1);
     });
@@ -420,7 +421,7 @@ describe("B3: condição de preço sem número de três dígitos também é cond
       let estado: EstadoLead = ESTADO_INICIAL;
       const cofre: Cofre = { ler: () => estado, salvar: (e) => { estado = e; } };
       await montarResumo.executar({ imovel_id: "GRM-301", checkin: "15/01/2027", checkout: "18/01/2027", hospedes: 2, nome: "Ana Lima", telefone: "(11) 98888-0000" },
-        criarContexto(mundo, cofre, 2, "quero fechar"));
+        criarContexto(mundo, cofre, 2, queroFechar({ nome: "Ana Lima" })));
       expect((await confirmarReserva.executar({}, criarContexto(mundo, cofre, 3, mensagem))).handoff).toBe(true);
       expect(mundo.leads).toEqual([]);
     });
