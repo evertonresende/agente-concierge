@@ -148,8 +148,16 @@ O custo das duas primeiras está declarado como limite no [README](../README.md)
 - A sessão original da frente C rodou num provedor que saiu da entrega (X16). O diagnóstico
   é de um revisor novo no papel da frente C, que abre o conjunto, não corrige o agente e
   devolve só contagens.
-- Casos corrigidos e agregado final: a preencher.
-  <!-- PREENCHER: casos corrigidos, motivo e soma das duas leituras finais do reservado (P33) -->
+- O diagnóstico terminou, devolvido só em contagens. Nos 60 casos, nenhum lead sem
+  confirmação, duplicado ou diferente do resumo. A passada única mudou a expectativa de 9
+  casos (7 afrouxados por redação, 2 apertados), cada um com a cláusula citada; o segundo
+  revisor com veto ainda está conferindo. Contagem depois do veto: a preencher.
+- O conjunto fez o trabalho dele: achou um erro real e repetido do agente. Em 4 casos o
+  hóspede confirma de um jeito que a L9 e a P13 aceitam, e o agente repete o resumo sem
+  enviar. Pela regra 6 de `docs/EVALS.md`, esses 4 casos foram revelados para a correção,
+  migram para o conjunto de desenvolvimento e ganham substitutos que ninguém vê.
+- Correção do agente e agregado final: a preencher.
+  <!-- PREENCHER: correção dos 4 casos de confirmação, contagem depois do veto e soma das duas leituras finais do reservado (P33) -->
 
 ## 6. Gate de sigilo e de histórico
 
