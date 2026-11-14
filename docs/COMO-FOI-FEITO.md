@@ -128,6 +128,7 @@ aprovado com ressalvas, antes de entrar.
 |---|---|---|---|
 | 2759766 | B2, passo 1 | 13/11 16h30 | conferido pela coordenadora e mesclado para liberar C e D |
 | e4712ef, 320eb63 | B1, segunda e terceira rodadas | 13/11 16h47 | a terceira mexeu só no teste e os furos menores ficaram aceitos; o log não registra veredito de verificador para elas |
+| 45ca6ef | A | 13/11 17h31 | as quatro correções do M1 entraram depois do veredito, conferidas pela coordenadora com três defeitos plantados |
 | f55d1a9 | A, último commit | 13/11 17h44 | contexto das ferramentas com a mensagem do turno e a data de hoje; o log não registra verificador |
 | 6c090d0 | D | 13/11 18h16 | reprovado às 17h21; as correções entraram depois de ensaio de merge, sem nova rodada |
 | 56cc12c | F, passo 1 | 13/11 18h20 | a verificação da trava foi adiada às 18h32 para uma rodada só com a G, depois do merge |
@@ -137,6 +138,8 @@ aprovado com ressalvas, antes de entrar.
 | fce21b7 | B2, opção `--pausa-ms` | 13/11 19h26 | conferido pela coordenação |
 | 801c8a2 | F, restante | 13/11 19h34 | dentro da verificação adiada às 18h32; as rodadas da F vieram depois do merge |
 | 249ef34 | B2, casos ajustados | 13/11 20h10 | conferido pela coordenação |
+| 27c3093 | I | 13/11 23h18 | aprovada em 64f0526; depois entrou 6008d02 (nível alto em `src/modelo.ts` e `wrangler.jsonc`), conferido pela coordenação |
+| fcb7dc2 | I, delta | 13/11 23h59 | aprovada em b34ab95; a correção do log 4a63568 entrou depois, com ensaio da coordenação |
 | a8da5d6 | G | 14/11 00h48 | a rodada 3 reprovou por um achado só de teste; a correção dele e a do M-1 (9 linhas) foram lidas pela coordenação, sem nova rodada |
 | eb12f04 | G, teste do P07 | 14/11 00h59 | só teste |
 | 1a9b8d5 | T, baixos | 14/11 00h59 | baixos do verificador aprovado, sem nova rodada; em `src/` muda uma frase |

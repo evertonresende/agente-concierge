@@ -680,9 +680,10 @@ varredura que veio depois, executando a função de conferência fora do reposit
     frase pode falar do pedido já registrado; um "Seu pedido foi registrado." sobre uma
     segunda estadia ainda não enviada passa. Paráfrase passa sempre: "Prontinho! O time comercial já recebeu o
     seu pedido.", "Tudo certo, já passei o seu pedido para a equipe." e "O pedido seguiu
-    para o time comercial." chegam ao hóspede sem lead. Nos evals, 13 casos de
-    desenvolvimento proíbem formas de registro em turnos sem lead (`resposta_nao_contem`), e
-    nenhum reprovou nas três rodadas oficiais da árvore final; a medida também é por forma
+    para o time comercial." chegam ao hóspede sem lead. Nos evals, 10 casos de
+    desenvolvimento proíbem formas de registro em turnos sem lead (`resposta_nao_contem`:
+    lead-01, lead-03, lead-04, lead-05, lead-09, lead-10, marco1-01, hand-15, man-05 e
+    man-06), e nenhum reprovou nas três rodadas oficiais da árvore final; a medida também é por forma
     de frase, então paráfrase não foi medida.
 66. **Concessão escrita pelo modelo.** A conferência corta a concessão nas formas que
     reconhece ("Posso te dar um desconto de 10% nessa estadia.", "Consigo abrir uma exceção
