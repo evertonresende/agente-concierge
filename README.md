@@ -172,26 +172,30 @@ pela API e conferir por leitura depois de cada deploy de `producao`: sem `previe
 configuração traz `preview_urls: false` em `env.producao`, e no deploy com o envio ligado a
 pré-visualização veio desligada sem reaplicar pela API (conferido por leitura).
 
-O webhook real não recebe nenhum POST antes da entrega, nem como teste. A validação é por
+O webhook real não recebe nenhum POST antes da entrega, nem como teste, com uma exceção
+única: o lead de teste que o Éverton autorizou em 14/11 (X36). A validação é por
 composição:
 
 1. `GET /saude` em `producao` mostra `ambiente: "producao"`, `leads_destino: "real"`,
    `envio_leads: "ligado"` e a presença das variáveis.
 2. `GET` no webhook real (permitido) confere endereço e token e devolve a lista de leads,
-   que precisa estar vazia.
+   que depois do lead de teste (X36) tem um lead.
 3. O caminho do POST é o mesmo código que roda em `dev` contra o webhook falso.
-4. Contra `producao` só rodam conversas sem confirmação.
+4. Contra `producao` só rodam conversas sem confirmação. A exceção única foi a conversa do
+   lead de teste (X36).
 
 O script `scripts/validar-producao.sh` junta essas conferências. Os endereços vêm do
 arquivo de ambiente e nunca aparecem na saída.
 
 | Modo | O que faz | Saída de sucesso |
 |---|---|---|
-| sem modo | `/saude`, leads reais antes e depois e o conjunto dev sem os casos de confirmação | `PRODUCAO OK` |
-| `--so-leitura` | só o GET no webhook real; exige zero lead real | `LEADS REAIS: 0` |
+| sem modo | `/saude`, leads reais antes e depois e o conjunto dev sem os casos de confirmação; exige zero lead real e reprova depois do lead de teste (X36) | `PRODUCAO OK` |
+| `--so-leitura` | só o GET no webhook real; exige zero lead real e reprova depois do lead de teste (X36) | `LEADS REAIS: 0` |
 | `--clientes` | um turno sem confirmação com curl, Python `requests`, Python `urllib` e `fetch` do Node | `CLIENTES OK` |
 | `--entrega` | `/saude` com o envio ligado e leads reais; reprova com o envio desligado | `ENTREGA OK` |
 | `--autoteste` | confere o próprio script contra servidores falsos locais, sem tocar em `producao` | `AUTOTESTE OK` |
+
+Depois do lead de teste valem `--entrega` e `--clientes`. O script não muda.
 
 ### Deploy final e validação
 
@@ -219,11 +223,23 @@ que ela estava certa. Não houve terceira passada.
 Em 14/11, `producao` foi publicada de novo, da `main` a97777b, com o envio real ligado (X32).
 `scripts/validar-producao.sh --entrega` deu `ENVIO: ligado`, `LEADS REAIS: 0` e `ENTREGA OK`,
 duas vezes, com `--clientes` no meio (`CLIENTES OK`, os quatro clientes com 200);
-`LEADS REAIS: 0` antes e depois. Nenhuma conversa com confirmação foi feita contra
-`producao`, e o modo completo não rodou com o envio ligado: as duas passadas acima foram
+`LEADS REAIS: 0` antes e depois. Até o lead de teste, nenhuma conversa com confirmação foi
+feita contra `producao`, e o modo completo não rodou com o envio ligado: as duas passadas acima foram
 feitas com o envio desligado. O "ligado" está gravado em `wrangler.jsonc`, em `env.producao.vars.ENVIO_LEADS`,
 e o teste `test/configuracao-i.test.ts` exige esse valor: um novo deploy publica esse
 arquivo e mantém o envio ligado.
+
+Às 07h17 de 14/11 o Éverton autorizou um lead de teste no webhook real, para provar a
+comunicação antes da avaliação (X36). O lead foi enviado às 07h26 (horário de Brasília), por
+uma conversa em `producao`, pelo caminho real do agente: cotação, resumo e "sim". Não houve
+POST direto ao webhook. Dados: GRM-301, 15/01/2027 a 18/01/2027, 2 hóspedes, nome "Teste
+Everton Resende", telefone "(11) 90000-0000", total R$ 2.156,00 (`valor_total` 2156), o
+exemplo do Marco 1. A lista real, lida por GET, tinha 0 lead às 07h26:39 e 1 lead às
+07h26:47, com os sete campos iguais aos do resumo. O webhook respondeu `201`. O número não
+fica no log; o que prova é o código: só um `201` grava o estado "registrado" e escreve o
+texto fixo de registrado (`src/lead.ts:697`), e o log de `producao` tem, nessa janela, 1
+evento `turno` com envio `registrado`. Às 07h28, `--entrega` deu `ENVIO: ligado`,
+`LEADS REAIS: 1` e `ENTREGA OK`.
 
 ### Sete dias no ar
 
@@ -490,9 +506,10 @@ verificadores das frentes, no log do backlog.
     hóspede recebe a pergunta do agente e um resumo novo (P28).
 18. **Nome em chinês, japonês ou coreano** grudado na frase ("meu nome é" e o nome sem
     espaço) é recusado; mandado sozinho, passa (P28).
-19. **Webhook real.** O corpo do `422` e o formato de um item da lista são desconhecidos até
-    o primeiro lead real. Qualquer resposta diferente de `201` é tratada como não
-    registrado.
+19. **Webhook real.** O corpo do `422` segue desconhecido. O formato de um item da lista ficou
+    conhecido com o lead de teste (X36): um objeto com `lead` (os sete campos enviados),
+    `recebido_em` (data e hora) e um campo de credencial. Qualquer resposta diferente de
+    `201` é tratada como não registrado.
 20. **Disponibilidade.** O catálogo não informa datas livres. O agente é instruído a cotar
     sem dizer que a data está disponível, e lead registrado é pedido encaminhado, não
     reserva garantida. A conferência de código reconhece formas da frase. "Sim, as datas
