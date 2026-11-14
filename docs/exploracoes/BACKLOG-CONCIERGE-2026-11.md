@@ -59,7 +59,7 @@ revisão de segurança, validação de `producao` sem POST, README e `DECISOES.m
 | H | agente-concierge | Concorrência endurecida e falha interna | Marco 1, L17, L17a, L18 | alta | 1 | subagente em worktree · Gemini 4 Hydrogen até 13/11 21h26; depois Opus 5.5, esforço alto (X23) | duas rodadas de verificador independente; correções entregues (c905a09); espera a F entrar na `main` para o merge final e a terceira rodada | `t3/durable-session-concurrency` |
 | J | agente-concierge | Página de chat em dois passos: design (canvas) e implementação | passo 1: nada; passo 2: Marco 1 e aprovação do Éverton | baixa | 0,7 + 1 | thread T3 · Fable 5.2 | passo 1 concluído (canvas aprovado pelo Éverton, com dois ajustes); passo 2 entregue (b8991ce) | `frente-j` |
 | M2 | agente-concierge | Revisão de código, segurança e segunda opinião | leva 2 integrada | alta | 1,5 | subagentes Opus 5.5 + segunda opinião do Gemini 4 Argon em esforço alto (X23) | primeira passada rodando desde 13/11 23h22, adiantada pela X24: segurança na `main` atual, código dos módulos estáveis e segunda opinião do Gemini sobre o cálculo; a segunda passada é só o delta, depois da leva 2 | — |
-| L | agente-concierge | Custo por conversa e monitor diário | leva 2 integrada | média | 1 | subagente em worktree · Opus 5.5, esforço médio (X23) | script pronto na branch (22eda87), em verificação; aberta em 13/11 23h22, adiantada pela X24: só `scripts/custo.mjs`; o monitor diário espera a K | `frente-l` |
+| L | agente-concierge | Custo por conversa e monitor diário | leva 2 integrada | média | 1 | subagente em worktree · Opus 5.5, esforço médio (X23) | script de custo na `main` desde 13/11 23h47 (eec433a), verificador aprovado; falta o monitor diário, depois que `producao` existir; aberta em 13/11 23h22, adiantada pela X24: só `scripts/custo.mjs`; o monitor diário espera a K | `frente-l` |
 | K | agente-concierge | Produção com o envio real desligado | M2 | alta | 1,5 | thread T3 · Opus 5.5, esforço alto (X23) | gateway de `producao` criado e com o log desligado; `scripts/validar-producao.sh` na branch (33c8316), em verificação; rota e primeiro deploy parados à espera do Éverton. Rodando desde 13/11 23h14, adiantada pela X24: só a infraestrutura de `producao` com o envio real desligado; o deploy final espera a M2 | `frente-k` |
 | N | agente-concierge | Entregáveis de processo | K | alta | 2 | thread T3 · Opus 5.5, esforço alto (X23) | rascunho completo na branch (ede0c12), em verificação de sigilo e de fatos; parada até o fim da leva 2. Aberta em 13/11 23h14, adiantada pela X24: rascunhos do README, do "Como foi feito", dos desenhos e do setup, com marcador no que se preenche no fim | `frente-n` |
 | S | agente-concierge | Gate de sigilo: achados da M2 | M2, primeira passada | alta | 0,5 | subagente em worktree · Opus 5.5, esforço alto (X23) | rodando desde 13/11 23h46: conteúdo do histórico, saída sem trecho do termo, sufixo composto e teste do gate; verificador antes do merge | `frente-gate` |
@@ -999,6 +999,14 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   B2, depois da lista do juiz; saída sem ano anterior à entrada (P5 contra CA-06, 363 noites cotadas)
   para o Éverton decidir. Conferido sem imprimir valor: a hipótese do sufixo composto não se aplica
   ao ambiente real
+- 13/11 23h47 · L · NA `main` (eec433a). Verificador independente (22eda87): APROVADO, só achados baixos. As
+  contas batem com um programa à parte em frações exatas; relatório sem uso, só agregado, JSON
+  inválido e pasta vazia terminam em `CUSTO FALHOU`; sem rede e sem escrita (conferido com `strace`).
+  Ensaio da coordenadora: merge limpo, 711 testes, tipos sem erro, SIGILO OK, CHECK com `CUSTO OK`.
+  Limites anotados: o preço é constante do script e não acompanha o `wrangler.jsonc`; os relatórios
+  versionados são de antes do Haiku, então o valor do CHECK não é o custo real; conversa com zero
+  tokens puxa a média para baixo; arquivo passado duas vezes conta duas vezes; 4 de 14 defeitos
+  plantados escapam do teste. Falta da frente: o monitor diário, depois que `producao` existir
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
