@@ -174,7 +174,14 @@ export function pedidoAnthropic(mensagens: Mensagem[], ferramentas: DefinicaoDeF
 /** Resposta do modelo que não serve ao hóspede: falha do principal, o reserva responde. */
 class RespostaInutil extends Error {
   override name = "RespostaInutil";
+  constructor(readonly motivo: MotivoInutil, detalhe: string) {
+    super(`resposta inútil do modelo (${detalhe})`);
+  }
 }
+
+// Motivo da resposta inútil numa palavra de lista fechada: é o que vai para o log.
+type MotivoInutil = "corte" | "recusa" | "fim_desconhecido" | "fim_nao_bate" | "vazia" | "erro_como_valor" | "ferramenta_invalida";
+const motivoDoFim = (fim: string): MotivoInutil => (fim === "max_tokens" ? "corte" : fim === "refusal" ? "recusa" : "fim_desconhecido");
 
 // Únicos fins de resposta que entregam algo inteiro. Os demais (`max_tokens`, `refusal`,
 // `pause_turn` e qualquer valor novo da API) cortam ou recusam: a resposta não serve.
@@ -187,27 +194,27 @@ const FINS_COMPLETOS = new Set(["end_turn", "tool_use", "stop_sequence"]);
  */
 export function lerRespostaAnthropic(bruto: unknown): RespostaDoModelo {
   const raiz = objeto(bruto);
-  const inutil = (motivo: string) => new RespostaInutil(`resposta inútil do modelo (${motivo})`);
-  if (raiz.type === "error") throw inutil("erro devolvido como valor");
+  const inutil = (motivo: MotivoInutil, detalhe: string) => new RespostaInutil(motivo, detalhe);
+  if (raiz.type === "error") throw inutil("erro_como_valor", "erro devolvido como valor");
   const fim = typeof raiz.stop_reason === "string" ? raiz.stop_reason : "ausente";
-  if (!FINS_COMPLETOS.has(fim)) throw inutil(`stop_reason ${fim}`);
+  if (!FINS_COMPLETOS.has(fim)) throw inutil(motivoDoFim(fim), `stop_reason ${fim}`);
   const blocos = (Array.isArray(raiz.content) ? raiz.content : []).map(objeto);
   const texto = blocos.filter((b) => b.type === "text" && typeof b.text === "string").map((b) => b.text as string).join("\n").trim();
   const usos = blocos.filter((b) => b.type === "tool_use");
   // Chamada sem nome ou com argumentos que não são objeto não pode ser executada: nada de
   // descartar em silêncio nem de inventar argumentos vazios.
   const valido = (b: Bloco) => typeof b.name === "string" && b.name !== "" && !!b.input && typeof b.input === "object" && !Array.isArray(b.input);
-  if (!usos.every(valido)) throw inutil("chamada de ferramenta sem nome ou com argumentos inválidos");
+  if (!usos.every(valido)) throw inutil("ferramenta_invalida", "chamada de ferramenta sem nome ou com argumentos inválidos");
   const idDe = idsDaResposta();
   const chamadas = usos.map((b): ChamadaDeFerramenta => ({
     id: idDe(b.id),
     type: "function",
     function: { name: b.name as string, arguments: JSON.stringify(b.input) },
   }));
-  if (texto === "" && chamadas.length === 0) throw inutil(`stop_reason ${fim}, sem texto nem ferramenta`);
+  if (texto === "" && chamadas.length === 0) throw inutil("vazia", `stop_reason ${fim}, sem texto nem ferramenta`);
   // O fim tem de bater com o conteúdo: "tool_use" sem ferramenta deixaria um texto do tipo
   // "vou consultar" pendurado para o hóspede; ferramenta com outro fim não foi pedida.
-  if ((fim === "tool_use") !== (chamadas.length > 0)) throw inutil(`stop_reason ${fim} não bate com o conteúdo`);
+  if ((fim === "tool_use") !== (chamadas.length > 0)) throw inutil("fim_nao_bate", `stop_reason ${fim} não bate com o conteúdo`);
   const uso = objeto(raiz.usage);
   return {
     texto,
@@ -277,15 +284,23 @@ function comLimite<T>(promessa: Promise<T>, ms: number): Promise<T> {
   return Promise.race([promessa, limite]).finally(() => clearTimeout(relogio));
 }
 
+// Nomes de erro que podem ir ao log; qualquer outro sai como ErroDesconhecido.
+const CLASSES_DA_PLATAFORMA = new Set(["AiError", "AiGatewayError", "InferenceUpstreamError"]);
+const NOMES_DE_ERRO = new Set(["Error", "TypeError", "AiError", "AiGatewayError", "InferenceUpstreamError", "RespostaInutil", "TempoDoPrincipal", "RecusaPorLimite"]);
+
 /**
- * Só o nome do modelo, o nome do erro e o primeiro código numérico da mensagem (ex.:
- * `AiGatewayError 7003`). Nenhum texto livre: um erro que ecoasse nome ou telefone do
- * pedido feriria o contrato L22, e endereço ou identificador de conta não entra.
+ * Só o nome do modelo, o nome do erro (lista fechada), o código e, na resposta inútil, o
+ * motivo (lista fechada). O código só vem da posição de código, o número logo depois do
+ * nome do erro (`AiError: 3021: …`), nunca de dígitos soltos da mensagem, que podem ser
+ * telefone ou endereço ecoado do pedido (contrato L22).
  */
 function registrarFalha(modelo: string, erro: unknown): void {
-  const nome = erro instanceof Error ? erro.name : typeof erro;
-  const codigo = (erro instanceof Error ? erro.message : String(erro)).match(/\b\d{3,4}\b/)?.[0];
-  console.warn(JSON.stringify({ evento: "modelo_falhou", modelo, erro: codigo ? `${nome} ${codigo}` : nome }));
+  const nome = erro instanceof Error && NOMES_DE_ERRO.has(erro.name) ? erro.name : "ErroDesconhecido";
+  // Erro de classe própria da plataforma traz o código no começo da mensagem ("7003: …").
+  const padrao = CLASSES_DA_PLATAFORMA.has(nome) ? /^(?:[A-Za-z]{1,40}Error: ?)?(\d{3,4})\b/ : /^[A-Za-z]{1,40}Error: ?(\d{3,4})\b/;
+  const codigo = (erro instanceof Error ? erro.message : "").match(padrao)?.[1];
+  const motivo = erro instanceof RespostaInutil ? erro.motivo : undefined;
+  console.warn(JSON.stringify({ evento: "modelo_falhou", modelo, erro: [nome, codigo, motivo].filter(Boolean).join(" ") }));
 }
 
 /** Se a última tentativa recusou por limite e a anterior também, o erro sai como `RecusaPorLimite`. */
