@@ -6,7 +6,7 @@ import { criarCatalogo } from "./catalogo";
 import type { Env } from "./env";
 import {
   type Cofre, destinoDosLeads, destinoPermitido, ESTADO_INICIAL, type EstadoLead,
-  lerConfirmacao, pedidoDeConfirmacaoPendente, type Pendente, pendenteAberto, postarLead,
+  lerConfirmacao, pedidoDeConfirmacaoPendente, pendenteAberto, postarLead,
   textoDoPedidoDeConfirmacao,
 } from "./lead";
 import { criarModelo, type Mensagem, type Modelo } from "./modelo";
@@ -214,14 +214,13 @@ export class Sessao extends DurableObject<Env> {
 
       const deveReapresentar = this.ler("reapresentar", false);
       const estadoInicial = this.ler<EstadoLead>("lead", ESTADO_INICIAL);
-      const pendentePersistido = estadoInicial.pendente;
       const pendenteAbertoInicial = pendenteAberto(estadoInicial);
 
       if (deveReapresentar && pendenteAbertoInicial && lerConfirmacao(mensagem, pendenteAbertoInicial, turno) === "sim") {
-        let pendenteEmCurso: Pendente | null = pendenteAbertoInicial;
+        let estadoEmCurso: EstadoLead = estadoInicial;
         const cofreLocal: Cofre = {
-          ler: () => ({ ...estadoInicial, pendente: pendenteEmCurso }),
-          salvar: (estado) => { pendenteEmCurso = estado.pendente; },
+          ler: () => estadoEmCurso,
+          salvar: (estado) => { estadoEmCurso = estado; },
         };
         const historicoAtual = this.historico();
         const idioma = idiomaDoHospede([
@@ -233,8 +232,9 @@ export class Sessao extends DurableObject<Env> {
         if (pedido !== undefined) {
           corpo = pedido;
         } else {
-          pendenteEmCurso = { ...pendenteAbertoInicial, turno };
-          corpo = textoDoPedidoDeConfirmacao(pendenteEmCurso, idioma);
+          const pendenteAtualizado = { ...pendenteAbertoInicial, turno };
+          estadoEmCurso = { ...estadoEmCurso, pendente: pendenteAtualizado };
+          corpo = textoDoPedidoDeConfirmacao(pendenteAtualizado, idioma);
         }
         const aviso = idioma === "en"
           ? "I have not sent this request yet. To avoid any mistake, please check the request once more."
@@ -273,7 +273,7 @@ export class Sessao extends DurableObject<Env> {
           this.ctx.storage.sql.exec("INSERT INTO historico (mensagem) VALUES (?)", JSON.stringify({ role: "user", content: mensagem }));
           this.ctx.storage.sql.exec("INSERT INTO historico (mensagem) VALUES (?)", JSON.stringify({ role: "assistant", content: reply }));
           const atual = this.ler<EstadoLead>("lead", ESTADO_INICIAL);
-          this.gravar("lead", { ...atual, pendente: pendenteEmCurso });
+          this.gravar("lead", { ...estadoEmCurso, envios: atual.envios });
           this.ctx.storage.sql.exec("DELETE FROM estado WHERE chave = 'reapresentar'");
           if (idPedido) this.gravarPedido(idPedido, resposta);
         });
@@ -295,10 +295,9 @@ export class Sessao extends DurableObject<Env> {
       }
 
       // `envios` (marcador "enviando" etc.) é gravado na hora antes do POST para sobreviver a
-      // reinício do objeto; `pendente` só é gravado junto com o histórico na transação do fim
-      // do turno, para um resumo não entregue nunca ficar confirmável.
-      let pendenteEmCurso: Pendente | null = pendentePersistido;
-      let resumosMostradosEmCurso = estadoInicial.resumosMostrados;
+      // reinício do objeto; o restante de `EstadoLead` só é gravado junto com o histórico na
+      // transação do fim do turno, preservando por inteiro qualquer campo adicionado pela F.
+      let estadoEmCurso: EstadoLead = estadoInicial;
       let turnoAberto = true;
       let falhaExterna: CausaContingencia | null = null;
       let ultimaEtapa: "modelo" | "catalogo" | "lead" | null = null;
@@ -306,12 +305,11 @@ export class Sessao extends DurableObject<Env> {
       const cofre: Cofre = {
         ler: () => {
           const atual = this.ler<EstadoLead>("lead", ESTADO_INICIAL);
-          return { pendente: pendenteEmCurso, envios: atual.envios, resumosMostrados: resumosMostradosEmCurso };
+          return { ...estadoEmCurso, envios: atual.envios };
         },
         salvar: (estado) => {
           if (!turnoAberto) return;
-          pendenteEmCurso = estado.pendente;
-          resumosMostradosEmCurso = estado.resumosMostrados;
+          estadoEmCurso = estado;
           const atual = this.ler<EstadoLead>("lead", ESTADO_INICIAL);
           if (JSON.stringify(estado.envios) !== JSON.stringify(atual.envios)) {
             this.gravar("lead", { ...atual, envios: estado.envios });
@@ -408,11 +406,6 @@ export class Sessao extends DurableObject<Env> {
       const desistido = idPedido !== undefined && this.desistidos.has(idPedido);
       const contingenciaFinal = saida.contingencia || estourouWorker || desistido;
 
-      const pendenteFinal = contingenciaFinal
-        ? (pendenteEmCurso === pendentePersistido ? pendentePersistido : null)
-        : pendenteEmCurso;
-      const resumosMostradosFinal = contingenciaFinal ? estadoInicial.resumosMostrados : resumosMostradosEmCurso;
-
       const replyFinal = contingenciaFinal ? CONTINGENCIA : saida.reply;
       const handoffFinal = contingenciaFinal ? true : saida.handoff;
       const novasFinais = !saida.contingencia && contingenciaFinal
@@ -421,27 +414,27 @@ export class Sessao extends DurableObject<Env> {
 
       const resposta: RespostaDoChat = { reply: replyFinal, handoff: handoffFinal, uso: saida.uso };
 
-      // Tudo ou nada: o histórico, o resumo pendente e o registro do pedido valem juntos ou não valem.
+      // Tudo ou nada: o histórico, o estado inteiro do lead e o registro do pedido valem juntos ou não valem.
       this.ctx.storage.transactionSync(() => {
         for (const nova of novasFinais) {
           this.ctx.storage.sql.exec("INSERT INTO historico (mensagem) VALUES (?)", JSON.stringify(nova));
         }
         if (handoffFinal) this.gravar("handoff", true);
         const atual = this.ler<EstadoLead>("lead", ESTADO_INICIAL);
-        if (
-          JSON.stringify(pendenteFinal) !== JSON.stringify(atual.pendente)
-          || resumosMostradosFinal !== atual.resumosMostrados
-        ) {
-          this.gravar("lead", {
-            ...atual,
-            pendente: pendenteFinal,
-            ...(resumosMostradosFinal !== undefined ? { resumosMostrados: resumosMostradosFinal } : {}),
-          });
+        const estadoFinal: EstadoLead = contingenciaFinal
+          ? {
+              ...estadoInicial,
+              envios: atual.envios,
+              pendente: estadoEmCurso.pendente === estadoInicial.pendente ? estadoInicial.pendente : null,
+            }
+          : { ...estadoEmCurso, envios: atual.envios };
+        if (JSON.stringify(estadoFinal) !== JSON.stringify(atual)) {
+          this.gravar("lead", estadoFinal);
         }
         if (deveReapresentar && !contingenciaFinal) {
           this.ctx.storage.sql.exec("DELETE FROM estado WHERE chave = 'reapresentar'");
         }
-        if (contingenciaFinal && pendenteAberto({ ...atual, pendente: pendenteFinal })) {
+        if (contingenciaFinal && pendenteAberto(estadoFinal)) {
           this.gravar("reapresentar", true);
         }
         if (idPedido) this.gravarPedido(idPedido, resposta);

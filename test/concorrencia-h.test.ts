@@ -6,7 +6,7 @@ import { definir } from "../src/agente/ferramentas/tipos";
 import { tratarChat } from "../src/chat";
 import type { Env } from "../src/env";
 import worker from "../src/index";
-import { apresentarResumo, type EstadoLead } from "../src/lead";
+import { apresentarResumo, ESTADO_INICIAL, type EstadoLead } from "../src/lead";
 import type { Mensagem, Modelo } from "../src/modelo";
 import { type Dependencias, type RespostaDoChat, type Sessao, TETO_SESSAO_MS, TETO_WORKER_MS } from "../src/sessao";
 import { chamar, criarMundo, diz, type Mundo, pedeFerramentas, ultimaDoHospede } from "./apoio";
@@ -1495,6 +1495,98 @@ describe("concorrência endurecida e falhas (frente H)", () => {
       expect(mundo.leads).toHaveLength(1);
     }
   });
+
+  it("estado do lead com campo desconhecido (campoFuturo: 7) sobrevive a turnos, reapresentação e despejo do objeto", async () => {
+    const id = `estado-inteiro-${++proxima}`;
+    const mundo = criarMundo();
+    const observados: Record<string, unknown>[] = [];
+    FERRAMENTAS.push(definir("sondar_estado_futuro", "grava ou lê campoFuturo no cofre", {
+      gravar: { type: "integer" },
+    }, [], async (args, contexto) => {
+      const atual = contexto.cofre.ler() as EstadoLead & Record<string, unknown>;
+      if (typeof args.gravar === "number") {
+        contexto.cofre.salvar({ ...atual, campoFuturo: args.gravar } as EstadoLead);
+      }
+      observados.push(contexto.cofre.ler() as EstadoLead & Record<string, unknown>);
+      return { paraOModelo: { ok: true } };
+    }));
+
+    try {
+      const modelo: Modelo = async (mensagens) => {
+        const ultima = ultimaDoHospede(mensagens);
+        if (ultima === "gravar") {
+          return mensagens.at(-1)?.role === "tool"
+            ? diz("gravado")
+            : pedeFerramentas(chamar("sondar_estado_futuro", { gravar: 7 }), chamar("montar_resumo", DADOS));
+        }
+        return mensagens.at(-1)?.role === "tool"
+          ? diz("lido")
+          : pedeFerramentas(chamar("sondar_estado_futuro", {}));
+      };
+
+      const nome = `sessao:${id}`;
+      const stub1 = ambiente.SESSAO.getByName(nome);
+      await runInDurableObject(stub1, (s: Sessao) => {
+        s.dependencias = { modelo, buscar: mundo.buscar };
+      });
+
+      // Turno 1 grava resumo + campoFuturo=7 com entrega perdida para também testar o caminho de reapresentação.
+      const envPerdeEntrega = comNamespaceRealEnvolvido(async (real, args) => {
+        await real.conversar(...args);
+        throw new Error("entrega perdida");
+      });
+      await postChat(id, "gravar", envPerdeEntrega);
+      expect(observados[0]?.campoFuturo).toBe(7);
+
+      // Reapresentação (sim) não pode apagar campoFuturo.
+      const respReap = await postChat(id, "sim");
+      expect(respReap.status).toBe(200);
+      expect(await respReap.json()).toMatchObject({ handoff: false });
+
+      // Despeja o objeto da memória e lê novamente num novo turno em outra instância.
+      await evictDurableObject(stub1);
+      const stub2 = ambiente.SESSAO.getByName(nome);
+      await runInDurableObject(stub2, (s: Sessao) => {
+        s.dependencias = { modelo, buscar: mundo.buscar };
+      });
+      const rDepois = await stub2.conversar("ler");
+      expect(rDepois.handoff).toBe(false);
+      expect(observados.at(-1)?.campoFuturo).toBe(7);
+
+      const gravado = await runInDurableObject(stub2, (_s, state) =>
+        JSON.parse(state.storage.sql.exec<{ valor: string }>("SELECT valor FROM estado WHERE chave = 'lead'").toArray()[0]!.valor) as Record<string, unknown>);
+      expect(gravado.campoFuturo).toBe(7);
+    } finally {
+      FERRAMENTAS.pop();
+    }
+  });
+
+  it("estado inicial de uma sessão nova é igual ao ESTADO_INICIAL da F", async () => {
+    const observados: EstadoLead[] = [];
+    FERRAMENTAS.push(definir("ler_estado_inicial", "lê o EstadoLead inicial no primeiro turno", {}, [], async (_args, contexto) => {
+      observados.push(contexto.cofre.ler());
+      return { paraOModelo: { ok: true } };
+    }));
+
+    try {
+      const modelo: Modelo = async (mensagens) =>
+        mensagens.at(-1)?.role === "tool"
+          ? diz("ok")
+          : pedeFerramentas(chamar("ler_estado_inicial"));
+
+      const stub = await abrir({ modelo, buscar: criarMundo().buscar });
+      const antes = await runInDurableObject(stub, (_s, state) =>
+        state.storage.sql.exec<{ valor: string }>("SELECT valor FROM estado WHERE chave = 'lead'").toArray()[0]?.valor ?? null);
+      expect(antes).toBeNull();
+
+      const resp = await stub.conversar("oi");
+      expect(resp.handoff).toBe(false);
+      expect(observados).toEqual([ESTADO_INICIAL]);
+    } finally {
+      FERRAMENTAS.pop();
+    }
+  });
 });
+
 
 
