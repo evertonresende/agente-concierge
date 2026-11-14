@@ -2,10 +2,9 @@
 
 Um agente só. Requisitos em [`docs/CONTRATO.md`](../CONTRATO.md); decisões citadas (L, P,
 X) em [`DECISOES.md`](../../DECISOES.md). Os desenhos descrevem o código da integração da
-leva 2. As frentes F, G, H, I e T estão na `main`; falta uma correção da G no caminho do
-lead quando o teto de chamadas corta parte do lote. Conferir contra a `main` final: a
-preencher.
-<!-- PREENCHER: conferir os desenhos contra a main depois da correção R1 da G -->
+leva 2. As frentes F, G (com a correção do teto no caminho do lead), H, I e T estão na
+`main`, verificadas. Conferir contra a `main` final: a preencher.
+<!-- PREENCHER: conferir os desenhos contra a main congelada final -->
 
 ## 1. Um turno: do pedido à resposta
 
@@ -148,6 +147,8 @@ stateDiagram-v2
 - Resumo e confirmação ficam em turnos diferentes: a ferramenta de envio recusa se o resumo
   não foi apresentado num turno anterior. A confirmação não recebe argumentos: envia só o
   resumo gravado.
+- Se o teto de chamadas (P30) corta um `cotar` ou um `montar_resumo` no turno em que o
+  hóspede confirma, a confirmação daquele turno não roda; o hóspede confirma de novo.
 - No envio, o total é recalculado com a ficha lida de novo. O valor do webhook sai desse
   cálculo, não do texto da conversa.
 - Um lead por reserva: a confirmação é consumida uma vez.
