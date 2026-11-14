@@ -82,6 +82,14 @@ describe("saída sem ano a mais de 90 noites da entrada (P21)", () => {
     esperarRecusaP21(await pedido("01/03/2028", "29/02"));
   });
 
+  it("entrada no passado e saída sem ano distante: vale primeiro a recusa de entrada no passado (L2)", async () => {
+    const resultado = await pedido("01/11/2026", "30/10");
+    expect(resultado.ok).toBe(false);
+    const erro = (resultado as { erro: string }).erro;
+    expect(erro).toContain("já passou");
+    expect(erro).not.toContain("sem ano");
+  });
+
   it("inglês: January 20 a January 18 e Jan 20 a Jan 18 recusam; com o ano na saída, cota", async () => {
     esperarRecusaP21(await pedido("January 20", "January 18"));
     esperarRecusaP21(await pedido("Jan 20", "Jan 18"));
