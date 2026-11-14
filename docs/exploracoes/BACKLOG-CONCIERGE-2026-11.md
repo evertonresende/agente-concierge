@@ -1273,6 +1273,19 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   tipos e gate verdes. Sonda da janela do verificador: com resumo aberto o total não é mais cortado
   (antes, turno 42); sem resumo aberto continua cortado no turno 41 e o agente cota de novo (limite
   para o README). Faltam os três defeitos plantados que escapavam (P06, P07, P08), em curso
+- 14/11 00h48 · G · **entrou na `main`: merge `--no-ff` de 4515061, main em a8da5d6.** Defeitos plantados de novo
+  sobre a `main` com a G: P06 e P08 pegos (um teste cada), P07 ainda escapa (a resposta à pergunta fechada
+  por chamada de ferramenta não tem teste; o código já trata). Pedido à frente: um commit só de teste.
+  Fora isso a frente está fechada. F e H avisadas para mergear a `main` nova
+- 14/11 00h48 · B2 · verificador da rodada 2 (7f12107): REPROVADO por quatro achados altos no juiz de preço. A1:
+  total sem a limpeza, chamado de total, passa quando vem com "pelas N noites". A2: uma resposta real e
+  certa é reprovada ("já com a taxa de limpeza de R$ X"; 1 em cerca de 800 turnos reais). A3: desconto
+  concedido com valor igual a um componente passa. A4: respostas certas em inglês reprovadas. Médios em
+  dois casos (`lead-05`, `inv-07`). Passaram a trava de `producao`, a carga e os autotestes. Nos cinco
+  registros reais o juiz novo erra uma vez; o da `main` errava de 6 a 11 por registro. Frente corrigindo,
+  com critério fechado para convergir: os dois corpus do verificador viram teste de regressão; zero certa
+  reprovada nos registros reais; zero errada aprovada em A1, A3 e nos casos da rodada 1; formato que o
+  agente nunca escreveu vira limite documentado do juiz. Pedido junto: um caso dev para a P21
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
