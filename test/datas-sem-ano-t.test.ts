@@ -5,9 +5,11 @@ import { describe, expect, it } from "vitest";
 import { cotarEstadia } from "../src/agente/ferramentas/cotacao";
 import { montarResumo } from "../src/agente/ferramentas/lead";
 import { prepararPedido } from "../src/agente/ferramentas/pedido";
+import { rodarTurno } from "../src/agente/loop";
 import { type Cofre, ESTADO_INICIAL, type EstadoLead } from "../src/lead";
+import type { Modelo } from "../src/modelo";
 import { diasEntre, resolverData, resolverSaida, saidaSemAnoAlemDoTeto, somarDias, TETO_NOITES_SAIDA_SEM_ANO } from "../src/nucleo/datas";
-import { criarContexto, criarMundo } from "./apoio";
+import { chamar, criarContexto, criarMundo, diz, pedeFerramentas, roteiro } from "./apoio";
 
 const HOJE = "2026-11-14";
 
@@ -137,5 +139,36 @@ describe("caminho das ferramentas com a saída sem ano distante (P21)", () => {
     }
     expect(estados[1]).toEqual(estados[0]);
     expect(estados[1]![0]!.pendente).toBeNull();
+  });
+});
+
+describe("turno inteiro com a saída sem ano distante (P21)", () => {
+  const turno = (modelo: Modelo) => {
+    const { ctx } = sessao();
+    return rodarTurno({ mensagem: "de 20/01 a 18/01", historico: [], houveHandoff: false, contexto: ctx(1), modelo, prazo: Date.now() + 5_000 });
+  };
+
+  it("recusa sem total e sem handoff, com a instrução na resposta da ferramenta", async () => {
+    const { modelo, recebidas } = roteiro(
+      pedeFerramentas(chamar("cotar", { imovel_id: "GRM-301", checkin: "20/01", checkout: "18/01", adultos: 2 })),
+      diz("A saída parece estar antes da entrada. Pode me passar as datas de entrada e de saída de novo?"),
+    );
+    const saida = await turno(modelo);
+    const resultado = recebidas[1]!.findLast((m) => m.role === "tool")!.content;
+    expect(resultado).toContain("Peça ao hóspede as datas de entrada e de saída de novo");
+    expect(resultado).not.toContain("R$");
+    expect(saida.reply).not.toContain("R$");
+    expect(saida.handoff).toBe(false);
+  });
+
+  it("recusa depois de cotação válida no mesmo turno não vaza total", async () => {
+    const { modelo } = roteiro(
+      pedeFerramentas(chamar("cotar", { imovel_id: "GRM-301", checkin: "15/01/2027", checkout: "18/01/2027" })),
+      pedeFerramentas(chamar("cotar", { imovel_id: "GRM-301", checkin: "20/01", checkout: "18/01" })),
+      diz("Pode confirmar as datas de entrada e de saída?"),
+    );
+    const saida = await turno(modelo);
+    expect(saida.reply).not.toContain("R$");
+    expect(saida.handoff).toBe(false);
   });
 });
