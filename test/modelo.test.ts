@@ -287,3 +287,14 @@ describe("log de falha do modelo", () => {
     expect(linha).toContain("<id>");
   });
 });
+
+describe("contagem de chamadas reais", () => {
+  const ok = { choices: [{ message: { content: "ok" } }] };
+  it("1 quando o principal responde, 2 quando o reserva assume", async () => {
+    const bom = { run: async () => ok } as unknown as Ai;
+    expect((await criarModelo(bom, "principal/x", { reserva: "reserva/y" })([], [])).uso.chamadas).toBe(1);
+    expect((await criarModelo(bom, "principal/x", {})([], [])).uso.chamadas).toBe(1);
+    const falha = { run: async (m: string) => { if (m === "principal/x") throw new Error("fora do ar"); return ok; } } as unknown as Ai;
+    expect((await criarModelo(falha, "principal/x", { reserva: "reserva/y" })([], [])).uso.chamadas).toBe(2);
+  });
+});

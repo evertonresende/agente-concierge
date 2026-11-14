@@ -23,7 +23,8 @@ export interface DefinicaoDeFerramenta {
 export interface RespostaDoModelo {
   texto: string;
   chamadas: ChamadaDeFerramenta[];
-  uso: { entrada: number; saida: number };
+  /** `chamadas`: quantas chamadas reais o adaptador fez para esta resposta (principal + reserva). */
+  uso: { entrada: number; saida: number; chamadas?: number };
 }
 
 export type Modelo = (mensagens: Mensagem[], ferramentas: DefinicaoDeFerramenta[]) => Promise<RespostaDoModelo>;
@@ -285,14 +286,15 @@ export function criarModelo(ai: Ai, modelo: string | undefined, opcoes: OpcoesDo
 
   return async (mensagens, ferramentas) => {
     if (!modelo) throw new Error("MODELO não configurado");
-    if (!opcoes.reserva) return comMarcaDeLimite(chamar(modelo, mensagens, ferramentas), true);
+    const contar = (r: RespostaDoModelo, chamadas: number): RespostaDoModelo => ({ ...r, uso: { ...r.uso, chamadas } });
+    if (!opcoes.reserva) return contar(await comMarcaDeLimite(chamar(modelo, mensagens, ferramentas), true), 1);
     let principalPorLimite: boolean;
     try {
-      return await comLimite(chamar(modelo, mensagens, ferramentas), opcoes.tempoDoPrincipalMs ?? TEMPO_DO_PRINCIPAL_MS);
+      return contar(await comLimite(chamar(modelo, mensagens, ferramentas), opcoes.tempoDoPrincipalMs ?? TEMPO_DO_PRINCIPAL_MS), 1);
     } catch (erro) {
       if (erro instanceof TempoDoPrincipal) registrarFalha(modelo, erro);
       principalPorLimite = ehErroDeLimite(erro);
     }
-    return comMarcaDeLimite(chamar(opcoes.reserva, mensagens, ferramentas), principalPorLimite);
+    return contar(await comMarcaDeLimite(chamar(opcoes.reserva, mensagens, ferramentas), principalPorLimite), 2);
   };
 }
