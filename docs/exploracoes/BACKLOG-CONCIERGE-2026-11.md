@@ -1295,6 +1295,16 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   paralelo conferidos contra a regra nova do B1 da H: `lead-14` e `con-07` mandam dois "sim" depois de
   resumo visto (1 lead em qualquer ordem) e `con-06` manda duas perguntas; nenhum mistura confirmação
   com outra mensagem. Plano B perguntado ao Éverton (seção Fechamento)
+- 14/11 00h56 · T · verificador independente: APROVADO o delta da64da4..e53e777 (82.102 casos comparados com a
+  árvore da G; 59.051 mudaram, todos de "cotava com 91 a 1460 noites" para a recusa da P21; 90 noites
+  exatas continuam cotando; 11 de 12 defeitos plantados pegos). **Entrou na `main`: merge `--no-ff` de
+  e53e777, main em c9217dc**, depois do ensaio por hash (1367 testes, tipos e gate verdes). Dois baixos
+  com a frente, em commit à parte: a frase da recusa que impede o modelo de completar o ano (na sonda,
+  com a saída reenviada com ano, a estadia de 363 noites foi cotada) e o teste da ordem das recusas
+- 14/11 00h56 · H · veredito final da rodada 3 igual ao parcial. Fato novo: o B1 (mensagens simultâneas) já
+  existe na `main` sem a H, então não é regressão dela e congelar sem a H não o evita. Baixos novos:
+  nenhum teste afirma que o corpo não é lido acima do teto; `handoff` não gravado em reinício no meio
+  do turno. 12 de 16 defeitos plantados pegos. A frente já publicou correções; espero o relatório dela
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -1320,12 +1330,12 @@ e o runner da B2, a P20 (nome do lead, frente F) e a P21 (datas sem ano, frente 
 casos fixo. Meta: 14/11 03h00. Limite: 06h00. Gatilho que já existia: 10h00 com o critério 4 não
 verde, parar e chamar o Éverton.
 
-**Estado do congelamento em 14/11 00h54.** G: na `main` (a8da5d6). H: reprovada na rodada 3, corrigindo
-B1 e B2 (P24 por último e dispensável). Juiz da B2: reprovado na rodada 2, corrigindo com critério
-fechado. T (P21): verificador rodando. F (P20): frente trabalhando. Só o que muda o comportamento
-do agente ou o juiz reinicia a contagem das rodadas: o gate da S, o script da K e o commit de teste
-da G (P07) podem entrar depois que as rodadas começarem, desde que o `git diff --stat` de cada um
-não toque em `src/` nem em `evals/`.
+**Estado do congelamento em 14/11 00h56.** G: na `main` (a8da5d6). T (P21): na `main` (c9217dc); falta
+um commit pequeno com a frase da recusa e um teste. H: reprovada na rodada 3, corrigindo B1 e B2 (P24
+por último e dispensável). Juiz da B2: reprovado na rodada 2, corrigindo com critério fechado. F
+(P20): frente trabalhando. Só o que muda o comportamento do agente ou o juiz reinicia a contagem das
+rodadas: o gate da S, o script da K e o commit de teste da G (P07) podem entrar depois que as rodadas
+começarem, desde que o `git diff --stat` de cada um não toque em `src/` nem em `evals/`.
 
 **Plano B, decisão do Éverton (perguntado em 14/11).** Um ciclo de correção e verificação leva
 cerca de 85 minutos; cabem dois até as 06h00. Se a H ou o juiz não fecharem nesse prazo, a escolha
