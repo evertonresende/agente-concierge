@@ -2193,6 +2193,19 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   passada da frente N, junto com o envio ligado e o caminho do reservado. **Frente N em 62f7583**
   (`frente-n-textos`): os achados da rodada 3 suavizados com o texto do verificador, nada apagado;
   a tabela de merges sem verificador aprovado foi a 24 linhas
+- 14/11 06h50 · N · **README, "Como foi feito", desenhos, setup e fechamento da M2 NA `main` (933a24d)**, pelo
+  hash 62f7583 da `frente-n-textos`. Antes do merge a coordenação conferiu: o delta da rodada 3
+  (9ff03bd..62f7583) linha a linha contra o "deveria ser" do relatório do verificador, com uma
+  oração a mais da N ("porque a frase pode falar do pedido já registrado"), que o teste
+  `test/conferencia-g.test.ts` sustenta; as três linhas novas da tabela de merges contra o log;
+  `docs/rascunho-aberturas.md` ausente e 3a6b9d7 e ad4dafc fora da ascendência; o delta contra a
+  `main` só em README e `docs/`; os seis blocos Mermaid renderizando; ensaio de merge limpo; gate
+  verde na árvore mesclada. Depois do merge, saiu da `main` o `docs/rascunho-cortes-e-mais-tempo.md`,
+  cujo conteúdo já está no `DECISOES.md`. **Última passada pedida à N às 06h51**, sem verificador
+  depois (a coordenação confere o delta): exports fora (X33), envio ligado com os fatos da K,
+  P25 na configuração, decisões confirmadas (X33), marcador do setup, e o caminho do reservado
+  quando a branch da cópia existir. Depois dela só sobra marcador de repositório público e da
+  revisão da cópia da skill
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
