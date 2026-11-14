@@ -229,6 +229,15 @@ describe("resposta inútil do Haiku vai ao reserva", () => {
     ["erro devolvido como valor", { type: "error", error: { type: "overloaded_error", message: "Overloaded" } }],
     ["texto fora de JSON", "<html>502 Bad Gateway</html>"],
     ["fim desconhecido", { stop_reason: "pause_turn", content: [{ type: "text", text: "um momento" }] }],
+    ["refusal com texto", { stop_reason: "refusal", content: [{ type: "text", text: "Não posso ajudar." }] }],
+    ["stop_reason ausente com texto", { content: [{ type: "text", text: "oi" }] }],
+    ["texto só de espaços", { stop_reason: "end_turn", content: [{ type: "text", text: "   \n " }] }],
+    ["tool_use declarado sem ferramenta, só texto", { stop_reason: "tool_use", content: [{ type: "text", text: "Vou consultar, um instante." }] }],
+    ["ferramenta sem nome, com texto", { stop_reason: "tool_use", content: [{ type: "text", text: "Vou cotar." }, { type: "tool_use", id: "toolu_1", input: {} }] }],
+    ["ferramenta com stop_reason end_turn", { stop_reason: "end_turn", content: [{ type: "tool_use", id: "toolu_1", name: "cotar", input: {} }] }],
+    ["ferramenta com input null", { stop_reason: "tool_use", content: [{ type: "tool_use", id: "toolu_1", name: "cotar", input: null }] }],
+    ["ferramenta com input texto", { stop_reason: "tool_use", content: [{ type: "tool_use", id: "toolu_1", name: "cotar", input: "{}" }] }],
+    ["type error com texto e end_turn", { type: "error", stop_reason: "end_turn", content: [{ type: "text", text: "oi" }] }],
   ];
 
   for (const [nome, bruto] of inuteis) {

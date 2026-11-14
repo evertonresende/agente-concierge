@@ -153,6 +153,11 @@ export function pedidoAnthropic(mensagens: Mensagem[], ferramentas: DefinicaoDeF
   };
 }
 
+/** Resposta do modelo que não serve ao hóspede: falha do principal, o reserva responde. */
+class RespostaInutil extends Error {
+  override name = "RespostaInutil";
+}
+
 // Únicos fins de resposta que entregam algo inteiro. Os demais (`max_tokens`, `refusal`,
 // `pause_turn` e qualquer valor novo da API) cortam ou recusam: a resposta não serve.
 const FINS_COMPLETOS = new Set(["end_turn", "tool_use", "stop_sequence"]);
@@ -164,16 +169,26 @@ const FINS_COMPLETOS = new Set(["end_turn", "tool_use", "stop_sequence"]);
  */
 export function lerRespostaAnthropic(bruto: unknown): RespostaDoModelo {
   const raiz = objeto(bruto);
+  const inutil = (motivo: string) => new RespostaInutil(`resposta inútil do modelo (${motivo})`);
+  if (raiz.type === "error") throw inutil("erro devolvido como valor");
   const fim = typeof raiz.stop_reason === "string" ? raiz.stop_reason : "ausente";
-  if (!FINS_COMPLETOS.has(fim)) throw new Error(`resposta inútil do modelo (stop_reason ${fim})`);
+  if (!FINS_COMPLETOS.has(fim)) throw inutil(`stop_reason ${fim}`);
   const blocos = (Array.isArray(raiz.content) ? raiz.content : []).map(objeto);
   const texto = blocos.filter((b) => b.type === "text" && typeof b.text === "string").map((b) => b.text as string).join("\n").trim();
-  const chamadas = blocos.filter((b) => b.type === "tool_use" && typeof b.name === "string").map((b): ChamadaDeFerramenta => ({
+  const usos = blocos.filter((b) => b.type === "tool_use");
+  // Chamada sem nome ou com argumentos que não são objeto não pode ser executada: nada de
+  // descartar em silêncio nem de inventar argumentos vazios.
+  const valido = (b: Bloco) => typeof b.name === "string" && b.name !== "" && !!b.input && typeof b.input === "object" && !Array.isArray(b.input);
+  if (!usos.every(valido)) throw inutil("chamada de ferramenta sem nome ou com argumentos inválidos");
+  const chamadas = usos.map((b): ChamadaDeFerramenta => ({
     id: typeof b.id === "string" && b.id !== "" ? b.id : idNovo(),
     type: "function",
-    function: { name: b.name as string, arguments: JSON.stringify(b.input ?? {}) },
+    function: { name: b.name as string, arguments: JSON.stringify(b.input) },
   }));
-  if (texto === "" && chamadas.length === 0) throw new Error(`resposta inútil do modelo (stop_reason ${fim}, sem texto nem ferramenta)`);
+  if (texto === "" && chamadas.length === 0) throw inutil(`stop_reason ${fim}, sem texto nem ferramenta`);
+  // O fim tem de bater com o conteúdo: "tool_use" sem ferramenta deixaria um texto do tipo
+  // "vou consultar" pendurado para o hóspede; ferramenta com outro fim não foi pedida.
+  if ((fim === "tool_use") !== (chamadas.length > 0)) throw inutil(`stop_reason ${fim} não bate com o conteúdo`);
   const uso = objeto(raiz.usage);
   return {
     texto,
