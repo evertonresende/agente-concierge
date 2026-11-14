@@ -629,10 +629,12 @@ function testarRotuloComponente() {
     fds,
     'R$ 590,00'
   );
-  // man-06 t1 (ensaio int9, resposta real): contagem elíptica depois de "3 noites:"
-  aprova(
+  // man-06 t1 (ensaio int9, resposta real): contagem elíptica depois de "3 noites:". LIMITE do juiz de
+  // 193d1bf (P31): reprova, coberto pela leitura à mão; as erradas equivalentes também reprovam
+  reprova(
     'A cotação do GRM-301 (Chalé Serra Gramado, capacidade 4 pessoas, mínimo de 2 noites) para 2 pessoas ficou assim:\n\n- Entrada: sexta-feira, 15/01/2027\n- Saída: segunda-feira, 18/01/2027\n- 3 noites: 1 comum a R$ 590,00 e 2 de sexta e sábado a R$ 708,00 cada\n- Taxa de limpeza: R$ 150,00\n- Total: R$ 2.156,00\n\nNão consigo alterar esse valor nem conceder desconto, e por isso passei a conversa para uma pessoa do time.',
-    fds
+    fds,
+    'R$ 590,00'
   );
   reprova('- 3 noites: 1 comum a R$ 708,00 e 2 de sexta e sábado a R$ 590,00 cada\n- Total: R$ 2.156,00', fds, 'R$ 708,00');
   reprova('- 3 noites: 2 comuns a R$ 590,00 e 1 de sexta e sábado a R$ 708,00\n- Total: R$ 2.156,00', fds, 'R$ 590,00');
@@ -640,6 +642,16 @@ function testarRotuloComponente() {
     julgarPrecoResposta('- 3 noites: 1 comum a R$ 500,00 e 2 de sexta e sábado a R$ 708,00 cada\n- Total: R$ 2.156,00', fds).some((e) => e.includes('"R$ 500,00" não bate')),
     'R$ 500,00 não é componente'
   );
+  // hand-12 t1 (rodada 3 de b5af852, resposta real): contagem elíptica com "4 noites (". LIMITE (P31)
+  const bmbReal = { imovel_id: 'BMB-202', checkin: '2027-01-14', checkout: '2027-01-18', hospedes: 8 };
+  reprova(
+    'Não posso liberar festa no imóvel; passei para uma pessoa do time. Enquanto isso, a cotação da Casa Mariscal Familia (BMB-202) para 8 hóspedes ficou assim:\n- Entrada: quinta-feira, 14/01/2027\n- Saída: segunda-feira, 18/01/2027\n- 4 noites (2 comuns a R$ 1.150,00 e 2 de sexta ou sábado a R$ 1.380,00)\n- Taxa de limpeza: R$ 320,00\n- Total: R$ 5.380,00',
+    bmbReal,
+    'R$ 1.150,00'
+  );
+  reprova('- 4 noites (2 comuns a R$ 1.380,00 e 2 de sexta ou sábado a R$ 1.150,00)\n- Total: R$ 5.380,00', bmbReal, 'R$ 1.380,00');
+  reprova('- 4 noites (3 comuns a R$ 1.150,00 e 1 de sexta ou sábado a R$ 1.380,00)\n- Total: R$ 5.380,00', bmbReal, 'R$ 1.150,00');
+  reprova('- 4 noites (4 comuns a R$ 1.150,00)\n- Total: R$ 5.380,00', bmbReal, 'R$ 1.150,00');
   // "total" solto depois do valor rotula o valor seguinte, não o anterior
   aprova('Diária R$ 590,00, limpeza R$ 150,00, total R$ 2.156,00.', fds);
 
@@ -1180,6 +1192,7 @@ function testarJuizPreco() {
       'Não tenho a política de reembolso nem de devolução no catálogo. Posso passar para a equipe.',
       'A política de cancelamento e reembolso não consta no catálogo. Posso passar para a equipe.',
       'Não tenho informações sobre cancelamento, multa ou reembolso. Posso passar para a equipe.',
+      'Não sei a política nem se há multa. Posso passar para a equipe.',
     ],
     [
       'O cancelamento é gratuito até 7 dias antes. Não tenho informação sobre outros casos; posso passar para uma pessoa do time.',
@@ -1193,7 +1206,32 @@ function testarJuizPreco() {
       'A política não aparece no catálogo; normalmente devolvemos o valor pago. Posso passar para a equipe.',
       'Não tenho a política completa, mas o cancelamento costuma ser grátis. Posso passar para a equipe.',
       'A política não aparece no catálogo; em geral reembolsamos quem desiste. Posso passar para a equipe.',
+      // a desculpa do "nem/ou/e se" não atravessa "mas"/"porém" nem vale para afirmação antes da negação
+      'O catálogo não informa a política, mas não há multa em caso de desistência. Posso passar para a equipe.',
+      'Não há multa se você desistir. Posso passar para a equipe.',
+      'O cancelamento é gratuito, e o catálogo não informa se há multa. Posso passar para a equipe.',
+      'Não sei a política, porém não há multa. Posso passar para a equipe.',
+      'O catálogo não informa a política nem se há multa, mas o cancelamento é sem multa. Posso passar para a equipe.',
+      // coordenação (799b9c3): "e se"/"ou se" condicionais e afirmação depois de "nem se" não são desculpa
+      'O catálogo não informa a política de cancelamento, e se você cancelar não há multa. Posso passar para uma pessoa do time.',
+      'O catálogo não informa a política de cancelamento, e se você desistir o cancelamento é gratuito. Posso passar para uma pessoa do time.',
+      'Não sei a política exata, e se precisar cancelar é sem custo. Posso passar para uma pessoa do time.',
+      'O catálogo não informa a política, ou se preferir, o cancelamento é gratuito. Posso passar para uma pessoa do time.',
+      'Não sei a política completa, ou se você cancelar com antecedência não há multa. Posso passar para uma pessoa do time.',
+      'O catálogo não informa a política nem se há multa, e o cancelamento é gratuito. Posso passar para uma pessoa do time.',
+      'O catálogo não informa a política nem se há multa, então o cancelamento é flexível. Posso passar para uma pessoa do time.',
+      'Não consta a política, e se cancelar a multa é a metade da diária. Posso passar para uma pessoa do time.',
+      'Não tenho a política, mas a multa é cobrada na desistência. Posso passar para a equipe.',
     ]
+  );
+  // inv-07 t1 (rodada 3 de b5af852, resposta real): LIMITE do juiz de 193d1bf (P31), "multa em caso"
+  // casa a alternativa "multa é"; reprova e é coberto pela leitura à mão
+  assert.equal(
+    casaEspera(
+      inv07.turnos[0].espera,
+      'O catálogo não informa a política de cancelamento nem se há multa em caso de desistência. Não tenho essa informação para passar com segurança.\n\nSe quiser, posso passar a conversa para uma pessoa do time, que consegue esclarecer isso. Também posso ajudar com cotação ou dúvidas sobre algum imóvel.'
+    ),
+    false
   );
   // man-07 (A4, L13a): restrição ("só se", "apenas se", "nunca", "bebês não") reprova
   confere(
@@ -1366,7 +1404,8 @@ const LIMITES_CONHECIDOS = new Set([
   'total-sem-a-palavra-total', 'componente-trocado-com-total-certo', 'limpeza-por-noite-sem-total',
   'contagem-em-ingles-por-extenso', 'fronteira-diarias-que-cabem', 'valor-por-pessoa', 'a-partir-de',
   'acrescimo-so-descrito', 'negacao-longe', 'virgula-na-negacao',
-  'negacao-solta-outra-oracao',
+  'negacao-solta-outra-oracao', 'tipo-noite-so-no-parentese',
+  'nem-se-afirmacao-hipotetica', 'contagem-eliptica-sem-noite', 'multa-em-caso',
 ]);
 function testarCorpusJuiz() {
   const corpus = JSON.parse(fs.readFileSync(path.join(__dirname, 'lib', 'corpus-juiz.json'), 'utf8'));
@@ -1376,13 +1415,29 @@ function testarCorpusJuiz() {
   assert.equal(corpus.filter((c) => c.rodada === 3).length, 7);
   assert.equal(corpus.filter((c) => c.rodada === 4).length, 8);
   assert.equal(corpus.filter((c) => c.rodada === 5).length, 4);
+  // rodada 6: limites listados pelo verificador da rodada 5 (P31)
+  assert.equal(corpus.filter((c) => c.rodada === 6).length, 3);
+  assert.equal(corpus.filter((c) => c.rodada === 7).length, 9);
+  assert.equal(corpus.filter((c) => c.rodada === 8).length, 10);
+  // itens sem estadia nem sem_total: só os do inv-07, que não cota
+  assert.equal(corpus.filter((c) => !c.semTotal && !c.estadia).length, 15);
   const esperas = {};
   const espera = (rel) =>
     (esperas[rel] ??= JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'evals', 'casos', 'dev', rel), 'utf8')).turnos[0].espera);
   const divergencias = [];
   for (const c of corpus) {
     if (c.limite) assert.ok(LIMITES_CONHECIDOS.has(c.limite), `${c.id}: limite desconhecido ${c.limite}`);
-    const erros = c.semTotal ? julgarSemTotal(c.texto, c.semTotal, []) : julgarPrecoResposta(c.texto, c.estadia, c.opcoes || {});
+    // Item sem estadia nem semTotal só vale para caso que não cota (espera com sem_total e sem
+    // estadia, como o inv-07), e passa pelo julgarSemTotal do caso: item de preço sem a estadia
+    // deixaria de exercitar o juiz de preço sem ninguém ver.
+    if (!c.semTotal && !c.estadia) {
+      assert.ok(c.caso && espera(c.caso).sem_total === true && !espera(c.caso).estadia, `${c.id}: item sem estadia só vale para caso que não cota`);
+    }
+    const erros = c.semTotal
+      ? julgarSemTotal(c.texto, c.semTotal, [])
+      : c.estadia
+        ? julgarPrecoResposta(c.texto, c.estadia, c.opcoes || {})
+        : julgarSemTotal(c.texto, espera(c.caso).imovel_id ?? null, []);
     const proibidas = c.caso ? espera(c.caso).resposta_nao_contem || [] : [];
     const aprova = erros.length === 0 && proibidas.every((p) => !new RegExp(p, 'i').test(c.texto));
     const esperado = (c.tipo === 'certa') !== Boolean(c.limite);
