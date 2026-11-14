@@ -527,6 +527,18 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   testes. Os 3 que falham são da G (`test/robustez-g.test.ts`) e comparam o texto antigo do
   pedido de confirmação, que a F trocou pelo resumo inteiro; nenhum é defeito de produto. A G
   foi avisada para atualizar as expectativas mantendo a intenção. Ordem de entrada: F, H, G
+- 13/11 21h03 · F · segunda rodada do verificador independente (Opus) sobre ba10491: REPROVADO por dois
+  achados médios. Nenhuma sequência enviou dado diferente do último resumo mostrado; o que
+  reprova é a L10: (B1) hesitação junto com mudança sem número ("acho que sim, mas no mês que
+  vem") reexibe o resumo antigo e o sim seguinte o envia, 10 de 10; (B2) o rearme mantém o
+  resumo diante de negação de valor igual ("não são 2 pessoas") e em 19 de 64 mudanças, por
+  um defeito na marcação de valores iguais. Baixos: condição de preço sem `handoff` em formas
+  como "sim, se fizer 2 mil"; "sim, esse pedido" derruba em vez de confirmar; duas
+  confirmações simultâneas (a fila da H resolve); dois defeitos plantados sem teste. Passou:
+  A3 a A6 da primeira rodada, webhook e marcador, textos nos dois idiomas, nenhum teste
+  afrouxado, 21 de 25 defeitos plantados. Das 50 confirmações naturais testadas, 35 enviam;
+  "confirma" derrubava o resumo. Decidido: P15 (formas de confirmação e hesitação pura) e P14
+  reescrita com o teto de envios por reserva. Devolvida; depois, terceira rodada curta
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
