@@ -28,7 +28,7 @@ async function abrir(vistas: string[]) {
     const ultima = mensagens[mensagens.length - 1]!;
     if (ultima.role === "tool") return diz("Certo.");
     vistas.push(ultima.content);
-    if (ultima.content === "quero fechar") return pedeFerramentas(chamar("montar_resumo", DADOS));
+    if (ultima.content === "quero fechar, sou Ana Lima") return pedeFerramentas(chamar("montar_resumo", DADOS));
     if (ultima.content === "sim") return pedeFerramentas(chamar("confirmar_reserva"));
     return diz(`resposta a ${ultima.content}`);
   };
@@ -60,7 +60,7 @@ describe("resposta do Worker fora do turno com resumo pendente (frente H, P24)",
     it(`P24: resumo, ${caso.nome} e 'sim' → o 'sim' reapresenta (0 POSTs, sem modelo); o 'sim' seguinte envia o resumo`, async () => {
       const vistas: string[] = [];
       const s = await abrir(vistas);
-      await postChat(s.id, "quero fechar");
+      await postChat(s.id, "quero fechar, sou Ana Lima");
 
       const doWorker = await postChat(s.id, caso.mensagem);
       expect(doWorker).toEqual({ reply: expect.stringMatching(caso.resposta), handoff: false });
@@ -68,7 +68,7 @@ describe("resposta do Worker fora do turno com resumo pendente (frente H, P24)",
       const primeiro = await postChat(s.id, "sim");
       expect(primeiro.handoff).toBe(false);
       expect(primeiro.reply).toContain("Ainda não enviei este pedido");
-      expect(vistas).toEqual(["quero fechar"]);
+      expect(vistas).toEqual(["quero fechar, sou Ana Lima"]);
       expect(s.mundo.leads).toEqual([]);
 
       await postChat(s.id, "sim");

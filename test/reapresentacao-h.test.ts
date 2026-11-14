@@ -78,7 +78,7 @@ describe("reapresentação depois de turno que falhou, com as regras finais da F
         sessao.dependencias = { modelo, buscar: mundo.buscar };
       });
 
-      await postChat(id, ingles ? "I want to book this place" : "quero fechar");
+      await postChat(id, ingles ? "I want to book this place, I am Ana Lima" : "quero fechar, sou Ana Lima");
       const segundo = await (await postChat(id, ingles ? "change the check-out to one day earlier" : "muda a saída para um dia antes")).json<{ reply: string }>();
       const falha = await (await postChat(id, ingles ? "what time is check-in?" : "qual o horário do check-in?")).json<{ handoff: boolean }>();
       expect(falha.handoff).toBe(true);

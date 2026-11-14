@@ -40,12 +40,12 @@ function webhookEmPassos(passos: Passo[], antesDoPost?: (n: number) => Promise<v
   return { posts, buscar };
 }
 
-/** "quero fechar" e "outro telefone" montam resumo da mesma estadia; "nome corrigido" troca o nome; "sim" confirma. */
+/** "quero fechar, sou Ana Lima" e "outro telefone" montam resumo da mesma estadia; "nome corrigido: Ana Lima Souza" troca o nome; "sim" confirma. */
 const modelo: Modelo = async (mensagens) => {
   const ultima = ultimaDoHospede(mensagens);
   if (ultima === "sim") return pedeFerramentas(chamar("confirmar_reserva"));
   if (ultima === "outro telefone") return pedeFerramentas(chamar("montar_resumo", { ...DADOS, telefone: "(11) 97777-0000" }));
-  if (ultima === "nome corrigido") return pedeFerramentas(chamar("montar_resumo", { ...DADOS, nome: "Ana Lima Souza" }));
+  if (ultima === "nome corrigido: Ana Lima Souza") return pedeFerramentas(chamar("montar_resumo", { ...DADOS, nome: "Ana Lima Souza" }));
   return pedeFerramentas(chamar("montar_resumo", DADOS));
 };
 
@@ -91,7 +91,7 @@ describe("estado da F no Durable Object (frente H)", () => {
     });
     const stub = await abrir(buscar);
 
-    await stub.conversar("quero fechar");
+    await stub.conversar("quero fechar, sou Ana Lima");
     const sim = await simAbandonadoPeloWorker(stub, posts, liberar);
     expect(sim.handoff).toBe(true);
     expect(posts).toHaveLength(2);
@@ -115,13 +115,13 @@ describe("estado da F no Durable Object (frente H)", () => {
     });
     const stub = await abrir(buscar);
 
-    await stub.conversar("quero fechar");
+    await stub.conversar("quero fechar, sou Ana Lima");
     await simAbandonadoPeloWorker(stub, posts, liberar);
     expect(posts).toHaveLength(1);
     expect((await estadoGravado(stub)).postsSemRegistro?.[ESTADIA]).toBe(1);
 
     await reiniciar(stub, buscar);
-    await stub.conversar("nome corrigido");
+    await stub.conversar("nome corrigido: Ana Lima Souza");
     const corrigido = await stub.conversar("sim");
     expect(corrigido.handoff).toBe(true);
     // Segundo POST sem 201 da estadia: sem nova tentativa do 5xx (P14), 2 POSTs no total.
@@ -133,7 +133,7 @@ describe("estado da F no Durable Object (frente H)", () => {
     const { posts, buscar } = webhookEmPassos([201], () => pausa(300));
     const stub = await abrir(buscar, { orcamentoMs: 120, tetoMs: 250 });
 
-    await stub.conversar("quero fechar");
+    await stub.conversar("quero fechar, sou Ana Lima");
     const sim = await stub.conversar("sim");
     expect(sim.handoff).toBe(true);
     expect(posts).toHaveLength(1);

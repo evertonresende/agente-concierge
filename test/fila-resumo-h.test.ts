@@ -32,7 +32,7 @@ function modelo(vistas: string[], atrasoMs: () => number): Modelo {
     if (ultima.role === "tool") return diz("Certo.");
     vistas.push(ultima.content);
     await pausa(atrasoMs());
-    if (ultima.content === "quero fechar") return pedeFerramentas(chamar("montar_resumo", DADOS));
+    if (ultima.content === "quero fechar, sou Ana Lima") return pedeFerramentas(chamar("montar_resumo", DADOS));
     if (ultima.content.startsWith("hospedes ")) {
       return pedeFerramentas(chamar("montar_resumo", { ...DADOS, hospedes: Number(ultima.content.slice(9)) }));
     }
@@ -74,8 +74,8 @@ describe("fila da sessão e resumo ainda não entregue (frente H, B1)", () => {
     const s = await abrir(vistas, () => 40);
 
     // O "sim" sai com o turno do resumo já em curso (o modelo leva 40 ms): ordem garantida, não por tempo.
-    const fechar = postChat(s.id, "quero fechar");
-    await vi.waitFor(() => expect(vistas).toEqual(["quero fechar"]), { interval: 1 });
+    const fechar = postChat(s.id, "quero fechar, sou Ana Lima");
+    await vi.waitFor(() => expect(vistas).toEqual(["quero fechar, sou Ana Lima"]), { interval: 1 });
     const [a, b] = await Promise.all([fechar, postChat(s.id, "sim")]);
     const resumo = await a.json<{ reply: string }>();
     const sim = await b.json<{ reply: string; handoff: boolean }>();
@@ -83,7 +83,7 @@ describe("fila da sessão e resumo ainda não entregue (frente H, B1)", () => {
     expect(sim.handoff).toBe(false);
     expect(sim.reply).toContain("Ainda não enviei este pedido");
     expect(sim.reply).toContain("Resumo do seu pedido de reserva:");
-    expect(vistas).toEqual(["quero fechar"]);
+    expect(vistas).toEqual(["quero fechar, sou Ana Lima"]);
     expect(s.mundo.leads).toEqual([]);
 
     const depois = await (await postChat(s.id, "sim")).json<{ reply: string }>();
@@ -94,7 +94,7 @@ describe("fila da sessão e resumo ainda não entregue (frente H, B1)", () => {
   it("B1-controle: resumo já entregue e 'sim' sozinho depois → 1 lead (caminho normal)", async () => {
     const vistas: string[] = [];
     const s = await abrir(vistas, () => 5);
-    await postChat(s.id, "quero fechar");
+    await postChat(s.id, "quero fechar, sou Ana Lima");
     await postChat(s.id, "sim");
     expect(s.mundo.leads).toHaveLength(1);
   });
@@ -103,7 +103,7 @@ describe("fila da sessão e resumo ainda não entregue (frente H, B1)", () => {
     it(`B1 não alcança resumo visto: '${primeira}' e '${segunda}' ao mesmo tempo → 1 lead, um 'foi registrado' e um 'já está registrado', sem reapresentação`, async () => {
       const vistas: string[] = [];
       const s = await abrir(vistas, () => 20);
-      await postChat(s.id, "quero fechar");
+      await postChat(s.id, "quero fechar, sou Ana Lima");
 
       const [a, b] = await Promise.all([postChat(s.id, primeira), pausa(2).then(() => postChat(s.id, segunda))]);
       const respostas = [(await a.json<{ reply: string; handoff: boolean }>()), (await b.json<{ reply: string; handoff: boolean }>())];
@@ -122,7 +122,7 @@ describe("fila da sessão e resumo ainda não entregue (frente H, B1)", () => {
       for (let rodada = 0; rodada < 5; rodada++) {
         const vistas: string[] = [];
         const s = await abrir(vistas, () => 5 + Math.floor(Math.random() * 15));
-        await postChat(s.id, "quero fechar");
+        await postChat(s.id, "quero fechar, sou Ana Lima");
         vistas.length = 0;
 
         const mensagens = MISTURAS[tamanho]!;

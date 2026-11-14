@@ -33,7 +33,7 @@ function modelo(vistas: string[]): Modelo {
     if (mensagens[0]?.role === "system" && mensagens[0].content.includes("aguarda a confirmação do hóspede")) return diz("NÃO");
     vistas.push(ultima.content);
     await pausa(ultima.content === LENTA ? 250 : 40);
-    if (ultima.content === "quero fechar") return pedeFerramentas(chamar("montar_resumo", DADOS));
+    if (ultima.content === "quero fechar, sou Ana Lima") return pedeFerramentas(chamar("montar_resumo", DADOS));
     if (ultima.content === "quero outras datas") return pedeFerramentas(chamar("montar_resumo", OUTROS));
     if (ultima.content === "sim") return pedeFerramentas(chamar("confirmar_reserva"));
     // Sem "?" na resposta, para a pergunta do agente não derrubar o resumo (P18).
@@ -93,20 +93,20 @@ describe("Worker desiste de pedido na fila do objeto (frente H, B2)", () => {
     const lento = postChat(s.id, LENTA);
     await pausa(20);
 
-    const r = await (await postChat(s.id, "quero fechar", entregaPerdida(5))).json<{ handoff: boolean }>();
+    const r = await (await postChat(s.id, "quero fechar, sou Ana Lima", entregaPerdida(5))).json<{ handoff: boolean }>();
     expect(r.handoff).toBe(true);
     await lento;
     await pausa(200);
 
     await postChat(s.id, "sim");
-    expect(vistas).not.toContain("quero fechar");
+    expect(vistas).not.toContain("quero fechar, sou Ana Lima");
     expect(s.mundo.leads).toEqual([]);
   });
 
   it("B2b: resumo visto em aberto e 'quero outras datas' abandonado na fila → o resumo visto continua; 'sim' reapresenta e o 'sim' seguinte envia as datas vistas", async () => {
     const vistas: string[] = [];
     const s = await abrir(vistas);
-    await postChat(s.id, "quero fechar");
+    await postChat(s.id, "quero fechar, sou Ana Lima");
     const lento = postChat(s.id, LENTA);
     await pausa(20);
 
@@ -128,7 +128,7 @@ describe("Worker desiste de pedido na fila do objeto (frente H, B2)", () => {
   it("B2-controle: abandono com o turno já em curso (sem fila) continua sem enviar", async () => {
     const vistas: string[] = [];
     const s = await abrir(vistas);
-    const r = await (await postChat(s.id, "quero fechar", entregaPerdida(10))).json<{ handoff: boolean }>();
+    const r = await (await postChat(s.id, "quero fechar, sou Ana Lima", entregaPerdida(10))).json<{ handoff: boolean }>();
     expect(r.handoff).toBe(true);
     await pausa(150);
     await postChat(s.id, "sim");

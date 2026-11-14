@@ -119,7 +119,7 @@ describe("concorrência endurecida e falhas (frente H)", () => {
       sessao.dependencias = { modelo, buscar: mundo.buscar };
     });
 
-    const resumo = await postChat(id, "quero fechar");
+    const resumo = await postChat(id, "quero fechar, sou Ana Lima");
     expect(resumo.status).toBe(200);
     expect(mundo.leads).toHaveLength(0);
 
@@ -229,7 +229,7 @@ describe("concorrência endurecida e falhas (frente H)", () => {
       }) as typeof state.storage.transactionSync;
     });
 
-    const resumo = await stub.conversar("quero fechar");
+    const resumo = await stub.conversar("quero fechar, sou Ana Lima");
     expect(resumo.handoff).toBe(true);
     expect(resumo.reply).toContain("problema técnico");
 
@@ -255,7 +255,7 @@ describe("concorrência endurecida e falhas (frente H)", () => {
     const stub = await abrir({ modelo, buscar: mundo.buscar });
 
     // Turno 1 entrega o resumo até 18/01/2027 normalmente.
-    const r1 = await stub.conversar("quero fechar");
+    const r1 = await stub.conversar("quero fechar, sou Ana Lima");
     expect(r1.handoff).toBe(false);
     expect(r1.reply).toContain("18/01/2027");
 
@@ -309,7 +309,7 @@ describe("concorrência endurecida e falhas (frente H)", () => {
         : pedeFerramentas(chamar("montar_resumo", DADOS));
 
     const stub = await abrir({ modelo, buscar: buscarLento, orcamentoMs: 120, tetoMs: 250 });
-    await stub.conversar("quero fechar");
+    await stub.conversar("quero fechar, sou Ana Lima");
 
     const primeiraConfirmacao = await stub.conversar("sim");
     await postEmCurso;
@@ -354,7 +354,7 @@ describe("concorrência endurecida e falhas (frente H)", () => {
           : pedeFerramentas(chamar("montar_resumo", DADOS));
 
       const stub = await abrir({ modelo, buscar, orcamentoMs: 100, tetoMs: 400 });
-      await stub.conversar("quero fechar");
+      await stub.conversar("quero fechar, sou Ana Lima");
 
       const [r1, r2] = await Promise.all([stub.conversar("sim"), stub.conversar("sim")]);
       expect(r1.handoff).toBe(true);
@@ -384,7 +384,7 @@ describe("concorrência endurecida e falhas (frente H)", () => {
 
     // 1. Estoura na recotação antes do POST: nenhum POST pode sair depois.
     const stub1 = await abrir({ modelo, buscar: mundo.buscar, orcamentoMs: 100, tetoMs: 300 });
-    await stub1.conversar("quero fechar");
+    await stub1.conversar("quero fechar, sou Ana Lima");
     await runInDurableObject(stub1, (sessao: Sessao) => {
       sessao.dependencias = { modelo, buscar: buscarAtrasado, orcamentoMs: 80, tetoMs: 300 };
     });
@@ -399,7 +399,7 @@ describe("concorrência endurecida e falhas (frente H)", () => {
       throw new Error("catálogo caiu tarde");
     }) as unknown as typeof fetch;
     const stub2 = await abrir({ modelo, buscar: buscarComErroTardio, orcamentoMs: 80, tetoMs: 300 });
-    const cortadaResumo = await stub2.conversar("quero fechar");
+    const cortadaResumo = await stub2.conversar("quero fechar, sou Ana Lima");
     expect(cortadaResumo.handoff).toBe(true);
     await pausa(250);
 
@@ -466,7 +466,7 @@ describe("concorrência endurecida e falhas (frente H)", () => {
     }) as typeof fetch;
     const modelo1: Modelo = async (mensagens) => {
       const ultima = ultimaDoHospede(mensagens);
-      if (ultima === "quero fechar") return pedeFerramentas(chamar("montar_resumo", DADOS));
+      if (ultima === "quero fechar, sou Ana Lima") return pedeFerramentas(chamar("montar_resumo", DADOS));
       if (ultima === "sim") return pedeFerramentas(chamar("confirmar_reserva"));
       throw new Error("modelo indisponível");
     };
@@ -475,7 +475,7 @@ describe("concorrência endurecida e falhas (frente H)", () => {
       sessao.dependencias = { modelo: modelo1, buscar: buscar1 };
     });
 
-    expect((await postChat(id1, "quero fechar")).status).toBe(200);
+    expect((await postChat(id1, "quero fechar, sou Ana Lima")).status).toBe(200);
     const contingencia = await postChat(id1, "qual o horário?");
     expect(contingencia.status).toBe(200);
     expect((await contingencia.json<{ handoff: boolean }>()).handoff).toBe(true);
@@ -526,7 +526,7 @@ describe("concorrência endurecida e falhas (frente H)", () => {
       sessao.dependencias = { modelo: modelo2, buscar: buscarContado };
     });
 
-    expect((await postChat(id2, "quero fechar")).status).toBe(200);
+    expect((await postChat(id2, "quero fechar, sou Ana Lima")).status).toBe(200);
     let tentativas2 = 0;
     const envFalha2 = comNamespaceRealEnvolvido(async (stub, args) => {
       tentativas2++;
@@ -549,7 +549,7 @@ describe("concorrência endurecida e falhas (frente H)", () => {
         .map((l) => JSON.parse(l.mensagem) as Mensagem)
         .filter((m) => m.role === "user")
         .map((m) => m.content));
-    expect(usersNoHistorico2).toEqual(["quero fechar", "sim"]);
+    expect(usersNoHistorico2).toEqual(["quero fechar, sou Ana Lima", "sim"]);
   });
 
   it("item 1b-pergunta: resumo, pergunta e 'sim' com falha depois da 1ª passagem → a 2ª passagem não acrescenta efeito", async () => {
@@ -566,7 +566,7 @@ describe("concorrência endurecida e falhas (frente H)", () => {
     const modelo: Modelo = async (mensagens) => {
       chamadasModelo++;
       const ultima = ultimaDoHospede(mensagens);
-      if (ultima === "quero fechar") return pedeFerramentas(chamar("montar_resumo", DADOS));
+      if (ultima === "quero fechar, sou Ana Lima") return pedeFerramentas(chamar("montar_resumo", DADOS));
       if (ultima === "sim") return pedeFerramentas(chamar("confirmar_reserva"));
       return diz("O check-in é às 15:00.");
     };
@@ -575,7 +575,7 @@ describe("concorrência endurecida e falhas (frente H)", () => {
       sessao.dependencias = { modelo, buscar };
     });
 
-    expect((await postChat(id, "quero fechar")).status).toBe(200);
+    expect((await postChat(id, "quero fechar, sou Ana Lima")).status).toBe(200);
     expect((await postChat(id, "qual o horário?")).status).toBe(200);
 
     let tentativas = 0;
@@ -698,7 +698,7 @@ describe("concorrência endurecida e falhas (frente H)", () => {
         : pedeFerramentas(chamar("montar_resumo", DADOS));
 
     const stub = await abrir({ modelo, buscar: buscarLento, orcamentoMs: 80, tetoMs: 250 });
-    await stub.conversar("quero fechar");
+    await stub.conversar("quero fechar, sou Ana Lima");
 
     // O turno estoura em 80 ms com o marcador em "enviando" e o POST ainda em curso.
     const cortada = await stub.conversar("sim");
@@ -783,7 +783,7 @@ describe("concorrência endurecida e falhas (frente H)", () => {
     const modelo: Modelo = async (mensagens) => {
       const ultima = ultimaDoHospede(mensagens);
       if (ultima === "sim") return pedeFerramentas(chamar("confirmar_reserva"));
-      if (ultima === "quero fechar") return pedeFerramentas(chamar("montar_resumo", DADOS));
+      if (ultima === "quero fechar, sou Ana Lima") return pedeFerramentas(chamar("montar_resumo", DADOS));
       return mensagens.at(-1)?.role === "tool"
         ? diz("Temos imóveis em Gramado.")
         : pedeFerramentas(chamar("listar_cidades"));
@@ -795,7 +795,7 @@ describe("concorrência endurecida e falhas (frente H)", () => {
     expect(consulta.handoff).toBe(false);
     expect(consulta.reply).toBe("Temos imóveis em Gramado.");
 
-    const resumo = await stub.conversar("quero fechar");
+    const resumo = await stub.conversar("quero fechar, sou Ana Lima");
     expect(resumo.handoff).toBe(false);
     expect(resumo.reply).toContain("Resumo do seu pedido de reserva:");
 
@@ -1174,7 +1174,7 @@ describe("concorrência endurecida e falhas (frente H)", () => {
       } as unknown as Env["SESSAO"],
     };
 
-    const falhaResumo = await postChat(id, "quero fechar", envDuasPerdas);
+    const falhaResumo = await postChat(id, "quero fechar, sou Ana Lima", envDuasPerdas);
     expect(falhaResumo.status).toBe(200);
     expect(entregasPerdidas).toBe(2);
     expect(await falhaResumo.json()).toMatchObject({ handoff: true });
@@ -1227,7 +1227,7 @@ describe("concorrência endurecida e falhas (frente H)", () => {
       return resposta;
     });
 
-    const resumoEntregue = await postChat(id, "quero fechar", envUmaPerda);
+    const resumoEntregue = await postChat(id, "quero fechar, sou Ana Lima", envUmaPerda);
     expect(resumoEntregue.status).toBe(200);
     expect(tentativas).toBe(2);
     expect((await resumoEntregue.json<{ reply: string }>()).reply).toContain("Resumo do seu pedido de reserva:");
@@ -1252,7 +1252,7 @@ describe("concorrência endurecida e falhas (frente H)", () => {
     const modeloA: Modelo = async (mensagens) => {
       const ultima = ultimaDoHospede(mensagens);
       if (ultima === "sim") return pedeFerramentas(chamar("confirmar_reserva"));
-      if (ultima === "quero fechar") {
+      if (ultima === "quero fechar, sou Ana Lima") {
         await pausa(180);
         return pedeFerramentas(chamar("montar_resumo", DADOS));
       }
@@ -1270,7 +1270,7 @@ describe("concorrência endurecida e falhas (frente H)", () => {
 
     const reqA = new Request("https://agente.teste/chat", {
       method: "POST",
-      body: JSON.stringify({ session_id: idA, message: "quero fechar" }),
+      body: JSON.stringify({ session_id: idA, message: "quero fechar, sou Ana Lima" }),
     });
     const respA = await tratarChat(reqA, envVoltaLenta, 250);
     expect(respA.status).toBe(200);
@@ -1292,7 +1292,7 @@ describe("concorrência endurecida e falhas (frente H)", () => {
     const modeloB: Modelo = async (mensagens) => {
       const ultima = ultimaDoHospede(mensagens);
       if (ultima === "sim") return pedeFerramentas(chamar("confirmar_reserva"));
-      if (ultima === "quero fechar") {
+      if (ultima === "quero fechar, sou Ana Lima") {
         await pausa(230);
         return pedeFerramentas(chamar("montar_resumo", DADOS));
       }
@@ -1304,7 +1304,7 @@ describe("concorrência endurecida e falhas (frente H)", () => {
     });
     const reqB = new Request("https://agente.teste/chat", {
       method: "POST",
-      body: JSON.stringify({ session_id: idB, message: "quero fechar" }),
+      body: JSON.stringify({ session_id: idB, message: "quero fechar, sou Ana Lima" }),
     });
     const respB = await tratarChat(reqB, ambiente, 250);
     expect(respB.status).toBe(200);
@@ -1338,7 +1338,7 @@ describe("concorrência endurecida e falhas (frente H)", () => {
       throw new Error("falha após gravar resumo inicial");
     });
 
-    const falha = await postChat(id, "quero fechar", envFalha);
+    const falha = await postChat(id, "quero fechar, sou Ana Lima", envFalha);
     expect(falha.status).toBe(200);
     expect(await falha.json()).toMatchObject({ handoff: true });
 
@@ -1365,7 +1365,7 @@ describe("concorrência endurecida e falhas (frente H)", () => {
     const modelo: Modelo = async (mensagens) => {
       const ultima = ultimaDoHospede(mensagens);
       if (ultima === "sim") return pedeFerramentas(chamar("confirmar_reserva"));
-      if (ultima === "quero fechar") {
+      if (ultima === "quero fechar, sou Ana Lima") {
         await pausa(150);
         return pedeFerramentas(chamar("montar_resumo", DADOS));
       }
@@ -1398,7 +1398,7 @@ describe("concorrência endurecida e falhas (frente H)", () => {
 
     const resposta = await tratarChat(new Request("https://agente.teste/chat", {
       method: "POST",
-      body: JSON.stringify({ session_id: id, message: "quero fechar" }),
+      body: JSON.stringify({ session_id: id, message: "quero fechar, sou Ana Lima" }),
     }), envL1, 240);
     expect(resposta.status).toBe(200);
     expect((await resposta.json<{ handoff: boolean }>()).handoff).toBe(true);
@@ -1458,7 +1458,7 @@ describe("concorrência endurecida e falhas (frente H)", () => {
       await real.conversar(...args);
       throw new Error("entrega perdida");
     });
-    await postChat(idIsso, "quero fechar", envPerdeEntrega);
+    await postChat(idIsso, "quero fechar, sou Ana Lima", envPerdeEntrega);
     expect(chamadasIsso).toBe(1);
 
     const respIsso = await postChat(idIsso, "isso");
@@ -1496,7 +1496,7 @@ describe("concorrência endurecida e falhas (frente H)", () => {
         buscar: mundoNovas.buscar,
       };
     });
-    await postChat(idNovas, "quero fechar");
+    await postChat(idNovas, "quero fechar, sou Ana Lima");
     await postChat(idNovas, "muda saida", envPerdeEntrega);
     expect(chamadasNovas).toBe(2);
 
@@ -1525,7 +1525,7 @@ describe("concorrência endurecida e falhas (frente H)", () => {
           modelo: async (mensagens) => {
             chamadasModelo++;
             const u = ultimaDoHospede(mensagens);
-            if (u === "quero fechar") return pedeFerramentas(chamar("montar_resumo", DADOS));
+            if (u === "quero fechar, sou Ana Lima") return pedeFerramentas(chamar("montar_resumo", DADOS));
             return pedeFerramentas(chamar("confirmar_reserva"));
           },
           buscar: mundo.buscar,
@@ -1536,7 +1536,7 @@ describe("concorrência endurecida e falhas (frente H)", () => {
         await real.conversar(...args);
         throw new Error("entrega perdida");
       });
-      await postChat(id, "quero fechar", envPerdeEntrega);
+      await postChat(id, "quero fechar, sou Ana Lima", envPerdeEntrega);
       expect(chamadasModelo).toBe(1);
 
       const resp = await postChat(id, mensagem);

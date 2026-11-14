@@ -62,7 +62,7 @@ async function sessaoComEventos(status: number) {
 describe("fila da sessão com a F atual (frente H)", () => {
   it("'sim' e 'confirmo' ao mesmo tempo: 1 POST, o 2º turno só começa depois do POST do 1º, histórico em pares na ordem", async () => {
     const s = await sessaoComEventos(201);
-    await postChat(s.id, "quero fechar");
+    await postChat(s.id, "quero fechar, sou Ana Lima");
 
     const [r1, r2] = await Promise.all([postChat(s.id, "sim"), postChat(s.id, "confirmo")]);
     expect(r1.status).toBe(200);
@@ -77,7 +77,7 @@ describe("fila da sessão com a F atual (frente H)", () => {
 
     // Um turno inteiro por vez: nada da 2ª mensagem acontece antes de o POST da 1ª terminar. Se o
     // código responde ao sim repetido sem chamar o modelo (L7), a 2ª mensagem não deixa evento.
-    const confirmacoes = s.eventos.filter((e) => e !== "modelo:quero fechar");
+    const confirmacoes = s.eventos.filter((e) => e !== "modelo:quero fechar, sou Ana Lima");
     expect(confirmacoes.slice(0, 3)).toEqual([`modelo:${primeira}`, "post:inicio", "post:fim"]);
     expect(confirmacoes.slice(3).every((e) => e === `modelo:${segunda}`)).toBe(true);
 
@@ -91,7 +91,7 @@ describe("fila da sessão com a F atual (frente H)", () => {
 
   it("P14 na corrida: dois 'sim' ao mesmo tempo com webhook 500 → no máximo 2 POSTs na estadia (o 1º e a nova tentativa), 0 do 2º turno", async () => {
     const s = await sessaoComEventos(500);
-    await postChat(s.id, "quero fechar");
+    await postChat(s.id, "quero fechar, sou Ana Lima");
 
     const [r1, r2] = await Promise.all([postChat(s.id, "sim"), postChat(s.id, "sim")]);
     expect(r1.status).toBe(200);
@@ -99,7 +99,7 @@ describe("fila da sessão com a F atual (frente H)", () => {
     expect((await r1.json<{ handoff: boolean }>()).handoff).toBe(true);
     expect((await r2.json<{ handoff: boolean }>()).handoff).toBe(true);
     expect(s.posts).toHaveLength(2);
-    const confirmacoes = s.eventos.filter((e) => e !== "modelo:quero fechar");
+    const confirmacoes = s.eventos.filter((e) => e !== "modelo:quero fechar, sou Ana Lima");
     expect(confirmacoes.slice(0, 5)).toEqual(["modelo:sim", "post:inicio", "post:fim", "post:inicio", "post:fim"]);
     // O 2º turno só chama o modelo (o falso pede confirmar_reserva a cada chamada) e nenhum POST.
     expect(confirmacoes.slice(5)).not.toHaveLength(0);
