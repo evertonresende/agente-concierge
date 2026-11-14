@@ -1523,6 +1523,29 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
 - 14/11 02h03 · carga · apareceu pressão de memória (2% em 60 s; a fatia do usuário encostou no teto de 14 GB,
   sem processo morto): o teto de suítes voltou de três para duas vagas, como a X25 manda. Leitura
   seguinte: 0,2%
+- 14/11 02h14 · dev · publicado da `main` com a frente H (código de 6daffb1), fora da contagem das rodadas.
+  **A fila da sessão conferida no runtime real** (sonda da coordenadora, 2 sessões): duas mensagens ao
+  mesmo tempo na mesma sessão respondem as duas, sem contingência; "quero fechar" e "sim" ao mesmo tempo:
+  o "sim" que estava na fila só reapresenta o resumo ("Ainda não enviei este pedido…") e o "sim"
+  seguinte registra; corpo de 70 KB e mensagem de 8.001 caracteres recebem "ficou longa demais";
+  mensagem vazia recebe o pedido de texto; a sessão segue respondendo depois. **Oscilação do catálogo
+  vista em `dev`:** entre 02h04 e 02h06, logo depois do primeiro deploy, 25 turnos de 5 sessões (a fumaça
+  do `marco1` e a primeira passada da sonda) saíram com a contingência e `handoff`, e o log do Worker
+  diz `origem: catalogo`, `erro: ErroDoCatalogo`, com os turnos durando de 1 a 5 s (o catálogo respondeu
+  rápido com erro; o log não guarda o status). Não é a H: a mesma sonda passou inteira um minuto depois,
+  e um segundo deploy do mesmo código, sondado a cada 4 s por dois minutos, deu 33 de 33 respostas certas.
+  O catálogo respondia 200 em 0,3 a 0,6 s às 02h08. Consequência para as rodadas oficiais: conferir o
+  catálogo antes de cada rodada e, em cada falha, olhar no log do Worker se a origem foi o catálogo;
+  rodada atingida por queda do catálogo vai para a lista do Éverton (X24 não deixa descartar rodada)
+- 14/11 02h14 · F · hash final 248f479, em cima da `main` com a H: "sim" limpo (efa5f8b), um teste negativo
+  (f2ad44b) e a P29 (a2989f0, nome com dígito ou símbolo de moeda recusado antes da regra do nome); a
+  frente diz 52 arquivos e 1504 testes. Verificador curto da rodada 8 lançado, com barra fechada de sete
+  itens; o mais importante é o "sim" limpo não furar a fila da H (o "sim" que estava na fila continua só
+  reapresentando quando o modelo chama `montar_resumo` no lugar de `confirmar_reserva`). Conferência com
+  o modelo real em curso. Dois ajustes só de teste ficam para depois da P30, num commit da F: a mensagem
+  do hóspede de um teste da H que deixou de montar o resumo (`test/concorrencia-h.test.ts`) e duas
+  mensagens de teste da G que não servem mais. Limites declarados pela F: valor por extenso no nome
+  passa; com o catálogo fora do ar o "sim" limpo por `montar_resumo` derruba o resumo pendente
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -1548,13 +1571,13 @@ e o runner da B2, a P20 (nome do lead, frente F) e a P21 (datas sem ano, frente 
 casos fixo. Meta: 14/11 03h00. Limite: 06h00. Gatilho que já existia: 10h00 com o critério 4 não
 verde, parar e chamar o Éverton.
 
-**Estado do congelamento em 14/11 02h03.** Na `main` (6daffb1 em código): G, T (P21), F (P20), H (fila da
-sessão e P24), o script da K e o gate da S. Abertos, todos pequenos e com verificador curto depois: F
-("sim" limpo entregue em efa5f8b e conferido com o modelo real, 8 de 8; falta o hash com a P29, nome
-sem dígito nem moeda); G (P30, teto de chamadas de ferramenta); B2 (bd6e28b reprovado por um item, o
-rótulo com parêntese; última rodada de correção do juiz em curso). A parte 2 da M2 (H, itens 7, 8, 13,
-14 e 15) está em curso. O ensaio local da árvore candidata deu 98 de 100, e as duas falhas têm
-correção entregue. Só o que muda o comportamento do agente ou o juiz reinicia a contagem das rodadas.
+**Estado do congelamento em 14/11 02h14.** Na `main` (6daffb1 em código, publicado em `dev`): G, T (P21), F
+(P20), H (fila da sessão e P24), o script da K e o gate da S. Abertos, todos pequenos e com verificador
+curto: F (248f479, "sim" limpo e P29, no verificador da rodada 8); G (P30, teto de chamadas de
+ferramenta, sem hash ainda); B2 (bd6e28b reprovado por um item, o rótulo com parêntese; última rodada
+de correção do juiz em curso). A parte 2 da M2 (H, itens 7, 8, 13, 14 e 15) está em curso. O ensaio
+local da árvore candidata deu 98 de 100, e as duas falhas têm correção entregue. Só o que muda o
+comportamento do agente ou o juiz reinicia a contagem das rodadas.
 
 **Plano B, decisão do Éverton (perguntado em 14/11).** Um ciclo de correção e verificação leva
 cerca de 85 minutos; cabem dois até as 06h00. Se a H ou o juiz não fecharem nesse prazo, a escolha
