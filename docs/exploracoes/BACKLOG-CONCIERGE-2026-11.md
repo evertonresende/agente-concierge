@@ -2238,6 +2238,13 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   de sigilo (caminho de máquina, nome de máquina, endereço, nome de outro projeto), tira o
   marcador e a frase "a preencher" da linha da tabela de `docs/setup/README.md`, passa o gate, e a
   coordenação confere o delta e mescla pelo hash. O resto da última passada já está na `main`
+- 14/11 07h02 · Éverton · **X34 fechada: a cópia da skill de orquestração em `docs/setup` é a versão adaptada ao
+  T3 Code que ele enviou** (0c27a22, merge d69066a). O arquivo foi copiado byte a byte, sem
+  reescrita; a coordenação leu o diff contra a cópia anterior: muda o cabeçalho, sai o marcador de
+  revisão e entra no fim a seção "Modo T3 Code", escrita em 14/11, depois da construção. O
+  `docs/setup/README.md` diz o mesmo na tabela e no parágrafo do que foi retirado. Gate verde.
+  **Não resta nenhum marcador `PREENCHER` nem "a preencher"** no README, no "Como foi feito" e em
+  `docs/setup`
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -2275,8 +2282,8 @@ marca é erro de contrato (P36); rajada 40 de 40. **`producao`:** versão 4d457d
 `CLIENTES OK`, zero lead real até 06h43. **Na `main`:** README, "Como foi feito", desenhos, setup,
 fechamento da M2, abertura do `DECISOES.md` com cortes e mais tempo, `docs/prompts/`, conjunto
 reservado com o diagnóstico. **Decisões:** P1 a P38 confirmadas (X33), menos a P23. **Só com o
-Éverton:** tornar o repositório público, o vídeo, o e-mail da entrega, agendar o monitor (P38) e
-a revisão da cópia da skill em `docs/setup`.
+Éverton:** tornar o repositório público, o vídeo, o e-mail da entrega e agendar o monitor (P38).
+Depois desse parágrafo entrou a cópia da skill adaptada ao T3 Code (X34, d69066a).
 
 **Plano B, decisão do Éverton (perguntado em 14/11).** Um ciclo de correção e verificação leva
 cerca de 85 minutos; cabem dois até as 06h00. Se a H ou o juiz não fecharem nesse prazo, a escolha
@@ -2342,8 +2349,8 @@ P23 (X33); exports de sessão fora desta entrega (X33).
 Falta só com ele:
 1. Tornar o repositório público. A `main` de entrega está em 3b56fac, com o gate verde em todas
    as refs publicáveis e sem marcador no README nem no "Como foi feito". Todas as 19 branches do
-   remoto ficam públicas junto. O único marcador que resta é o da cópia da skill de
-   orquestração em `docs/setup`: ela espera a versão adaptada ao T3 Code que ele vai enviar (X34).
+   remoto ficam públicas junto. Não resta nenhum marcador: a cópia da skill de
+   orquestração em `docs/setup` já é a versão adaptada ao T3 Code que ele enviou (X34, d69066a).
 2. Gravar o vídeo e mandar o link no e-mail. Na confirmação do pedido, responder só "sim"
    (limites 54 e 55 do README).
 3. Responder o e-mail da entrega.
