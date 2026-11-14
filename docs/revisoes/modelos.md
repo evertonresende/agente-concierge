@@ -250,8 +250,8 @@ rodadas oficiais consecutivas, de 04h35 a 04h51, sem descartar nenhuma. Relatór
   (limite listado em `evals/README.md`); `resp-11-imovel-ambiguo` é erro do agente: valores
   e total certos, descrição do dia errada e corrigida no próprio texto.
 - Nenhum lead antecipado, duplicado ou com dado errado. Nenhum turno acima de 60 s.
-- Telemetria do Worker nas três janelas: nenhuma resposta de contingência e nenhuma falha
-  de catálogo.
+- Log do Worker nas três janelas (contagem exata): 185, 182 e 182 eventos de turno, nenhum
+  com contingência, nenhum com origem no catálogo e nenhum outro tipo de evento.
 - Custo: `node scripts/custo.mjs` sobre os três relatórios, US$ 0,81 nas 312 conversas. O
   script cobra tudo ao preço do Haiku e conta tokens de cache como entrada a preço cheio.
 - Contra a fase 1 (mesmo modelo e nível, 85 de 98): a diferença vem do código e dos casos,
