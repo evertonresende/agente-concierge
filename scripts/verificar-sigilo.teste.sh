@@ -107,8 +107,14 @@ novo_repo l4; echo "$TOKEN" > b.txt; git add b.txt; git commit -q -m b; git rm -
 falhando --batch=; espera_codigo 2
 
 caso="s) pasta temporária que não pode ser criada"
-novo_repo s; echo "$TOKEN" > b.txt; git add b.txt
+novo_repo s; git switch -q --orphan vazia; echo "$TOKEN" > b.txt; git add b.txt
 rodar TMPDIR="$TMP/nao-existe"; espera_codigo 2
+
+caso="k) branch órfã, sem commit no HEAD"
+novo_repo k; echo "$TOKEN" > b.txt; git add b.txt; git commit -q -m b; git rm -q b.txt; git commit -q -m rm
+git commit -q --allow-empty -m "$HOST"
+git switch -q --orphan nova
+rodar; espera_codigo 1; espera_texto "conteúdo de commit"; espera_texto "mensagem de commit"
 
 caso="e) termo em arquivo binário"
 novo_repo e

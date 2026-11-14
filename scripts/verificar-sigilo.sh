@@ -113,7 +113,9 @@ grep -E '(^|/)(\.privado/|\.env($|\.)|\.dev\.vars)' "$tmpd/arquivos" | grep -v -
 #    checagem, mas o item 3 garante que nenhuma chegou ao remoto.
 PUBLICAVEL="--branches --tags --remotes"
 : > "$tmpd/tipos"
-if git rev-parse -q --verify HEAD >/dev/null; then
+# Vale com ou sem commit no HEAD (branch órfã): o que conta é haver ref publicável.
+le publicaveis for-each-ref --count=1 refs/heads refs/tags refs/remotes
+if [ -s "$tmpd/publicaveis" ]; then
   # Conteúdo de todos os commits publicáveis: o repositório fica público com o histórico
   # inteiro, então um termo apagado num commit posterior continua publicado. Varre cada
   # blob uma vez (rápido); só quando acha algo localiza commit:arquivo, blob a blob.
@@ -148,6 +150,8 @@ if git rev-parse -q --verify HEAD >/dev/null; then
   le autores log $PUBLICAVEL --format='%ae%n%ce'
   sort -u "$tmpd/autores" | grep -v -x -F "$AUTOR" | sed 's/.*/(e-mail fora do padrão no histórico)/' \
     | relata "autor ou committer diferente de $AUTOR"
+fi
+if git rev-parse -q --verify HEAD >/dev/null; then
   le reflog reflog
   grep -E -i 'amend|rebase|squash' "$tmpd/reflog" | cut -d' ' -f1 \
     | relata "amend, rebase ou squash no reflog"
