@@ -411,6 +411,12 @@ function cortarAposValorAnterior(antes) {
   return antes.slice(fimAnterior).replace(REGEX_ROTULO_POSPOSTO, '');
 }
 
+// Subtotal disfarçado de desconto/oferta ou de total geral da estadia.
+// "cada uma sai por R$ 294,60" é preço por noite, não oferta.
+const REGEX_OFERTA =
+  /(?:fa[cç]o|fecho|fechamos|(?<!\bcada(?:\s+(?:uma?|noite|di[aá]ria))?\s+)sai)\s+por|desconto\s+(?:de|para)|com\s+desconto/i;
+const REGEX_TOTAL = /(?<!\bsub)\btotal\b(?!\s+(?:das?|de)\s+(?:di[aá]rias?|noites?|hospedagem))/i;
+
 function subtotalNomeadoComoComponente(texto, valorObj) {
   const { antes, depois } = extrairClausulaAoRedor(texto, valorObj.indice, valorObj.texto.length);
   const antesSemValorAnterior = cortarAposValorAnterior(antes);
@@ -422,18 +428,7 @@ function subtotalNomeadoComoComponente(texto, valorObj) {
       ? antesSemValorAnterior.slice(0, idxParen)
       : trechoAposParen;
 
-  // Não aceita subtotal disfarçado de desconto/oferta ou de total geral da estadia
-  // "cada uma sai por R$ 294,60" é preço por noite, não oferta
-  if (
-    /(?:fa[cç]o|fecho|fechamos|(?<!\bcada(?:\s+(?:uma?|noite|di[aá]ria))?\s+)sai)\s+por|desconto\s+(?:de|para)|com\s+desconto/i.test(
-      prefixoOferta
-    )
-  ) {
-    return false;
-  }
-  if (/(?<!\bsub)\btotal\b(?!\s+(?:das?|de)\s+(?:di[aá]rias?|noites?|hospedagem))/i.test(prefixoOferta)) {
-    return false;
-  }
+  if (REGEX_OFERTA.test(prefixoOferta) || REGEX_TOTAL.test(prefixoOferta)) return false;
 
   const mProx = /R\$\s*(?:[1-9]\d{0,2}(?:\.\d{3})*|0),\d{2}/.exec(depois);
   const depoisAteProx = mProx ? depois.slice(0, mProx.index) : depois;
@@ -452,6 +447,11 @@ function subtotalNomeadoComoComponente(texto, valorObj) {
       pararEmVirgula: false,
     });
     antesDaVirgula = cortarAposValorAnterior(antesFrase);
+    // O veto vale também para a cláusula anterior ("Com desconto, 2 noites, R$ 1.180,00";
+    // "Total para 2 noites, R$ 1.180,00"). O de total cede só quando o valor traz rótulo
+    // de preço por noite logo depois ("No total são 2 noites, de R$ 590,00 cada").
+    if (REGEX_OFERTA.test(antesDaVirgula)) return false;
+    if (REGEX_TOTAL.test(antesDaVirgula) && !REGEX_ROTULO_POSPOSTO.test(depoisAteProx)) return false;
   }
 
   return REGEX_TERMO_COMPONENTE.test(`${trechoContextoAntes} ${antesDaVirgula} ${depoisAteProx}`);

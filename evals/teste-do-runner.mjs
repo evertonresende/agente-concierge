@@ -434,6 +434,19 @@ function testarJuizPreco() {
       'R$ 590,00'
     )
   );
+  // A cláusula antes da vírgula empresta o rótulo, mas também o veto de total e de oferta
+  assert.ok(
+    semRotulo(
+      julgarPrecoResposta('Total para 2 noites, R$ 1.180,00. Taxa de limpeza: R$ 150,00. Total: R$ 1.330,00.', grmUteis),
+      'R$ 1.180,00'
+    )
+  );
+  assert.ok(semRotulo(julgarPrecoResposta('Total: R$ 1.330,00. Com desconto, 2 noites, R$ 1.180,00.', grmUteis), 'R$ 1.180,00'));
+  assert.ok(semRotulo(julgarPrecoResposta('Total: R$ 1.330,00. Com desconto, 2 noites, R$ 590,00 cada.', grmUteis), 'R$ 590,00'));
+  assert.deepEqual(
+    julgarPrecoResposta('No total são 2 noites, de R$ 590,00 cada. Taxa de limpeza: R$ 150,00. Total: R$ 1.330,00.', grmUteis),
+    []
+  );
   // O "cada" que vem depois de um valor pertence a ele, não ao valor seguinte
   assert.ok(
     semRotulo(
