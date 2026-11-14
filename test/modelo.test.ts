@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { criarModelo, lerRespostaAnthropic, type Mensagem, normalizarResposta, parametros, pedidoAnthropic } from "../src/modelo";
 
 describe("adaptador do modelo", () => {
@@ -269,5 +269,21 @@ describe("ids de chamada de ferramenta no pedido ao Haiku", () => {
     expect(new Set(usos).size).toBe(usos.length);
     for (const id of [...usos, ...resultados]) expect(id).toMatch(/^[a-zA-Z0-9_-]+$/);
     expect(resultados).toEqual(usos);
+  });
+});
+
+describe("log de falha do modelo", () => {
+  it("mascara endereço e identificador longo antes de registrar", async () => {
+    const aviso = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const conta = "0123456789abcdef0123456789abcdef";
+    const ai = { run: async () => { throw new Error(`AiGatewayError: falhou em https://gateway.exemplo/v1/${conta}/gw/anthropic conta ${conta}`); } } as unknown as Ai;
+    await criarModelo(ai, "principal/x", {})([], []).catch(() => {});
+    const linha = String(aviso.mock.calls[0]![0]);
+    aviso.mockRestore();
+    expect(linha).toContain("modelo_falhou");
+    expect(linha).not.toContain(conta);
+    expect(linha).not.toContain("https://");
+    expect(linha).toContain("<endereço>");
+    expect(linha).toContain("<id>");
   });
 });

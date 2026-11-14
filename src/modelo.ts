@@ -240,9 +240,14 @@ function comLimite<T>(promessa: Promise<T>, ms: number): Promise<T> {
   return Promise.race([promessa, limite]).finally(() => clearTimeout(relogio));
 }
 
-/** Só o nome do modelo e o erro: nunca o conteúdo da conversa (contrato L22). */
+/**
+ * Só o nome do modelo e o erro: nunca o conteúdo da conversa (contrato L22). Endereço e
+ * sequência longa de hexadecimal (id de conta, de gateway, de pedido) saem mascarados.
+ */
 function registrarFalha(modelo: string, erro: unknown): void {
-  const descricao = erro instanceof Error ? `${erro.name}: ${erro.message}` : String(erro);
+  const descricao = (erro instanceof Error ? `${erro.name}: ${erro.message}` : String(erro))
+    .replace(/[a-z][a-z0-9+.-]*:\/\/\S+/gi, "<endereço>")
+    .replace(/[0-9a-f]{16,}/gi, "<id>");
   console.warn(JSON.stringify({ evento: "modelo_falhou", modelo, erro: descricao.slice(0, 200) }));
 }
 
