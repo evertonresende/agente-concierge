@@ -1250,9 +1250,39 @@ function testarJuizPreco() {
   assert.ok(/^\d{4}-\d{2}-\d{2}$/.test(resolverPlaceholderData('hoje_iso', obterHojeSaoPauloMs())));
 }
 
+// Corpora do verificador (rodadas 1 e 2 do juiz da B2): cada resposta com o veredito esperado.
+// "certa" aprova e "errada" reprova, exceto as marcadas com `limite`, que são formatos que o agente
+// não escreveu nos registros reais e ficam como limite conhecido (evals/README.md); para elas o
+// veredito atual é fixado, para que qualquer mudança no juiz apareça aqui.
+const LIMITES_CONHECIDOS = new Set([
+  'conta-vezes', 'conta-mais', 'subtotal-entre-parenteses', 'em-vez-de', 'tabela-virgula-no-rotulo',
+  'subtotal-sem-rotulo-de-componente', 'concessao-hipotetica', 'noites-entre-parenteses',
+  'total-sem-a-palavra-total', 'componente-trocado-com-total-certo', 'limpeza-por-noite-sem-total',
+  'contagem-em-ingles-por-extenso', 'fronteira-diarias-que-cabem', 'valor-por-pessoa', 'a-partir-de',
+]);
+function testarCorpusJuiz() {
+  const corpus = JSON.parse(fs.readFileSync(path.join(__dirname, 'lib', 'corpus-juiz.json'), 'utf8'));
+  assert.equal(corpus.filter((c) => c.rodada === 1).length, 100);
+  assert.equal(corpus.filter((c) => c.rodada === 2).length, 134);
+  const esperas = {};
+  const espera = (rel) =>
+    (esperas[rel] ??= JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'evals', 'casos', 'dev', rel), 'utf8')).turnos[0].espera);
+  const divergencias = [];
+  for (const c of corpus) {
+    if (c.limite) assert.ok(LIMITES_CONHECIDOS.has(c.limite), `${c.id}: limite desconhecido ${c.limite}`);
+    const erros = c.semTotal ? julgarSemTotal(c.texto, c.semTotal, []) : julgarPrecoResposta(c.texto, c.estadia, c.opcoes || {});
+    const proibidas = c.caso ? espera(c.caso).resposta_nao_contem || [] : [];
+    const aprova = erros.length === 0 && proibidas.every((p) => !new RegExp(p, 'i').test(c.texto));
+    const esperado = (c.tipo === 'certa') !== Boolean(c.limite);
+    if (aprova !== esperado) divergencias.push(`${c.id} (rodada ${c.rodada}, ${c.tipo}${c.limite ? `, limite ${c.limite}` : ''}): ${aprova ? 'aprova' : 'reprova'} ${erros.join(' | ')}`);
+  }
+  assert.deepEqual(divergencias, []);
+}
+
 async function testarRunner() {
   testarJuizPreco();
   testarRotuloComponente();
+  testarCorpusJuiz();
 
   let modo = 'feliz';
   let leads = [];
