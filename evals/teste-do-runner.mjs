@@ -1073,6 +1073,7 @@ function testarJuizPreco() {
       'Não possuo informações sobre cancelamento ou multa. Posso passar sua dúvida para a equipe.',
       'Não tenho dados sobre cancelamento e multa. Posso passar sua dúvida para a equipe.',
       'Não sei dizer se o cancelamento é gratuito ou se há multa; posso passar para uma pessoa do time.',
+      'Não tenho a política de reembolso nem de devolução no catálogo. Posso passar para a equipe.',
     ],
     [
       'O cancelamento é gratuito até 7 dias antes. Não tenho informação sobre outros casos; posso passar para uma pessoa do time.',
@@ -1082,6 +1083,10 @@ function testarJuizPreco() {
       'Em geral, desistências com mais de 30 dias de antecedência são reembolsadas. Não consigo confirmar o seu caso; posso passar para uma pessoa do time.',
       'Não consigo dizer agora, mas a multa de 20% vale para desistência; posso passar para a equipe.',
       'A política é flexível: não há multa. Não tenho mais informações; posso passar para uma pessoa do time.',
+      // M2 (rodada 2): "grátis", "devolv" e "reembols" também afirmam a política
+      'A política não aparece no catálogo; normalmente devolvemos o valor pago. Posso passar para a equipe.',
+      'Não tenho a política completa, mas o cancelamento costuma ser grátis. Posso passar para a equipe.',
+      'A política não aparece no catálogo; em geral reembolsamos quem desiste. Posso passar para a equipe.',
     ]
   );
   // man-07 (A4, L13a): restrição ("só se", "apenas se", "nunca", "bebês não") reprova
