@@ -1286,6 +1286,15 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   com critério fechado para convergir: os dois corpus do verificador viram teste de regressão; zero certa
   reprovada nos registros reais; zero errada aprovada em A1, A3 e nos casos da rodada 1; formato que o
   agente nunca escreveu vira limite documentado do juiz. Pedido junto: um caso dev para a P21
+- 14/11 00h54 · coordenadora · deploy de `dev` a partir da `main` 472277c (código de a8da5d6, com a G; versão
+  a5c1b6a8) e fumaça declarada `--bloco marco1`: 100%, p50 2,4 s, p95 5,5 s, `EVAL OK`. Não conta como
+  rodada. O deploy anterior de `dev` era de 27c3093
+- 14/11 00h54 · coordenadora · P26: o resto da M-1 (total repetido sem resumo aberto, depois de 80 mensagens)
+  fica como limite conhecido, provisório. Conjunto do congelamento reduzido: gate da S, script da K e
+  teste P07 da G saem dele, porque não mudam o agente nem o juiz. Casos de eval com mensagens em
+  paralelo conferidos contra a regra nova do B1 da H: `lead-14` e `con-07` mandam dois "sim" depois de
+  resumo visto (1 lead em qualquer ordem) e `con-06` manda duas perguntas; nenhum mistura confirmação
+  com outra mensagem. Plano B perguntado ao Éverton (seção Fechamento)
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -1307,9 +1316,25 @@ ainda não tem veredito. Ao receber um veredito, conferir qual hash da F a árvo
 usou.
 
 **Congelamento da `main` para a prova.** A `main` congela quando tiver, com veredito: H, G, o juiz
-e o runner da B2, o gate da S, a P20 (nome do lead, frente F) e a P21 (datas sem ano, frente T), e
-o conjunto de casos fixo. Meta: 14/11 03h00. Limite: 06h00. Gatilho que já existia: 10h00 com o
-critério 4 não verde, parar e chamar o Éverton.
+e o runner da B2, a P20 (nome do lead, frente F) e a P21 (datas sem ano, frente T), e o conjunto de
+casos fixo. Meta: 14/11 03h00. Limite: 06h00. Gatilho que já existia: 10h00 com o critério 4 não
+verde, parar e chamar o Éverton.
+
+**Estado do congelamento em 14/11 00h54.** G: na `main` (a8da5d6). H: reprovada na rodada 3, corrigindo
+B1 e B2 (P24 por último e dispensável). Juiz da B2: reprovado na rodada 2, corrigindo com critério
+fechado. T (P21): verificador rodando. F (P20): frente trabalhando. Só o que muda o comportamento
+do agente ou o juiz reinicia a contagem das rodadas: o gate da S, o script da K e o commit de teste
+da G (P07) podem entrar depois que as rodadas começarem, desde que o `git diff --stat` de cada um
+não toque em `src/` nem em `evals/`.
+
+**Plano B, decisão do Éverton (perguntado em 14/11).** Um ciclo de correção e verificação leva
+cerca de 85 minutos; cabem dois até as 06h00. Se a H ou o juiz não fecharem nesse prazo, a escolha
+não é da coordenação (X24: defeito determinístico bloqueia a `main`). Recomendação levada a ele: (1)
+H entra na última cabeça com o caso de mensagens simultâneas escrito como limite no README, porque
+sem a H não há fila por sessão, limite de corpo nem contingência; (2) as rodadas oficiais usam o
+juiz da B2 na última cabeça que tiver zero resposta certa reprovada nos registros reais, com os
+limites do juiz escritos em `docs/EVALS.md`. Sem resposta dele, a coordenação continua nos ciclos de
+correção e não escolhe.
 
 **Antes da primeira rodada oficial (não conta como rodada).** Ensaio local na árvore congelada, com
 o modelo real em nível alto: o conjunto de desenvolvimento inteiro, a sonda do resumo pendente e o
