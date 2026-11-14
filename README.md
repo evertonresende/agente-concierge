@@ -203,7 +203,11 @@ Já decididos ou declarados:
    a data está disponível, e lead registrado é pedido encaminhado, não reserva garantida.
 8. **Simulador.** O juiz de handoff do simulador não enxerga gatilho que o modelo do
    hóspede inventa; reprovação de handoff no simulador se lê à mão.
-9. **Medição do nível alto.** A comparação de níveis do Haiku teve uma rodada só no nível
+9. **Conferência no nível do hóspede.** Quando o código pede ao modelo que corrija a
+   resposta, a mensagem de conferência chega como texto de usuário, no mesmo nível de uma
+   fala do hóspede. Um hóspede que copie esse texto não ganha autoridade, mas o modelo
+   também não distingue os dois.
+10. **Medição do nível alto.** A comparação de níveis do Haiku teve uma rodada só no nível
    alto, e entre duas rodadas do mesmo nível 13 casos trocaram de resultado.
 
 ## Onde está cada documento
