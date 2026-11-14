@@ -355,7 +355,7 @@ Rajada na árvore final, em `dev`: 10 sessões simultâneas de 4 turnos, 40 de 4
 200, sem 429, 5xx, contingência ou resposta vazia; p95 de 5,4 s.
 
 `producao` recebeu a árvore final em 14/11, com o envio real desligado e nenhum lead real do
-começo ao fim. A validação completa reprovou na primeira passada, 69 de 70, por um caso que
+começo ao fim dessa etapa. A validação completa reprovou na primeira passada, 69 de 70, por um caso que
 o juiz de preço marcou. A resposta não ficou gravada: o script roda o runner sem relatório e
 o Worker não registra texto, então a falha ficou não classificada. Pela P37, houve uma
 segunda passada com o script sem mudança, uma vez só: 70 de 70, `PRODUCAO OK`. As duas

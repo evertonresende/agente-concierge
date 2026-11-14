@@ -316,7 +316,8 @@ pela busca; injeção via catálogo se testa com catálogo falso, fiel a este fo
 **Fontes.** GET na API real em 13/11/2026 (respostas brutas fora do repositório).
 
 **Desconhecido.** Campos de um lead na listagem (lista vazia). → Não se resolve antes da
-entrega. Se o catálogo muda com o tempo. → Frente L: o monitor diário compara a
+entrega. (Resolvido em 14/11 com o lead de teste da X36: ver a atualização no fim da
+seção 5.) Se o catálogo muda com o tempo. → Frente L: o monitor diário compara a
 contagem de imóveis.
 
 ## Token da Cloudflare

@@ -52,7 +52,8 @@ TypeScript na Cloudflare, um Durable Object por sessão, loop de ferramentas pr�
   `DECISOES.md`). Ele já foi feito, e a proibição vale inteira de novo.
 - Fluxo completo de lead, evals com confirmação e gravação de vídeo: só em `dev`, que
   usa o webhook falso. Contra `producao`, só conversas sem confirmação.
-- A lista real tem 1 lead, o de teste. O modo completo e o `--so-leitura` do
+- A lista real parte de 1 lead, o de teste; o que passar disso vem da avaliação. O
+  modo completo e o `--so-leitura` do
   `scripts/validar-producao.sh` exigem zero lead real e por isso reprovam; use
   `--entrega` e `--clientes`.
 
