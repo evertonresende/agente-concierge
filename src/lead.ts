@@ -83,9 +83,19 @@ export function chaveDaEstadia(r: Reserva): string {
   return [r.imovel_id.toUpperCase(), r.checkin, r.checkout].join("|");
 }
 
-/** A estadia desta reserva está bloqueada na sessão? Devolve o motivo. */
+/**
+ * A estadia desta reserva está bloqueada na sessão? Devolve o motivo. Também bloqueia, como
+ * incerto, a estadia de uma reserva cujo POST ficou sem resultado: marcador "enviando" que
+ * sobrou de um reinício no meio do envio, ou "incerto", mesmo de estado gravado antes do
+ * teto por estadia existir (C7). Pode ter entrado; outro telefone duplicaria o lead.
+ */
 export function estadiaBloqueada(estado: EstadoLead, r: Reserva): "recusado" | "incerto" | undefined {
-  return estado.estadiasBloqueadas?.[chaveDaEstadia(r)];
+  const estadia = chaveDaEstadia(r);
+  const salvo = estado.estadiasBloqueadas?.[estadia];
+  if (salvo) return salvo;
+  const semResultado = Object.entries(estado.envios)
+    .some(([chave, situacao]) => chave.startsWith(`${estadia}|`) && (situacao === "enviando" || situacao === "incerto"));
+  return semResultado ? "incerto" : undefined;
 }
 
 /** Registra que o resumo foi mostrado neste turno. Substitui qualquer resumo anterior (L10). */
