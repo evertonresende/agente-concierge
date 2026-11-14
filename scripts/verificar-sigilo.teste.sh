@@ -37,6 +37,11 @@ printf '#!/bin/sh\nfor a in "$@"; do [ "$a" = "$FALHA_GIT" ] && exit 128; done\n
   "$(command -v git)" > "$TMP/bin/git"
 chmod +x "$TMP/bin/git"
 falhando() { rodar PATH="$TMP/bin:$PATH" FALHA_GIT="$1"; }
+
+# hostname falso: com -s, só o primeiro rótulo.
+mkdir -p "$TMP/bin-maq"
+printf '#!/bin/sh\n[ "${1:-}" = -s ] && echo zqxwmaq || echo zqxwmaq.lan.test\n' > "$TMP/bin-maq/hostname"
+chmod +x "$TMP/bin-maq/hostname"
 curto() { git rev-parse HEAD | cut -c1-8; }
 falha() { falhas+=("$caso: $1"); }
 espera_codigo() { [ "$cod" -eq "$1" ] || falha "saída $cod, esperava $1"; }
@@ -150,6 +155,14 @@ novo_repo u; n=$(printf 'a\nb-%s.txt' "$EMPRESA"); echo x > "$n"; git add -A; gi
 git rm -q -- "$n"; git commit -q -m rm
 rodar; espera_codigo 1; espera_texto "nome de arquivo"; sem_pedaco "$EMPRESA"
 
+caso="u2) nome com termo criado só no commit de merge"
+novo_repo u2; git switch -q -c lado; git commit -q --allow-empty -m lado
+git switch -q -c junta main; git commit -q --allow-empty -m junta
+git merge -q --no-ff --no-commit lado >/dev/null 2>&1
+echo x > "m-$EMPRESA.txt"; git add -A; git commit -q -m "merge lado"
+git switch -q main
+rodar; espera_codigo 1; espera_texto "nome de arquivo"
+
 caso="v) termo não ASCII no nome de um arquivo"
 novo_repo v; echo "zqxwøæå" > "$AGENTE_CFG/sigilo-extra"
 echo "zqxwøæå" > "zqxwøæå.txt"; git add -A
@@ -162,6 +175,27 @@ rodar SIGILO_TEMPO=20 timeout 60; espera_codigo 0
 [ $((SECONDS - inicio)) -le 15 ] || falha "30 MB sem @ levou $((SECONDS - inicio)) s"
 git rm -q --cached g.txt; { head -c 60000 /dev/zero | tr '\0' a; echo @; } > g.txt; git add g.txt
 rodar SIGILO_TEMPO=2 timeout 60; espera_codigo 2
+
+caso="m) nome de máquina"
+novo_repo m; echo "acesso pela zqxwmaq" > c.txt; git add c.txt
+rodar PATH="$TMP/bin-maq:$PATH"; espera_codigo 1; espera_texto "c.txt:1"; sem_pedaco zqxwmaq
+git rm -q --cached c.txt; echo "zqxwmaq.lan.test" > c.txt; git add c.txt
+rodar PATH="$TMP/bin-maq:$PATH"; espera_codigo 1; espera_texto "c.txt:1"
+
+caso="n) host de outra variável _URL e termo de sigilo-extra"
+novo_repo n; echo "AGENTE_URL_DEV=https://zqxwdev.invalid" >> "$AGENTE_CFG/env"
+echo "zqxwextra" > "$AGENTE_CFG/sigilo-extra"
+echo "zqxwdev.invalid" > c.txt; git add c.txt
+rodar; espera_codigo 1; espera_texto "c.txt:1"
+git rm -q --cached c.txt; echo "ZqxwExtra" > c.txt; git add c.txt
+rodar; espera_codigo 1; espera_texto "c.txt:1"
+
+caso="p) termo só numa tag e só numa ref remota"
+novo_repo p; git switch -q -c lado; echo "$TOKEN" > b.txt; git add b.txt; git commit -q -m b; c=$(curto)
+git tag marco; git switch -q main; git branch -q -D lado
+rodar; espera_codigo 1; espera_texto "$c:b.txt"
+git tag -d marco >/dev/null; git update-ref refs/remotes/origin/lado "$c"
+rodar; espera_codigo 1; espera_texto "$c:b.txt"
 
 caso="f) repositório limpo"
 novo_repo f
