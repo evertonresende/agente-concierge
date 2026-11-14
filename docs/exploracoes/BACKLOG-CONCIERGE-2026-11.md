@@ -1350,6 +1350,28 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   montar o resumo que preparavam) e os três testes da G com valor no nome, com os roteiros intactos.
   Limites para o README: palavras do hóspede em outra ordem passam; pontuação não é conferida; fora da
   janela de 80 mensagens o nome é pedido de novo
+- 14/11 01h16 · T · linha do apoio de teste na `main` (merge de 4650a05, main em 0e68247): o hóspede escreve o
+  nome que o resumo usa. Uma linha, sem asserção mudada
+- 14/11 01h16 · F · hash final da P20: 8f8fbd5, em cima da `main` 0e68247 (1402 testes e tipos verdes, segundo a
+  frente; em `src/` só `src/agente/ferramentas/lead.ts`). Verificador do delta lançado (Opus 5.5, esforço
+  alto), barra fechada de nove itens: nome dito em turno anterior aceito pelo caminho da sessão, nenhum
+  laço de recusa, formas comuns de nome aceitas, cenário de segurança do nome com valor mantido
+- 14/11 01h16 · H · cabeça a4abacb: P24 em 50ce319 (`src/chat.ts` e `src/sessao.ts`, 30 linhas; o Worker avisa a
+  sessão na mensagem vazia e na longa, e a marca só liga com resumo aberto) e testes com o nome na
+  mensagem do hóspede em a4abacb (30 testes da frente ficariam vermelhos com a regra da F). Segundo a
+  frente: 1417 testes sem a regra da F e 1450 no ensaio com ela. Segundo verificador lançado só para o
+  delta 03e1605..a4abacb (Opus 5.5, esforço alto), barra fechada de dez itens
+- 14/11 01h16 · coordenadora · **conferência com o modelo real** (servidor local, `main` 0e68247 com a F 8f8fbd5 e
+  a H 03e1605, Haiku 5.5 em nível alto, leads no webhook falso de `dev`). **P20:** oito roteiros de nome
+  (titular, nome dito em turno anterior, minúsculas, em pedaços, inglês, abreviado, corrigido, sem
+  nome); nenhum travou em recusa. Sete terminaram em lead e os sete nomes no webhook falso são
+  exatamente o que o hóspede escreveu ("Pedro", "Marina Duarte", "joao da silva", "Pedro Souza Lima",
+  "Maria Ap. Souza", "Ana Paula Lima", "Carla Mendes"); a dica do sobrenome aparece só no texto do
+  resumo, não no lead. O roteiro em inglês parou antes, na data em formato americano (limite já
+  conhecido), e ficou com o resumo aguardando confirmação. **P21:** quatro pedidos com saída sem ano
+  anterior à entrada (português e inglês): nenhum valor em reais, o agente pede as datas de novo; à
+  insistência "isso mesmo, pode cotar" ele continua sem cotar e não completa o ano sozinho. Latência dos
+  turnos: 0,8 a 8,3 s. Uma repetição de cada roteiro; não é rodada de eval
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
