@@ -298,3 +298,32 @@ describe("contagem de chamadas reais", () => {
     expect((await criarModelo(falha, "principal/x", { reserva: "reserva/y" })([], [])).uso.chamadas).toBe(2);
   });
 });
+
+describe("lacunas apontadas pelo verificador (M2, M8, M17, M18)", () => {
+  const limite = () => new Error("AiError: 3021: rate limiting: inference request per min rate reached");
+
+  it("M2: 5xx não é limite, nem no reserva depois de limite no principal", async () => {
+    const ai = { run: async (m: string) => { throw m === "principal/x" ? limite() : new Error("AiGatewayError: 500 Internal Server Error"); } } as unknown as Ai;
+    expect(await criarModelo(ai, "principal/x", { reserva: "reserva/y" })([], []).catch((e: unknown) => e)).not.toHaveProperty("porLimite");
+    const sem = { run: async () => { throw new Error("502 Bad Gateway"); } } as unknown as Ai;
+    expect(await criarModelo(sem, "principal/x", {})([], []).catch((e: unknown) => e)).not.toHaveProperty("porLimite");
+  });
+
+  it("M8: o system vai no campo system e nunca como mensagem do usuário", () => {
+    const { messages, system } = pedidoAnthropic([{ role: "system", content: "Regras." }, { role: "user", content: "Quanto fica o GRM-301?" }], [], undefined) as { system: string; messages: { role: string; content: unknown }[] };
+    expect(system).toBe("Regras.");
+    expect(messages).toEqual([{ role: "user", content: [{ type: "text", text: "Quanto fica o GRM-301?" }] }]);
+  });
+
+  it("M17: principal sem resposta no prazo e reserva com limite não é recusa por limite", async () => {
+    const ai = { run: (m: string) => (m === "principal/x" ? new Promise(() => {}) : Promise.reject(limite())) } as unknown as Ai;
+    const erro = await criarModelo(ai, "principal/x", { reserva: "reserva/y", tempoDoPrincipalMs: 10 })([], []).catch((e: unknown) => e);
+    expect(erro).toBeInstanceOf(Error);
+    expect(erro).not.toHaveProperty("porLimite");
+  });
+
+  it("M18: texto do assistente junto com ferramenta vai antes do tool_use", () => {
+    const { messages } = pedidoAnthropic([{ role: "user", content: "a" }, { role: "assistant", content: "Vou cotar.", tool_calls: [{ id: "toolu_1", type: "function", function: { name: "cotar", arguments: "{}" } }] }, { role: "tool", tool_call_id: "toolu_1", content: "{}" }], [], undefined) as { messages: { content: Record<string, unknown>[] }[] };
+    expect(messages[1]!.content).toEqual([{ type: "text", text: "Vou cotar." }, { type: "tool_use", id: "toolu_1", name: "cotar", input: {} }]);
+  });
+});
