@@ -31,6 +31,7 @@ function esperarRecusaP21(resultado: Awaited<ReturnType<typeof pedido>>) {
   expect(erro).toContain("sem ano");
   expect(erro).toContain("Peça ao hóspede as datas de entrada e de saída de novo");
   expect(erro).toContain("com o ano");
+  expect(erro).toContain("Não complete o ano por conta própria nem chame a ferramenta de novo com um ano que o hóspede não escreveu.");
   expect(erro).toContain("Não informe nenhum total e não passe para humano.");
   expect(erro).not.toContain("R$");
   return erro;
