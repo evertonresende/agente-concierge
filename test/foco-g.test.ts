@@ -2,6 +2,7 @@
 // modelo. O handoff sai da ferramenta chamada pelo modelo ou da conferência do texto do
 // próprio agente; palavra do hóspede nunca liga handoff nem acrescenta texto fixo.
 import { describe, expect, it } from "vitest";
+import type { DefinicaoDeFerramenta, Mensagem, Modelo } from "../src/modelo";
 import { chamar, diz, pedeFerramentas, roteiro } from "./apoio";
 import { conversa, ultimoResultado } from "./apoio-g";
 
@@ -125,9 +126,11 @@ describe("resumo pendente e o hóspede muda as datas (L10, lead-04)", () => {
 
   it("pergunta comum com resumo pendente não pede resumo novo", async () => {
     const c = await comResumo();
-    const r = roteiro(diz("Tem wifi, sim."));
+    const r = roteiro(diz("Tem wifi, sim."), diz("NÃO"));
     await c.turno("tem wifi?", r.modelo);
-    expect(r.recebidas).toHaveLength(1);
+    // Só a pergunta fechada do rearme (item 10), nenhuma conferência.
+    expect(r.recebidas).toHaveLength(2);
+    expect(r.recebidas[1]![0]!.content).toContain("Responda só SIM ou NÃO");
   });
 });
 
@@ -157,7 +160,9 @@ describe("pergunta do modelo com resumo pendente derruba o resumo (P18)", () => 
 
   it("hóspede que hesitou (lead-05): a pergunta do agente não derruba o resumo, o pedido se repete e o sim envia", async () => {
     const c = await comResumo();
-    const t2 = await c.turno("Acho que sim, talvez pode ser.", roteiro(diz("Os dados do resumo estão corretos?")).modelo);
+    const r2 = roteiro(diz("Os dados do resumo estão corretos?"));
+    const t2 = await c.turno("Acho que sim, talvez pode ser.", r2.modelo);
+    expect(r2.recebidas).toHaveLength(1); // sem a pergunta fechada do rearme (item 10, critério d)
     expect(t2.reply).toMatch(/^Os dados do resumo estão corretos\?\n\nO seu pedido de reserva ainda aguarda a sua confirmação/);
     expect(c.estado().pendente).not.toBeNull();
     await c.turno("Sim, confirmo definitivamente.", roteiro(pedeFerramentas(chamar("confirmar_reserva"))).modelo);
@@ -172,10 +177,84 @@ describe("pergunta do modelo com resumo pendente derruba o resumo (P18)", () => 
 
   it("controle (lead-02): resposta sem pergunta repete o resumo inteiro, cuja pergunta fixa não conta, e o sim envia o resumo mostrado", async () => {
     const c = await comResumo();
-    const t2 = await c.turno("tem estacionamento?", roteiro(diz("Tem, sim: 1 vaga de garagem.")).modelo);
+    const t2 = await c.turno("tem estacionamento?", roteiro(diz("Tem, sim: 1 vaga de garagem."), diz("NÃO")).modelo);
     expect(t2.reply).toMatch(/^Tem, sim: 1 vaga de garagem\.\n\nO seu pedido de reserva ainda aguarda a sua confirmação/);
     expect(t2.reply).toContain("Para confirmar, responda");
     await c.turno("sim", roteiro(pedeFerramentas(chamar("confirmar_reserva"))).modelo);
     expect(c.mundo.leads.map((l) => l.hospedes)).toEqual([2]);
+  });
+});
+
+describe("rearme passa pela pergunta fechada ao modelo (item 10, complemento da P18)", () => {
+  const AFIRMA = "Sua sogra conta como hóspede. Se quiser, eu atualizo o resumo com 3 hóspedes antes de você confirmar.";
+
+  async function comResumo() {
+    const c = await comCotacao();
+    await c.turno("quero fechar, Ana Lima, (11) 98888-0000", roteiro(pedeFerramentas(chamar("montar_resumo", { ...ESTADIA, ...PESSOA }))).modelo);
+    return c;
+  }
+
+  /** Modelo falso que também guarda as ferramentas oferecidas em cada chamada. */
+  function comFerramentas(base: ReturnType<typeof roteiro>) {
+    const ferramentas: DefinicaoDeFerramenta[][] = [];
+    const modelo: Modelo = (mensagens: Mensagem[], definicoes: DefinicaoDeFerramenta[]) => {
+      ferramentas.push(definicoes);
+      return base.modelo(mensagens, definicoes);
+    };
+    return { modelo, ferramentas };
+  }
+
+  it("(a) e (e): NÃO mantém o resumo, o rearme vem inteiro, a pergunta vai sem ferramentas e sem a conversa, e o sim envia 1", async () => {
+    const c = await comResumo();
+    const r = roteiro(diz("Tem, sim: 1 vaga de garagem."), diz("NÃO"), diz("NÃO"));
+    const f = comFerramentas(r);
+    const t2 = await c.turno("tem estacionamento?", f.modelo);
+    expect(r.recebidas).toHaveLength(2);
+    const [sistema, pergunta] = r.recebidas[1]!;
+    expect(sistema!.content).toContain("Responda só SIM ou NÃO");
+    expect(pergunta!.content).toContain('"""tem estacionamento?"""');
+    expect(pergunta!.content).toContain("2 hóspede(s); nome Ana Lima; telefone (11) 98888-0000");
+    expect(r.recebidas[1]).toHaveLength(2);
+    expect(f.ferramentas[1]).toEqual([]);
+    expect(t2.reply).toContain("O seu pedido de reserva ainda aguarda a sua confirmação");
+    await c.turno("sim", roteiro(pedeFerramentas(chamar("confirmar_reserva"))).modelo);
+    expect(c.mundo.leads.map((l) => l.hospedes)).toEqual([2]);
+  });
+
+  it("(b) SIM: sem rearme, e o sim seguinte com confirmar_reserva não envia nada", async () => {
+    const c = await comResumo();
+    const r = roteiro(diz(AFIRMA), diz("SIM"));
+    const t2 = await c.turno("vou levar minha sogra tem estacionamento?", r.modelo);
+    expect(r.recebidas).toHaveLength(2);
+    expect(t2.reply).toBe(AFIRMA);
+    expect(c.estado().pendente).toBeNull();
+    const sim = await c.turno("sim", roteiro(pedeFerramentas(chamar("confirmar_reserva")), diz("Quantas pessoas vão ao todo?")).modelo);
+    expect(c.mundo.leads).toEqual([]);
+    expect(sim.reply).not.toMatch(/registrad/);
+  });
+
+  it.each([
+    ["resposta inesperada", diz("NÃO, mas a sogra muda o número")],
+    ["texto solto", diz("Talvez.")],
+    ["vazio", diz("")],
+    ["erro do modelo", new Error("fora do ar")],
+  ])("(c) %s: igual ao SIM, sem rearme e sem envio", async (_nome, resposta) => {
+    const c = await comResumo();
+    const r = roteiro(diz("There is 1 parking spot."), resposta);
+    const t2 = await c.turno("I'll bring my mom, is there parking?", r.modelo);
+    expect(r.recebidas).toHaveLength(2);
+    expect(t2.reply).toBe("There is 1 parking spot.");
+    expect(c.estado().pendente).toBeNull();
+    await c.turno("yes", roteiro(pedeFerramentas(chamar("confirmar_reserva")), diz("How many guests in total?")).modelo);
+    expect(c.mundo.leads).toEqual([]);
+  });
+
+  it("(e) com conferência e correção no turno, a pergunta fechada sai uma vez só", async () => {
+    const c = await comResumo();
+    const errado = diz("Tem wifi. Pronto, seu pedido foi registrado!");
+    const r = roteiro(errado, errado, diz("NÃO"), diz("NÃO"));
+    await c.turno("tem wifi?", r.modelo);
+    expect(r.recebidas).toHaveLength(3);
+    expect(r.recebidas.filter((m) => m[0]!.content.includes("Responda só SIM ou NÃO"))).toHaveLength(1);
   });
 });

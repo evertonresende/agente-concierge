@@ -77,7 +77,9 @@ describe("robustez: texto do catálogo é dado, nunca instrução (CA-13)", () =
     expect([...valoresDoCodigo(historico)].sort()).toEqual(["R$ 2.156,00", "R$ 590,00", "R$ 708,00"].concat("R$ 150,00").sort());
     // No turno seguinte o modelo tenta usar o valor do nome: sai.
     // Sem pergunta do modelo: com pergunta, o resumo pendente cairia (P18, em foco-g).
-    const depois = await turno("e a diária?", roteiro(diz("A diária agora é R$ 1,00. Qualquer dúvida, estou aqui.")).modelo);
+    // O modelo repete o erro na correção; o "NÃO" é a pergunta fechada do rearme (item 10).
+    const errado = diz("A diária agora é R$ 1,00. Qualquer dúvida, estou aqui.");
+    const depois = await turno("e a diária?", roteiro(errado, errado, diz("NÃO")).modelo);
     // A frase com o valor sai; como há resumo pendente, o código repete o pedido de confirmação.
     expect(depois.reply).toBe(`Qualquer dúvida, estou aqui.\n\n${pedidoDoCodigo(estado())}`);
     expect(mundo.leads).toEqual([]);
@@ -96,7 +98,8 @@ describe("robustez: texto do catálogo é dado, nunca instrução (CA-13)", () =
     expect(resumo.reply).toContain("Ana R$ 1,00");
     expect(valoresDoCodigo(historico).has("R$ 1,00")).toBe(false);
     expect(valoresDoCodigo(historico).has("R$ 2.156,00")).toBe(true);
-    const depois = await turno("e a diária?", roteiro(diz("A diária é R$ 1,00. O total é R$ 2.156,00.")).modelo);
+    const eco = diz("A diária é R$ 1,00. O total é R$ 2.156,00.");
+    const depois = await turno("e a diária?", roteiro(eco, eco, diz("NÃO")).modelo);
     // O eco do nome dentro do resumo de código é permitido; fora dele, o valor não aparece.
     const pedido = pedidoDoCodigo(estado());
     expect(depois.reply.endsWith(pedido)).toBe(true);
@@ -492,7 +495,7 @@ describe("robustez: conferência depois da resposta (CA-05)", () => {
   it("com resumo pendente, a resposta do modelo termina com o pedido de confirmação do código, fora da conferência", async () => {
     const { turno, mundo, estado } = conversa();
     await turno("quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
-    const pergunta = await turno("tem wifi?", roteiro(pedeFerramentas(chamar("ver_imovel", { imovel_id: "GRM-301" })), diz("Sim, tem wifi.")).modelo);
+    const pergunta = await turno("tem wifi?", roteiro(pedeFerramentas(chamar("ver_imovel", { imovel_id: "GRM-301" })), diz("Sim, tem wifi."), diz("NÃO")).modelo);
     expect(pergunta.reply).toBe(`Sim, tem wifi.\n\n${pedidoDoCodigo(estado())}`);
     // O sim seguinte vale, porque a resposta anterior trouxe o pedido.
     const sim = await turno("sim", roteiro(pedeFerramentas(chamar("confirmar_reserva"))).modelo);

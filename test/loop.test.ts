@@ -297,7 +297,7 @@ describe("loop de ferramentas", () => {
   it("repetir a cotação da mesma estadia não invalida o resumo", async () => {
     const { turno, estado } = montar();
     await turno(2, "quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
-    await turno(3, "quanto era mesmo?", roteiro(pedeFerramentas(chamar("cotar", ESTADIA)), diz("R$ 2.156,00.")).modelo);
+    await turno(3, "quanto era mesmo?", roteiro(pedeFerramentas(chamar("cotar", ESTADIA)), diz("R$ 2.156,00."), diz("NÃO")).modelo);
     expect(estado().pendente).not.toBeNull();
   });
 
@@ -398,7 +398,8 @@ describe("ligações da frente F no loop", () => {
   it("dado mudado pelo hóspede sem ferramenta derruba o pedido de confirmação do resumo antigo", async () => {
     const { turno, mundo } = conversa();
     await turno("quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", DADOS))).modelo);
-    const pergunta = await turno("tem wifi?", roteiro(diz("Sim, a ficha lista wifi.")).modelo);
+    // O "NÃO" é a pergunta fechada do rearme (item 10).
+    const pergunta = await turno("tem wifi?", roteiro(diz("Sim, a ficha lista wifi."), diz("NÃO")).modelo);
     // O pedido de confirmação é anexado por código (o texto exato é da frente F).
     expect(pergunta.reply.startsWith("Sim, a ficha lista wifi.\n\n")).toBe(true);
     expect(pergunta.reply.length).toBeGreaterThan("Sim, a ficha lista wifi.".length + 10);

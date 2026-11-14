@@ -100,7 +100,8 @@ describe("registro só com 201 (MÉDIA 3)", () => {
     await turno("quanto fica?", roteiro(pedeFerramentas(chamar("cotar", ESTADIA)), diz("Fica em R$ 2.156,00.")).modelo);
     await turno("quero fechar", roteiro(pedeFerramentas(chamar("montar_resumo", { ...DADOS, nome: "Ana Aceita Pets" }))).modelo);
     const errado = diz("Tem wifi. Pronto, seu pedido foi registrado e enviado ao time!");
-    const saida = await turno("tem wifi?", roteiro(errado, errado).modelo);
+    // O terceiro "NÃO" é a pergunta fechada do rearme (item 10).
+    const saida = await turno("tem wifi?", roteiro(errado, errado, diz("NÃO")).modelo);
     expect(mundo.leads).toEqual([]);
     expect(saida.reply).not.toMatch(/registrado e enviado/);
     expect(saida.reply.startsWith("Tem wifi. O seu pedido só é registrado depois que você confirmar o resumo.\n\n")).toBe(true);
