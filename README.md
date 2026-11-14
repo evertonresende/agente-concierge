@@ -14,12 +14,11 @@ Agente de chat para quem quer se hospedar em imóveis de temporada. Ele faz quat
    valor do lead sai do cálculo do código. Reconhecer o pedido e passar para humano depende
    do modelo, e o texto dele passa por uma conferência com limites (limites 1, 2, 8, 46 e 66).
 
-Os requisitos estão em [`docs/CONTRATO.md`](docs/CONTRATO.md). O que ainda depende do fim da
-entrega está marcado como "a preencher".
+Os requisitos estão em [`docs/CONTRATO.md`](docs/CONTRATO.md).
 
 **URL pública:** https://concierge.evertonresende.com
 
-**Repositório público:** a preencher. <!-- PREENCHER: repositório público (só com ordem do Éverton) -->
+**Repositório público:** https://github.com/evertonresende/agente-concierge
 
 ## Interface
 
