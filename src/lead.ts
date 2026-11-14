@@ -434,9 +434,10 @@ export function mudaDadoDoResumo(mensagem: string, pendente: Pendente): boolean 
 
 // Trecho que termina em "?" (separado por vírgula, ponto, ponto e vírgula ou quebra de linha).
 const TRECHO_DE_PERGUNTA = /[^.!?,;\n]*[?？؟]+/g;
-// Abertura que não diz nada sobre a reserva ("ah, antes de confirmar, qual é o bairro?").
-// Aberturas que têm "uma" (sinal de número): saem antes da busca de sinais (C9).
+// Aberturas que têm "uma" (sinal de número): saem antes da busca de sinais, só no rearme
+// (C9). Na leitura do sim ficam: sim com anúncio de dúvida não é confirmação limpa (C10).
 const ABERTURA_COM_NUMERO = /(?<![a-z0-9])(?:so uma pergunta|uma pergunta|uma duvida)(?![a-z0-9])/g;
+// Abertura que não diz nada sobre a reserva ("ah, antes de confirmar, qual é o bairro?").
 const ABERTURA_NEUTRA = /(?<![a-z0-9])(?:oi|ola|ah|bom|entao|hum+|hey|hi|hello|alias|antes de (?:confirmar|fechar)|antes|so uma pergunta|uma duvida|e|mas|and|but|so)(?![a-z0-9])/g;
 
 /**
@@ -463,7 +464,9 @@ export function lerConfirmacao(mensagem: string, pendente: Pendente, turno?: num
   if (mensagem.length > MAXIMO_DA_MENSAGEM) return "outra";
   // Ponto de interrogação de largura cheia (？) e árabe (؟) também fazem pergunta.
   const bruto = mensagem.replace(/[？؟]/g, "?");
-  const texto = marcarDadosIguais(semAcento(bruto).replace(ABERTURA_COM_NUMERO, " "), pendente);
+  // Nada sai do texto antes da gramática do sim: "sim, uma dúvida" tem de continuar com o
+  // "uma" (sinal) e não confirmar. As aberturas neutras só são tiradas no rearme (C10).
+  const texto = marcarDadosIguais(semAcento(bruto), pendente);
   if (PRECO.test(texto)) return "condicao_de_preco";
   const limpo = semPontuacao(texto);
   const comValores = comValoresDoResumo(texto);
