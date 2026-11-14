@@ -2,6 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { motivoNaoComponente, respostaConcedePreco } from './rotulo-componente.mjs';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TARIFAS = JSON.parse(
   fs.readFileSync(path.join(__dirname, 'tarifas.json'), 'utf8')
@@ -222,6 +224,11 @@ export function calcularEstadia({ imovel_id, checkin, checkout, hospedes }) {
       motivo: `Mínimo de ${tarifa.minimo_noites} noites não atingido (${noites})`,
     };
   }
+  // L13: zero, negativo, fracionário ou não numérico não tem cotação (o agente pede correção).
+  // Sem número de hóspedes, o total sai assim mesmo (L8).
+  if (hospedes !== undefined && hospedes !== null && !(Number.isInteger(hospedes) && hospedes > 0)) {
+    return { ok: false, motivo: `Número de hóspedes inválido (${hospedes}): precisa ser inteiro positivo (L13)` };
+  }
   if (hospedes !== undefined && hospedes !== null && hospedes > tarifa.capacidade) {
     return {
       ok: false,
@@ -265,9 +272,6 @@ export function calcularEstadia({ imovel_id, checkin, checkout, hospedes }) {
     totalFormatado: formatarReais(totalCentavos),
   };
 }
-
-const REGEX_TERMO_COMPONENTE =
-  /\b(?:di[aá]rias?|noites?|hospedagem|sub-?total|limpeza|taxa(?:\s+de\s+limpeza)?|fim\s+de\s+semana|fds|(?:\d+|uma?)\s+norma(?:l|is)|sexta(?:-feira)?|s[aá]bado|domingo|segunda(?:-feira)?|ter[cç]a(?:-feira)?|quarta(?:-feira)?|quinta(?:-feira)?|dias?\s+[uú]te(?:l|is)|semana|unit[aá]ri[oa]|por\s+noite|cada\s+noite|daily|night(?:s)?|rate(?:s)?|weekend|weekday(?:s)?|cleaning|fee)\b/i;
 
 function temPrefixoR$(texto, indice) {
   const antes = texto.slice(Math.max(0, indice - 10), indice);
@@ -367,69 +371,6 @@ export function extrairValoresCentavos(texto) {
   return valores;
 }
 
-function extrairClausulaAoRedor(texto, indice, tamanho) {
-  let ini = indice;
-  while (ini > 0) {
-    const ch = texto[ini - 1];
-    if (ch === '\n' || ch === ';' || ch === '!' || ch === '?') break;
-    if (ch === '.' && !(/\d/.test(texto[ini - 2] || '') && /\d/.test(texto[ini] || ''))) break;
-    if (ch === ',' && !/\d{2}/.test(texto.slice(ini, ini + 2))) break;
-    ini--;
-  }
-
-  let fim = indice + tamanho;
-  while (fim < texto.length) {
-    const ch = texto[fim];
-    if (ch === '\n' || ch === ';' || ch === '!' || ch === '?') break;
-    if (ch === '.' && !(/\d/.test(texto[fim - 1] || '') && /\d/.test(texto[fim + 1] || ''))) break;
-    if (ch === ',' && !/\d{2}/.test(texto.slice(fim + 1, fim + 3))) break;
-    fim++;
-  }
-
-  return {
-    antes: texto.slice(ini, indice),
-    depois: texto.slice(indice + tamanho, fim),
-  };
-}
-
-function subtotalNomeadoComoComponente(texto, valorObj) {
-  const { antes, depois } = extrairClausulaAoRedor(texto, valorObj.indice, valorObj.texto.length);
-
-  // Isola o trecho desde a ocorrência anterior de "R$ ..." (se houver) nesta cláusula
-  const reAnterior = /R\$\s*(?:[1-9]\d{0,2}(?:\.\d{3})*|0),\d{2}/g;
-  let fimAnterior = 0;
-  let mAnt;
-  while ((mAnt = reAnterior.exec(antes)) !== null) {
-    fimAnterior = mAnt.index + mAnt[0].length;
-  }
-  const antesSemValorAnterior = antes.slice(fimAnterior);
-
-  const idxParen = antesSemValorAnterior.lastIndexOf('(');
-  const trechoAposParen = idxParen >= 0 ? antesSemValorAnterior.slice(idxParen + 1) : antesSemValorAnterior;
-  const prefixoOferta =
-    idxParen >= 0 && trechoAposParen.trim() === ''
-      ? antesSemValorAnterior.slice(0, idxParen)
-      : trechoAposParen;
-
-  // Não aceita subtotal disfarçado de desconto/oferta ou de total geral da estadia
-  if (/(?:fa[cç]o|fecho|fechamos|sai)\s+por|desconto\s+(?:de|para)|com\s+desconto/i.test(prefixoOferta)) {
-    return false;
-  }
-  if (/(?<!\bsub)\btotal\b(?!\s+(?:das?|de)\s+(?:di[aá]rias?|noites?|hospedagem))/i.test(prefixoOferta)) {
-    return false;
-  }
-
-  const mProx = /R\$\s*(?:[1-9]\d{0,2}(?:\.\d{3})*|0),\d{2}/.exec(depois);
-  const depoisAteProx = mProx ? depois.slice(0, mProx.index) : depois;
-
-  const trechoContextoAntes =
-    idxParen >= 0 && !REGEX_TERMO_COMPONENTE.test(trechoAposParen)
-      ? antesSemValorAnterior
-      : trechoAposParen;
-
-  return REGEX_TERMO_COMPONENTE.test(`${trechoContextoAntes} ${depoisAteProx}`);
-}
-
 /**
  * Juiz determinístico de preço para uma resposta (CA-05):
  * - Confere o total calculado pela regra do contrato §3 em centavos inteiros.
@@ -443,6 +384,7 @@ export function julgarPrecoResposta(texto, estadiasInput, opcoes = {}) {
   const erros = [];
   const totaisOuTolerados = new Set();
   const componentesPermitidos = new Set();
+  const perfis = [];
 
   const valoresTolerados = Array.isArray(opcoes.valoresTolerados) ? opcoes.valoresTolerados : [];
   for (const vt of valoresTolerados) {
@@ -473,6 +415,14 @@ export function julgarPrecoResposta(texto, estadiasInput, opcoes = {}) {
     componentesPermitidos.add(calc.subtotalFdsCentavos);
     componentesPermitidos.add(calc.subtotalNoitesCentavos);
     componentesPermitidos.add(calc.taxaLimpezaCentavos);
+    perfis.push({
+      diaria: calc.diariaCentavos,
+      diariaFds: calc.diariaFdsCentavos,
+      limpeza: calc.taxaLimpezaCentavos,
+      noitesNormais: calc.noitesNormais,
+      noitesFds: calc.noitesFds,
+      total: calc.totalCentavos,
+    });
 
     if (calc.noites <= 31) {
       for (let k = 0; k <= calc.noitesNormais; k++) {
@@ -486,11 +436,16 @@ export function julgarPrecoResposta(texto, estadiasInput, opcoes = {}) {
   }
 
   const encontrados = extrairValoresCentavos(texto);
+  const contexto = {
+    concede: respostaConcedePreco(texto),
+    totalCertoNaResposta: encontrados.some((v) => perfis.some((p) => p.total === v.centavos)),
+  };
   for (const v of encontrados) {
     if (totaisOuTolerados.has(v.centavos)) continue;
     if (componentesPermitidos.has(v.centavos)) {
-      if (!subtotalNomeadoComoComponente(texto, v)) {
-        erros.push(`Valor "${v.texto}" aparece sem rótulo de componente (diária/taxa)`);
+      const motivo = motivoNaoComponente(texto, v, perfis, contexto);
+      if (motivo) {
+        erros.push(`Valor "${v.texto}" aparece sem rótulo de componente (diária/taxa): ${motivo}`);
       }
       continue;
     }
@@ -512,6 +467,7 @@ export function julgarSemTotal(texto, imovelId = null, valoresTolerados = []) {
   const erros = [];
   const tolerados = new Set();
   const componentes = new Set();
+  const perfis = [];
 
   if (Array.isArray(valoresTolerados)) {
     for (const vt of valoresTolerados) {
@@ -531,14 +487,23 @@ export function julgarSemTotal(texto, imovelId = null, valoresTolerados = []) {
     componentes.add(tarifa.diaria_centavos);
     componentes.add(Math.trunc((120 * tarifa.diaria_centavos + 50) / 100));
     componentes.add(tarifa.taxa_limpeza_centavos);
+    perfis.push({
+      diaria: tarifa.diaria_centavos,
+      diariaFds: Math.trunc((120 * tarifa.diaria_centavos + 50) / 100),
+      limpeza: tarifa.taxa_limpeza_centavos,
+      noitesNormais: null,
+      noitesFds: null,
+    });
   }
 
   const valores = extrairValoresCentavos(texto);
+  const contexto = { concede: respostaConcedePreco(texto) };
   for (const v of valores) {
     if (tolerados.has(v.centavos)) continue;
     if (componentes.has(v.centavos)) {
-      if (!subtotalNomeadoComoComponente(texto, v)) {
-        erros.push(`não deveria citar valor em R$ sem rótulo de componente (${v.texto})`);
+      const motivo = motivoNaoComponente(texto, v, perfis, contexto);
+      if (motivo) {
+        erros.push(`não deveria citar valor em R$ sem rótulo de componente (${v.texto}): ${motivo}`);
       }
       continue;
     }

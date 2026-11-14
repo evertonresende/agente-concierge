@@ -34,6 +34,7 @@ export function montarResumoRelatorio({
   let entradaTotal = 0;
   let saidaTotal = 0;
   let chamadasTotal = 0;
+  let semUsoTotal = 0;
   let execCount = 0;
   let aprovadosTotal = 0;
   const conversas = [];
@@ -46,6 +47,7 @@ export function montarResumoRelatorio({
     entradaTotal += r.usoEntrada;
     saidaTotal += r.usoSaida;
     chamadasTotal += r.chamadasModelo;
+    semUsoTotal += r.pedidosSemUso ?? 0;
 
     if (!soAgregado) {
       conversas.push({
@@ -57,6 +59,7 @@ export function montarResumoRelatorio({
         uso_entrada: r.usoEntrada,
         uso_saida: r.usoSaida,
         chamadas_modelo: r.chamadasModelo,
+        pedidos_sem_uso: r.pedidosSemUso ?? 0,
       });
     }
   }
@@ -93,6 +96,9 @@ export function montarResumoRelatorio({
       entrada_media_conversa: execCount > 0 ? Math.round(entradaTotal / execCount) : 0,
       saida_media_conversa: execCount > 0 ? Math.round(saidaTotal / execCount) : 0,
       chamadas_media_conversa: execCount > 0 ? Number((chamadasTotal / execCount).toFixed(2)) : 0,
+      // Pedidos sem cabeçalho de uso (erro de rede, timeout ou resposta sem x-uso-*): o uso
+      // acima é um mínimo, não o total, quando este número não é zero.
+      pedidos_sem_uso_total: semUsoTotal,
     },
   };
 

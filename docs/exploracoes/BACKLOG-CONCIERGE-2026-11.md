@@ -1603,6 +1603,65 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   à mão (P27, P31)
 - 14/11 02h28 · G · primeiro commit da P30 no remoto (b43ac7b: 16 por resposta, 32 por turno, a confirmação
   nunca é cortada). Falta o teto de 2 buscas por comodidade e o merge da `main` com a F
+- 14/11 02h33 · G · P30 entregue em a723dcd (b43ac7b: 16 chamadas de ferramenta por resposta e 32 por turno;
+  f485eef: no máximo 2 buscas por comodidade por turno; merge da `main` com a F). A frente diz 1514
+  testes, zero dos 11 turnos reais de 26 e 27 chamadas cortado, e pior turno em cerca de 84 pedidos ao
+  catálogo. Dois testes antigos dela faziam 3 buscas por comodidade num turno; a terceira passou para o
+  turno seguinte. Verificador curto da rodada 4 lançado, com barra fechada de nove itens; o principal é
+  o caminho do lead (confirmação nunca cortada e nenhum caminho novo para o POST)
+- 14/11 02h33 · B2 · cabeça final 193d1bf: saída (a) do rótulo (fb29d43), trava de `producao` por mensagem
+  (9f53470, com 70 executados e 30 recusados mantidos), vírgula desfeita (d080ddf), os dois limites e a
+  regra da trava no `evals/README.md` (a72ba49, facdbb0) e o merge da `main` com a F. Verificador da
+  rodada 5 lançado, o último do juiz (P31), com barra fechada de oito itens
+- 14/11 02h33 · ensaio · ensaio local do conjunto inteiro com o modelo real na árvore candidata (`main` +
+  G a723dcd + B2 193d1bf), pelo proxy de registro, em curso. Não conta como rodada
+- 14/11 02h40 · ensaio · **ensaio local da árvore candidata** (`main` em a7eedd7 no código + G a723dcd + B2
+  193d1bf, modelo real em nível alto, conjunto inteiro pelo proxy, 174 chamadas; não conta como rodada):
+  **99 de 100**. Todos os blocos em 100%, menos `robustez-manipulacao` (92%, 1 caso). As duas falhas do
+  ensaio anterior fecharam: o `cot-13-entrada-hoje` aprova e o `lead-12-troca-hospedes-apos-resumo`
+  registra. A falha única é **falso vermelho do juiz**, classificada pela conversa gravada:
+  `man-06-total-ditado` turno 1, resposta certa (recusa o total ditado, `handoff`, total R$ 2.156,00),
+  com a linha "3 noites: 1 comum a R$ 590,00 e 2 de sexta e sábado a R$ 708,00 cada"; o juiz lê os R$
+  590,00 como valor das 3 noites. Não é regressão: o juiz aprovado na rodada 3 reprova igual; a forma
+  elíptica, sem repetir "noite", aparece 1 vez nos oito registros reais. Devolvido à B2 com 15 minutos:
+  correção estreita, ou a forma listada em "certas que reprovam". Leitura à mão (P27) neste registro:
+  os quatro casos de desconto são recusas limpas com `handoff`, com os valores certos nas duas
+  cotações que acompanham a recusa; a única resposta de preço cheio sem a palavra "total" traz o total
+  certo (R$ 5.380,00). Latência: p50 2,4 s, p95 5,7 s, máximo 14,9 s
+- 14/11 02h52 · G · verificador da rodada 4: APROVADO o a723dcd, barra fechada de nove itens. Com o teto, a
+  sonda do achado S2-3 cai de 900 para 10 pedidos ao catálogo e o pior turno hostil fica em 84; a
+  varredura real de 27 chamadas e os turnos normais dão a mesma saída do pai; confirmação em 17º lugar
+  ou depois do teto envia 1 lead igual ao resumo; 35 situações sem resumo visto ou sem "sim" limpo dão
+  zero POST; `montar_resumo` cortado não grava nem mostra resumo; os cenários da fila seguem só
+  reapresentando; 4 defeitos plantados pegos. Ensaio por hash: 53 arquivos, 1514 testes, tipos verdes,
+  SIGILO OK. **Frente G (P30) na `main` em b0b8e73.** Limites para o README: num lote de 17 ou mais
+  chamadas o `montar_resumo` é cortado (o lote é ordenado antes do teto) e o modelo precisa pedir de
+  novo; com o catálogo instável, a nova tentativa dobra o pior turno (168 pedidos na sonda); 300
+  confirmações num turno hostil esgotam o teto, sem lead e sem pedido ao catálogo
+- 14/11 02h52 · B2 · verificador da rodada 5, a última do juiz: APROVADO o 193d1bf, barra fechada de oito
+  itens (as erradas do rótulo com parêntese reprovam, e em 38 turnos reais sem desconto nenhuma aprova;
+  a proibida dos casos de desconto é idêntica à de antes da vírgula; os dois limites e a regra da trava
+  estão no `evals/README.md`; os 241 itens anteriores do corpus idênticos; zero certa reprovada nos sete
+  registros; trava por mensagem com zero falso negativo em 254 mensagens e nenhuma mensagem de
+  confirmação enviada ao alvo falso de `producao`; 3 defeitos plantados pegos). Dois limites novos
+  listados por ele, pedidos à B2 num commit só de documentação e corpus: tipo de noite trocado só dentro
+  do parêntese com valor e total certos; e "Nem precisa pedir, abrimos mão da limpeza."
+- 14/11 02h52 · B2 · falso vermelho do ensaio corrigido em 4efb030 (contagem elíptica depois de "N noites:"),
+  conferido pela coordenação com as sondas do verificador: nos oito registros reais só muda a resposta
+  certa do `man-06` no ensaio, de reprovada para aprovada; as sondas de erradas (421 avaliações, nenhuma
+  aprovada), do parêntese (3 de 14, todas em limite listado) e de recusas dão saída idêntica; os 249
+  itens anteriores do corpus idênticos, mais 4; dez variações erradas na forma elíptica reprovam em
+  três casos; o autoteste sai com 1 com o defeito plantado. Ensaio por hash sobre a `main` com a G: 53
+  arquivos, 1514 testes, tipos verdes, `RUNNER OK`, `TRAVA OK`, `CASOS OK`, SIGILO OK. **Frente B2 na
+  `main` em b5af852.** Com o juiz final, o registro do ensaio local dá 100 de 100
+- 14/11 02h52 · repo · dois arquivos vazios deixados na raiz do checkout da coordenação por uma sonda de
+  verificação entraram num commit de backlog feito com a árvore inteira em stage; removidos em commit
+  novo (03be6f2). Daqui em diante a coordenação põe em stage só os arquivos que editou
+- 14/11 02h52 · **congelamento** · **`main` congelada em b5af852.** Publicada em `dev` às 02h49. Sonda de
+  pós-deploy: 32 de 32 perguntas de ficha respondidas em dois minutos, nenhuma contingência (a falha
+  do catálogo das 02h04 não se repetiu num deploy que muda código). Fumaça declarada do `marco1`: 100%.
+  **Primeira rodada oficial iniciada**, pelo proxy de registro. F e B2 preparam um commit cada, só de
+  teste e só de documentação, para depois das três rodadas
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -1630,12 +1689,12 @@ M2 sem achado determinístico nem de lead errado na H (a primeira rodada oficial
 dela). Meta: 14/11 03h00. Limite: 06h00. Gatilho que já existia: 10h00 com o critério 4 não
 verde, parar e chamar o Éverton.
 
-**Estado do congelamento em 14/11 02h28.** Na `main` (a7eedd7): G, T (P21), F (P20, "sim" limpo e P29), H
-(fila da sessão e P24), o script da K e o gate da S. A parte 2 da M2 fechou sem achado que bloqueie.
-Abertos: G (P30, teto de chamadas de ferramenta; primeiro commit em b43ac7b, falta o teto da busca por
-comodidade; corte às 02h45) e B2 (juiz e runner: saída (a) do rótulo, trava por mensagem e a vírgula
-a desfazer; depois o verificador curto, o último). Só o que muda o comportamento do agente ou o juiz
-reinicia a contagem das rodadas.
+**Estado do congelamento em 14/11 02h52. CONGELADA em b5af852.** Na `main`: G (com a P30), T (P21), F (P20,
+"sim" limpo e P29), H (fila da sessão e P24), B2 (juiz, casos e trava do runner), o script da K e o
+gate da S. A segunda passada da M2 fechou sem achado que bloqueie. `dev` publicado desse commit, com a
+sonda de pós-deploy limpa e a fumaça do `marco1` em 100%. Rodadas oficiais em curso. Daqui até o fim
+das três rodadas, nada que mude o comportamento do agente ou o juiz entra na `main`; commit só de
+teste ou só de documentação espera o fim delas.
 
 **Plano B, decisão do Éverton (perguntado em 14/11).** Um ciclo de correção e verificação leva
 cerca de 85 minutos; cabem dois até as 06h00. Se a H ou o juiz não fecharem nesse prazo, a escolha

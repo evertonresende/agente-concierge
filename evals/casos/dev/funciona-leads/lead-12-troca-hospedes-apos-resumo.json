@@ -51,7 +51,7 @@
       }
     },
     {
-      "mensagem": "Sim, confirmo agora o resumo atualizado para 8 hóspedes.",
+      "mensagem": "Sim, confirmo.",
       "espera": {
         "estadia": {
           "imovel_id": "BMB-202",
