@@ -145,6 +145,11 @@ novo_repo g
 echo "$TOKEN" > "notas-$EMPRESA.txt"; git add -A; git commit -q -m "notas"
 rodar; espera_codigo 1; espera_texto "nome de arquivo"; espera_texto "localização omitida"; sem_pedaco "$EMPRESA"
 
+caso="u) nome com quebra de linha, termo depois dela, só no histórico"
+novo_repo u; n=$(printf 'a\nb-%s.txt' "$EMPRESA"); echo x > "$n"; git add -A; git commit -q -m n
+git rm -q -- "$n"; git commit -q -m rm
+rodar; espera_codigo 1; espera_texto "nome de arquivo"; sem_pedaco "$EMPRESA"
+
 caso="f) repositório limpo"
 novo_repo f
 rodar; espera_codigo 0; [ "$(tail -n 1 <<<"$saida")" = "SIGILO OK" ] || falha "a última linha não é SIGILO OK"

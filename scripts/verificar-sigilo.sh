@@ -114,7 +114,7 @@ grep -E '(^|/)(\.privado/|\.env($|\.)|\.dev\.vars)' "$tmpd/arquivos" | grep -v -
 PUBLICAVEL="--branches --tags --remotes"
 [ "$(git rev-parse --is-shallow-repository 2>/dev/null)" = false ] \
   || { echo "SIGILO: clone raso: o histórico está incompleto e não dá para varrê-lo"; exit 2; }
-: > "$tmpd/tipos"
+: > "$tmpd/tipos"; : > "$tmpd/nomes_hist"
 # Vale com ou sem commit no HEAD (branch órfã): o que conta é haver ref publicável.
 le publicaveis for-each-ref --count=1 refs/heads refs/tags refs/remotes
 if [ -s "$tmpd/publicaveis" ]; then
@@ -137,6 +137,9 @@ if [ -s "$tmpd/publicaveis" ]; then
   elif [ "${st[2]}" -ne 1 ] || [ "${st[1]}" -ne 0 ] || [ "${st[0]}" -ne 0 ]; then
     echo "SIGILO: falha ao ler o conteúdo do histórico"; exit 2
   fi
+
+  # Todo caminho que algum commit publicável toca (merges incluídos), separado por NUL.
+  le nomes_hist log -z -m --format= --name-only $PUBLICAVEL
 
   # Um registro por commit, separado por NUL (que não cabe numa mensagem): hash, \037 e
   # a mensagem. Procura só na mensagem e imprime só o identificador curto. Registro fora
@@ -170,7 +173,9 @@ if git rev-parse -q --verify HEAD >/dev/null; then
 fi
 
 # Nomes de arquivo e de pasta, no índice e no histórico: só a contagem, nunca o nome.
-n=$({ cut -s -d' ' -f3- "$tmpd/tipos"; cat "$tmpd/arquivos"; } | grep -c -i -F -f "$fixos")
+# Separados por NUL, para que um nome com quebra de linha não se parta.
+le nomes_indice ls-files -z --cached
+n=$(cat "$tmpd/nomes_hist" "$tmpd/nomes_indice" | grep -z -c -i -F -f "$fixos")
 [ "$n" -eq 0 ] || echo "($n caminho(s))" | relata "termo proibido em nome de arquivo ou pasta"
 
 # 3. Remoto: só branches e tags. Nunca `git push --mirror` nem push de outras refs.
