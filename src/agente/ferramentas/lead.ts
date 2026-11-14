@@ -1,7 +1,7 @@
 import { regrasDaFicha } from "../../catalogo";
 import {
   apresentarResumo, type CampoDoHospede, chaveDaReserva, confirmar, invalidarPendente, type Leitura, type Pendente, type Reserva,
-  reservaFechada, simAposRegistro, textoDoResumo, dataComDia,
+  estadiaBloqueada, reservaFechada, simAposRegistro, textoDoResumo, dataComDia,
 } from "../../lead";
 import { formatarReais } from "../../nucleo/dinheiro";
 import { type Idioma, idiomaDoHospede } from "../../nucleo/idioma";
@@ -104,13 +104,18 @@ export function resumir(contexto: Contexto, pedido: Extract<Pedido, { ok: true }
   const pendente: Pendente = {
     reserva, totalCentavos: pedido.cotacao.totalCentavos, turno: contexto.turno, nomeDoImovel: pedido.ficha.nome,
   };
-  const anterior = contexto.cofre.ler().envios[chaveDaReserva(reserva)];
-  if (reservaFechada(anterior)) {
+  const estado = contexto.cofre.ler();
+  const anterior = estado.envios[chaveDaReserva(reserva)];
+  // Reserva que já teve envio, ou estadia bloqueada pelo teto de falhas (P14), mesmo com
+  // outro nome, telefone ou número de hóspedes: não ganha resumo novo.
+  const bloqueio = anterior === "registrado" ? undefined : estadiaBloqueada(estado, reserva);
+  if (reservaFechada(anterior) || bloqueio) {
     // O hóspede pediu outra reserva (que já teve envio): o resumo que estava em aberto,
     // de uma reserva diferente, deixa de valer (L10).
     invalidarPendente(contexto.cofre);
     if (anterior === "registrado") return jaRegistrado(pendente, idioma);
-    const texto = anterior === "recusado" ? TEXTOS[idioma].naoRegistrado : TEXTOS[idioma].incerto;
+    const incerto = bloqueio === "incerto" || anterior === "incerto" || anterior === "enviando";
+    const texto = incerto ? TEXTOS[idioma].incerto : TEXTOS[idioma].naoRegistrado;
     return { paraOModelo: { nao_registrado: true }, respostaFinal: texto, handoff: true };
   }
 

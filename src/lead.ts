@@ -56,6 +56,10 @@ export interface EstadoLead {
   envios: Record<string, SituacaoEnvio>;
   /** Resumos mostrados na sessão, para saber se um resumo substituiu outro (P13). */
   resumosMostrados?: number;
+  /** POSTs sem 201 por estadia (ver `chaveDaEstadia`): no máximo 2 na sessão (P14). */
+  postsSemRegistro?: Record<string, number>;
+  /** Estadias que não recebem mais POST na sessão, com o motivo: recusa ou resultado incerto (P14). */
+  estadiasBloqueadas?: Record<string, "recusado" | "incerto">;
 }
 
 export const ESTADO_INICIAL: EstadoLead = { pendente: null, envios: {} };
@@ -69,6 +73,29 @@ export interface Cofre {
 /** A mesma reserva = mesmo imóvel, datas, hóspedes e telefone (contrato L7). */
 export function chaveDaReserva(r: Reserva): string {
   return [r.imovel_id.toUpperCase(), r.checkin, r.checkout, r.hospedes, r.telefone.replace(/\D/g, "")].join("|");
+}
+
+/**
+ * A estadia = imóvel, entrada e saída. O teto de falhas da P14 conta por estadia, então
+ * trocar nome, telefone ou número de hóspedes não abre um novo envio depois do bloqueio.
+ */
+export function chaveDaEstadia(r: Reserva): string {
+  return [r.imovel_id.toUpperCase(), r.checkin, r.checkout].join("|");
+}
+
+/**
+ * A estadia desta reserva está bloqueada na sessão? Devolve o motivo. Também bloqueia, como
+ * incerto, a estadia de uma reserva cujo POST ficou sem resultado: marcador "enviando" que
+ * sobrou de um reinício no meio do envio, ou "incerto", mesmo de estado gravado antes do
+ * teto por estadia existir (C7). Pode ter entrado; outro telefone duplicaria o lead.
+ */
+export function estadiaBloqueada(estado: EstadoLead, r: Reserva): "recusado" | "incerto" | undefined {
+  const estadia = chaveDaEstadia(r);
+  const salvo = estado.estadiasBloqueadas?.[estadia];
+  if (salvo) return salvo;
+  const semResultado = Object.entries(estado.envios)
+    .some(([chave, situacao]) => chave.startsWith(`${estadia}|`) && (situacao === "enviando" || situacao === "incerto"));
+  return semResultado ? "incerto" : undefined;
 }
 
 /** Registra que o resumo foi mostrado neste turno. Substitui qualquer resumo anterior (L10). */
@@ -209,8 +236,11 @@ export type Leitura =
 
 const PRECO = new RegExp(
   "r\\$|\\$\\s*\\d|\\d\\s*%|\\breais\\b|\\bdescont|\\bcupo(m|ns)\\b|\\bpromoc|\\babat|\\bbarat|\\bdiscount|\\bcheaper|\\bcoupon"
-    + "|\\b(por|for)\\s+\\d[\\d.,]{2,}"
-    + "|\\b(se|desde que|contanto que|caso|if|unless|provided|as long as)\\b.*\\b(valor|preco|total|price|\\d{3,})",
+    + "|\\b(por|for)\\s+\\d[\\d.,]{2,}|\\b(por|for)\\s+(\\d+|um|dois|tres|quatro|cinco|one|two|three|four|five)\\s*(mil|k)\\b"
+    + "|\\bpagar menos\\b|\\bpay less\\b|\\bem conta\\b|\\bmetade do (valor|preco)\\b|\\bhalf price\\b"
+    // Condição com qualquer coisa com cara de valor ou de preço (B3): "sim, se fizer 2 mil".
+    + "|\\b(se|desde que|contanto que|caso|if|unless|provided|as long as)\\b.*(\\b(valor|preco|total|price|mil|metade|half|desconto\\w*"
+    + "|barat\\w*|cheap\\w*|baixar|baixe|baixa o|orcamento|budget|cost|costs)\\b|\\d+\\s*k\\b|\\d{3,})",
 );
 const HESITA = /\b(acho|achando|talvez|pode ser|nao sei|sei la|quase|provavel|provavelmente|depende|vou pensar|vou ver|pensando|maybe|i think|i guess|probably|perhaps|not sure|might|kind of|sort of)\b/;
 // As palavras de hesitação e o que só as acompanha ("acho que", "i think so", "ainda"). O que
@@ -246,13 +276,14 @@ const PODE = "(?:pode(?: sim)?(?: (?:fechar|enviar|mandar|confirmar|registrar|re
   + "(?: (?:o|esse|este) pedido| (?:a|essa|esta) reserva| the (?:request|booking))?";
 // 4. Dados do próprio resumo repetidos pelo hóspede. Só chegam aqui como marca os que o
 //    código conferiu e são iguais aos do resumo (ver `marcarDadosIguais`).
-const MARCA = "oimovel|ototal|asdatas|oshospedes|asnoites|onome|otelefone";
+const MARCA = "oimovel|ototal|asdatas|oshospedes|asnoites|onome|otelefone|odia|omes";
 const LIGA = "de|do|da|no|na|em|para|pra|pro|com|por|pelo|e|o|a|os|as|sou|of|for|at|in|with|on|and|the"
   + "|imovel|property|valor|total|nome|telefone|name|phone|datas|dates";
 const DADOS = `(?: (?:(?:${LIGA}) ){0,3}(?:${MARCA}))*`;
 const CORTESIA = "por favor|pfv|obrigad[oa]|obg|valeu|please|thanks|thank you|tambem|definitivamente|agora|ja|mesmo|entao|too|also|now|ok|okay"
   // Referência ao resumo mostrado, que não muda nada (P13).
-  + "|com (?:esses|estes|os) dados|with (?:these|those|the) details";
+  + "|com (?:esses|estes|os) dados|with (?:these|those|the) details|(?:esse|este) (?:pedido|resumo)|(?:essa|esta) reserva"
+  + "|(?:esses|estes) dados|(?:this|that) (?:request|booking|summary)";
 const AFIRMA_OU_CONFIRMA = `(?:${AFIRMA}|${CONFIRMA})`;
 const FRASE = `(?:${AFIRMA_OU_CONFIRMA}|${PODE})${DADOS}`;
 // Interjeição positiva na frente do sim (P15): "tá ótimo, confirma", "show, pode mandar".
@@ -304,11 +335,33 @@ function marcarDadosIguais(texto: string, pendente: Pendente): string {
       (interpretarData(entrada) === r.checkin && interpretarData(saida) === r.checkout ? " asdatas " : trecho))
     .replace(new RegExp(`(?<![a-z0-9])${nome}(?![a-z0-9])`, "g"), " onome ")
     .replace(/\+?\d[\d\s().-]{6,}\d/g, (trecho) => (normalizarTelefone(trecho) === normalizarTelefone(r.telefone) ? " otelefone " : trecho))
-    .replace(/(\d+)\s*(?:hospedes?|pessoas?|adultos?|guests?|people|persons?)\b/g, (trecho, n: string) =>
-      (Number(n) === r.hospedes ? " oshospedes " : trecho))
-    .replace(/(\d+)\s*(?:noites?|nights?|diarias?)\b/g, (trecho, n: string) =>
-      (Number(n) === diasEntre(r.checkin, r.checkout) ? " asnoites " : trecho));
+    .replace(new RegExp(`(?<![a-z0-9])(\\d+|${NUMEROS})\\s*(?:hospedes?|pessoas?|adultos?|guests?|people|persons?)\\b`, "g"), (trecho, n: string) =>
+      (numero(n) === r.hospedes ? " oshospedes " : trecho))
+    .replace(new RegExp(`(?<![a-z0-9])(\\d+|${NUMEROS})\\s*(?:noites?|nights?|diarias?)\\b`, "g"), (trecho, n: string) =>
+      (numero(n) === diasEntre(r.checkin, r.checkout) ? " asnoites " : trecho))
+    // Dia da semana e mês da entrada ou da saída, por extenso ("sim, sexta", "sim, janeiro").
+    .replace(DIA_DA_SEMANA, (trecho, dia: string) =>
+      ([indiceDiaDaSemana(r.checkin), indiceDiaDaSemana(r.checkout)].includes(indiceDoDia(dia)) ? " odia " : trecho))
+    .replace(MES, (trecho, mes: string) =>
+      ([Number(r.checkin.slice(5, 7)), Number(r.checkout.slice(5, 7))].includes(indiceDoMes(mes)) ? " omes " : trecho));
 }
+
+const NUMEROS_POR_EXTENSO: Record<string, number> = {
+  um: 1, uma: 1, dois: 2, duas: 2, tres: 3, quatro: 4, cinco: 5, seis: 6, sete: 7, oito: 8, nove: 9, dez: 10,
+  one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
+};
+const NUMEROS = Object.keys(NUMEROS_POR_EXTENSO).join("|");
+const numero = (n: string) => NUMEROS_POR_EXTENSO[n] ?? Number(n);
+const DIAS = [["domingo", "sunday"], ["segunda", "monday"], ["terca", "tuesday"], ["quarta", "wednesday"], ["quinta", "thursday"],
+  ["sexta", "friday"], ["sabado", "saturday"]];
+// "Segunda reserva" é ordinal, não dia (P13): fica de fora.
+const DIA_DA_SEMANA = new RegExp(`(?<![a-z0-9])(${DIAS.flat().join("|")})(?:\\s*-?\\s*feira)?(?![a-z0-9])`
+  + "(?!\\s+(?:reserva|estadia|hospedagem|opcao|pedido|cotacao|resumo|vez)(?![a-z0-9]))", "g");
+const indiceDoDia = (dia: string) => DIAS.findIndex((nomes) => nomes.includes(dia));
+const MESES = ["janeiro|january", "fevereiro|february", "marco|march", "abril|april", "maio|may", "junho|june", "julho|july",
+  "agosto|august", "setembro|september", "outubro|october", "novembro|november", "dezembro|december"];
+const MES = new RegExp(`(?<![a-z0-9])(${MESES.join("|")})(?![a-z0-9])`, "g");
+const indiceDoMes = (mes: string) => MESES.findIndex((nomes) => nomes.split("|").includes(mes)) + 1;
 
 // Pedido explícito de mudança, ou dado novo dito em palavras (nome, número de pessoas).
 // Sinais de que a mensagem pode mudar um dado do resumo. A regra é negar por padrão: a
@@ -340,7 +393,7 @@ const SINAIS_DE_MUDANCA = [
   // adiar ou antecipar, abreviações de dia e de mês.
   "sobrenome|surname|last name|que vem|seguinte|proxim\\w*|next|sozinh\\w*|so eu|only me|just me|mais|menos|more|less"
     + "|tarde|cedo|later|earlier|longer|shorter|posterg\\w*|antecip\\w*|adi[ae]\\w*|fim do mes|end of the month|gente"
-    + "|seg|ter|qua|qui|sex|sab|dom|jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez|feb|apr|aug|sep|sept|oct|dec",
+    + "|seg|ter|qua|qui|sex|sab|dom|jan|fev|mar|abr|mai|jun|jul|ago|set|nov|dez|feb|apr|aug|sep|sept|oct|dec",
   // Verbo de mudança.
   "mud\\w*|troc\\w*|alter\\w*|corrig\\w*|corrij\\w*|correca\\w*|substitu\\w*|ajust\\w*|na verdade|melhor|vai ser|vamos ser|somos|seremos"
     + "|em vez|ao inves|chang\\w*|switch\\w*|instead|actually|rather|better|updat\\w*|we are|we'?re|make it",
@@ -370,9 +423,32 @@ export function mudaDadoDoResumo(mensagem: string, pendente: Pendente): boolean 
   if (mensagem.length > MAXIMO_DA_MENSAGEM) return true;
   // Fora de um sim também derrubam: palavra de novidade ("quero outra reserva"), valor do
   // resumo repetido ("não são 2 pessoas": a marca engole a palavra "pessoas") e negação.
-  const texto = marcarDadosIguais(semAcento(mensagem), pendente);
+  const texto = marcarDadosIguais(semAcento(mensagem).replace(ABERTURA_COM_NUMERO, " "), pendente);
+  // Afirmação só mantém o resumo se for um sim ou uma hesitação: a lista de sinais nunca
+  // fica completa ("quero cancelar", "vou com o João"). Afirmação junto com pergunta vale
+  // pela afirmação ("levo o João, ok?"); só a mensagem que é toda pergunta segue pela lista.
+  if (afirmaAlemDasPerguntas(mensagem, pendente)) return true;
   return temSinalDeMudanca(texto) || NOVIDADE.test(texto) || new RegExp(`(?<![a-z0-9])(?:${MARCA})(?![a-z0-9])`).test(texto)
     || NEGACAO.test(texto);
+}
+
+// Trecho que termina em "?" (separado por vírgula, ponto, ponto e vírgula ou quebra de linha).
+const TRECHO_DE_PERGUNTA = /[^.!?,;\n]*[?？؟]+/g;
+// Aberturas que têm "uma" (sinal de número): saem antes da busca de sinais, só no rearme
+// (C9). Na leitura do sim ficam: sim com anúncio de dúvida não é confirmação limpa (C10).
+const ABERTURA_COM_NUMERO = /(?<![a-z0-9])(?:so uma pergunta|uma pergunta|uma duvida)(?![a-z0-9])/g;
+// Abertura que não diz nada sobre a reserva ("ah, antes de confirmar, qual é o bairro?").
+const ABERTURA_NEUTRA = /(?<![a-z0-9])(?:oi|ola|ah|bom|entao|hum+|hey|hi|hello|alias|antes de (?:confirmar|fechar)|antes|so uma pergunta|uma pergunta|uma duvida|e|mas|and|but|so)(?![a-z0-9])/g;
+
+/**
+ * Fora dos trechos de pergunta sobra uma afirmação que não é sim nem hesitação? É a regra
+ * da afirmação aplicada ao resto (C1): "vou levar minha sogra, tem estacionamento?" muda o
+ * resumo como "vou levar minha sogra"; "tem wifi?" e "posso levar minha sogra?" não sobram nada.
+ */
+function afirmaAlemDasPerguntas(mensagem: string, pendente: Pendente): boolean {
+  const resto = mensagem.replace(TRECHO_DE_PERGUNTA, " ");
+  if (semPontuacao(semAcento(resto)).replace(ABERTURA_NEUTRA, " ").trim() === "") return false;
+  return !["sim", "hesitacao"].includes(lerConfirmacao(resto, pendente));
 }
 
 const NEGACAO = /(?<![a-z0-9])(?:nao|not|no|nope|errad\w*|wrong|incorret\w*|sem|without|tira\w*|remov\w*|exceto|except)(?![a-z0-9])/;
@@ -388,6 +464,8 @@ export function lerConfirmacao(mensagem: string, pendente: Pendente, turno?: num
   if (mensagem.length > MAXIMO_DA_MENSAGEM) return "outra";
   // Ponto de interrogação de largura cheia (？) e árabe (؟) também fazem pergunta.
   const bruto = mensagem.replace(/[？؟]/g, "?");
+  // Nada sai do texto antes da gramática do sim: "sim, uma dúvida" tem de continuar com o
+  // "uma" (sinal) e não confirmar. As aberturas neutras só são tiradas no rearme (C10).
   const texto = marcarDadosIguais(semAcento(bruto), pendente);
   if (PRECO.test(texto)) return "condicao_de_preco";
   const limpo = semPontuacao(texto);
@@ -402,7 +480,7 @@ export function lerConfirmacao(mensagem: string, pendente: Pendente, turno?: num
     // qualquer outra pergunta ("sim, e tem wifi?", "pode fechar?", "sim?") não confirma.
     const perguntas = (texto.match(/[^.!?]*\?/g) ?? []).map(semPontuacao);
     const pedidoEducado = COMECA_AFIRMANDO.test(limpo) && perguntas.every((p) => PEDIDO_DE_ENVIO.test(p));
-    if (!pedidoEducado) return /\d/.test(texto) ? "outra" : "pergunta";
+    if (!pedidoEducado) return /\d/.test(texto) || afirmaAlemDasPerguntas(bruto, pendente) ? "outra" : "pergunta";
   }
   if (HESITA.test(limpo)) {
     // "acho que sim, mas no mês que vem": a hesitação não pode engolir o resto (L10).
@@ -411,7 +489,7 @@ export function lerConfirmacao(mensagem: string, pendente: Pendente, turno?: num
   }
   if (FRACA.test(limpo)) return "hesitacao";
   // Só emoji ou símbolo: não confirma nem derruba; repete o pedido com o resumo (P15).
-  if (limpo === "") return bruto.trim() === "" ? "outra" : "hesitacao";
+  if (limpo === "") return bruto.trim() === "" || /\p{L}/u.test(bruto) ? "outra" : "hesitacao";
   if (!SIM.test(limpo)) return "outra";
   // Sim com caractere fora da lista permitida (emoji, ❓, ‽, o ";" grego): não é sim limpo, repete o pedido.
   if (!SO_CARACTERES_COMUNS.test(bruto.replace(EMOJI_POSITIVO_NO_FIM, ""))) return "hesitacao";
@@ -576,34 +654,58 @@ export async function confirmar(cofre: Cofre, turnoAtual: number, mensagem: stri
   const corrida = agora.envios[chave];
   if (reservaFechada(corrida)) return jaMarcada(cofre, corrida!, pendente, turnoAtual);
   if (!agora.pendente || chaveDaReserva(agora.pendente.reserva) !== chave) return { tipo: "sem_resumo" };
+  // Estadia bloqueada (duas falhas, ou uma falha que passou para humano): nenhum POST (P14).
+  const bloqueio = estadiaBloqueada(agora, pendente.reserva);
+  if (bloqueio) return { tipo: "nao_registrado", motivo: bloqueio === "incerto" ? "ja_tentado" : "ja_recusado" };
   // Lido antes do marcador "enviando", que sobrescreve a recusa anterior desta reserva.
   const recusadaAntes = corrida === "nao_registrado";
   const recusaNaSessao = recusadaAntes || Object.values(agora.envios).some((e) => e === "nao_registrado" || e === "recusado");
+  const estadia = chaveDaEstadia(pendente.reserva);
+  let semRegistro = agora.postsSemRegistro?.[estadia] ?? 0;
   marcar(cofre, chave, "enviando");
 
   const corpo = corpoDoLead(pendente.reserva, cotacao.totalCentavos);
-  let resposta = await tentarEnvio(deps, corpo);
-  // 5xx: exatamente uma nova tentativa (L11). Resposta que não chegou nunca é repetida.
-  if (resposta !== "incerto" && resposta.status >= 500) resposta = await tentarEnvio(deps, corpo);
+  const enviar = async () => {
+    const r = await tentarEnvio(deps, corpo);
+    if (r === "incerto" || r.status !== 201) semRegistro++;
+    return r;
+  };
+  let resposta = await enviar();
+  // 5xx: uma nova tentativa (L11), se a estadia ainda não chegou a 2 POSTs sem 201 (P14).
+  // Resposta que não chegou nunca é repetida.
+  if (resposta !== "incerto" && resposta.status >= 500 && semRegistro < 2) resposta = await enviar();
+
+  /** Grava o resultado da tentativa: marcador da reserva, contagem e bloqueio da estadia. */
+  const fechar = (situacao: SituacaoEnvio, bloqueia?: "recusado" | "incerto", pendenteDepois: Pendente | null = null) => {
+    const estado = cofre.ler();
+    cofre.salvar({
+      ...estado,
+      pendente: pendenteDepois,
+      envios: { ...estado.envios, [chave]: situacao },
+      postsSemRegistro: { ...estado.postsSemRegistro, [estadia]: semRegistro },
+      estadiasBloqueadas: bloqueia ? { ...estado.estadiasBloqueadas, [estadia]: bloqueia } : estado.estadiasBloqueadas,
+    });
+  };
   if (resposta === "incerto") {
-    marcar(cofre, chave, "incerto");
+    fechar("incerto", "incerto", cofre.ler().pendente);
     return { tipo: "nao_registrado", motivo: "incerto" };
   }
   if (resposta.status === 201) {
-    const estado = cofre.ler();
-    cofre.salvar({ ...estado, pendente: { ...pendente, turno: turnoAtual }, envios: { ...estado.envios, [chave]: "registrado" } });
+    fechar("registrado", undefined, { ...pendente, turno: turnoAtual });
     return { tipo: "registrado", pendente };
   }
-  // Com certeza não registrou: a confirmação foi gasta, mas a reserva não fica bloqueada.
-  // Um novo resumo (com o dado corrigido, ou mais tarde) pode ser confirmado e enviado.
-  // Já houve recusa nesta sessão (mesma reserva ou a de antes da correção): pedir a
-  // correção de novo vira laço; a conversa passa para humano. Segunda recusa da mesma
-  // reserva: ela fica bloqueada na sessão.
-  const estado = cofre.ler();
-  cofre.salvar({ ...estado, pendente: null, envios: { ...estado.envios, [chave]: recusadaAntes ? "recusado" : "nao_registrado" } });
-  return resposta.campos.length > 0 && !recusaNaSessao
-    ? { tipo: "campo_recusado", campos: resposta.campos }
-    : { tipo: "nao_registrado", motivo: "resposta" };
+  // 2xx diferente de 201 (200, 204): pode ter entrado. Incerto, sem novo envio (P14).
+  if (resposta.status >= 200 && resposta.status < 300) {
+    fechar("incerto", "incerto", cofre.ler().pendente);
+    return { tipo: "nao_registrado", motivo: "incerto" };
+  }
+  // Com certeza não registrou. Só o 422 que aponta dado do hóspede, na primeira recusa da
+  // sessão e com a estadia abaixo de 2 POSTs sem 201, pede a correção e deixa um envio
+  // corrigido. Qualquer outra resposta (5xx depois da nova tentativa, 3xx, 4xx, 422 sem
+  // campo ou repetido, ou a segunda falha da estadia) bloqueia a estadia e passa para humano (P14).
+  const corrigivel = resposta.status === 422 && resposta.campos.length > 0 && !recusaNaSessao && semRegistro < 2;
+  fechar(corrigivel ? "nao_registrado" : "recusado", corrigivel ? undefined : "recusado");
+  return corrigivel ? { tipo: "campo_recusado", campos: resposta.campos } : { tipo: "nao_registrado", motivo: "resposta" };
 }
 
 /** "real" quando o webhook mora no mesmo host do catálogo (contrato seção 8); senão "falso". */
