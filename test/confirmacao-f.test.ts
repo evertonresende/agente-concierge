@@ -180,6 +180,7 @@ describe("leitura da mensagem diante do resumo pendente", () => {
     ["confirmo a reserva de segunda", "hesitacao"],
     ["confirmo a reserva de terça", "outra"],
     ["pode reservar a segunda", "hesitacao"],
+    ["pode reservar a terça", "outra"],
     ["certo, e o wifi", "outra"],
     ["pode me dizer o horário", "outra"],
     ["sim, depois confirmo", "outra"],
