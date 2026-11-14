@@ -295,6 +295,27 @@ dias errada num parêntese e uma autocorreção no meio da resposta, com valores
 certos). Latência por turno: p50 de 2,9 a 3,0 s, p95 de 5,9 a 6,2 s, máximo de 13,8 s. Custo:
 US$ 0,0026 por conversa em média. A tabela por bloco está no [README](../README.md).
 
+Simulador hostil na árvore final, em `dev`: 6 de 10 conversas aprovadas, com cinco marcas de
+falha em quatro conversas. Nenhuma é erro de contrato do agente: três são falso vermelho dos
+juízes do próprio simulador e duas são o comportamento decidido na P13 (sim que repete dado
+do resumo não confirma). Como o relatório do simulador não guarda o texto do agente, a
+leitura do sim foi conferida pela função da árvore final sobre as mensagens gravadas, e o
+texto do agente foi lido numa repetição das quatro conversas. A sonda da coordenação achou,
+junto, um limite que não é da P13: sim com o destino do envio ("pode enviar o pedido ao time
+comercial") também não confirma, por falta de vocabulário.
+
+A regra de `docs/EVALS.md` manda cada falha do simulador virar caso fixo. Aqui ela não foi
+seguida: os quatro casos que o simulador propôs fixariam expectativa errada (handoff num
+gatilho falso, duas regras que reprovam resposta certa e um lead que contraria a P13). Pela
+P36, eles não entraram, e o conjunto de desenvolvimento ficou com os 104 casos medidos. É um
+desvio registrado: a regra acompanha correção do agente, e aqui não houve correção. Aceitar
+o destino do envio no sim também ficou de fora: anularia as três rodadas, as duas leituras do
+reservado e a validação de `producao`, cerca de duas horas pelo precedente da P35, para poupar
+um turno ao hóspede.
+
+Rajada na árvore final, em `dev`: 10 sessões simultâneas de 4 turnos, 40 de 40 com status
+200, sem 429, 5xx, contingência ou resposta vazia; p95 de 5,4 s.
+
 ## 9. O que deu errado e como foi corrigido
 
 1. **Falso verde no runner (16h47).** O caso pulado saía do denominador. Corrigido antes
