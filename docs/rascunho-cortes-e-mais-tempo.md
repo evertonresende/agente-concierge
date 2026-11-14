@@ -62,9 +62,9 @@ lista de limites do [README](../README.md). O estado final do monitor diário: a
     buraco, e o juiz parou no último estado aprovado (P31, P34). Com mais tempo, o juiz
     compararia os valores da resposta com a cotação estruturada, em vez de reconhecer a
     forma da frase.
-14. **Leitura da redação.** Duas autocorreções confusas do modelo em cerca de 1.600
-    respostas passaram despercebidas por uma delas no juiz e na leitura à mão. Uma
-    conferência de redação nas rodadas pegaria isso.
+14. **Leitura da redação.** Há duas autocorreções confusas do modelo em cerca de 1.600
+    respostas, e uma passou no juiz e na leitura à mão. Uma conferência da redação nas
+    rodadas pegaria isso.
 15. **Gramática do sim mais larga.** A P35 abriu só formas da mesma classe da L9 e da P13,
     cada uma com matriz negativa. Confirmação natural fora dela ainda custa um turno.
 16. **Reservado maior.** Com 60 casos, duas leituras seguidas variaram de 88% a 95%; mais
