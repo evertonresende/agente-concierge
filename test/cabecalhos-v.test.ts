@@ -60,6 +60,20 @@ describe("cabeçalhos de proteção da página (GET /)", () => {
     }
   });
 
+  it("nenhuma diretiva se repete e nenhuma fonte frouxa aparece no cabeçalho inteiro, fora do style-src-attr", async () => {
+    const resposta = await worker.fetch(new Request("https://agente.teste/"), ambiente);
+    const cabecalho = resposta.headers.get("content-security-policy") ?? "";
+    // O navegador usa a PRIMEIRA ocorrência de uma diretiva repetida, e o Map de diretivas() guarda a última:
+    // sem esta conta, um "script-src 'unsafe-inline'" antes do script-src com hash passaria despercebido.
+    const nomes = cabecalho.split(";").map((d) => d.trim()).filter(Boolean).map((d) => d.split(/\s+/)[0]!.toLowerCase());
+    expect(nomes.length).toBeGreaterThan(0);
+    expect(nomes.filter((nome, i) => nomes.indexOf(nome) !== i)).toEqual([]);
+    // A única permissão é o trecho exato do style-src-attr; tirado ele, o resto do texto não afrouxa nada.
+    const permitido = "style-src-attr 'unsafe-inline'";
+    expect(cabecalho.split(permitido)).toHaveLength(2);
+    expect(cabecalho.replace(permitido, "")).not.toMatch(/unsafe-|\*/);
+  });
+
   it("atributo de estilo inserido pela borda passa, sem afrouxar o bloco de estilo nem o script", async () => {
     const resposta = await worker.fetch(new Request("https://agente.teste/"), ambiente);
     const politica = diretivas(resposta.headers.get("content-security-policy") ?? "");
