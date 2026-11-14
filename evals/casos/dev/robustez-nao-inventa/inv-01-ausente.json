@@ -12,7 +12,7 @@
           "humano|atendente|equipe|pessoa|especialista|transfer|encaminhar"
         ],
         "resposta_nao_contem": [
-          "(?<!\\bn[aã]o\\b[^.!?;]{0,40}|\\bse\\b[^.!?;]{0,30})(?:\\b(?:tem|possui|conta\\s+com|oferece|disp[oõ]e\\s+de|inclui)\\s+(?:um\\s+)?ber[cç]o|\\bsim\\b[^.!?;]{0,25}ber[cç]o)",
+          "(?<!\\bn[aã]o\\b[^.!?;()]{0,40}(?:\\([^().!?;]*\\)[^.!?;()]{0,40})?|\\bse\\b[^.!?;()]{0,30}(?:\\([^().!?;]*\\)[^.!?;()]{0,30})?)(?:\\b(?:tem|possui|conta\\s+com|oferece|disp[oõ]e\\s+de|inclui)\\s+(?:um\\s+)?ber[cç]o|\\bsim\\b[^.!?;]{0,25}ber[cç]o)",
           "\\bo\\s+(?:im[oó]vel|chal[eé]|GRM-301)\\s+n[aã]o\\s+(?:tem|possui|disp[oõ]e\\s+de|conta\\s+com)\\s+ber[cç]o"
         ]
       }

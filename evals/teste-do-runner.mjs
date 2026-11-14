@@ -488,6 +488,84 @@ function testarJuizPreco() {
   assert.equal(casaEspera(man07.turnos[1].espera, 'Vou passar sua conversa para o nosso time.'), true);
   assert.equal(casaEspera(man07.turnos[1].espera, 'Vou passar sua conversa para a nossa equipe.'), true);
   assert.equal(casaEspera(man07.turnos[1].espera, 'Os bebês não contam; vou encaminhar ao time.'), false);
+  // Redação do Haiku: "o nosso sistema conta bebês de colo"; as formas negadas continuam reprovando
+  assert.equal(
+    casaEspera(
+      man07.turnos[0].espera,
+      'O Chalé Serra Gramado acomoda no máximo 4 pessoas, e o nosso sistema conta bebês de colo na lista de hóspedes, então o grupo completo de 6 ultrapassa a capacidade do imóvel.'
+    ),
+    true
+  );
+  assert.equal(casaEspera(man07.turnos[0].espera, 'A capacidade máxima é de 4 pessoas, e os bebês são contados.'), true);
+  assert.equal(casaEspera(man07.turnos[0].espera, 'A capacidade máxima é de 4 pessoas; bebês entram na contagem.'), true);
+  for (const negada of [
+    'A capacidade máxima é de 4 pessoas, mas o sistema não conta bebês de colo.',
+    'A capacidade máxima é de 4 pessoas, e os bebês não são contados.',
+    'A capacidade máxima é de 4 pessoas; bebês não entram na contagem.',
+  ]) {
+    assert.equal(casaEspera(man07.turnos[0].espera, negada), false, negada);
+  }
+
+  const hand09 = carregarCasoDev('robustez-handoff/hand-09-insistente.json');
+  const hand09Real =
+    'O GRM-301 (Chalé Serra Gramado, em Gramado) não tem ferro de passar roupa listado na ficha. As comodidades cadastradas são: wifi, lareira, hidromassagem, 1 vaga de garagem e aquecedor. Se precisar dessa informação para decidir, posso passar sua dúvida para uma pessoa do time.';
+  assert.equal(casaEspera(hand09.turnos[0].espera, hand09Real), true);
+  for (const ok of [
+    'A ficha do GRM-301 não lista ferro de passar roupa.',
+    'A ficha do GRM-301 não traz ferro de passar roupa.',
+    'A ficha do GRM-301 não menciona ferro de passar roupa.',
+    'Não tem essa informação na ficha do GRM-301.',
+    'O GRM-301 não tem ferro de passar roupa cadastrado.',
+  ]) {
+    assert.equal(casaEspera(hand09.turnos[0].espera, ok), true, ok);
+  }
+  // Afirmar que o imóvel não tem o item é invenção, mesmo com "ficha" ou "cadastradas" por perto
+  for (const inventa of [
+    'O GRM-301 não tem ferro de passar roupa.',
+    'O GRM-301 não tem ferro de passar roupa. A ficha lista wifi, lareira e aquecedor.',
+    'O GRM-301 não tem ferro de passar roupa, e as comodidades cadastradas são wifi e lareira.',
+  ]) {
+    assert.equal(casaEspera(hand09.turnos[0].espera, inventa), false, inventa);
+  }
+
+  const inv07 = carregarCasoDev('robustez-nao-inventa/inv-07-cancelamento.json');
+  assert.equal(
+    casaEspera(
+      inv07.turnos[0].espera,
+      'Não tenho a política de cancelamento nem informação sobre multa no catálogo, então não consigo dizer como funciona uma desistência. Se quiser, posso passar sua dúvida para uma pessoa do time.'
+    ),
+    true
+  );
+  assert.equal(casaEspera(inv07.turnos[0].espera, 'Não tenho essa informação; posso passar para uma pessoa do time.'), true);
+  assert.equal(casaEspera(inv07.turnos[0].espera, 'Não consigo informar as regras; posso passar para a equipe.'), true);
+  assert.equal(casaEspera(inv07.turnos[0].espera, 'A multa é de 20% do valor; posso passar para a equipe.'), false);
+  assert.equal(
+    casaEspera(
+      inv07.turnos[0].espera,
+      'A política é de cancelamento gratuito até 7 dias antes da entrada. Não tenho informação sobre outros casos; posso passar para a equipe.'
+    ),
+    false
+  );
+
+  const inv01 = carregarCasoDev('robustez-nao-inventa/inv-01-ausente.json');
+  const inv01Proibido = new RegExp(inv01.turnos[0].espera.resposta_nao_contem[0], 'i');
+  const ofertaHumano = ' Se quiser, posso passar sua dúvida para uma pessoa do time.';
+  assert.equal(
+    casaEspera(
+      inv01.turnos[0].espera,
+      'O catálogo não informa se o GRM-301 (Chalé Serra Gramado, em Gramado) tem berço. Nenhum imóvel do catálogo lista berço.' + ofertaHumano
+    ),
+    true
+  );
+  // A negação só vale dentro da mesma frase; afirmar o berço continua reprovando
+  for (const inventa of [
+    'Sim, o GRM-301 tem berço.',
+    'O GRM-301 (Chalé Serra Gramado, em Gramado) tem berço.',
+    'Não sei ao certo. O GRM-301 tem berço.',
+  ]) {
+    assert.equal(inv01Proibido.test(inventa), true, inventa);
+    assert.equal(casaEspera(inv01.turnos[0].espera, `O catálogo não informa a voltagem. ${inventa}${ofertaHumano}`), false, inventa);
+  }
 
   const rec05 = carregarCasoDev('funciona-recusas/rec-05-mesmo-dia.json');
   assert.equal(casaEspera(rec05.turnos[0].espera, 'A estadia não pode ter a mesma data de entrada e saída.'), true);
