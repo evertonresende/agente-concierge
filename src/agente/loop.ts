@@ -1,7 +1,7 @@
 // Loop de ferramentas de um turno: o modelo pede ferramentas, o código executa e
 // devolve o resultado, até sair uma resposta. O loop tem limite de voltas e de tempo, e
 // nunca lança: em qualquer falha devolve a resposta de contingência (contrato L18).
-import { invalidarPendente, mudaDadoDoResumo, pedidoDeConfirmacaoPendente, pendenteAberto } from "../lead";
+import { invalidarPendente, lerConfirmacao, mudaDadoDoResumo, pedidoDeConfirmacaoPendente, pendenteAberto } from "../lead";
 import type { ChamadaDeFerramenta, Mensagem, Modelo, RespostaDoModelo } from "../modelo";
 import { type Idioma, idiomaDoHospede } from "../nucleo/idioma";
 import { type Argumentos, type Contexto, FERRAMENTAS, type Resultado } from "./ferramentas";
@@ -598,7 +598,9 @@ export async function rodarTurno(entrada: EntradaDoTurno): Promise<SaidaDoTurno>
     const conferido = comTotais(corrigirValores(semPontaSolta(texto), permitidos(), textos.semValor, situacao), totais, textos);
     // Pergunta do modelo com resumo pendente (P18): o "sim" seguinte responde a ela, não ao
     // resumo. O resumo cai e não é repetido; o modelo monta outro com os dados atualizados.
-    if (pendenteAberto(contexto.cofre.ler()) !== null && /[?？؟]/.test(conferido)) {
+    // Hóspede que só hesitou não trouxe dado novo: o resumo fica e o pedido se repete (P15).
+    const pendente = pendenteAberto(contexto.cofre.ler());
+    if (pendente !== null && /[?？؟]/.test(conferido) && lerConfirmacao(entrada.mensagem, pendente, contexto.turno) !== "hesitacao") {
       invalidarPendente(contexto.cofre);
       return terminar(conferido);
     }

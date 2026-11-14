@@ -155,6 +155,21 @@ describe("pergunta do modelo com resumo pendente derruba o resumo (P18)", () => 
     expect(sim.reply).toContain("Hóspedes: 3");
   });
 
+  it("hóspede que hesitou (lead-05): a pergunta do agente não derruba o resumo, o pedido se repete e o sim envia", async () => {
+    const c = await comResumo();
+    const t2 = await c.turno("Acho que sim, talvez pode ser.", roteiro(diz("Os dados do resumo estão corretos?")).modelo);
+    expect(t2.reply).toMatch(/^Os dados do resumo estão corretos\?\n\nO seu pedido de reserva ainda aguarda a sua confirmação/);
+    expect(c.estado().pendente).not.toBeNull();
+    await c.turno("Sim, confirmo definitivamente.", roteiro(pedeFerramentas(chamar("confirmar_reserva"))).modelo);
+    expect(c.mundo.leads.map((l) => l.hospedes)).toEqual([2]);
+  });
+
+  it("outra leitura da mensagem (pergunta do hóspede) com pergunta do agente: o resumo cai", async () => {
+    const c = await comResumo();
+    await c.turno("tem wifi?", roteiro(diz("Tem wifi, sim. Quer saber mais alguma coisa?")).modelo);
+    expect(c.estado().pendente).toBeNull();
+  });
+
   it("controle (lead-02): resposta sem pergunta repete o resumo inteiro, cuja pergunta fixa não conta, e o sim envia o resumo mostrado", async () => {
     const c = await comResumo();
     const t2 = await c.turno("tem estacionamento?", roteiro(diz("Tem, sim: 1 vaga de garagem.")).modelo);
