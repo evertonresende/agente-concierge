@@ -200,7 +200,7 @@ Depois do lead de teste valem `--entrega` e `--clientes`. O script não muda.
 ### Deploy final e validação
 
 A árvore final foi publicada primeiro em `producao` em 14/11, com o envio real desligado.
-Nenhum lead real do começo ao fim: o webhook real só foi lido por GET, antes e depois de cada etapa. Os
+Nessa etapa, nenhum lead real do começo ao fim: o webhook real só foi lido por GET, antes e depois de cada etapa. Os
 quatro clientes (curl, Python `requests`, Python `urllib` e `fetch` do Node) receberam 200:
 `CLIENTES OK`.
 
