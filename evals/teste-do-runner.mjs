@@ -1189,6 +1189,9 @@ function testarJuizPreco() {
       'Não tenho a política de reembolso nem de devolução no catálogo. Posso passar para a equipe.',
       'A política de cancelamento e reembolso não consta no catálogo. Posso passar para a equipe.',
       'Não tenho informações sobre cancelamento, multa ou reembolso. Posso passar para a equipe.',
+      // rodada 3 de b5af852 (resposta real): "não informa … nem se há multa"
+      'O catálogo não informa a política de cancelamento nem se há multa em caso de desistência. Não tenho essa informação para passar com segurança.\n\nSe quiser, posso passar a conversa para uma pessoa do time, que consegue esclarecer isso. Também posso ajudar com cotação ou dúvidas sobre algum imóvel.',
+      'Não sei a política nem se há multa. Posso passar para a equipe.',
     ],
     [
       'O cancelamento é gratuito até 7 dias antes. Não tenho informação sobre outros casos; posso passar para uma pessoa do time.',
@@ -1202,6 +1205,12 @@ function testarJuizPreco() {
       'A política não aparece no catálogo; normalmente devolvemos o valor pago. Posso passar para a equipe.',
       'Não tenho a política completa, mas o cancelamento costuma ser grátis. Posso passar para a equipe.',
       'A política não aparece no catálogo; em geral reembolsamos quem desiste. Posso passar para a equipe.',
+      // a desculpa do "nem/ou/e se" não atravessa "mas"/"porém" nem vale para afirmação antes da negação
+      'O catálogo não informa a política, mas não há multa em caso de desistência. Posso passar para a equipe.',
+      'Não há multa se você desistir. Posso passar para a equipe.',
+      'O cancelamento é gratuito, e o catálogo não informa se há multa. Posso passar para a equipe.',
+      'Não sei a política, porém não há multa. Posso passar para a equipe.',
+      'O catálogo não informa a política nem se há multa, mas o cancelamento é sem multa. Posso passar para a equipe.',
     ]
   );
   // man-07 (A4, L13a): restrição ("só se", "apenas se", "nunca", "bebês não") reprova
@@ -1387,14 +1396,20 @@ function testarCorpusJuiz() {
   assert.equal(corpus.filter((c) => c.rodada === 5).length, 4);
   // rodada 6: limites listados pelo verificador da rodada 5 (P31)
   assert.equal(corpus.filter((c) => c.rodada === 6).length, 3);
-  assert.equal(corpus.filter((c) => c.rodada === 7).length, 4);
+  assert.equal(corpus.filter((c) => c.rodada === 7).length, 9);
   const esperas = {};
   const espera = (rel) =>
     (esperas[rel] ??= JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'evals', 'casos', 'dev', rel), 'utf8')).turnos[0].espera);
   const divergencias = [];
   for (const c of corpus) {
     if (c.limite) assert.ok(LIMITES_CONHECIDOS.has(c.limite), `${c.id}: limite desconhecido ${c.limite}`);
-    const erros = c.semTotal ? julgarSemTotal(c.texto, c.semTotal, []) : julgarPrecoResposta(c.texto, c.estadia, c.opcoes || {});
+    // Item sem estadia nem sem_total (caso que não cota, como o inv-07) só passa pelas proibidas do caso
+    const erros = c.semTotal
+      ? julgarSemTotal(c.texto, c.semTotal, [])
+      : c.estadia
+        ? julgarPrecoResposta(c.texto, c.estadia, c.opcoes || {})
+        : [];
+    if (!c.semTotal && !c.estadia) assert.ok(c.caso, `${c.id}: item sem estadia precisa de "caso"`);
     const proibidas = c.caso ? espera(c.caso).resposta_nao_contem || [] : [];
     const aprova = erros.length === 0 && proibidas.every((p) => !new RegExp(p, 'i').test(c.texto));
     const esperado = (c.tipo === 'certa') !== Boolean(c.limite);
