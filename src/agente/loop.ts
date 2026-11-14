@@ -618,6 +618,9 @@ export async function rodarTurno(entrada: EntradaDoTurno): Promise<SaidaDoTurno>
   let rascunho: string | undefined;
   let chamadasNoTurno = 0;
   let comodidadesNoTurno = 0;
+  // Cotação ou resumo cortado pelo teto no turno: ele derrubaria a confirmação pendente (L10),
+  // então a confirmação do turno também não roda (R1 da rodada 4).
+  let invalidadorCortado = false;
   // Sinal na mensagem do hóspede (P17): provoca no máximo UMA chamada focada ao modelo.
   let focou = false;
   const pendenteNoInicio = pendenteAberto(entrada.contexto.cofre.ler());
@@ -807,9 +810,11 @@ export async function rodarTurno(entrada: EntradaDoTurno): Promise<SaidaDoTurno>
         let resultado: Resultado;
         if (respostaFinal !== undefined || falhou) {
           resultado = { paraOModelo: { ignorada: "o turno já tinha sido encerrado por outra ferramenta" } };
-        } else if (chamada.function.name !== CONFIRMAR && (noLote >= MAX_CHAMADAS_POR_RESPOSTA || chamadasNoTurno >= MAX_CHAMADAS_POR_TURNO
-          || (chamada.function.name === COMODIDADE && comodidadesNoTurno >= MAX_COMODIDADE_POR_TURNO))) {
-          // Passou do teto (P30): não executa, e o modelo responde com o que já tem.
+        } else if (chamada.function.name === CONFIRMAR ? invalidadorCortado : (noLote >= MAX_CHAMADAS_POR_RESPOSTA
+          || chamadasNoTurno >= MAX_CHAMADAS_POR_TURNO || (chamada.function.name === COMODIDADE && comodidadesNoTurno >= MAX_COMODIDADE_POR_TURNO))) {
+          // Passou do teto (P30): não executa, e o modelo responde com o que já tem. A
+          // confirmação nunca é cortada pelo teto, só junto de um invalidador cortado.
+          if (chamada.function.name === "cotar" || chamada.function.name === "montar_resumo") invalidadorCortado = true;
           resultado = { paraOModelo: { erro: LIMITE_DE_CHAMADAS } };
         } else {
           noLote++;
