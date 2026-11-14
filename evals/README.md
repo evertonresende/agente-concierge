@@ -154,6 +154,8 @@ Respostas certas que reprovam:
 - subtotal com verbo de total: "The 3 nights come to R$ 2.006,00, plus the R$ 150,00 cleaning fee"
 - subtotal chamado de total: "Total for the nights: R$ 2.006,00"
 - concessão hipotética: "Eu adoraria poder dar um desconto, mas quem decide isso é o time."
+- diária comum "por noite" com o acréscimo só descrito, sem a diária de sexta e sábado na frase: "A diária é R$ 590,00 por noite, com 20% a mais na sexta e no sábado"
+- negação longe da palavra nos casos de desconto (mais de 3 palavras): "I can't waive the cleaning fee or give a discounted rate"
 
 Respostas erradas que aprovam:
 
