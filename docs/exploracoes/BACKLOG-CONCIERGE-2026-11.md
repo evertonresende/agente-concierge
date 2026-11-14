@@ -1628,6 +1628,40 @@ Status é enumerado: `pendente` · `pronta` · `rodando` · `concluída` · `blo
   os quatro casos de desconto são recusas limpas com `handoff`, com os valores certos nas duas
   cotações que acompanham a recusa; a única resposta de preço cheio sem a palavra "total" traz o total
   certo (R$ 5.380,00). Latência: p50 2,4 s, p95 5,7 s, máximo 14,9 s
+- 14/11 02h52 · G · verificador da rodada 4: APROVADO o a723dcd, barra fechada de nove itens. Com o teto, a
+  sonda do achado S2-3 cai de 900 para 10 pedidos ao catálogo e o pior turno hostil fica em 84; a
+  varredura real de 27 chamadas e os turnos normais dão a mesma saída do pai; confirmação em 17º lugar
+  ou depois do teto envia 1 lead igual ao resumo; 35 situações sem resumo visto ou sem "sim" limpo dão
+  zero POST; `montar_resumo` cortado não grava nem mostra resumo; os cenários da fila seguem só
+  reapresentando; 4 defeitos plantados pegos. Ensaio por hash: 53 arquivos, 1514 testes, tipos verdes,
+  SIGILO OK. **Frente G (P30) na `main` em b0b8e73.** Limites para o README: num lote de 17 ou mais
+  chamadas o `montar_resumo` é cortado (o lote é ordenado antes do teto) e o modelo precisa pedir de
+  novo; com o catálogo instável, a nova tentativa dobra o pior turno (168 pedidos na sonda); 300
+  confirmações num turno hostil esgotam o teto, sem lead e sem pedido ao catálogo
+- 14/11 02h52 · B2 · verificador da rodada 5, a última do juiz: APROVADO o 193d1bf, barra fechada de oito
+  itens (as erradas do rótulo com parêntese reprovam, e em 38 turnos reais sem desconto nenhuma aprova;
+  a proibida dos casos de desconto é idêntica à de antes da vírgula; os dois limites e a regra da trava
+  estão no `evals/README.md`; os 241 itens anteriores do corpus idênticos; zero certa reprovada nos sete
+  registros; trava por mensagem com zero falso negativo em 254 mensagens e nenhuma mensagem de
+  confirmação enviada ao alvo falso de `producao`; 3 defeitos plantados pegos). Dois limites novos
+  listados por ele, pedidos à B2 num commit só de documentação e corpus: tipo de noite trocado só dentro
+  do parêntese com valor e total certos; e "Nem precisa pedir, abrimos mão da limpeza."
+- 14/11 02h52 · B2 · falso vermelho do ensaio corrigido em 4efb030 (contagem elíptica depois de "N noites:"),
+  conferido pela coordenação com as sondas do verificador: nos oito registros reais só muda a resposta
+  certa do `man-06` no ensaio, de reprovada para aprovada; as sondas de erradas (421 avaliações, nenhuma
+  aprovada), do parêntese (3 de 14, todas em limite listado) e de recusas dão saída idêntica; os 249
+  itens anteriores do corpus idênticos, mais 4; dez variações erradas na forma elíptica reprovam em
+  três casos; o autoteste sai com 1 com o defeito plantado. Ensaio por hash sobre a `main` com a G: 53
+  arquivos, 1514 testes, tipos verdes, `RUNNER OK`, `TRAVA OK`, `CASOS OK`, SIGILO OK. **Frente B2 na
+  `main` em b5af852.** Com o juiz final, o registro do ensaio local dá 100 de 100
+- 14/11 02h52 · repo · dois arquivos vazios deixados na raiz do checkout da coordenação por uma sonda de
+  verificação entraram num commit de backlog feito com a árvore inteira em stage; removidos em commit
+  novo (03be6f2). Daqui em diante a coordenação põe em stage só os arquivos que editou
+- 14/11 02h52 · **congelamento** · **`main` congelada em b5af852.** Publicada em `dev` às 02h49. Sonda de
+  pós-deploy: 32 de 32 perguntas de ficha respondidas em dois minutos, nenhuma contingência (a falha
+  do catálogo das 02h04 não se repetiu num deploy que muda código). Fumaça declarada do `marco1`: 100%.
+  **Primeira rodada oficial iniciada**, pelo proxy de registro. F e B2 preparam um commit cada, só de
+  teste e só de documentação, para depois das três rodadas
 
 **Setup global usado nesta entrega** (lista viva, para a frente N copiar em `docs/setup/`):
 - Skills: `cloudflare-token` (coordenadora, pré-voo); `design-hifi` e `design-guidelines`
@@ -1655,11 +1689,12 @@ M2 sem achado determinístico nem de lead errado na H (a primeira rodada oficial
 dela). Meta: 14/11 03h00. Limite: 06h00. Gatilho que já existia: 10h00 com o critério 4 não
 verde, parar e chamar o Éverton.
 
-**Estado do congelamento em 14/11 02h33.** Na `main` (a7eedd7 em código): G, T (P21), F (P20, "sim" limpo e
-P29), H (fila da sessão e P24), o script da K e o gate da S. A parte 2 da M2 fechou sem achado que
-bloqueie. Entregues e no verificador curto, os dois últimos: G (P30, a723dcd) e B2 (juiz e runner,
-193d1bf). O ensaio local da árvore candidata com o modelo real está em curso. Com os dois vereditos, a
-`main` congela. Só o que muda o comportamento do agente ou o juiz reinicia a contagem das rodadas.
+**Estado do congelamento em 14/11 02h52. CONGELADA em b5af852.** Na `main`: G (com a P30), T (P21), F (P20,
+"sim" limpo e P29), H (fila da sessão e P24), B2 (juiz, casos e trava do runner), o script da K e o
+gate da S. A segunda passada da M2 fechou sem achado que bloqueie. `dev` publicado desse commit, com a
+sonda de pós-deploy limpa e a fumaça do `marco1` em 100%. Rodadas oficiais em curso. Daqui até o fim
+das três rodadas, nada que mude o comportamento do agente ou o juiz entra na `main`; commit só de
+teste ou só de documentação espera o fim delas.
 
 **Plano B, decisão do Éverton (perguntado em 14/11).** Um ciclo de correção e verificação leva
 cerca de 85 minutos; cabem dois até as 06h00. Se a H ou o juiz não fecharem nesse prazo, a escolha
