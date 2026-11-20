@@ -50,6 +50,10 @@ Rodadas em `dev`, uma de cada (relatórios em `evals/relatorios/2026-11-20-dev-*
     capacidade, o hóspede pede a cotação para 2 e o agente pergunta se são 2 contando crianças,
     em vez de cotar. Causa não provada: o prompt mudou em todos os turnos, e a `main` não teve
     essa falha em 4 rodadas.
+- Depois da rodada 3, uma revisão achou que o pedido de cotação da F4 também valia para handoff
+  por cancelamento, reclamação ou pedido de pessoa com id e datas na mensagem; ele passou a
+  valer só sem handoff ou com handoff por desconto (teste roteirizado, sem rodada nova). A
+  rodada 3 mediu o commit anterior a esse ajuste.
 - Latência por turno: p95 de 6,2 s na base e 8,0 a 8,1 s depois (a conferência do nome e a
   cotação pedida pela F4 custam uma chamada a mais quando disparam). Custo por conversa:
   US$ 0,0027 na base e US$ 0,0029 depois.
@@ -206,10 +210,12 @@ o modelo pela conta).
    cd falso && npm ci && npx wrangler dev --port 8795
    ```
 
-3. Crie `.dev.vars.dev` na raiz (o arquivo não é versionado) com duas linhas:
-   `CATALOGO_URL=<base do catálogo, com o token, sem barra final>` e
-   `LEADS_URL=http://127.0.0.1:8795/leads/<um-segmento-seu>`. O contrato, seção 8, mostra
-   como gerar o arquivo sem imprimir os valores.
+3. Crie `.dev.vars.dev` na raiz (o arquivo não é versionado) com três linhas:
+   `CATALOGO_URL=<base do catálogo, sem barra final>`,
+   `LEADS_URL=http://127.0.0.1:8795/leads/<um-segmento-seu>` e
+   `LEADS_HOST_FALSO=127.0.0.1:8795` (desde 20/11, sem ele `dev` não envia lead nenhum). O
+   catálogo próprio do passo 2 serve de base: `http://127.0.0.1:8795/catalogo/<um-segmento>`.
+   O contrato, seção 8, mostra como gerar o arquivo sem imprimir os valores.
 4. Suba o agente: `npm run dev` (ambiente `dev`, porta 8787). Para outra porta, use
    `npx wrangler dev --env dev --port <porta>`; `npm run dev -- --port <porta>` falha
    porque o script já passa `--port`.

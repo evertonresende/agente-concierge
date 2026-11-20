@@ -63,7 +63,9 @@ Rotas adicionais do Worker (não fazem parte da bateria):
 - `GET /` — página simples de chat que usa o `POST /chat`.
 - `GET /saude` — `{ "ok": true, "ambiente": "dev" | "producao", "leads_destino":
   "falso" | "real", "envio_leads": "ligado" | "desligado" }` e a presença (nunca o
-  valor) de cada variável obrigatória.
+  valor) de cada variável obrigatória. Desde 20/11, também `impressao`: os 12 primeiros
+  hex do SHA-256 do `CATALOGO_URL` e do `LEADS_URL`, para provar qual URL está
+  configurada sem mostrá-la.
 - Cabeçalhos de resposta do `/chat` para medir custo: `x-uso-entrada`, `x-uso-saida`
   (tokens) e `x-chamadas-modelo`.
 
@@ -251,6 +253,8 @@ Variáveis (valores só em ambiente, nunca em arquivo versionado):
 | `AMBIENTE` | var | `dev` ou `producao` |
 | `MODELO` | var | identificador do modelo em uso |
 | `ENVIO_LEADS` | var | `ligado` ou `desligado`; `desligado` em `producao` até a ordem do Éverton (L24) |
+| `LEADS_HOST_FALSO` | secret, só `dev` (desde 20/11) | host do webhook falso; fora de `producao`, só ele recebe lead, e sem ele nenhum lead sai |
+| `TETO_DIARIO_CHAMADAS` | var (desde 20/11) | teto diário de chamadas ao modelo (L25); ausente desliga o teto |
 
 Na máquina de desenvolvimento os valores ficam em `~/.config/agente-concierge/env`
 (`CATALOGO_URL`; `LEADS_URL_DEV` e `AGENTE_URL_DEV` depois que o webhook falso e o
@@ -260,7 +264,8 @@ arquivo local do `wrangler dev` sem imprimir nada:
 
 ```bash
 ( set -a; . ~/.config/agente-concierge/env; set +a; umask 077
-  printf 'CATALOGO_URL=%s\nLEADS_URL=%s\n' "$CATALOGO_URL" "$LEADS_URL_DEV" > .dev.vars.dev )
+  h=${LEADS_URL_DEV#*://}
+  printf 'CATALOGO_URL=%s\nLEADS_URL=%s\nLEADS_HOST_FALSO=%s\n' "$CATALOGO_URL" "$LEADS_URL_DEV" "${h%%/*}" > .dev.vars.dev )
 ```
 
 A URL real de leads é a do catálogo trocando o segmento `catalogo` por `leads`. Ela só
