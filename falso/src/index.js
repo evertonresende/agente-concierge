@@ -1,4 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
+import { tratarCatalogo } from "./catalogo.js";
 
 // Webhook de leads falso. Replica o contrato §5 do docs/CONTRATO.md para o
 // ambiente dev: POST valida os 7 campos e guarda o lead, GET lista por segmento.
@@ -495,6 +496,13 @@ async function rotear(request, env) {
       return json({ erro: "metodo nao permitido" }, 405);
     }
     return json({ ok: true, servico: "webhook-falso" });
+  }
+
+  // Catálogo próprio: /catalogo/<segmento>/<rota>. O resto vem do caminho cru, para a
+  // barra final continuar sendo rota inexistente.
+  if (partes[0] === "catalogo" && partes.length >= 3) {
+    const prefixo = `/catalogo/${partes[1]}/`;
+    return tratarCatalogo(request, url.pathname.slice(prefixo.length));
   }
 
   if (partes.length !== 2) {
