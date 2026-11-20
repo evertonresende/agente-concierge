@@ -54,8 +54,16 @@ export class ListaDeLeads extends DurableObject {
     this.#pronta = true;
   }
 
+  /** Segmento com lead e sem alarme (leads de antes da retenção): o alarme roda já e reagenda. */
+  #garantirAlarme() {
+    this.ctx.storage.getAlarm()
+      .then((alarme) => alarme ?? this.ctx.storage.setAlarm(Date.now() + 1000))
+      .catch(() => {}); // sem o alarme, o lead só fica mais tempo; nada falha por isso
+  }
+
   listar() {
     this.#preparar();
+    this.#garantirAlarme();
     return this.ctx.storage.sql
       .exec(
         `SELECT id, recebido_em, nome, telefone, imovel_id, checkin, checkout,
@@ -75,10 +83,9 @@ export class ListaDeLeads extends DurableObject {
 
   inserir(lead) {
     this.#preparar();
-    // Todo lead guardado tem prazo: o primeiro do segmento agenda o alarme da retenção.
-    this.ctx.storage.getAlarm()
-      .then((alarme) => alarme ?? this.ctx.storage.setAlarm(Date.now() + RETENCAO_MS))
-      .catch(() => {}); // sem o alarme, o lead só fica mais tempo; o registro não falha por isso
+    // Todo lead guardado tem prazo: sem alarme, o alarme roda já, não apaga nada e reagenda
+    // para quando o lead mais antigo vencer.
+    this.#garantirAlarme();
     const recebidoEm = new Date().toISOString();
     this.ctx.storage.sql.exec(
       `INSERT INTO leads
