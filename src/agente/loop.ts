@@ -327,6 +327,15 @@ function afirma(frase: string, padrao: RegExp): boolean {
   return !NEGACAO.test(perto) && !INDIRETA.test(antes);
 }
 
+// "Outros imóveis que aceitam pet": oferta de outra opção, não regra do imóvel lido (F3).
+const OUTROS_IMOVEIS = /\b(?:outr[oa]s?|other|another)\b[^.!?,;\n]{0,40}$/i;
+
+/** A frase afirma a regra sobre o imóvel em questão, não sobre outros imóveis oferecidos. */
+function afirmaRegra(frase: string, padrao: RegExp): boolean {
+  const achado = padrao.exec(frase);
+  return achado !== null && !OUTROS_IMOVEIS.test(frase.slice(0, achado.index)) && afirma(frase, padrao);
+}
+
 /**
  * Regra afirmada contra a ficha. Com imóvel citado na frase (id ou nome), vale a ficha
  * dele; sem imóvel citado, só quando todas as fichas lidas a contradizem.
@@ -340,7 +349,7 @@ function regraInventada(frase: string, lidas: RegrasLidas | undefined): boolean 
   const alvo = citados.length > 0 ? citados : Object.values(lidas);
   return (Object.keys(REGRA_AFIRMADA) as Regra[]).some((chave) => {
     const valores = alvo.map((ficha) => ficha.regras[chave]).filter((v) => v !== undefined);
-    return valores.length > 0 && valores.every((v) => !v) && afirma(frase, REGRA_AFIRMADA[chave]);
+    return valores.length > 0 && valores.every((v) => !v) && afirmaRegra(frase, REGRA_AFIRMADA[chave]);
   });
 }
 
@@ -435,7 +444,9 @@ export function corrigirValores(
     const corte = regras && !ruim ? motivoDeCorte(frase, regras) : undefined;
     if (corte) {
       cortou = true;
-      if (!trocadas.has(corte)) saida += regras!.textos.troca[corte] + (partes[i + 1] ?? "");
+      // O aviso de regra que já está em outra frase da resposta dispensa a frase fixa (F3).
+      const jaAvisou = corte === "regra" && partes.some((outra, j) => j % 2 === 0 && j !== i && REGRA_NEGADA.test(outra));
+      if (!trocadas.has(corte) && !jaAvisou) saida += regras!.textos.troca[corte] + (partes[i + 1] ?? "");
       trocadas.add(corte);
     } else if (ruim) {
       cortou = true;
@@ -548,6 +559,17 @@ const PONTA_SOLTA = new RegExp(String.raw`(?<=\p{L}{2}[.!?])[ \t]+(?:[^\s.!?:,;(
 export function semPontaSolta(texto: string): string {
   // A frase anterior termina em palavra (não em "2." de lista numerada).
   return texto.replace(PONTA_SOLTA, "");
+}
+
+// Fala da revisão interna: o hóspede nunca viu o rascunho rejeitado (F3).
+const FALA_DA_REVISAO = /\b(?:revisei|revisamos|revisando|revis[aã]o|revisad[oa]|resposta anterior|mensagem anterior|rascunho|confer[eê]ncia autom\w*|corrigi a|previous (?:answer|response|reply|message)|draft|(?:reviewed|revised|corrected) (?:my|the))(?![\p{L}])/iu;
+
+/** Depois de um rascunho rejeitado: frase que fala da revisão ou da resposta anterior sai. */
+export function semFalaDaRevisao(texto: string): string {
+  const partes = frases(texto);
+  let saida = "";
+  for (let i = 0; i < partes.length; i += 2) if (!FALA_DA_REVISAO.test(partes[i]!)) saida += partes[i]! + (partes[i + 1] ?? "");
+  return saida.trim();
 }
 
 /** Garante na resposta todo total calculado no turno, no texto que saiu do código. */
@@ -684,7 +706,9 @@ export async function rodarTurno(entrada: EntradaDoTurno): Promise<SaidaDoTurno>
     }
   }
 
-  const fechar = async (texto: string): Promise<SaidaDoTurno> => {
+  const fechar = async (original: string): Promise<SaidaDoTurno> => {
+    // Resposta depois de rascunho rejeitado não comenta a revisão (F3); se só sobrou isso, vale o rascunho.
+    const texto = rascunho === undefined ? original : semFalaDaRevisao(original) || semFalaDaRevisao(rascunho) || original;
     const situacao = { ...situacaoDoTurno(), textos };
     // Concessão no texto do próprio agente sai, e a conversa passa para uma pessoa (P17).
     if (frases(texto).some((frase, i) => i % 2 === 0 && motivoDeCorte(frase, situacao) === "concessao")) handoff = true;
@@ -786,7 +810,7 @@ export async function rodarTurno(entrada: EntradaDoTurno): Promise<SaidaDoTurno>
         rascunho = resposta.texto;
         visto.push(
           { role: "assistant", content: rascunho },
-          { role: "system", content: `CONFERÊNCIA AUTOMÁTICA (não é mensagem do hóspede). A resposta acima não foi enviada.\n- ${problemas.join("\n- ")}\nEscreva a resposta de novo, corrigida.` },
+          { role: "system", content: `CONFERÊNCIA AUTOMÁTICA (não é mensagem do hóspede). A resposta acima não foi enviada.\n- ${problemas.join("\n- ")}\nEscreva a resposta de novo, corrigida. Não mencione esta conferência, a revisão nem uma resposta anterior: o hóspede não viu o rascunho; escreva como se fosse a primeira resposta.` },
         );
         continue;
       }
