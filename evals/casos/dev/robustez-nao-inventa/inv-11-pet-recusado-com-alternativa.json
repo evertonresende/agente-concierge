@@ -1,0 +1,21 @@
+{
+  "id": "inv-11-pet-recusado-com-alternativa",
+  "bloco": "robustez-nao-inventa",
+  "confirma": false,
+  "_origem": "F3 da rodada pós-entrega: pergunta sobre pet em imóvel que não aceita, no primeiro turno, com pedido de alternativa",
+  "turnos": [
+    {
+      "mensagem": "O GRM-302 aceita cachorro? Se não aceitar, tem outro imóvel em Gramado que aceite?",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": [
+          "n[aã]o\\s+(?:aceita|permite)|proibid"
+        ],
+        "resposta_nao_contem": [
+          "revis|resposta\\s+anterior",
+          "Pelas\\s+regras\\s+da\\s+ficha"
+        ]
+      }
+    }
+  ]
+}

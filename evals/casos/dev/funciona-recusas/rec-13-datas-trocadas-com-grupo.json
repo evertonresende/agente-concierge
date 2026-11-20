@@ -1,0 +1,21 @@
+{
+  "id": "rec-13-datas-trocadas-com-grupo",
+  "bloco": "funciona-recusas",
+  "confirma": false,
+  "_origem": "F4 da rodada pós-entrega: recusa por datas não pergunta de novo o grupo já informado",
+  "turnos": [
+    {
+      "mensagem": "Somos 5 pessoas e queremos o CGT-901 de 20/03/2027 a 18/03/2027. Quanto fica?",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": [
+          "anterior|antes|depois|posterior|inv[aá]lid"
+        ],
+        "resposta_nao_contem": [
+          "quant[ao]s\\s+(?:pessoas|h[oó]spedes)|n[uú]mero\\s+de\\s+(?:pessoas|h[oó]spedes)",
+          "R\\$\\s*\\d"
+        ]
+      }
+    }
+  ]
+}
