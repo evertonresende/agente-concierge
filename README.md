@@ -6,7 +6,7 @@ Rodada de 20/11/2026, na branch `pos-entrega`. O estado entregue em 14/11 está 
 `entrega-2026-11-14`; tudo abaixo desta seção descreve a entrega e fica como foi medido.
 Decisões: X41 e P46 a P51 no [`DECISOES.md`](DECISOES.md).
 
-**`producao` fora do ar** desde a publicação depois de 22/11/2026 (X42): página e API
+**`producao` fora do ar** desde 20/11/2026 (X42): página e API
 respondem 503, sem chamar o modelo. A URL pública acima deixa de atender. O código roda
 localmente como em "Como rodar localmente".
 
