@@ -93,8 +93,9 @@ function palavrasQueOHospedeNaoEscreveu(nome: string, contexto: Contexto): strin
   return [...new Set(palavras(nome).filter((p) => !escritas.has(p)))];
 }
 
-// Letras que, junto de um número na mesma palavra, fazem dele um valor: "500reais", "R1000", "20BRL", "2k".
-const MOEDA_GRUDADA = /^(?:r|rs|reais|real|brl|usd|eur|euros?|dolar(?:es)?|dollars?|mil|k)$/;
+// Letras que, junto de um número na mesma palavra, fazem dele um valor: "500reais", "R1000",
+// "20BRL", "2k", "1500/noite", "50desconto", "300off", "10x500", "US500".
+const MOEDA_GRUDADA = /^(?:r|rs|reais|real|brl|us|usd|eur|euros?|dolar(?:es)?|dollars?|mil|k|noites?|diarias?|total|desconto|off|x|por)$/;
 
 /**
  * Palavra do nome com cara de valor (P29, regra nova da F1 em 20/11): número solto ("500",
@@ -105,6 +106,8 @@ function temValor(nome: string): boolean {
   if (/[\p{Sc}%]/u.test(nome)) return true;
   return nome.split(/\s+/).some((palavra) => {
     if (!/[\p{Nd}\p{No}]/u.test(palavra)) return false;
+    // Três dígitos seguidos já têm cara de valor ("Ana1500"); código de nome tem menos.
+    if (/[\p{Nd}\p{No}]{3}/u.test(palavra)) return true;
     const letras = palavra.normalize("NFKD").replace(/\p{M}/gu, "").toLowerCase().replace(/[^\p{L}]/gu, "");
     return letras === "" || MOEDA_GRUDADA.test(letras);
   });

@@ -52,7 +52,9 @@ describe("F1: o nome é conferido no turno em que chega", () => {
     expect(definicao?.description).toMatch(/assim que o hóspede (?:disser|informar) o nome/i);
   });
 
-  for (const nome of ["Caio Prado R$ 1,00", "Caio 1,00", "Caio Prado 500", "Caio 50%", "Caio 500reais", "Caio US$20"]) {
+  for (const nome of ["Caio Prado R$ 1,00", "Caio 1,00", "Caio Prado 500", "Caio 50%", "Caio 500reais", "Caio US$20",
+    // Da revisão: valor grudado em palavra de preço, ou número de 3 dígitos ou mais.
+    "Caio 1500/noite", "Caio 50desconto", "Caio 1500total", "Caio 10x500", "Caio US500", "Caio 300off"]) {
     it(`recusa ${JSON.stringify(nome)} no próprio turno, sem mexer no pedido`, async () => {
       const { turno, estado } = await cotado();
       const r = roteiro(pedeFerramentas(chamar("conferir_nome", { nome })), diz("Preciso do seu nome sem número nem valor."));
