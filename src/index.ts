@@ -69,11 +69,11 @@ async function saude(env: Env): Promise<Response> {
 }
 
 export default {
-  async fetch(pedido: Request, env: Env): Promise<Response> {
+  async fetch(pedido: Request, env: Env, ctx?: ExecutionContext): Promise<Response> {
     const { pathname } = new URL(pedido.url);
     if (pathname === "/chat") {
       return pedido.method === "POST"
-        ? tratarChat(pedido, env)
+        ? tratarChat(pedido, env, undefined, ctx ? (trabalho) => ctx.waitUntil(trabalho) : undefined)
         : Response.json({ erro: "use POST" }, { status: 405, headers: { allow: "POST" } });
     }
     if (pedido.method === "GET" && pathname === "/saude") return saude(env);

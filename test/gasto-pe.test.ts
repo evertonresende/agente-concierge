@@ -103,3 +103,12 @@ describe("M2: valores por ambiente no wrangler.jsonc", () => {
     expect(semComentarios.env.dev!.ratelimits).toBeUndefined();
   });
 });
+
+describe("M2: a proteção de gasto não come o orçamento da resposta", () => {
+  it("o prazo do contador é 10% do que resta, no máximo 1,5 s", async () => {
+    const { prazoDoContador } = await import("../src/gasto");
+    expect(prazoDoContador(1_000_120, 1_000_000)).toBe(12);
+    expect(prazoDoContador(1_050_000, 1_000_000)).toBe(1_500);
+    expect(prazoDoContador(999_000, 1_000_000)).toBe(0);
+  });
+});
