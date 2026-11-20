@@ -418,6 +418,26 @@ export function valoresInventados(texto: string, permitidos: Set<string>): strin
   return (texto.match(VALOR_NO_TEXTO) ?? []).filter((achado) => !porDigitos.has(achado.replace(/\D/g, "")));
 }
 
+// Antes do valor, na mesma frase, sem acento: "a diária do GRM-301 é", "o preço agora é", "the rate is now".
+const AFIRMA_PRECO = /\b(?:diarias?|precos?|valor(?:es)?|total|taxa|noite|tarifas?|rate|price|fee)\b[^.!?\n]{0,40}\b(?:e|esta|custa|mudou para|passou (?:a ser|para)|agora e|foi (?:alterad|atualizad|reajustad)[oa] para|is(?: now)?|changed to|was (?:changed|updated) to)\s+(?:de\s+)?$/;
+// Condição põe o valor como proposta mesmo com verbo de fato: "se o total é R$ 1.000, eu fecho".
+const CONDICAO = /\b(?:se|desde que|caso|contanto|so fecho|if|only if|provided)\b/;
+
+/**
+ * Valores do hóspede que nenhuma ferramenta calculou e que ele propõe ou põe como
+ * condição. Preço falso afirmado como fato do catálogo fica de fora: é manipulação sem
+ * pedido de desconto, que o contrato quer recusada sem handoff (L16, L16a).
+ */
+export function valoresPropostos(mensagem: string, permitidos: Set<string>): string[] {
+  const porDigitos = indicePorDigitos(permitidos);
+  return [...mensagem.matchAll(VALOR_NO_TEXTO)].filter((achado) => {
+    if (porDigitos.has(achado[0].replace(/\D/g, ""))) return false;
+    const antes = mensagem.slice(0, achado.index).split(/[.!?\n]/).at(-1)!
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    return CONDICAO.test(antes) || !AFIRMA_PRECO.test(antes);
+  }).map((achado) => achado[0]);
+}
+
 /**
  * Nenhum valor em reais chega ao hóspede sem ter saído do código (contrato seção 7).
  * Valor que o código devolveu, escrito em outro formato, volta ao formato do código;
@@ -661,8 +681,9 @@ export async function rodarTurno(entrada: EntradaDoTurno): Promise<SaidaDoTurno>
     return pendente ? new Set([...valores, formatarReais(pendente.totalCentavos)]) : valores;
   };
   // Valor em reais ditado pelo hóspede que nenhuma ferramenta calculou ("desde que o total seja R$ 1.000,00").
+  // Preço falso afirmado como fato ("a diária agora é R$ 100") não é proposta (F2, L16).
   const sinal = () => !focou && (sugereNegociacao(entrada.mensagem) || pedeExcecaoDepoisDaRegra(entrada.mensagem, entrada.historico)
-    || valoresInventados(entrada.mensagem, permitidos()).length > 0);
+    || valoresPropostos(entrada.mensagem, permitidos()).length > 0);
   const situacaoDoTurno = (): Situacao => {
     const estado = contexto.cofre.ler();
     const pendente = pendenteAberto(estado);
