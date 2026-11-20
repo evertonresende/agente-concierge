@@ -61,7 +61,7 @@ async function saude(env: Env): Promise<Response> {
   return Response.json({
     ok: Object.values(variaveis).every(Boolean),
     ambiente: env.AMBIENTE ?? null,
-    leads_destino: destinoDosLeads(env.LEADS_URL, env.CATALOGO_URL, env.LEADS_HOST_FALSO),
+    leads_destino: destinoDosLeads(env.LEADS_URL, env.CATALOGO_URL, env.LEADS_HOST_FALSO, env.AMBIENTE !== "producao"),
     envio_leads: env.ENVIO_LEADS === "ligado" ? "ligado" : "desligado",
     variaveis,
     impressao: { CATALOGO_URL: await impressao(env.CATALOGO_URL), LEADS_URL: await impressao(env.LEADS_URL) },

@@ -35,7 +35,8 @@
         "AI_GATEWAY": "concierge-dev",
         "ENVIO_LEADS": "ligado"
       },
-      "secrets": { "required": ["CATALOGO_URL", "LEADS_URL"] }
+      // LEADS_HOST_FALSO: host do webhook falso; sem ele, dev não envia lead nenhum.
+      "secrets": { "required": ["CATALOGO_URL", "LEADS_URL", "LEADS_HOST_FALSO"] }
     },
     "producao": {
       "ai": { "binding": "AI" },

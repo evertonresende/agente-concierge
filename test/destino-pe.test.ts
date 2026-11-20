@@ -17,6 +17,12 @@ describe("destino dos leads com o host do falso informado", () => {
     expect(destinoDosLeads("não é url", CATALOGO_PROPRIO, FALSO)).toBe("real");
   });
 
+  it("fora de producao, sem o host do falso, todo destino é real (revisão: lado seguro)", () => {
+    expect(destinoDosLeads(`https://${FALSO}/leads/seg`, CATALOGO_PROPRIO, undefined, true)).toBe("real");
+    expect(destinoDosLeads(`https://${FALSO}/leads/seg`, CATALOGO_PROPRIO, "", true)).toBe("real");
+    expect(destinoDosLeads(`https://${FALSO}/leads/seg`, CATALOGO_PROPRIO, FALSO, true)).toBe("falso");
+  });
+
   it("host do falso vazio vale como ausente: regra antiga", () => {
     expect(destinoDosLeads(`https://${FALSO}/leads/seg`, CATALOGO_PROPRIO, "")).toBe("falso");
     expect(destinoDosLeads("https://api.exemplo.test/leads/tok", "https://api.exemplo.test/catalogo/tok", undefined)).toBe("real");

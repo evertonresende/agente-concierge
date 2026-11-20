@@ -413,7 +413,7 @@ export class Sessao extends DurableObject<Env> {
         }
       };
 
-      const destino = destinoDosLeads(this.env.LEADS_URL, this.env.CATALOGO_URL, this.env.LEADS_HOST_FALSO);
+      const destino = destinoDosLeads(this.env.LEADS_URL, this.env.CATALOGO_URL, this.env.LEADS_HOST_FALSO, this.env.AMBIENTE !== "producao");
 
       const saida = await rodarTurno({
         mensagem,
