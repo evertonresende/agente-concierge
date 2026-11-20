@@ -1,6 +1,7 @@
 // Tratamento de POST /chat fora do módulo de entrada do Worker (A1, A5, A5c, A6).
 import { CONTINGENCIA } from "./agente/loop";
 import type { Env } from "./env";
+import { barrarPorGasto, registrarGasto } from "./gasto";
 import { nomeDoErro, type RespostaDoChat, TETO_WORKER_MS } from "./sessao";
 
 const LIMITE_DA_MENSAGEM = 8_000;
@@ -124,6 +125,13 @@ export async function tratarChat(pedido: Request, env: Env, tetoMs = TETO_WORKER
       return responder(200, vazia ? "Não recebi nenhum texto. Pode escrever a sua mensagem?" : MENSAGEM_LONGA_DEMAIS, false);
     }
 
+    // Proteção de gasto (M2): acima do limite por IP ou do teto do dia, texto fixo sem modelo.
+    const barrado = await barrarPorGasto(env, pedido, message);
+    if (barrado) {
+      await avisarObjeto(env, session_id, tetoMs, (stub) => stub.registrarRespostaDoWorker?.());
+      return responder(200, barrado, false);
+    }
+
     const idPedido = crypto.randomUUID();
     for (let tentativa = 1; ; tentativa++) {
       const restante = prazo - Date.now();
@@ -138,6 +146,7 @@ export async function tratarChat(pedido: Request, env: Env, tetoMs = TETO_WORKER
         // Evita rejeição não tratada se o teto do Worker vencer antes da promessa da sessão.
         chamada.catch(() => {});
         const resposta = await comPrazo(chamada, restante);
+        await registrarGasto(env, resposta.uso.chamadas);
         return responder(200, resposta.reply, resposta.handoff, resposta.uso);
       } catch (erro) {
         if (erro instanceof TempoEsgotadoWorker || tentativa >= TENTATIVAS_SESSAO) {
