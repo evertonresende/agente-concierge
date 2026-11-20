@@ -69,6 +69,12 @@ async function saude(env: Env): Promise<Response> {
 
 export default {
   async fetch(pedido: Request, env: Env, ctx?: ExecutionContext): Promise<Response> {
+    // Fora do ar (pedido do Éverton em 20/11): nenhuma rota chama sessão, modelo ou catálogo.
+    if (env.FORA_DO_AR === "sim") {
+      return new Response("O agente concierge está fora do ar. O código está em https://github.com/evertonresende/agente-concierge\n", {
+        status: 503, headers: { "content-type": "text/plain; charset=utf-8" },
+      });
+    }
     const { pathname } = new URL(pedido.url);
     if (pathname === "/chat") {
       return pedido.method === "POST"

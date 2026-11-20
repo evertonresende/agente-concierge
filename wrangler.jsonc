@@ -50,6 +50,9 @@
       "ratelimits": [{ "name": "LIMITE_POR_IP", "namespace_id": "2611", "simple": { "limit": 10, "period": 60 } }],
       "vars": {
         "AMBIENTE": "producao",
+        // Fora do ar por pedido do Éverton em 20/11: página e API respondem 503 sem chamar o
+        // modelo, para ninguém gastar chamando a demonstração. Para religar, apague esta linha.
+        "FORA_DO_AR": "sim",
         // Teto diário de chamadas ao modelo (M2): perto de US$ 1,35 por dia no preço medido.
         "TETO_DIARIO_CHAMADAS": "1500",
         "MODELO": "anthropic/claude-haiku-5.5",
