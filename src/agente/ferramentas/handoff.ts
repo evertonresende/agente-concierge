@@ -20,7 +20,8 @@ export const MATRIZ: Record<string, { decisao: Decisao; descricao: string; orien
   pediu_pessoa: { decisao: "passa", descricao: "o hóspede pediu para falar com uma pessoa, atendente ou humano" },
   acao_fora_do_alcance: {
     decisao: "passa",
-    descricao: "cancelar ou alterar reserva já feita, pagamento, check-in antecipado ou saída tardia, problema durante a estadia",
+    descricao: "cancelar ou alterar reserva já feita, pedido para pagar (gerar link ou cobrança, sinal, reembolso), check-in "
+      + "antecipado ou saída tardia, problema durante a estadia",
     orientacao: "Não diga que cancelou, alterou, cobrou ou resolveu nada: você não executa essas ações.",
   },
   excecao_ou_insistencia_em_regra: {
@@ -35,7 +36,8 @@ export const MATRIZ: Record<string, { decisao: Decisao; descricao: string; orien
   },
   informacao_ausente: {
     decisao: "nao_passa",
-    descricao: "o catálogo não informa o que foi perguntado, e o hóspede não pediu uma pessoa nem disse que precisa disso para decidir",
+    descricao: "o catálogo não informa o que foi perguntado (inclusive pergunta sobre formas de pagamento aceitas, como Pix ou "
+      + "cartão), e o hóspede não pediu uma pessoa nem disse que precisa disso para decidir",
     orientacao: "Diga que o catálogo não informa e ofereça passar para uma pessoa do time se o hóspede quiser.",
   },
   cotacao_recusada: {
