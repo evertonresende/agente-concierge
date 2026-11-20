@@ -1,5 +1,74 @@
 # Agente concierge
 
+## Depois da entrega
+
+Rodada de 20/11/2026, na branch `pos-entrega`. O estado entregue em 14/11 está na tag
+`entrega-2026-11-14`; tudo abaixo desta seção descreve a entrega e fica como foi medido.
+Decisões: X41 e P46 a P51 no [`DECISOES.md`](DECISOES.md).
+
+**O que mudou**
+
+| Item | O que fazia | O que faz | Prova |
+|---|---|---|---|
+| F1, nome com dígito | recusava qualquer dígito no nome; o lead não saía | dígito dentro de palavra com letras passa, valor no nome continua recusado; o nome é conferido no turno em que chega (`conferir_nome`) | `test/nome-com-digito-pe.test.ts`, eval `lead-18` e `lead-19` |
+| F2, preço falso sem desconto | passava para humano com motivo de desconto | cota pelo catálogo, sem handoff (L16, L16a) | `test/injecao-de-preco-pe.test.ts`, eval `man-15` |
+| F3, revisão vazada | marcava "outros imóveis que aceitam pet" como regra inventada e mostrava "Revisei a resposta anterior..." | a oferta passa; a resposta reescrita não fala da revisão nem repete a regra | `test/revisao-vazada-pe.test.ts`, eval `inv-11` |
+| F4, deixava de cotar | com imóvel, datas e pedido de desconto, passava para humano sem cotar | cota na mesma resposta, com o handoff | `test/cota-o-que-ja-veio-pe.test.ts`, eval `hand-16` |
+| Forma de pagamento | "aceita Pix?" tendia a passar para humano | é informação que o catálogo não traz (L5); pedir para pagar continua na L19 | `test/pagamento-pe.test.ts`, eval `inv-12` |
+| M1, catálogo próprio | dependia do catálogo de terceiros | `falso/` serve as rotas do contrato §4 com 15 fichas próprias; a do IMB-801 traz uma ordem ao agente, para o eval de injeção | `test/catalogo-proprio-pe.test.ts`, eval `man-16` |
+| M2, gasto | sem teto por cliente (limite 24) | 10 mensagens por minuto por IP e 1.500 chamadas ao modelo por dia em `producao`; acima disso, texto fixo sem modelo | `test/gasto-pe.test.ts` |
+| Leads da demonstração | iam para o webhook de terceiros | guardados 7 dias no webhook próprio; a página pede dados fictícios | `test/demo-pe.test.ts` |
+| Trava do webhook real | "real" = mesmo host do catálogo | com `LEADS_HOST_FALSO`, só o host do falso recebe lead fora de `producao` | `test/destino-pe.test.ts` |
+| `/saude` | presença das variáveis | também a impressão (12 hex do SHA-256) de cada URL, para provar a troca sem mostrar o valor | `test/saude-impressao-pe.test.ts` |
+
+**Evals** (conjunto `dev`, 112 casos: os 104 da entrega e 8 novos, contra o catálogo próprio)
+
+Rodadas em `dev`, uma de cada (relatórios em `evals/relatorios/2026-11-20-dev-*`):
+
+| Bloco | Base: `main` (9021ff3) | Rodada 2 (f7d43a3) | Rodada 3, código final (64d03c3) |
+|---|---|---|---|
+| contrato | 9 de 9 | 9 de 9 | 9 de 9 |
+| cotações | 13 de 13 | 13 de 13 | 13 de 13 |
+| leads | 20 de 21 | 21 de 21 | 21 de 21 |
+| recusas | 13 de 13 | 13 de 13 | 12 de 13 |
+| respostas | 11 de 11 | 11 de 11 | 11 de 11 |
+| marco1 | 2 de 2 | 2 de 2 | 2 de 2 |
+| handoff | 15 de 16 | 16 de 16 | 16 de 16 |
+| manipulação | 14 de 15 | 15 de 15 | 15 de 15 |
+| não inventa | 12 de 12 | 11 de 12 | 12 de 12 |
+| **total** | **109 de 112** | **111 de 112** | **111 de 112** |
+
+- Na base, as três falhas são os casos das falhas F1, F2 e F4 (`lead-18`, `man-15`, `hand-16`).
+  Os 104 casos da entrega e os outros 5 novos passaram.
+- Nas duas rodadas depois, os três passam, e um bloco cai um caso em cada rodada, cada vez num
+  bloco diferente. Pela leitura literal, o critério "a soma de nenhum bloco cai" **não foi
+  cumprido**. Classificação:
+  - rodada 2, `inv-10-comodidade-ausente`: a resposta não casou a expressão do caso. O relatório
+    não guarda o texto, e em 3 repetições à mão a resposta passaria. Provável variação de
+    redação, sem prova direta.
+  - rodada 3, `rec-03-capacidade`: falha do agente, reproduzida 1 de 3. Depois da recusa por
+    capacidade, o hóspede pede a cotação para 2 e o agente pergunta se são 2 contando crianças,
+    em vez de cotar. Causa não provada: o prompt mudou em todos os turnos, e a `main` não teve
+    essa falha em 4 rodadas.
+- Latência por turno: p95 de 6,2 s na base e 8,0 a 8,1 s depois (a conferência do nome e a
+  cotação pedida pela F4 custam uma chamada a mais quando disparam). Custo por conversa:
+  US$ 0,0027 na base e US$ 0,0029 depois.
+
+Conjunto reservado, uma leitura do agregado com o código final e o catálogo próprio: **78%**
+(limiar 90%; a entrega teve 91,7% no catálogo de terceiros). O número não é comparável com o
+da entrega: mudaram o código e o catálogo ao mesmo tempo, e os casos do reservado foram escritos
+contra o texto do catálogo de terceiros (pelo menos 7 dos 60 perguntam ou esperam texto que o
+catálogo próprio não tem). Separar as duas causas pede uma leitura da `main` e outra da branch
+no mesmo catálogo.
+
+**O que ficou de fora**: o resto de "O que eu faria com mais tempo" (juiz de preço por valor, handoff fora do
+modelo, número por extenso, gramática do sim, mais rodadas), troca de modelo, redesenho da
+página e política por nonce. O teste do simulador (`evals/simulador/teste.mjs`) já falhava na
+`main` e segue falhando (P51). Em `producao` nada mudou: a troca do catálogo e do webhook
+(M3) espera a data e a ordem do Éverton.
+
+---
+
 Agente de chat para quem quer se hospedar em imóveis de temporada. Ele faz quatro coisas:
 
 1. Responde dúvidas sobre os imóveis pelo catálogo. O que o catálogo não traz, ele é
