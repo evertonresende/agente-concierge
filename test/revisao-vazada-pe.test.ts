@@ -2,7 +2,7 @@
 // imóveis que aceitam pet" depois de ler uma ficha sem pet, e a reescrita expunha o laço
 // interno ao hóspede ("Revisei a resposta anterior...") e repetia o aviso da regra.
 import { describe, expect, it } from "vitest";
-import { conferir, corrigirValores } from "../src/agente/loop";
+import { conferir, corrigirValores, semFalaDaRevisao } from "../src/agente/loop";
 import { chamar, diz, pedeFerramentas, roteiro } from "./apoio";
 import { conversa } from "./apoio-g";
 
@@ -27,6 +27,12 @@ describe("F3: oferta de outros imóveis com pet não é regra inventada", () => 
   it("afirmar que o imóvel da ficha aceita pet continua pego", () => {
     expect(conferir("O GRM-301 aceita pets, pode levar.", new Set(), SITUACAO)).toHaveLength(1);
     expect(conferir("Sim, aceita pets!", new Set(), SITUACAO)).toHaveLength(1);
+  });
+
+  it("\"outro\" que não fala de outros imóveis não isenta (revisão)", () => {
+    for (const texto of ["Outra vantagem: o GRM-301 aceita pets.", "Outro ponto positivo é que o GRM-301 aceita pets."]) {
+      expect(conferir(texto, new Set(), SITUACAO), texto).toHaveLength(1);
+    }
   });
 
   it("no turno inteiro: uma chamada só, e a resposta chega como o modelo escreveu", async () => {
@@ -66,5 +72,18 @@ describe("F3: a reescrita nunca fala da revisão ao hóspede", () => {
     const texto = "Este imóvel não aceita pet. O GRM-301 aceita pets, pode levar.";
     const saida = corrigirValores(texto, new Set(), undefined, { ...SITUACAO, textos: { troca: { regra: `${REGRA_FIXA}, isso não é permitido neste imóvel.` } } as never });
     expect(saida).toBe("Este imóvel não aceita pet.");
+  });
+
+  it("aviso de outra regra não dispensa a frase fixa da regra cortada (revisão)", () => {
+    const saida = corrigirValores("O GRM-301 aceita pets. Ele não permite festas.", new Set(), undefined,
+      { ...SITUACAO, textos: { troca: { regra: `${REGRA_FIXA}, isso não é permitido neste imóvel.` } } as never });
+    expect(saida).toContain(REGRA_FIXA);
+    expect(saida).toContain("Ele não permite festas.");
+  });
+
+  it("frase que só começa falando da revisão perde só esse pedaço (revisão)", () => {
+    expect(semFalaDaRevisao("Como disse na mensagem anterior, o GRM-301 não aceita pet.")).toBe("O GRM-301 não aceita pet.");
+    expect(semFalaDaRevisao("Revisei: o total é R$ 2.156,00.")).toBe("O total é R$ 2.156,00.");
+    expect(semFalaDaRevisao("Revisei a resposta anterior e ela está de acordo com a ficha. Tem lareira.")).toBe("Tem lareira.");
   });
 });

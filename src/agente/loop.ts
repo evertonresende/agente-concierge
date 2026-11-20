@@ -329,8 +329,10 @@ function afirma(frase: string, padrao: RegExp): boolean {
   return !NEGACAO.test(perto) && !INDIRETA.test(antes);
 }
 
-// "Outros imóveis que aceitam pet": oferta de outra opção, não regra do imóvel lido (F3).
-const OUTROS_IMOVEIS = /\b(?:outr[oa]s?|other|another)\b[^.!?,;\n]{0,40}$/i;
+// "Outros imóveis que aceitam pet": oferta de outra opção, não regra do imóvel lido (F3). Só
+// com "outros/outras" seguido de imóvel ou opção no plural, na mesma oração; "outra
+// vantagem: o X aceita pets" continua conferido.
+const OUTROS_IMOVEIS = /\b(?:outr[oa]s|other)\s+(?:im[oó]veis|op[cç][oõ]es|casas|apartamentos|chal[eé]s|lugares|hospedagens|properties|options|places|homes|listings)\b[^.!?,;:\n]{0,40}$/i;
 
 /** A frase afirma a regra sobre o imóvel em questão, não sobre outros imóveis oferecidos. */
 function afirmaRegra(frase: string, padrao: RegExp): boolean {
@@ -343,13 +345,25 @@ function afirmaRegra(frase: string, padrao: RegExp): boolean {
  * dele; sem imóvel citado, só quando todas as fichas lidas a contradizem.
  */
 function regraInventada(frase: string, lidas: RegrasLidas | undefined): boolean {
-  if (!lidas) return false;
+  return regraInventadaDaFrase(frase, lidas) !== undefined;
+}
+
+// Assunto de cada regra, para saber se outra frase já avisa a MESMA regra (F3).
+const TEMA_DA_REGRA: Record<Regra, RegExp> = {
+  aceita_pet: /\b(?:pets?|animais|animal|cachorr\w*|gat[oa]s?|c[aã]es|c[aã]o|dogs?|cats?)\b/i,
+  permite_festas: /\b(?:festas?|part(?:y|ies)|eventos?)\b/i,
+  permite_fumar: /\b(?:fum\w*|cigarr\w*|smok\w*)\b/i,
+};
+
+/** A regra que a frase afirma contra a ficha, se houver. */
+function regraInventadaDaFrase(frase: string, lidas: RegrasLidas | undefined): Regra | undefined {
+  if (!lidas) return undefined;
   const limpa = semMarcas(frase);
   const citados = Object.entries(lidas)
     .filter(([id, { nome }]) => ` ${limpa} `.includes(` ${semMarcas(id)} `) || (nome !== "" && limpa.includes(semMarcas(nome))))
     .map(([, ficha]) => ficha);
   const alvo = citados.length > 0 ? citados : Object.values(lidas);
-  return (Object.keys(REGRA_AFIRMADA) as Regra[]).some((chave) => {
+  return (Object.keys(REGRA_AFIRMADA) as Regra[]).find((chave) => {
     const valores = alvo.map((ficha) => ficha.regras[chave]).filter((v) => v !== undefined);
     return valores.length > 0 && valores.every((v) => !v) && afirmaRegra(frase, REGRA_AFIRMADA[chave]);
   });
@@ -422,8 +436,10 @@ export function valoresInventados(texto: string, permitidos: Set<string>): strin
 
 // Antes do valor, na mesma frase, sem acento: "a diária do GRM-301 é", "o preço agora é", "the rate is now".
 const AFIRMA_PRECO = /\b(?:diarias?|precos?|valor(?:es)?|total|taxa|noite|tarifas?|rate|price|fee)\b[^.!?\n]{0,40}\b(?:e|esta|custa|mudou para|passou (?:a ser|para)|agora e|foi (?:alterad|atualizad|reajustad)[oa] para|is(?: now)?|changed to|was (?:changed|updated) to)\s+(?:de\s+)?$/;
-// Condição põe o valor como proposta mesmo com verbo de fato: "se o total é R$ 1.000, eu fecho".
-const CONDICAO = /\b(?:se|desde que|caso|contanto|so fecho|if|only if|provided)\b/;
+// Condição ou proposta em qualquer ponto da frase põe o valor como proposta mesmo com verbo de
+// fato: "se o total é R$ 1.000, eu fecho", "o total é R$ 1.500 se eu fechar hoje", "pra mim o
+// valor é R$ 900", "o máximo que pago é R$ 900".
+const CONDICAO = /\b(?:se|desde que|caso|contanto|so|pago|pagaria|pagar|pagamos|fecho|fechamos|fechar|fecha|fechado|pra mim|para mim|maximo|ofereco|topo|topa|aceito|if|only if|provided|pay|max|maximum|budget|deal)\b/;
 
 /**
  * Valores do hóspede que nenhuma ferramenta calculou e que ele propõe ou põe como
@@ -434,9 +450,10 @@ export function valoresPropostos(mensagem: string, permitidos: Set<string>): str
   const porDigitos = indicePorDigitos(permitidos);
   return [...mensagem.matchAll(VALOR_NO_TEXTO)].filter((achado) => {
     if (porDigitos.has(achado[0].replace(/\D/g, ""))) return false;
-    const antes = mensagem.slice(0, achado.index).split(/[.!?\n]/).at(-1)!
-      .normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-    return CONDICAO.test(antes) || !AFIRMA_PRECO.test(antes);
+    const semAcento = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    const antes = semAcento(mensagem.slice(0, achado.index).split(/[.!?\n]/).at(-1)!);
+    const depois = semAcento(mensagem.slice(achado.index! + achado[0].length).split(/[.!?](?:\s|$)|\n/)[0]!);
+    return CONDICAO.test(antes) || CONDICAO.test(depois) || !AFIRMA_PRECO.test(antes);
   }).map((achado) => achado[0]);
 }
 
@@ -466,8 +483,10 @@ export function corrigirValores(
     const corte = regras && !ruim ? motivoDeCorte(frase, regras) : undefined;
     if (corte) {
       cortou = true;
-      // O aviso de regra que já está em outra frase da resposta dispensa a frase fixa (F3).
-      const jaAvisou = corte === "regra" && partes.some((outra, j) => j % 2 === 0 && j !== i && REGRA_NEGADA.test(outra));
+      // O aviso da MESMA regra, já em outra frase da resposta, dispensa a frase fixa (F3).
+      const chave = corte === "regra" ? regraInventadaDaFrase(frase, regras!.regras) : undefined;
+      const jaAvisou = chave !== undefined
+        && partes.some((outra, j) => j % 2 === 0 && j !== i && REGRA_NEGADA.test(outra) && TEMA_DA_REGRA[chave].test(outra));
       if (!trocadas.has(corte) && !jaAvisou) saida += regras!.textos.troca[corte] + (partes[i + 1] ?? "");
       trocadas.add(corte);
     } else if (ruim) {
@@ -596,11 +615,25 @@ export function semPontaSolta(texto: string): string {
 // Fala da revisão interna: o hóspede nunca viu o rascunho rejeitado (F3).
 const FALA_DA_REVISAO = /\b(?:revisei|revisamos|revisando|revis[aã]o|revisad[oa]|resposta anterior|mensagem anterior|rascunho|confer[eê]ncia autom\w*|corrigi a|previous (?:answer|response|reply|message)|draft|(?:reviewed|revised|corrected) (?:my|the))(?![\p{L}])/iu;
 
-/** Depois de um rascunho rejeitado: frase que fala da revisão ou da resposta anterior sai. */
+/**
+ * Depois de um rascunho rejeitado: o que fala da revisão ou da resposta anterior sai. Na
+ * frase que só começa assim ("Como disse na mensagem anterior, o X não aceita pet"), sai só
+ * esse pedaço e fica o resto, com a primeira letra maiúscula.
+ */
 export function semFalaDaRevisao(texto: string): string {
   const partes = frases(texto);
   let saida = "";
-  for (let i = 0; i < partes.length; i += 2) if (!FALA_DA_REVISAO.test(partes[i]!)) saida += partes[i]! + (partes[i + 1] ?? "");
+  for (let i = 0; i < partes.length; i += 2) {
+    const frase = partes[i]!;
+    if (!FALA_DA_REVISAO.test(frase)) {
+      saida += frase + (partes[i + 1] ?? "");
+      continue;
+    }
+    const pedacos = frase.split(/(?<=[,:;])\s+/);
+    const fim = pedacos.findIndex((p) => FALA_DA_REVISAO.test(p));
+    const resto = pedacos.slice(fim + 1).join(" ");
+    if (fim === 0 && resto && !FALA_DA_REVISAO.test(resto)) saida += resto[0]!.toUpperCase() + resto.slice(1) + (partes[i + 1] ?? "");
+  }
   return saida.trim();
 }
 

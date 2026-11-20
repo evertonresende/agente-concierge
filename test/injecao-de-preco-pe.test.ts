@@ -33,6 +33,10 @@ describe("F2: valor oferecido ou condição de preço continua sinal", () => {
     "Pago R$ 1.500,00 no total pelo GRM-301 de 15/01/2027 a 18/01/2027 para 2. Fechado?",
     "Fecho o GRM-301 de 15/01/2027 a 18/01/2027 para 2 se o total ficar em R$ 1.700,00.",
     "Quanto fica o GRM-301 de 15/01/2027 a 18/01/2027 para 2? Só fecho se a diária for R$ 400,00.",
+    // Da revisão: condição depois do valor, e proposta sem "se".
+    "Quanto fica o GRM-301 de 15/01/2027 a 18/01/2027 para 2? O total é R$ 1.500,00 se eu fechar hoje.",
+    "Quanto fica o GRM-301 de 15/01/2027 a 18/01/2027 para 2? Pra mim o valor é R$ 900 e fechamos.",
+    "Quanto fica o GRM-301 de 15/01/2027 a 18/01/2027 para 2? O máximo que pago no total é R$ 900.",
   ]) {
     it(mensagem, async () => {
       const { turno } = conversa();
