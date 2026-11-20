@@ -1,5 +1,22 @@
 # Decisões
 
+## Depois da entrega
+
+Rodada de 20/11/2026, numa branch própria (`pos-entrega`), depois da entrega de 14/11. O
+estado entregue está na tag `entrega-2026-11-14`. Os números e limites medidos até a
+entrega ficam abaixo como foram registrados.
+
+| ID | Decisão | Motivo |
+|---|---|---|
+| X41 | Dita em 20/11, em resposta às quatro perguntas da rodada (nome no lead, forma de pagamento, leads da demonstração, limites de gasto) e à pergunta sobre os textos do catálogo próprio: "faz o que for melhor, isso aí é só pra portfólio, mais nada". Valem as recomendações da rodada: (1) nome com dígito dentro de palavra com letras é aceito; símbolo de moeda, "%", número solto e número junto de palavra de moeda continuam recusados, e o nome é conferido no turno em que chega (ferramenta `conferir_nome`); (2) pergunta sobre forma de pagamento segue a L5 (não sabe, oferece uma pessoa, sem handoff), pedido para pagar segue a L19; (3) a demonstração registra o pedido confirmado no webhook próprio, os leads ficam 7 dias e a página pede dados fictícios; (4) `producao` com teto de 1.500 chamadas ao modelo por dia e 10 mensagens por minuto por IP, `dev` com 5.000 por dia e sem limite por IP; (5) o catálogo próprio mantém os nomes e os fatos que os casos de eval já citavam, e o resto é escrito do zero | O agente fica como portfólio público e deixa de depender de serviços de terceiros. Os motivos de cada recomendação estão na P46 a P49 |
+| P46 | Regra do nome (F1, complementa a P29 e a P20) | Uma palavra com dígito e letras é nome ("X7Q1", "3º"); valor no nome continua recusado. A conferência é a mesma no `montar_resumo` e no `conferir_nome`, que não mexe no pedido | A P29 recusava qualquer dígito: um nome assim nunca virava lead, e o agente agradecia pelo nome para recusá-lo no turno do telefone. O lado da P29 que importa (preço falso no lead e no resumo) segue coberto |
+| P47 | Preço falso afirmado pelo hóspede (F2) | Valor em reais escrito como fato do preço ("a diária agora é R$ X") não aciona a chamada focada da P17; valor oferecido ou posto como condição continua acionando | A chamada focada manda passar para humano quando há "valor proposto", e o agente passava com motivo de desconto numa injeção que não pedia desconto, contra a L16 e a L16a |
+| P48 | Conferência depois de reescrita (F3) e cotação do que veio na mensagem (F4) | Oferta de "outros imóveis que aceitam pet" não é regra inventada; a resposta depois de uma reescrita não fala da revisão; imóvel e datas na mensagem sem cotação no turno pedem a cotação ao modelo | Os três foram vistos em conversas de teste e reproduzidos por teste ou em `dev` antes da correção |
+| P49 | Catálogo próprio e trava do webhook real em `dev` | O catálogo próprio roda num Worker separado do webhook falso, com o mesmo código de `falso/`; com o secret `LEADS_HOST_FALSO`, só o host do falso recebe lead fora de `producao` | Com catálogo e webhook no mesmo host, a trava antiga tratava o falso como real e `dev` não enviava lead; com hosts diferentes, ela deixaria de proteger `dev` contra o webhook real. Nenhum POST chegou ao webhook real |
+| P50 | Casos de eval novos | Oito casos no conjunto `dev` (um por falha, a injeção pelo catálogo e a forma de pagamento), escritos antes da rodada base; nenhum caso existente mudou | A base e o depois precisam do mesmo denominador, e nenhum caso é editado para passar |
+| P51 | Teste do simulador que já falhava na `main` | Fica como está: o caso `man-12` foi apertado no commit `d080ddf` e o gerador do simulador não acompanhou | Está fora desta rodada; corrigir mudaria um caso fixo de eval |
+
+
 **As escolhas**
 
 - O código decide e o modelo conversa: preço, dia da semana, recusas e valor do lead
