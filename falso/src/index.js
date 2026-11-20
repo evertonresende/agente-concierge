@@ -1,5 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 import { tratarCatalogo } from "./catalogo.js";
+import { corteDaRetencao, RETENCAO_MS } from "./retencao.js";
 
 // Webhook de leads falso. Replica o contrato §5 do docs/CONTRATO.md para o
 // ambiente dev: POST valida os 7 campos e guarda o lead, GET lista por segmento.
@@ -64,8 +65,20 @@ export class ListaDeLeads extends DurableObject {
       .toArray();
   }
 
+  /** Alarme da retenção: apaga os leads vencidos e reagenda para o próximo a vencer. */
+  async alarm() {
+    this.#preparar();
+    this.ctx.storage.sql.exec("DELETE FROM leads WHERE recebido_em < ?", corteDaRetencao(Date.now()));
+    const [proximo] = this.ctx.storage.sql.exec("SELECT MIN(recebido_em) AS r FROM leads").toArray();
+    if (proximo?.r) await this.ctx.storage.setAlarm(Date.parse(proximo.r) + RETENCAO_MS);
+  }
+
   inserir(lead) {
     this.#preparar();
+    // Todo lead guardado tem prazo: o primeiro do segmento agenda o alarme da retenção.
+    this.ctx.storage.getAlarm()
+      .then((alarme) => alarme ?? this.ctx.storage.setAlarm(Date.now() + RETENCAO_MS))
+      .catch(() => {}); // sem o alarme, o lead só fica mais tempo; o registro não falha por isso
     const recebidoEm = new Date().toISOString();
     this.ctx.storage.sql.exec(
       `INSERT INTO leads

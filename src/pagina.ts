@@ -386,10 +386,11 @@ export const PAGINA = String.raw`<!doctype html>
     <form class="envio" id="envio">
       <label class="rotulo" for="mensagem">Sua mensagem</label>
       <div class="envio-linha">
-        <textarea class="campo" id="mensagem" rows="1" placeholder="Escreva sua pergunta" enterkeyhint="send" aria-describedby="dica"></textarea>
+        <textarea class="campo" id="mensagem" rows="1" placeholder="Escreva sua pergunta" enterkeyhint="send" aria-describedby="dica aviso"></textarea>
         <button class="botao" id="enviar" type="submit">Enviar</button>
       </div>
       <p class="dica" id="dica" data-so-teclado>Enter envia · Shift + Enter quebra a linha</p>
+      <p class="dica" id="aviso">Demonstração: use nome e telefone fictícios. Os pedidos ficam num registro de teste, apagado em 7 dias, e ninguém entra em contato.</p>
       <span class="so-leitor" id="estado" role="status"></span>
     </form>
   </main>

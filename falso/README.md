@@ -50,6 +50,10 @@ no repositório.
 - `GET /` — `{ "ok": true, "servico": "webhook-falso" }`, só para conferir que o
   servidor está no ar.
 
+Retenção: cada lead fica guardado 7 dias e depois é apagado pelo alarme do Durable
+Object do segmento (`src/retencao.js`, decisão do Éverton em 20/11 para a demonstração
+pública). Os modos de teste não mudam.
+
 Cada segmento tem um Durable Object com SQLite próprio: leads e modos sobrevivem
 entre requisições e reinícios do `wrangler dev` (estado local em `.wrangler/`, que não
 é versionado), e segmentos diferentes nunca se misturam.
