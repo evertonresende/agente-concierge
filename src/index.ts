@@ -43,7 +43,14 @@ function cabecalhosDePagina(): Promise<Record<string, string>> {
   return cabecalhosDaPagina;
 }
 
-function saude(env: Env): Response {
+/** Impressão de uma URL secreta: 12 hex do SHA-256. Prova qual URL está configurada sem mostrá-la (M3). */
+async function impressao(valor: string | undefined): Promise<string | null> {
+  if (!valor) return null;
+  const resumo = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(valor)));
+  return [...resumo].map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 12);
+}
+
+async function saude(env: Env): Promise<Response> {
   const variaveis = {
     CATALOGO_URL: Boolean(env.CATALOGO_URL),
     LEADS_URL: Boolean(env.LEADS_URL),
@@ -57,6 +64,7 @@ function saude(env: Env): Response {
     leads_destino: destinoDosLeads(env.LEADS_URL, env.CATALOGO_URL, env.LEADS_HOST_FALSO),
     envio_leads: env.ENVIO_LEADS === "ligado" ? "ligado" : "desligado",
     variaveis,
+    impressao: { CATALOGO_URL: await impressao(env.CATALOGO_URL), LEADS_URL: await impressao(env.LEADS_URL) },
   });
 }
 
