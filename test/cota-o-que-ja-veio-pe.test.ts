@@ -24,6 +24,20 @@ describe("F4: imóvel e datas na mensagem viram cotação na mesma resposta", ()
     expect(saida.reply).toContain("R$ 2.156,00");
   });
 
+  for (const [motivo, mensagem] of [
+    ["acao_fora_do_alcance", "Quero cancelar minha reserva do GRM-301 de 15/01/2027 a 18/01/2027."],
+    ["reclamacao", "Fiquei no GRM-301 de 10/11/2026 a 12/11/2026 e o chuveiro não funcionava. Quero reclamar."],
+    ["pediu_pessoa", "Quero falar com uma pessoa sobre o GRM-301 de 15/01/2027 a 18/01/2027."],
+  ] as const) {
+    it(`handoff por ${motivo} com id e datas: não pede cotação (revisão)`, async () => {
+      const { turno } = conversa();
+      const r = roteiro(pedeFerramentas(chamar("passar_para_humano", { motivo })), diz("Uma pessoa do time continua com você."));
+      const saida = await turno(mensagem, r.modelo);
+      expect(r.recebidas).toHaveLength(2);
+      expect(saida.reply).not.toMatch(/R\$/);
+    });
+  }
+
   it("com cotação no turno, nenhuma chamada a mais", async () => {
     const { turno } = conversa();
     const r = roteiro(pedeFerramentas(chamar("cotar", ESTADIA)), diz("Fica R$ 2.156,00."));

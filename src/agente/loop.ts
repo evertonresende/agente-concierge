@@ -729,6 +729,10 @@ export async function rodarTurno(entrada: EntradaDoTurno): Promise<SaidaDoTurno>
   // Preço falso afirmado como fato ("a diária agora é R$ 100") não é proposta (F2, L16).
   const sinal = () => !focou && (sugereNegociacao(entrada.mensagem) || pedeExcecaoDepoisDaRegra(entrada.mensagem, entrada.historico)
     || valoresPropostos(entrada.mensagem, permitidos()).length > 0);
+  /** Motivos com que o modelo chamou a passagem para uma pessoa neste turno. */
+  const motivosPassados = () => novas.flatMap((m) => (m.role === "assistant" ? m.tool_calls ?? [] : []))
+    .filter((c) => c.function.name === NOME_DO_HANDOFF)
+    .map((c) => String(lerArgumentos(c)?.motivo ?? ""));
   const situacaoDoTurno = (): Situacao => {
     const estado = contexto.cofre.ler();
     const pendente = pendenteAberto(estado);
@@ -743,7 +747,9 @@ export async function rodarTurno(entrada: EntradaDoTurno): Promise<SaidaDoTurno>
       regras: regrasLidas([...entrada.historico, ...novas]),
       totais,
       sinal: sinal(),
-      semCotacao: !usadas.some((nome) => nome === "cotar" || nome === "montar_resumo" || nome === CONFIRMAR),
+      // Handoff por outro motivo (cancelar, reclamar, pedir pessoa) não ganha cotação (L19).
+      semCotacao: !usadas.some((nome) => nome === "cotar" || nome === "montar_resumo" || nome === CONFIRMAR)
+        && (!handoff || motivosPassados().includes("desconto_ou_negociacao")),
       resumoMudou: caiu && r
         ? `imóvel ${r.imovel_id}, entrada ${r.checkin}, saída ${r.checkout}, ${r.hospedes} hóspedes, nome ${r.nome}, telefone ${r.telefone}`
         : undefined,
