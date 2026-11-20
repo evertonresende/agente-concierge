@@ -54,7 +54,7 @@ function saude(env: Env): Response {
   return Response.json({
     ok: Object.values(variaveis).every(Boolean),
     ambiente: env.AMBIENTE ?? null,
-    leads_destino: destinoDosLeads(env.LEADS_URL, env.CATALOGO_URL),
+    leads_destino: destinoDosLeads(env.LEADS_URL, env.CATALOGO_URL, env.LEADS_HOST_FALSO),
     envio_leads: env.ENVIO_LEADS === "ligado" ? "ligado" : "desligado",
     variaveis,
   });

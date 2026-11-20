@@ -712,10 +712,16 @@ export async function confirmar(cofre: Cofre, turnoAtual: number, mensagem: stri
   return corrigivel ? { tipo: "campo_recusado", campos: resposta.campos } : { tipo: "nao_registrado", motivo: "resposta" };
 }
 
-/** "real" quando o webhook mora no mesmo host do catálogo (contrato seção 8); senão "falso". */
-export function destinoDosLeads(leadsUrl: string | undefined, catalogoUrl: string | undefined): "falso" | "real" {
+/**
+ * Com o host do webhook falso informado (`LEADS_HOST_FALSO`), só ele é "falso". Sem ele, vale
+ * a regra de antes: "real" quando o webhook mora no mesmo host do catálogo (contrato seção 8).
+ * A regra de antes deixa de proteger dev quando o catálogo não é o de terceiros.
+ */
+export function destinoDosLeads(leadsUrl: string | undefined, catalogoUrl: string | undefined, hostDoFalso?: string): "falso" | "real" {
   try {
-    return new URL(leadsUrl ?? "").host === new URL(catalogoUrl ?? "").host ? "real" : "falso";
+    const host = new URL(leadsUrl ?? "").host;
+    if (hostDoFalso) return host === hostDoFalso ? "falso" : "real";
+    return host === new URL(catalogoUrl ?? "").host ? "real" : "falso";
   } catch {
     // Sem conseguir comparar, vale o lado seguro: tratar como real.
     return "real";

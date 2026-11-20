@@ -13,6 +13,8 @@ export interface Env {
   /** Id do AI Gateway por onde passam as chamadas de modelo. */
   AI_GATEWAY?: string;
   ENVIO_LEADS?: string;
+  /** Host do webhook falso (secret de dev): com ele, só esse host recebe lead fora de producao. */
+  LEADS_HOST_FALSO?: string;
   /** Contador de chamadas ao modelo por dia (M2). */
   TETO?: DurableObjectNamespace<import("./gasto").Teto>;
   /** Teto diário de chamadas ao modelo; ausente desliga o teto (M2). */
