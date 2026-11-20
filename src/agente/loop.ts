@@ -280,6 +280,8 @@ export interface Situacao {
   sinal?: boolean;
   /** O hóspede mudou um dado do resumo pendente e nenhuma ferramenta do turno o remontou (L10). */
   resumoMudou?: string;
+  /** Nenhuma ferramenta de cotação, resumo ou confirmação rodou no turno. */
+  semCotacao?: boolean;
 }
 
 /** Regras (pet, festas, fumar) de cada ficha lida nesta conversa, pelo id. */
@@ -510,6 +512,13 @@ const PROBLEMA: Record<Corte, string> = {
   cotacao: "O hóspede trouxe datas e você citou um total sem cotar. Chame cotar para essas datas; não reaproveite total de outra estadia.",
 };
 
+// Id de imóvel na mensagem do hóspede ("FLN-103", "fln103").
+const ID_NA_MENSAGEM = /\b[a-z]{3}-?\d{3}\b/i;
+/** Imóvel e datas na mensagem e nada cotado no turno (F4): cotar na mesma resposta, com ou sem handoff. */
+const COTE_O_QUE_VEIO = "O hóspede informou o imóvel e as datas nesta mensagem, e você não cotou. Chame cotar com esses dados e "
+  + "mostre a cotação pelo valor normal nesta mesma resposta, sem perguntar de novo o que ele já informou. Se ele pediu "
+  + "desconto, continue dizendo que você não concede.";
+
 /**
  * Segunda chamada focada (P17): a mensagem do hóspede tem um sinal (palavra ou valor ditado),
  * mas quem decide é o modelo. Palavra do hóspede nunca liga handoff nem acrescenta texto.
@@ -539,6 +548,9 @@ export function conferir(texto: string, permitidos: Set<string>, turno: Situacao
       + "a ferramenta agora; se não é, reescreva oferecendo essa opção, sem afirmar que passou.");
   }
   if (!turno.handoff && turno.sinal) problemas.push(FOCO);
+  if (turno.semCotacao && !cortes.has("cotacao") && ID_NA_MENSAGEM.test(turno.mensagem) && DATA_NA_MENSAGEM.test(turno.mensagem)) {
+    problemas.push(COTE_O_QUE_VEIO);
+  }
   if (!turno.handoff && turno.resumoMudou) {
     problemas.push("O resumo que aguardava confirmação deixou de valer: a mensagem do hóspede pode mudar um dado dele. Se mudou "
       + "(datas, imóvel, hóspedes, nome ou telefone), chame montar_resumo com os dados atualizados; o que ele não mudou continua como "
@@ -698,6 +710,7 @@ export async function rodarTurno(entrada: EntradaDoTurno): Promise<SaidaDoTurno>
       regras: regrasLidas([...entrada.historico, ...novas]),
       totais,
       sinal: sinal(),
+      semCotacao: !usadas.some((nome) => nome === "cotar" || nome === "montar_resumo" || nome === CONFIRMAR),
       resumoMudou: caiu && r
         ? `imóvel ${r.imovel_id}, entrada ${r.checkin}, saída ${r.checkout}, ${r.hospedes} hóspedes, nome ${r.nome}, telefone ${r.telefone}`
         : undefined,
