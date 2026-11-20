@@ -1189,8 +1189,8 @@ function testarJuizPreco() {
     }
     assert.ok(elegiveisProducao >= 60, `só ${elegiveisProducao} casos de dev rodam contra producao (mínimo 60)`);
     // Contagem fixada: caso novo ou removido atualiza estes números no mesmo commit
-    assert.equal(totalCasos, 111, 'casos de dev');
-    assert.equal(elegiveisProducao, 75, 'casos de dev elegíveis para producao');
+    assert.equal(totalCasos, 112, 'casos de dev');
+    assert.equal(elegiveisProducao, 76, 'casos de dev elegíveis para producao');
   }
 
   // P13: o "sim" de um turno que espera registro não traz valor junto (código de imóvel,
