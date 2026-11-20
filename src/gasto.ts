@@ -1,8 +1,7 @@
 // Proteção de gasto da demonstração pública (M2 da rodada pós-entrega, valores decididos pelo
 // Éverton em 20/11): limite de mensagens por IP, pelo binding nativo de rate limit, e teto
-// diário de chamadas ao modelo, contado num Durable Object por dia civil de São Paulo. Acima
-// de qualquer um, o /chat responde um texto fixo sem chamar o modelo.
-import { DurableObject } from "cloudflare:workers";
+// diário de chamadas ao modelo, contado numa instância da Sessao por dia civil de São Paulo
+// (`teto:<data>`). Acima de qualquer um, o /chat responde um texto fixo sem chamar o modelo.
 import type { Env } from "./env";
 import { dataCivilEmSaoPaulo } from "./nucleo/datas";
 import { idiomaDoHospede } from "./nucleo/idioma";
@@ -18,25 +17,14 @@ const TEXTOS = {
   },
 };
 
-/** Contador de chamadas ao modelo de um dia. Um objeto por dia: o nome leva a data. */
-export class Teto extends DurableObject {
-  async usadas(): Promise<number> {
-    return (await this.ctx.storage.get<number>("chamadas")) ?? 0;
-  }
-
-  async somar(chamadas: number): Promise<void> {
-    if (!Number.isInteger(chamadas) || chamadas <= 0) return;
-    await this.ctx.storage.put("chamadas", (await this.usadas()) + chamadas);
-  }
-}
-
 /** Teto do dia em chamadas ao modelo; ausente, vazio ou inválido desliga o teto. */
 function tetoDiario(env: Env): number | undefined {
   const valor = Number(env.TETO_DIARIO_CHAMADAS);
   return Number.isInteger(valor) && valor > 0 ? valor : undefined;
 }
 
-const contadorDoDia = (env: Env, agora: number) => env.TETO?.getByName(`teto:${dataCivilEmSaoPaulo(agora)}`);
+/** O contador do dia: uma instância da Sessao que nunca conversa. O nome não colide com as sessões ("sessao:<id>"). */
+const contadorDoDia = (env: Env, agora: number) => env.SESSAO.getByName(`teto:${dataCivilEmSaoPaulo(agora)}`);
 
 /**
  * Prazo das chamadas ao contador: no máximo 1,5 s e nunca mais que 10% do tempo que resta à
@@ -69,7 +57,7 @@ export async function barrarPorGasto(
     const teto = tetoDiario(env);
     const contador = contadorDoDia(env, agora);
     // ponytail: confere antes e soma depois; pedidos simultâneos podem passar um pouco do teto.
-    if (teto !== undefined && contador && (await comPrazo(contador.usadas(), prazoMs)) >= teto) return textos.teto;
+    if (teto !== undefined && contador && (await comPrazo(contador.usadasNoTeto(), prazoMs)) >= teto) return textos.teto;
   } catch (erro) {
     // ponytail: falha aberta; se o contador cair, o teto do provedor do modelo ainda vale.
     console.log(JSON.stringify({ evento: "falha_no_limite_de_gasto", erro: erro instanceof Error ? erro.name : "desconhecido" }));
@@ -81,8 +69,7 @@ export async function barrarPorGasto(
 export async function registrarGasto(env: Env, chamadas: number, prazoMs = 1_500, agora = Date.now()): Promise<void> {
   if (tetoDiario(env) === undefined) return;
   try {
-    const contador = contadorDoDia(env, agora);
-    if (contador) await comPrazo(contador.somar(chamadas), prazoMs);
+    await comPrazo(contadorDoDia(env, agora).somarNoTeto(chamadas), prazoMs);
   } catch {
     // Melhor esforço: a resposta ao hóspede não depende do contador.
   }

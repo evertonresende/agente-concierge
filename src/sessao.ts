@@ -98,6 +98,20 @@ export class Sessao extends DurableObject<Env> {
   }
 
   /**
+   * Contador do teto diário de gasto (M2), numa instância própria por dia (`teto:<data>`), que
+   * nunca conversa. Fica nesta classe para o M2 não criar classe nova de Durable Object: uma
+   * classe nova bloqueia o rollback de producao para a versão da entrega (medido em dev).
+   */
+  async usadasNoTeto(): Promise<number> {
+    return (await this.ctx.storage.get<number>("teto_chamadas")) ?? 0;
+  }
+
+  async somarNoTeto(chamadas: number): Promise<void> {
+    if (!Number.isInteger(chamadas) || chamadas <= 0) return;
+    await this.ctx.storage.put("teto_chamadas", (await this.usadasNoTeto()) + chamadas);
+  }
+
+  /**
    * Entra na fila e processa a mensagem quando todas as anteriores terminarem. Nunca
    * rejeita: processamento que lança vira a resposta de contingência (contrato L18), e
    * por isso uma mensagem que falha não trava as seguintes.

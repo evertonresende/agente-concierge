@@ -5,7 +5,6 @@ import type { Env } from "./env";
 import { destinoDosLeads } from "./lead";
 import { PAGINA } from "./pagina";
 
-export { Teto } from "./gasto";
 export { Sessao } from "./sessao";
 
 async function hashDoBloco(tag: "script" | "style"): Promise<string> {

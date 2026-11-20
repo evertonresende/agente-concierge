@@ -29,8 +29,11 @@ const chat = (variaveis: Env, sessionId: string, message = "oi", ip = "cliente-d
     method: "POST", headers: { "cf-connecting-ip": ip }, body: JSON.stringify({ session_id: sessionId, message }),
   }), variaveis);
 
-const contadorDeHoje = () => (ambiente as unknown as { TETO: DurableObjectNamespace<import("../src/gasto").Teto> })
-  .TETO.getByName(`teto:${dataCivilEmSaoPaulo(Date.now())}`);
+// O contador do dia é uma instância da Sessao (`teto:<data>`): sem classe nova de Durable Object.
+const contadorDeHoje = () => {
+  const stub = ambiente.SESSAO.getByName(`teto:${dataCivilEmSaoPaulo(Date.now())}`);
+  return { usadas: () => stub.usadasNoTeto(), somar: (n: number) => stub.somarNoTeto(n) };
+};
 
 describe("M2: teto diário de chamadas ao modelo", () => {
   it("abaixo do teto, o turno roda e as chamadas reais entram no contador do dia", async () => {

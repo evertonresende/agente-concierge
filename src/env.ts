@@ -15,8 +15,6 @@ export interface Env {
   ENVIO_LEADS?: string;
   /** Host do webhook falso (secret de dev): com ele, só esse host recebe lead fora de producao. */
   LEADS_HOST_FALSO?: string;
-  /** Contador de chamadas ao modelo por dia (M2). */
-  TETO?: DurableObjectNamespace<import("./gasto").Teto>;
   /** Teto diário de chamadas ao modelo; ausente desliga o teto (M2). */
   TETO_DIARIO_CHAMADAS?: string;
   /** Limite de mensagens por IP, binding nativo de rate limit; ausente em dev (M2). */

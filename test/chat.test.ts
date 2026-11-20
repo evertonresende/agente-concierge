@@ -132,9 +132,8 @@ describe("POST /chat", () => {
     expect(dado.reply).not.toContain("objeto fora do ar");
   });
 
-  it("módulo de entrada do Worker só exporta default (objeto) e as classes Sessao e Teto", () => {
-    expect(Object.keys(entrada).sort()).toEqual(["Sessao", "Teto", "default"]);
-    expect(typeof entrada.Teto).toBe("function");
+  it("módulo de entrada do Worker só exporta default (objeto) e a classe Sessao", () => {
+    expect(Object.keys(entrada).sort()).toEqual(["Sessao", "default"]);
     expect(typeof entrada.default).toBe("object");
     expect(entrada.default).not.toBeNull();
     expect(typeof entrada.Sessao).toBe("function");

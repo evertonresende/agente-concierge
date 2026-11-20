@@ -9,15 +9,17 @@
   // pode responder 404 "error code: 1042" ao ser chamado por outro Worker da conta.
   "compatibility_flags": ["global_fetch_strictly_public"],
   "observability": { "enabled": true },
-  "exports": {
-    "Sessao": { "type": "durable-object", "storage": "sqlite" },
-    // Contador diário de chamadas ao modelo (M2 da rodada pós-entrega).
-    "Teto": { "type": "durable-object", "storage": "sqlite" }
-  },
+  "exports": { "Sessao": { "type": "durable-object", "storage": "sqlite" } },
   "env": {
     "dev": {
+      // Teto: classe que existiu só em dev, por algumas horas de 20/11 (M2 antes da medida do
+      // rollback). O marcador de exclusão aposenta o namespace dela; producao nunca a teve.
+      "exports": {
+        "Sessao": { "type": "durable-object", "storage": "sqlite" },
+        "Teto": { "type": "durable-object", "state": "deleted" }
+      },
       "ai": { "binding": "AI" },
-      "durable_objects": { "bindings": [{ "name": "SESSAO", "class_name": "Sessao" }, { "name": "TETO", "class_name": "Teto" }] },
+      "durable_objects": { "bindings": [{ "name": "SESSAO", "class_name": "Sessao" }] },
       // URLs de pré-visualização desligadas (P25); sem isto o deploy as religa.
       "preview_urls": false,
       "vars": {
@@ -40,7 +42,7 @@
     },
     "producao": {
       "ai": { "binding": "AI" },
-      "durable_objects": { "bindings": [{ "name": "SESSAO", "class_name": "Sessao" }, { "name": "TETO", "class_name": "Teto" }] },
+      "durable_objects": { "bindings": [{ "name": "SESSAO", "class_name": "Sessao" }] },
       // URLs de pré-visualização desligadas (P25); sem isto o deploy as religa.
       "preview_urls": false,
       // Limite por IP da demonstração pública (M2, decisão do Éverton em 20/11): 10 mensagens
