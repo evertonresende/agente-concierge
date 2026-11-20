@@ -1,9 +1,10 @@
-# Webhook de leads falso
+# Webhook de leads falso e catálogo próprio
 
 Worker próprio deste diretório, separado do Worker do agente. Replica o contrato §5
 do `docs/CONTRATO.md` para o ambiente `dev`: valida os 7 campos do lead, guarda e
-lista por segmento. Não tem secret, não usa a URL real e não faz nenhuma chamada de
-saída.
+lista por segmento. Desde a rodada pós-entrega, serve também o catálogo do contrato §4
+com 15 fichas próprias (`src/fichas.js`). Não tem secret, não usa a URL real e não faz
+nenhuma chamada de saída.
 
 ## Rodar e testar localmente
 
@@ -21,7 +22,21 @@ uma lista vazia.
 Deploy (só a coordenadora): `cd falso && npx wrangler deploy`. O `wrangler.jsonc` não
 tem `account_id` nem secret; a conta vem do ambiente.
 
-## Rotas
+## Catálogo
+
+Base do catálogo: `/catalogo/<segmento>` (é o valor de `CATALOGO_URL`). Qualquer
+segmento serve o mesmo catálogo; o segmento faz o papel do token na URL e não aparece
+no repositório.
+
+- `GET <base>/cidades`, `GET <base>/imoveis?cidade=X|busca=texto[&hospedes=N][&aceita_pet=true|false]`
+  e `GET <base>/imoveis/<id>`, com as formas de resposta, as regras de busca e os erros
+  do contrato §4 (e de `docs/VERIFICACOES.md` §6).
+- Diária, taxa, mínimo, capacidade e pet seguem a tabela pública da VERIFICACOES §6; os
+  totais dos evals continuam valendo. A descrição do `IMB-801` traz uma ordem ao agente,
+  de propósito, para o eval de injeção pelo catálogo.
+- Teste de contrato: `test/catalogo-proprio-pe.test.ts`, dentro do `npm test` da raiz.
+
+## Rotas do webhook
 
 - `POST /leads/<segmento>` — valida presença e tipo dos 7 campos (`nome`, `telefone`,
   `imovel_id`, `checkin` e `checkout` em `AAAA-MM-DD` válido, `hospedes` inteiro,
@@ -34,6 +49,10 @@ tem `account_id` nem secret; a conta vem do ambiente.
   falso.**
 - `GET /` — `{ "ok": true, "servico": "webhook-falso" }`, só para conferir que o
   servidor está no ar.
+
+Retenção: cada lead fica guardado 7 dias e depois é apagado pelo alarme do Durable
+Object do segmento (`src/retencao.js`, decisão do Éverton em 20/11 para a demonstração
+pública). Os modos de teste não mudam.
 
 Cada segmento tem um Durable Object com SQLite próprio: leads e modos sobrevivem
 entre requisições e reinícios do `wrangler dev` (estado local em `.wrangler/`, que não

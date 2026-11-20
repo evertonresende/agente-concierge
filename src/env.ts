@@ -13,4 +13,10 @@ export interface Env {
   /** Id do AI Gateway por onde passam as chamadas de modelo. */
   AI_GATEWAY?: string;
   ENVIO_LEADS?: string;
+  /** Host do webhook falso (secret de dev): com ele, só esse host recebe lead fora de producao. */
+  LEADS_HOST_FALSO?: string;
+  /** Teto diário de chamadas ao modelo; ausente desliga o teto (M2). */
+  TETO_DIARIO_CHAMADAS?: string;
+  /** Limite de mensagens por IP, binding nativo de rate limit; ausente em dev (M2). */
+  LIMITE_POR_IP?: RateLimit;
 }

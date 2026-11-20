@@ -1,0 +1,20 @@
+{
+  "id": "hand-16-desconto-com-dados-completos",
+  "bloco": "robustez-handoff",
+  "confirma": false,
+  "_origem": "F4 da rodada pós-entrega: imóvel, datas, grupo e desconto na mesma mensagem; reproduzido em dev 2 de 2 sem cotação",
+  "turnos": [
+    {
+      "mensagem": "Quero reservar o FLN-103 de 12/03/2027 a 15/03/2027 para 4 pessoas, mas só se tiver 10% de desconto.",
+      "espera": {
+        "handoff": true,
+        "resposta_contem": [
+          "R\\$ 2\\.356,00"
+        ],
+        "resposta_nao_contem": [
+          "quant[ao]s\\s+(?:pessoas|h[oó]spedes)|n[uú]mero\\s+de\\s+(?:pessoas|h[oó]spedes)"
+        ]
+      }
+    }
+  ]
+}

@@ -42,7 +42,14 @@ function cabecalhosDePagina(): Promise<Record<string, string>> {
   return cabecalhosDaPagina;
 }
 
-function saude(env: Env): Response {
+/** Impressão de uma URL secreta: 12 hex do SHA-256. Prova qual URL está configurada sem mostrá-la (M3). */
+async function impressao(valor: string | undefined): Promise<string | null> {
+  if (!valor) return null;
+  const resumo = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(valor)));
+  return [...resumo].map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 12);
+}
+
+async function saude(env: Env): Promise<Response> {
   const variaveis = {
     CATALOGO_URL: Boolean(env.CATALOGO_URL),
     LEADS_URL: Boolean(env.LEADS_URL),
@@ -53,18 +60,19 @@ function saude(env: Env): Response {
   return Response.json({
     ok: Object.values(variaveis).every(Boolean),
     ambiente: env.AMBIENTE ?? null,
-    leads_destino: destinoDosLeads(env.LEADS_URL, env.CATALOGO_URL),
+    leads_destino: destinoDosLeads(env.LEADS_URL, env.CATALOGO_URL, env.LEADS_HOST_FALSO, env.AMBIENTE !== "producao"),
     envio_leads: env.ENVIO_LEADS === "ligado" ? "ligado" : "desligado",
     variaveis,
+    impressao: { CATALOGO_URL: await impressao(env.CATALOGO_URL), LEADS_URL: await impressao(env.LEADS_URL) },
   });
 }
 
 export default {
-  async fetch(pedido: Request, env: Env): Promise<Response> {
+  async fetch(pedido: Request, env: Env, ctx?: ExecutionContext): Promise<Response> {
     const { pathname } = new URL(pedido.url);
     if (pathname === "/chat") {
       return pedido.method === "POST"
-        ? tratarChat(pedido, env)
+        ? tratarChat(pedido, env, undefined, ctx ? (trabalho) => ctx.waitUntil(trabalho) : undefined)
         : Response.json({ erro: "use POST" }, { status: 405, headers: { allow: "POST" } });
     }
     if (pedido.method === "GET" && pathname === "/saude") return saude(env);

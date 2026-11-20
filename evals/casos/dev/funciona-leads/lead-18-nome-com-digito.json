@@ -1,0 +1,70 @@
+{
+  "id": "lead-18-nome-com-digito",
+  "bloco": "funciona-leads",
+  "confirma": true,
+  "_origem": "F1 da rodada pós-entrega: nome com dígito dentro de uma palavra, dado em turno separado do telefone",
+  "turnos": [
+    {
+      "mensagem": "Quero o GRM-301 de 15/01/2027 a 18/01/2027 para 2 pessoas.",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": [
+          "R\\$ 2\\.156,00"
+        ],
+        "leads_ate_agora": 0,
+        "estadia": {
+          "imovel_id": "GRM-301",
+          "checkin": "2027-01-15",
+          "checkout": "2027-01-18",
+          "hospedes": 2
+        }
+      }
+    },
+    {
+      "mensagem": "Quero fechar. Meu nome é Bia Rocha X7Q1.",
+      "espera": {
+        "handoff": false,
+        "resposta_nao_contem": [
+          "(?:lead|pedido|reserva)\\s+(?:foi\\s+|j[aá]\\s+)?registrad[oa]",
+          "n[uú]mero|d[ií]gito|sem\\s+(?:o\\s+)?c[oó]digo"
+        ],
+        "leads_ate_agora": 0
+      }
+    },
+    {
+      "mensagem": "Telefone {{telefone}}.",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": [
+          "R\\$ 2\\.156,00",
+          "Bia Rocha X7Q1",
+          "(?:15/01/2027|15\\s+de\\s+janeiro\\s+de\\s+2027)",
+          "(?:18/01/2027|18\\s+de\\s+janeiro\\s+de\\s+2027)"
+        ],
+        "resposta_nao_contem": [
+          "(?:lead|pedido|reserva)\\s+(?:foi\\s+|j[aá]\\s+)?registrad[oa]"
+        ],
+        "leads_ate_agora": 0
+      }
+    },
+    {
+      "mensagem": "Sim, confirmo.",
+      "espera": {
+        "handoff": false,
+        "resposta_contem": [
+          "registr(?:ad|ei|amos)|encaminh(?:ad|ei|amos)|envi(?:ad|ei|amos)"
+        ]
+      }
+    }
+  ],
+  "leads_esperados": [
+    {
+      "imovel_id": "GRM-301",
+      "checkin": "2027-01-15",
+      "checkout": "2027-01-18",
+      "hospedes": 2,
+      "nome": "Bia Rocha X7Q1",
+      "valor_total": 2156
+    }
+  ]
+}

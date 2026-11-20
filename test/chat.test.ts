@@ -179,6 +179,7 @@ describe("GET /saude", () => {
       leads_destino: "falso",
       envio_leads: "ligado",
       variaveis: { CATALOGO_URL: true, LEADS_URL: true, AMBIENTE: true, MODELO: true, ENVIO_LEADS: true },
+      impressao: { CATALOGO_URL: expect.stringMatching(/^[0-9a-f]{12}$/), LEADS_URL: expect.stringMatching(/^[0-9a-f]{12}$/) },
     });
     expect(texto).not.toContain("token-de-teste");
   });

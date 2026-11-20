@@ -93,6 +93,62 @@ function palavrasQueOHospedeNaoEscreveu(nome: string, contexto: Contexto): strin
   return [...new Set(palavras(nome).filter((p) => !escritas.has(p)))];
 }
 
+// Letras que, junto de um número na mesma palavra, fazem dele um valor: "500reais", "R1000",
+// "20BRL", "2k", "1500/noite", "50desconto", "300off", "10x500", "US500".
+const MOEDA_GRUDADA = /^(?:r|rs|reais|real|brl|us|usd|eur|euros?|dolar(?:es)?|dollars?|mil|k|noites?|diarias?|total|desconto|off|x|por)$/;
+
+/**
+ * Palavra do nome com cara de valor (P29, regra nova da F1 em 20/11): número solto ("500",
+ * "1,00"), número junto de moeda ("500reais") ou percentual. Dígito dentro de palavra com
+ * letras ("X7Q1", "3º") é nome. Símbolo de moeda em qualquer lugar também é valor.
+ */
+function temValor(nome: string): boolean {
+  if (/[\p{Sc}%]/u.test(nome)) return true;
+  return nome.split(/\s+/).some((palavra) => {
+    if (!/[\p{Nd}\p{No}]/u.test(palavra)) return false;
+    // Três dígitos seguidos já têm cara de valor ("Ana1500"); código de nome tem menos.
+    if (/[\p{Nd}\p{No}]{3}/u.test(palavra)) return true;
+    const letras = palavra.normalize("NFKD").replace(/\p{M}/gu, "").toLowerCase().replace(/[^\p{L}]/gu, "");
+    return letras === "" || MOEDA_GRUDADA.test(letras);
+  });
+}
+
+/**
+ * O que impede o nome de ir para o resumo e para o lead, ou `undefined` se ele serve. Valor
+ * no nome (P29) levaria um preço falso a quem lê o lead; o nome também só pode ser formado
+ * por palavras que o hóspede escreveu (P20). Conferido antes do corte de tamanho: palavra
+ * cortada ao meio não é palavra que ele escreveu.
+ */
+export function problemaDoNome(nome: string, contexto: Contexto): string | undefined {
+  if (temValor(nome)) {
+    return "O nome informado tem um valor (número solto, moeda ou percentual), e nome de pessoa não tem. Peça ao hóspede "
+      + "o nome dele sem número nem valor. Não invente nem corrija por conta própria.";
+  }
+  const estranhas = palavrasQueOHospedeNaoEscreveu(nome, contexto);
+  if (estranhas.length > 0 || palavras(nome).length === 0) {
+    const quais = estranhas.length > 0 ? ` O hóspede não escreveu: ${estranhas.slice(0, 8).map((p) => `"${p}"`).join(", ")}.` : "";
+    return `O nome informado não é o que o hóspede escreveu.${quais} Use o nome exatamente como o hóspede escreveu, sem `
+      + "acrescentar observação, título nem sobrenome. Se ele ainda não disse o nome, pergunte; não invente.";
+  }
+  return undefined;
+}
+
+/** Confere o nome no turno em que ele chega (F1), sem mexer no pedido: a mesma regra do resumo. */
+export const conferirNome = definir(
+  "conferir_nome",
+  "Confere o nome do hóspede. Chame assim que o hóspede disser o nome, no mesmo turno, quando o resumo ainda não puder "
+    + "ser montado (falta telefone ou outro dado). Se vier erro, diga ao hóspede o que está errado e peça o nome de novo, "
+    + "em vez de agradecer pelo nome. Não envia nada e não monta resumo; com todos os dados, chame montar_resumo direto, "
+    + "que faz a mesma conferência.",
+  { nome: { type: "string", description: "Nome do hóspede, exatamente como ele escreveu" } },
+  ["nome"],
+  async (argumentos, contexto) => {
+    const nome = texto(argumentos, "nome")?.replace(/\s+/g, " ") ?? "";
+    const problema = nome ? problemaDoNome(nome, contexto) : "Falta o nome. Pergunte ao hóspede; não invente.";
+    return { paraOModelo: problema ? { erro: problema } : { nome_ok: true } };
+  },
+);
+
 function jaRegistrado(pendente: Pendente, idioma: Idioma): Resultado {
   const r = pendente.reserva;
   return {
@@ -218,29 +274,8 @@ async function tentarResumir(argumentos: Argumentos, contexto: Contexto): Promis
   if (!nome || !informado || faltando.length > 0) {
     return { paraOModelo: { erro: `Falta: ${faltando.join(", ")}. Pergunte ao hóspede; não invente.` } };
   }
-  // Nome de pessoa não tem dígito nem símbolo de moeda (P29): com eles, o campo levaria um
-  // preço falso a quem lê o lead. Algarismo romano e sufixo por extenso passam.
-  if (/[\p{Nd}\p{No}\p{Sc}]/u.test(inteiro)) {
-    return {
-      paraOModelo: {
-        erro: "O nome informado tem número ou símbolo de moeda, e nome de pessoa não tem. Peça ao hóspede o nome dele "
-          + "sem número nem valor. Não invente, não corrija por conta própria e não monte resumo sem isso.",
-      },
-    };
-  }
-  // O nome do lead só pode ser formado por palavras que o hóspede escreveu (P20). Conferido
-  // antes do corte de tamanho: palavra cortada ao meio não é palavra que ele escreveu.
-  const estranhas = palavrasQueOHospedeNaoEscreveu(inteiro, contexto);
-  if (estranhas.length > 0 || palavras(inteiro).length === 0) {
-    const quais = estranhas.length > 0 ? ` O hóspede não escreveu: ${estranhas.slice(0, 8).map((p) => `"${p}"`).join(", ")}.` : "";
-    return {
-      paraOModelo: {
-        erro: `O nome informado não é o que o hóspede escreveu.${quais} Use o nome exatamente como o hóspede escreveu, sem `
-          + "acrescentar observação, título nem sobrenome. Se ele ainda não disse o nome, pergunte; não invente. Não monte "
-          + "resumo sem isso.",
-      },
-    };
-  }
+  const problema = problemaDoNome(inteiro, contexto);
+  if (problema) return { paraOModelo: { erro: `${problema} Não monte resumo sem isso.` } };
   const telefone = normalizarTelefone(informado);
   if (!telefone) {
     return {

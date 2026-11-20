@@ -1,4 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
+import { tratarCatalogo } from "./catalogo.js";
+import { corteDaRetencao, RETENCAO_MS } from "./retencao.js";
 
 // Webhook de leads falso. Replica o contrato §5 do docs/CONTRATO.md para o
 // ambiente dev: POST valida os 7 campos e guarda o lead, GET lista por segmento.
@@ -52,8 +54,16 @@ export class ListaDeLeads extends DurableObject {
     this.#pronta = true;
   }
 
+  /** Segmento com lead e sem alarme (leads de antes da retenção): o alarme roda já e reagenda. */
+  #garantirAlarme() {
+    this.ctx.storage.getAlarm()
+      .then((alarme) => alarme ?? this.ctx.storage.setAlarm(Date.now() + 1000))
+      .catch(() => {}); // sem o alarme, o lead só fica mais tempo; nada falha por isso
+  }
+
   listar() {
     this.#preparar();
+    this.#garantirAlarme();
     return this.ctx.storage.sql
       .exec(
         `SELECT id, recebido_em, nome, telefone, imovel_id, checkin, checkout,
@@ -63,8 +73,19 @@ export class ListaDeLeads extends DurableObject {
       .toArray();
   }
 
+  /** Alarme da retenção: apaga os leads vencidos e reagenda para o próximo a vencer. */
+  async alarm() {
+    this.#preparar();
+    this.ctx.storage.sql.exec("DELETE FROM leads WHERE recebido_em < ?", corteDaRetencao(Date.now()));
+    const [proximo] = this.ctx.storage.sql.exec("SELECT MIN(recebido_em) AS r FROM leads").toArray();
+    if (proximo?.r) await this.ctx.storage.setAlarm(Date.parse(proximo.r) + RETENCAO_MS);
+  }
+
   inserir(lead) {
     this.#preparar();
+    // Todo lead guardado tem prazo: sem alarme, o alarme roda já, não apaga nada e reagenda
+    // para quando o lead mais antigo vencer.
+    this.#garantirAlarme();
     const recebidoEm = new Date().toISOString();
     this.ctx.storage.sql.exec(
       `INSERT INTO leads
@@ -495,6 +516,13 @@ async function rotear(request, env) {
       return json({ erro: "metodo nao permitido" }, 405);
     }
     return json({ ok: true, servico: "webhook-falso" });
+  }
+
+  // Catálogo próprio: /catalogo/<segmento>/<rota>. O resto vem do caminho cru, para a
+  // barra final continuar sendo rota inexistente.
+  if (partes[0] === "catalogo" && partes.length >= 3) {
+    const prefixo = `/catalogo/${partes[1]}/`;
+    return tratarCatalogo(request, url.pathname.slice(prefixo.length));
   }
 
   if (partes.length !== 2) {

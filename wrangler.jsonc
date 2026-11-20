@@ -12,12 +12,21 @@
   "exports": { "Sessao": { "type": "durable-object", "storage": "sqlite" } },
   "env": {
     "dev": {
+      // Teto: classe que existiu só em dev, por algumas horas de 20/11 (M2 antes da medida do
+      // rollback). O marcador de exclusão aposenta o namespace dela; producao nunca a teve.
+      "exports": {
+        "Sessao": { "type": "durable-object", "storage": "sqlite" },
+        "Teto": { "type": "durable-object", "state": "deleted" }
+      },
       "ai": { "binding": "AI" },
       "durable_objects": { "bindings": [{ "name": "SESSAO", "class_name": "Sessao" }] },
       // URLs de pré-visualização desligadas (P25); sem isto o deploy as religa.
       "preview_urls": false,
       "vars": {
         "AMBIENTE": "dev",
+        // Teto diário de chamadas ao modelo (M2, decisão do Éverton em 20/11). Sem limite por IP
+        // em dev: o runner de evals sai de um IP só e uma rodada faz perto de 330 chamadas.
+        "TETO_DIARIO_CHAMADAS": "5000",
         // Principal escolhido pelo Éverton (X22): Claude Haiku 5.5, pela binding do AI Gateway,
         // com a chave da Anthropic guardada no gateway (BYOK). Raciocínio em nível alto (decisão do
         // Éverton, 13/11; muito alto descartado).
@@ -28,15 +37,21 @@
         "AI_GATEWAY": "concierge-dev",
         "ENVIO_LEADS": "ligado"
       },
-      "secrets": { "required": ["CATALOGO_URL", "LEADS_URL"] }
+      // LEADS_HOST_FALSO: host do webhook falso; sem ele, dev não envia lead nenhum.
+      "secrets": { "required": ["CATALOGO_URL", "LEADS_URL", "LEADS_HOST_FALSO"] }
     },
     "producao": {
       "ai": { "binding": "AI" },
       "durable_objects": { "bindings": [{ "name": "SESSAO", "class_name": "Sessao" }] },
       // URLs de pré-visualização desligadas (P25); sem isto o deploy as religa.
       "preview_urls": false,
+      // Limite por IP da demonstração pública (M2, decisão do Éverton em 20/11): 10 mensagens
+      // por minuto. O namespace_id é um número escolhido para este Worker, não um segredo.
+      "ratelimits": [{ "name": "LIMITE_POR_IP", "namespace_id": "2611", "simple": { "limit": 10, "period": 60 } }],
       "vars": {
         "AMBIENTE": "producao",
+        // Teto diário de chamadas ao modelo (M2): perto de US$ 1,35 por dia no preço medido.
+        "TETO_DIARIO_CHAMADAS": "1500",
         "MODELO": "anthropic/claude-haiku-5.5",
         "MODELO_ESFORCO": "high",
         "MODELO_RESERVA": "@cf/zai-org/glm-5.3-flash",

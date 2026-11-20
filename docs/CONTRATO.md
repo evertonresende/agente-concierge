@@ -63,7 +63,9 @@ Rotas adicionais do Worker (não fazem parte da bateria):
 - `GET /` — página simples de chat que usa o `POST /chat`.
 - `GET /saude` — `{ "ok": true, "ambiente": "dev" | "producao", "leads_destino":
   "falso" | "real", "envio_leads": "ligado" | "desligado" }` e a presença (nunca o
-  valor) de cada variável obrigatória.
+  valor) de cada variável obrigatória. Desde 20/11, também `impressao`: os 12 primeiros
+  hex do SHA-256 do `CATALOGO_URL` e do `LEADS_URL`, para provar qual URL está
+  configurada sem mostrá-la.
 - Cabeçalhos de resposta do `/chat` para medir custo: `x-uso-entrada`, `x-uso-saida`
   (tokens) e `x-chamadas-modelo`.
 
@@ -233,7 +235,7 @@ O agente nunca:
 
 | Ambiente | Catálogo | Webhook de leads | Uso |
 |---|---|---|---|
-| `dev` | real (só GET) | **falso**, nosso, que replica o contrato da seção 5 | fluxo completo de lead, evals com confirmação, vídeo |
+| `dev` | real (só GET); desde 20/11, o catálogo próprio (`falso/`, mesmo contrato da seção 4) | **falso**, nosso, que replica o contrato da seção 5 | fluxo completo de lead, evals com confirmação, vídeo |
 | `producao` | real | real, com o envio desligado até a entrega (L24) | entrega; antes dela, só conversas sem confirmação |
 
 **Webhook real: nenhum POST antes da entrega, por nenhuma sessão, nem como teste
@@ -251,6 +253,8 @@ Variáveis (valores só em ambiente, nunca em arquivo versionado):
 | `AMBIENTE` | var | `dev` ou `producao` |
 | `MODELO` | var | identificador do modelo em uso |
 | `ENVIO_LEADS` | var | `ligado` ou `desligado`; `desligado` em `producao` até a ordem do Éverton (L24) |
+| `LEADS_HOST_FALSO` | secret, só `dev` (desde 20/11) | host do webhook falso; fora de `producao`, só ele recebe lead, e sem ele nenhum lead sai |
+| `TETO_DIARIO_CHAMADAS` | var (desde 20/11) | teto diário de chamadas ao modelo (L25); ausente desliga o teto |
 
 Na máquina de desenvolvimento os valores ficam em `~/.config/agente-concierge/env`
 (`CATALOGO_URL`; `LEADS_URL_DEV` e `AGENTE_URL_DEV` depois que o webhook falso e o
@@ -260,7 +264,8 @@ arquivo local do `wrangler dev` sem imprimir nada:
 
 ```bash
 ( set -a; . ~/.config/agente-concierge/env; set +a; umask 077
-  printf 'CATALOGO_URL=%s\nLEADS_URL=%s\n' "$CATALOGO_URL" "$LEADS_URL_DEV" > .dev.vars.dev )
+  h=${LEADS_URL_DEV#*://}
+  printf 'CATALOGO_URL=%s\nLEADS_URL=%s\nLEADS_HOST_FALSO=%s\n' "$CATALOGO_URL" "$LEADS_URL_DEV" "${h%%/*}" > .dev.vars.dev )
 ```
 
 A URL real de leads é a do catálogo trocando o segmento `catalogo` por `leads`. Ela só
@@ -308,12 +313,14 @@ Quem decide é o Éverton. O motivo de cada decisão fica em `DECISOES.md`.
 | L17 | Corpo inválido no `POST /chat` | JSON válido com `session_id` e `message` em texto devolve **sempre `200`**. Mensagem vazia: o agente pede para escrever a mensagem. Mensagem acima de 8.000 caracteres: o agente pede para resumir. Nos dois casos, `handoff: false`. `400` só para JSON inválido ou campo faltando, com corpo `{ "reply": "<o que está errado>", "handoff": false }`. |
 | L17a | Campo presente que não é texto; `session_id` vazio | Campo presente que não é texto conta como inválido e devolve `400`. `session_id` vazio é texto e devolve `200`, como uma sessão qualquer. |
 | L18 | Falha interna (modelo, catálogo, tempo) | Uma nova tentativa; se persistir, `200` com aviso honesto e `handoff: true`. Nunca `500`. **Recusa do modelo por limite de pedidos não conta para essa nova tentativa: vai direto para o modelo reserva; se o reserva também recusar por limite, vale o aviso honesto com `handoff: true`, sem repetir.** |
-| L19 | Pedidos que exigem ação fora do agente | Cancelar ou alterar reserva já feita, pagamento, check-in antecipado e problema durante a estadia: `handoff: true`, e o agente não diz que executou nada. Dúvida informativa que o catálogo responde (horário normal de check-in) continua no agente. |
-| L20 | Nome do hóspede | Aceita o nome como veio. Pede o nome completo, mas não bloqueia. |
+| L19 | Pedidos que exigem ação fora do agente | Cancelar ou alterar reserva já feita, pagamento, check-in antecipado e problema durante a estadia: `handoff: true`, e o agente não diz que executou nada. Dúvida informativa que o catálogo responde (horário normal de check-in) continua no agente. Mudança de 20/11 (X41): pergunta sobre forma de pagamento aceita ("aceita Pix?") é informação que o catálogo não traz e segue a L5; pedido para pagar, gerar link ou cobrança, sinal ou reembolso segue esta linha. |
+| L20 | Nome do hóspede | Aceita o nome como veio. Pede o nome completo, mas não bloqueia. Valor no nome é recusado (P29); desde 20/11 (X41, P46) dígito dentro de palavra com letras é aceito, e o nome é conferido no turno em que chega. |
 | L21 | Imóvel ambíguo | Mais de um imóvel compatível: lista as opções (nome, bairro, cidade, capacidade) e pede a escolha antes de cotar. |
 | L22 | Dados pessoais em logs e exports | Nome e telefone mascarados em logs e exports. Íntegros só no estado da sessão e no corpo enviado ao webhook. |
 | L23 | URL pública da entrega | Subdomínio próprio do Éverton, guardado em `AGENTE_URL_PRODUCAO` (o hostname só entra em arquivo versionado com ordem dele). A checagem de integridade de navegador é desligada por regra que vale **só para esse hostname**, sem tocar no resto do domínio. O Bot Fight Mode da zona é conferido. A URL publicada é testada com clientes Python (`requests` e `urllib`), curl e Node a partir da máquina de desenvolvimento. |
 | L24 | Trava do POST real até a entrega | `producao` nasce com `ENVIO_LEADS=desligado`: uma confirmação lá não gera POST e segue o caminho de falha do L11 (diz que não conseguiu registrar, `handoff: true`). Ligar o envio é só com ordem do Éverton, na entrega; `scripts/validar-producao.sh --entrega` reprova se estiver desligado. |
+| L25 | Limite de gasto da demonstração (20/11, X41) | Acima de 10 mensagens por minuto do mesmo IP ou do teto diário de chamadas ao modelo (1.500 em `producao`, 5.000 em `dev`, sem limite por IP em `dev`), o `/chat` devolve `200` com um texto fixo e `handoff: false`, sem chamar o modelo. |
+| L26 | Leads da demonstração (20/11, X41) | O webhook próprio guarda cada lead por 7 dias; a página pede nome e telefone fictícios. |
 
 Já decidido (decisões fechadas, ver `DECISOES.md`): data sem ano é a próxima
 ocorrência daquela data, e o agente repete a data completa na resposta; o agente cota

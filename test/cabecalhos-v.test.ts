@@ -97,7 +97,7 @@ describe("cabeçalhos de proteção da página (GET /)", () => {
   it("GET /saude e POST /chat seguem com o mesmo status e o mesmo corpo", async () => {
     const saude = await worker.fetch(new Request("https://agente.teste/saude"), ambiente);
     expect(saude.status).toBe(200);
-    expect(Object.keys(await saude.json() as object)).toEqual(["ok", "ambiente", "leads_destino", "envio_leads", "variaveis"]);
+    expect(Object.keys(await saude.json() as object)).toEqual(["ok", "ambiente", "leads_destino", "envio_leads", "variaveis", "impressao"]);
 
     const id = "cabecalhos-v";
     await runInDurableObject(ambiente.SESSAO.getByName(`sessao:${id}`), (s: Sessao) => {
