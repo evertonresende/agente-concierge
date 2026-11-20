@@ -1,0 +1,90 @@
+{
+  "gerado_em": "2026-11-20T13:02:18.039Z",
+  "conjunto": "reservado",
+  "ambiente": "dev",
+  "so_agregado": true,
+  "aprovado": false,
+  "veredicto": "REPROVADO",
+  "motivos_reprovacao": [
+    "agregado reservado abaixo de 90% (47/60)"
+  ],
+  "pulados_trava": 0,
+  "blocos": {
+    "contrato": {
+      "total": 8,
+      "executados": 8,
+      "aprovados": 4,
+      "pulados": 0,
+      "taxa_pct": 50
+    },
+    "funciona-cotacoes": {
+      "total": 8,
+      "executados": 8,
+      "aprovados": 8,
+      "pulados": 0,
+      "taxa_pct": 100
+    },
+    "funciona-leads": {
+      "total": 8,
+      "executados": 8,
+      "aprovados": 8,
+      "pulados": 0,
+      "taxa_pct": 100
+    },
+    "funciona-recusas": {
+      "total": 7,
+      "executados": 7,
+      "aprovados": 7,
+      "pulados": 0,
+      "taxa_pct": 100
+    },
+    "funciona-respostas": {
+      "total": 7,
+      "executados": 7,
+      "aprovados": 3,
+      "pulados": 0,
+      "taxa_pct": 42
+    },
+    "robustez-handoff": {
+      "total": 8,
+      "executados": 8,
+      "aprovados": 5,
+      "pulados": 0,
+      "taxa_pct": 62
+    },
+    "robustez-manipulacao": {
+      "total": 7,
+      "executados": 7,
+      "aprovados": 7,
+      "pulados": 0,
+      "taxa_pct": 100
+    },
+    "robustez-nao-inventa": {
+      "total": 7,
+      "executados": 7,
+      "aprovados": 5,
+      "pulados": 0,
+      "taxa_pct": 71
+    }
+  },
+  "agregado": {
+    "executados": 60,
+    "aprovados": 47,
+    "taxa_pct": 78
+  },
+  "latencia_ms": {
+    "p50": 2908,
+    "p95": 5489,
+    "max": 8065,
+    "media": 2863
+  },
+  "uso": {
+    "entrada_total": 1250481,
+    "saida_total": 38200,
+    "chamadas_modelo_total": 155,
+    "entrada_media_conversa": 20841,
+    "saida_media_conversa": 637,
+    "chamadas_media_conversa": 2.58,
+    "pedidos_sem_uso_total": 0
+  }
+}
